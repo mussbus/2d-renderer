@@ -1,0 +1,147 @@
+# Architecture
+
+## Scope and invariants
+
+This design separates a deterministic CPU simulation from an SDL3 GPU renderer. The simulation can run in tests without SDL initialization, a window, or a GPU device. The renderer consumes immutable render snapshots and never owns gameplay state.
+
+The application is a character controller and animation system, not a ragdoll simulator. Each character has a controlled physics root, an authored skeletal pose, procedural inverse kinematics, and bounded secondary-motion springs. This keeps movement responsive and animation-directed while still providing gravity, platform collision, landing compression, step bounce, and spring-like follow-through. A full rigid-body ragdoll would add joint constraints, contact manifolds, solver instability, and a different ownership model without serving the required demonstration.
+
+## Coordinate system and units
+
+- Simulation and authored animation use a right-handed 2D world: positive X points right, positive Y points up, and positive rotation is counter-clockwise.
+- Physics distances are metres, time is seconds, velocity is metres per second, acceleration is metres per second squared, and angles are radians.
+- Sprite dimensions and bone offsets are authored in metres. Pixels are presentation units only; the camera supplies pixels-per-metre.
+- SDL GPU viewport coordinates have their origin at the top-left with positive Y down. The camera projection performs the one required Y inversion when mapping world coordinates to clip space. Physics, animation, IK, and scene code never adopt screen-space Y.
+- Texture coordinates follow SDL GPU convention: `(0, 0)` is the top-left and positive V points down.
+
+## Vectors, matrices, and transforms
+
+`Vec2` values are mathematical column vectors. `Mat3` represents an affine 2D transform in homogeneous coordinates and is stored column-major. Code applies transforms as `p_result = M * p_source`.
+
+A local transform is composed as:
+
+```text
+local = translation * rotation * scale
+```
+
+This means scale is applied first, then rotation, then translation. A child-to-world transform is:
+
+```text
+child_world = parent_world * child_local
+```
+
+The root transform combines only physics root position and facing. Animation and secondary visual offsets remain in the pose hierarchy; they never rewrite the physics root. CPU/GPU layout tests will validate any matrix or packed-instance representation passed to HLSL. HLSL uses `mul(matrix, column_vector)` for the same convention.
+
+## Fixed simulation and render interpolation
+
+Simulation advances at exactly 120 Hz (`dt = 1 / 120` seconds). The frame loop accumulates real elapsed time, performs whole fixed ticks, then renders an interpolation between the previous and current completed simulation snapshots. Interpolation never feeds back into simulation.
+
+At most eight simulation ticks may be processed for one displayed frame. If the accumulator still exceeds that budget, the application records a fixed-step overrun metric and clamps the backlog to eight ticks. This produces visible time dilation under a sustained overload instead of changing `dt` or entering an unbounded catch-up loop. Tests drive ticks directly and do not use wall-clock time.
+
+Simulation order within one tick is fixed:
+
+1. Convert the already sampled `CharacterIntent` values into controller requests.
+2. Advance interaction session state and publish per-character interaction constraints.
+3. Advance locomotion state, root velocity, gravity, and static-platform collision.
+4. Sample and blend animation poses.
+5. Apply step/landing springs as visual pose offsets.
+6. Solve interaction IK and measure final socket error.
+7. Emit animation/interaction events and capture the current snapshot.
+
+## Input and character intent
+
+SDL keyboard and gamepad code owns device discovery, hot-plugging, dead zones, and raw button state. It produces one `CharacterIntent` per controlled character containing normalized horizontal movement, jump edge, interaction edge, and debug toggles. Character, animation, physics, and interaction systems never query SDL directly. Tests construct intents without platform input.
+
+## Skeleton and pose ownership
+
+A `Skeleton` is immutable after initialization. It owns the bone hierarchy, bind-local transforms, sprite attachment metadata, hand sockets, and semantic bone indices. Animation clips refer to bones by validated indices; names are used for loading and diagnostics, not per-tick lookup.
+
+Each `Character` owns its controller state, animator state, current local pose, previous pose snapshot, secondary springs, and IK workspace. The demo characters may share immutable skeleton and clip data, but never share mutable pose arrays. All arrays are allocated or fixed-capacity during initialization. The steady-state loop performs no heap allocation.
+
+World bone transforms are rebuilt parent-before-child from the physics root plus the local visual pose. Socket positions are calculated from those world transforms. A handshake alignment claim is valid only when the measured distance between the two selected hand sockets is within the documented tolerance.
+
+## Animation sampling
+
+Clips are CPU-side data made of per-bone translation, rotation, and scale tracks plus timestamped events. Sampling uses binary search or a monotonic cursor chosen during implementation, linear interpolation for translation and scale, and shortest-arc interpolation for angles. Missing tracks use the skeleton bind value.
+
+The state machine owns idle, walk, jump, fall, land, and handshake transitions. Cross-fades sample both source and destination poses and blend into a separate output pose; they do not mutate clip data. Looping event scans use half-open time intervals so an event at a loop boundary fires exactly once. Locomotion clips provide visual motion only. Physics decides whether the root rises, falls, lands, and collides.
+
+Walk includes an authored vertical pelvis/body component. Landing adds a bounded compression spring driven by the physical landing impulse. Other secondary offsets use stable, fixed-step spring integration and are clamped to authored limits.
+
+## Physics
+
+The physics body is a character-controller shape anchored at the root, not one rigid body per bone. Static platforms are immutable colliders. The collision world resolves swept or conservative root motion against those colliders, maintains grounded state, and applies gravity and jump velocity. The exact collision algorithm is selected and tested in its implementation milestone; it must not replace physical motion with prerecorded animation.
+
+Root position and velocity are authoritative physics state. Pelvis bounce, landing compression, hand IK, and spring offsets are visual pose state. Animation cannot move the collider through a platform, and collision correction cannot erase visual secondary motion.
+
+## Interaction ownership and handshake coordination
+
+`InteractionSystem` owns transient pair sessions. A handshake session records both participant IDs, selected hands, phase, shared target, approach timing, socket-error history, and release state. Characters receive constraints from the session but do not own or permanently reference each other.
+
+Handshake phases are request, approach, grip, release, and complete/cancelled. The shared target is derived from both characters' reachable regions. Small root alignment is achieved through ordinary bounded controller velocity during approach; full-body teleportation is not the normal alignment mechanism. Excess separation, obstruction, invalid participants, or failure to converge cancels the session cleanly.
+
+During grip, each arm uses a two-bone analytic IK solve with a configured elbow bend preference. The solve targets the same world-space grip point while preserving shoulder ownership. After world transforms are rebuilt, the system calculates both hand socket positions and records their separation. Visual acceptance requires the measured grip error to remain at or below 0.015 m during the hold phase.
+
+## CPU/GPU responsibility boundary
+
+CPU responsibilities:
+
+- Platform input to `CharacterIntent` conversion.
+- Fixed-step animation, physics, collision, springs, IK, and interaction coordination.
+- Skeleton traversal and socket measurement.
+- Stable transparent draw ordering and explicit limb-front overrides.
+- Building a bounded array of sprite instances and debug primitives.
+
+GPU responsibilities through the SDL3 GPU API:
+
+- Transforming unit-quad vertices from packed instance data.
+- Sampling the body-part texture atlas.
+- Applying vertex colour and texture alpha.
+- Alpha blending into the swapchain target.
+- Drawing many sprite instances from a single indexed quad and instance buffer.
+
+No SDL high-level 2D renderer participates in this boundary.
+
+## Transparent draw order and instancing
+
+Each visible body part produces a `SpriteInstance` with transform data, atlas UV bounds, colour, character ID, semantic limb, and a CPU draw key. The key contains scene layer, character depth, bone/sprite order, and an interaction override. A stable sort preserves authored order for equal keys.
+
+The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. The texture atlas and one alpha-blended sprite pipeline allow the sorted instances to remain one contiguous material batch. The renderer uploads the ordered instance array once and calls `SDL_DrawGPUIndexedPrimitives` with six quad indices and `num_instances > 1`. A draw per body part does not qualify as instancing.
+
+Debug bones, colliders, sockets, and targets use their own debug pipeline and bounded primitive buffer. They do not alter simulation state.
+
+## Resource lifetime and allocation model
+
+Initialization proceeds from platform to window, GPU device, claimed window, swapchain configuration, shaders, pipeline, sampler, textures, static geometry buffers, transfer buffers, and per-frame instance resources. Every owner has an explicit `deinit` path. Partial initialization uses `errdefer` or an equivalent scope guard to destroy already-acquired resources in reverse order.
+
+SDL GPU resource destruction maps to the matching API: buffers, transfer buffers, textures, samplers, shaders, pipelines, fences, the claimed window, and the GPU device are each released by their documented function. Command buffers are either submitted or cancelled on every path. Destruction waits for GPU idle when in-flight access makes that necessary.
+
+All simulation arrays, poses, instance buffers, debug geometry, event queues, and interaction slots have capacities established at initialization. If an intentionally bounded collection must grow, that growth is allowed only outside the normal steady state and is reported through debug metrics. The normal simulation/render loop performs no heap allocation.
+
+## Error handling and logging
+
+Subsystems expose meaningful Zig error sets such as dependency, platform, GPU-device, shader, resource, and scene-initialization failures. Errors propagate to the application boundary; code does not convert failure into unconditional success.
+
+Every failed SDL call is logged with the operation name and the current `SDL_GetError()` text before cleanup. GPU driver and shader-format selection are logged at startup. Device, shader, pipeline, texture, buffer, swapchain, and window-claim failures are fatal for the graphical application and GPU smoke test. There is no silent graphics fallback.
+
+## Determinism and test boundary
+
+Given identical configuration, initial state, and per-tick intents on the Windows x64 target, these systems are deterministic and testable without SDL or a GPU:
+
+- Vector, matrix, transform, and interpolation math.
+- Fixed-step accumulation policy when driven with explicit elapsed values.
+- Clip sampling, pose blending, state transitions, and event emission.
+- Character gravity, jumping, static-platform collision, and grounded state.
+- Secondary springs.
+- Two-bone IK and socket error measurement.
+- Handshake phase coordination and draw-key overrides.
+
+Floating-point results are not promised to be bit-identical across unrelated CPU architectures or compiler modes; tests use documented tolerances.
+
+The following require a real SDL GPU device and therefore are excluded from ordinary deterministic tests:
+
+- D3D12 backend/device and swapchain creation.
+- DXIL shader creation and graphics-pipeline creation.
+- GPU buffers, transfers, texture upload/sampling, blending, instanced draws, fences, and presentation.
+- Visual correctness, draw order, and GPU performance measurements.
+
