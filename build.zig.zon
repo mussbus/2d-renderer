@@ -1,0 +1,17 @@
+.{
+    .name = .sdl3_gpu_skeletal_character,
+    .version = "0.1.0",
+    .fingerprint = 0xe892b574973d6c4,
+    .minimum_zig_version = "0.16.0",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "AGENTS.md",
+        "README.md",
+        "assets",
+        "docs",
+        "src",
+        "tests",
+        "tools",
+    },
+}

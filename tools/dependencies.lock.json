@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "zig_version": "0.16.0",
+  "dependencies": [
+    {
+      "name": "SDL3",
+      "version": "3.4.10",
+      "url": "https://github.com/libsdl-org/SDL/releases/download/release-3.4.10/SDL3-devel-3.4.10-VC.zip",
+      "sha256": "e2b336b10b037934af98308027410732ef7b22f2c6697d58092aa1c209fae7d7",
+      "archive_file": "SDL3-devel-3.4.10-VC.zip",
+      "archive_root": "SDL3-3.4.10",
+      "install_directory": "SDL3-3.4.10",
+      "required_paths": [
+        ".git-hash",
+        "include/SDL3/SDL.h",
+        "include/SDL3/SDL_gpu.h",
+        "include/SDL3/SDL_gamepad.h",
+        "lib/x64/SDL3.lib",
+        "lib/x64/SDL3.dll"
+      ],
+      "identity_checks": [
+        {
+          "path": ".git-hash",
+          "text": "8e37db5e797b6167f3a00d697d816a684bd259c7"
+        }
+      ]
+    },
+    {
+      "name": "DXC",
+      "version": "1.9.2602.24",
+      "url": "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2602.24/dxc_2026_05_27.zip",
+      "sha256": "cf658aacf070d3045e31b8f1f8a696c2945f37c1095019481ef7c513368db3b4",
+      "archive_file": "dxc_2026_05_27.zip",
+      "archive_root": "",
+      "install_directory": "dxc-1.9.2602.24",
+      "required_paths": [
+        "bin/x64/dxc.exe",
+        "bin/x64/dxcompiler.dll",
+        "bin/x64/dxil.dll",
+        "bin/x64/dxv.exe",
+        "LICENSE-MS.txt"
+      ],
+      "identity_checks": []
+    }
+  ]
+}
+

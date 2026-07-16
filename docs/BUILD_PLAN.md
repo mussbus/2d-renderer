@@ -29,6 +29,8 @@ The bootstrap script validates Zig, downloads exact SDL/DXC archives, checks SHA
 
 Exit criteria: dependency bootstrap succeeds from a clean `.deps`; incorrect hashes fail; `zig build`, both required release builds, formatting, and the first platform-neutral tests pass; initialization cleanup is tested where practical.
 
+Prompt 1 explicitly required a narrower real GPU validation slice earlier than the full renderer planned in Milestone 7. That slice adds pinned HLSL/DXIL compilation, explicit D3D12/DXIL device creation, a procedural texture upload, one indexed instanced quad draw, swapchain presentation, render-target readback, and controlled initialization fault injection. It validates the build and ownership foundation without adding the future character renderer, sprite batching architecture, atlas, animation, physics, input, or scene systems. Milestone 7 remains responsible for the full sprite renderer and its architecture; this amendment does not move or weaken those decisions.
+
 ## Milestone 2: deterministic math and time
 
 Add only the math and timing files needed for `Vec2`, `Mat3`, transforms, interpolation, and the 120 Hz fixed-step accumulator. Add exhaustive unit tests for conventions, composition order, interpolation, overload clamping, and float tolerances.
@@ -82,4 +84,3 @@ Exit criteria: every required build command exits zero in its proper environment
 ## File creation discipline
 
 The intended repository tree in `AGENTS.md` is a destination, not a request for empty scaffolding. For example, `sprite_batch.zig` appears with the renderer milestone, `handshake.zig` with interaction, and `metrics.zig` when metrics are recorded. A milestone may split a file earlier only when the new file contains real behavior used by that or the immediately following milestone.
-

@@ -12,7 +12,7 @@ No dependency may use a floating branch, moving tag, package alias, or `latest` 
 | SDL3 | release 3.4.10, embedded commit `8e37db5e797b6167f3a00d697d816a684bd259c7` | `SDL3-devel-3.4.10-VC.zip` | `e2b336b10b037934af98308027410732ef7b22f2c6697d58092aa1c209fae7d7` |
 | DirectX Shader Compiler | stable release `v1.9.2602.24`, commit `d355aa8364d34df3f0822ba0de8d1dfc75ae6f48` | `dxc_2026_05_27.zip` | `cf658aacf070d3045e31b8f1f8a696c2945f37c1095019481ef7c513368db3b4` |
 
-Official artifact URLs:
+The machine-readable authority used by the bootstrap is `tools/dependencies.lock.json`, which embeds these exact URLs and hashes. Official artifact URLs:
 
 - `https://github.com/libsdl-org/SDL/releases/download/release-3.4.10/SDL3-devel-3.4.10-VC.zip`
 - `https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2602.24/dxc_2026_05_27.zip`
@@ -21,13 +21,22 @@ The SDL release page publishes the archive digest. The DXC release API publishes
 
 ## Obtaining dependencies
 
-The dependency-foundation milestone will add `tools/bootstrap_dependencies.ps1`. It will:
+From the repository root (including a path containing spaces), run:
+
+```powershell
+& '.\tools\bootstrap_dependencies.ps1'
+```
+
+`tools/bootstrap_dependencies.ps1`:
 
 1. Refuse to continue unless `zig version` is exactly `0.16.0`.
-2. Download each archive to `.deps/cache` under its exact filename.
-3. Calculate SHA-256 and stop with the expected and actual values if they differ.
-4. Extract to versioned directories under `.deps` using a temporary directory and atomic rename so a failed extraction is not accepted as complete.
-5. Validate required files before reporting success.
+2. Downloads each archive to a unique temporary `.download` filename.
+3. Calculates SHA-256 and rejects the archive with expected and actual values if they differ; only a verified download is moved to the authoritative cache filename.
+4. Extracts to a unique staging directory, validates required files and identities, records every extracted file's length and SHA-256 in `.dependency-manifest.json`, and only then moves the payload to its versioned directory.
+5. Re-hashes the complete extracted manifest on every later invocation. A missing, extra, modified, partial, or corrupt payload is never accepted as installed and is replaced transactionally from a verified archive.
+6. Preserves an old invalid directory until the newly staged payload passes post-move verification, then removes it. Repeated extraction is idempotent.
+
+Run `& '.\tools\bootstrap_dependencies.ps1' -SelfTest` to exercise corrupt-archive, partial-directory, and corrupt-directory rejection. After the initial download, `& '.\tools\bootstrap_dependencies.ps1' -Offline` verifies or reinstalls exclusively from `.deps/cache`. Normal `zig build`, `zig build test`, and `zig build run` never invoke the network.
 
 Expected validated paths are:
 
@@ -42,7 +51,7 @@ Expected validated paths are:
 .deps/dxc-1.9.2602.24/bin/x64/dxv.exe
 ```
 
-`.deps` is local build input and will not be committed. The build fails with a diagnostic directing the developer to the bootstrap command if any validated path is missing; it does not search arbitrary environment locations.
+`.deps` is ignored local build input and is not committed. The build fails with a diagnostic directing the developer to the bootstrap command if any pinned path is missing; it does not search arbitrary environment locations.
 
 ## Header inspection record
 
@@ -61,11 +70,13 @@ The input headers confirm `SDL_GetKeyboardState`, gamepad add/remove events, `SD
 
 The hash-verified DXC archive was also inspected and executed during this milestone. Its x64 compiler reported `1.9.2602.24` at commit `d355aa836`, and the inspected SDL x64 DLL reported file/product version `3.4.10.0`.
 
+One pinned compiler/header conflict was demonstrated during the required release builds: Zig 0.16.0 translates MinGW's fortified `wcscat` and `wcscpy` inline wrappers, pulled in transitively by `SDL.h`, into unused local declarations that ReleaseSafe and ReleaseFast reject. `src/platform/sdl.zig` therefore defines `_FORTIFY_SOURCE=0` only inside `@cImport`. The project compiles no C source through that import, and Zig safety settings plus the linked pinned SDL runtime are unchanged; this is a header-translation workaround, not an architecture or backend change.
+
 ## Linking and runtime files
 
-The initial supported target is Windows 11 x86_64. Zig links the exact VC archive import library at `.deps/SDL3-3.4.10/lib/x64/SDL3.lib` and includes `.deps/SDL3-3.4.10/include`. `SDL3.dll` is copied beside the installed executable for `zig build run` and packaged builds.
+The initial supported target is Windows 11 x86_64. Zig links the exact VC archive import library at `.deps/SDL3-3.4.10/lib/x64/SDL3.lib` and includes `.deps/SDL3-3.4.10/include`. The install step copies the pinned `.deps/SDL3-3.4.10/lib/x64/SDL3.dll` beside `zig-out/bin/skeletal_gpu_demo.exe`; `zig build run` depends on that installed layout instead of a global DLL.
 
-DXC is an offline build tool only. Shader compilation invokes the pinned x64 `dxc.exe` with `dxcompiler.dll` and `dxil.dll` beside it; `dxv.exe` validates emitted DXIL. These DXC files are not application runtime dependencies. Windows supplies the D3D12 system runtime and a compatible display driver.
+DXC is an offline build tool only. Shader compilation invokes the pinned x64 `dxc.exe` with structured PowerShell process arguments, with `dxcompiler.dll` and `dxil.dll` beside it; `dxv.exe` validates emitted DXIL. Build dependencies include the HLSL source, compiler/validator binaries and companion DLLs, lock file, compile script, stage, entry point, target profile, flags, and Zig optimization configuration. A changed input regenerates the DXIL. Compilation and validation use temporary output and delete any authoritative output on failure, so stale shaders are not silently accepted. These DXC files are not application runtime dependencies. Windows supplies the D3D12 system runtime and a compatible display driver.
 
 ## Shader format and backend policy
 

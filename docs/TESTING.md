@@ -52,14 +52,19 @@ A test that needs a larger tolerance must explain the numerical source locally. 
 `zig build gpu-smoke` is an opt-in Windows test that requires a physical or supported hardware GPU. It must:
 
 1. Initialize SDL video and create a small test window.
-2. prove DXIL support for `direct3d12`, create that backend explicitly, and verify the created driver and reported format.
+2. Prove DXIL support for `direct3d12`, create that backend explicitly, log the driver returned by SDL, and verify the created driver and reported shader format.
 3. Claim the window and acquire a swapchain texture.
 4. Load the build-produced vertex and pixel DXIL, create both shaders and the sprite graphics pipeline.
-5. Create/upload a small texture, quad vertex/index data, and at least two distinct instances.
-6. Render the instances in one indexed instanced draw, submit, and present multiple frames.
-7. Release every resource and report any SDL operation plus `SDL_GetError()` on failure.
+5. Upload a four-color procedural RGBA texture, quad vertex/index data, and two distinct instances through a real SDL GPU upload transfer buffer.
+6. Execute both shader stages and render the two instances in one indexed instanced draw, submit, and present three frames.
+7. Render again to an `R8G8B8A8_UNORM` color target and download that render target through an SDL GPU download transfer buffer.
+8. Use an explicit D3D12-compatible row pitch: `align(width * 4, 256)` bytes, pass `pixels_per_row = row_pitch / 4`, and address each mapped row with that pitch. The implementation checks SDL's texel block size instead of assuming a four-byte format contract silently.
+9. Submit with `SDL_SubmitGPUCommandBufferAndAcquireFence`, wait successfully with `SDL_WaitForGPUFences`, and only then map the download transfer buffer.
+10. Compare an exterior clear pixel and two interior pixels expected to match different uploaded procedural texels. This pattern exercises vertex transformation, fragment execution, texture sampling, render-pass output, and GPU-to-CPU readback rather than validating a clear alone.
+11. Inject a controlled failure after SDL initialization, window creation, device creation, window claim, shader creation, sampler creation, texture/buffer creation, upload transfer-buffer creation, upload completion, and pipeline creation; every attempt must clean up explicitly in reverse order.
+12. Release every resource and report any SDL operation plus `SDL_GetError()` on failure.
 
-The smoke test fails when required hardware/backend support is absent. It is never reported as skipped success and never falls back to another API.
+The smoke test fails with a nonzero exit when a graphical session, swapchain texture, required hardware/backend, DXIL agreement, rendering operation, fence, mapped readback, or expected pixel is unavailable. It is never reported as skipped success and never falls back to another API.
 
 ## Manual visual acceptance tests
 
@@ -106,5 +111,4 @@ zig build -Doptimize=ReleaseFast
 
 `zig build check` runs `zig fmt --check` on Zig sources and build files, pure and deterministic tests, and repository audits that need no GPU. Source audits check for prohibited high-level render APIs, forbidden graphics/engine dependencies, unfinished markers, disabled tests, and missing resource-release ownership. Documentation examples are not treated as executable source.
 
-The documentation milestone intentionally does not create nonfunctional build steps. Commands are introduced only when they have a real target, according to `docs/BUILD_PLAN.md`.
-
+Prompt 1 introduced each listed command with a real target. Later milestones extend the same build interface rather than replacing it.

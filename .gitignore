@@ -1,0 +1,15 @@
+# Repository-local dependencies and verified download cache
+.deps/
+
+# Zig cache and install output
+.zig-cache/
+zig-cache/
+zig-out/
+
+# Generated shader artifacts
+*.dxil
+*.dxil.json
+
+# Local bootstrap test data
+.bootstrap-test*/
+
