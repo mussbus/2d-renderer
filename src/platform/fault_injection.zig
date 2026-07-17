@@ -17,6 +17,12 @@ pub const InitStage = enum {
     pipeline_creation,
     capacity_growth_replacement,
     frame_fence_acquisition,
+    skeleton_definition_allocation,
+    socket_definition_allocation,
+    pose_local_transform_allocation,
+    pose_world_transform_allocation,
+    attachment_allocation,
+    humanoid_character_initialization,
 };
 
 pub const all_stages = std.enums.values(InitStage);
@@ -37,6 +43,14 @@ pub const initialization_stages = [_]InitStage{
     .pipeline_creation,
 };
 pub const runtime_stages = [_]InitStage{ .capacity_growth_replacement, .frame_fence_acquisition };
+pub const humanoid_initialization_stages = [_]InitStage{
+    .skeleton_definition_allocation,
+    .socket_definition_allocation,
+    .pose_local_transform_allocation,
+    .pose_world_transform_allocation,
+    .attachment_allocation,
+    .humanoid_character_initialization,
+};
 
 pub const Injector = struct {
     fail_after: InitStage,

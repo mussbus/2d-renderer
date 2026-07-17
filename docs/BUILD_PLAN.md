@@ -43,6 +43,8 @@ Add skeleton validation, owned pose storage, clip tracks/events, animator blendi
 
 Exit criteria: sampling, wrap events, transitions, pose ownership, and socket transforms pass deterministic tests; physics root and visual offsets are structurally separate.
 
+Prompt 3 advances only the foundational math and hierarchy portion of Milestones 2 and 3: `Vec2`, column-major affine `Mat3`, component `Transform2D`, shortest-angle interpolation, immutable validated humanoid definitions, independent local/world poses, sockets, render attachments, and one deterministic segmented humanoid. It deliberately does not add fixed-step timing, clips, state machines, IK, physics, or interactions. The humanoid submits exclusively through Prompt 2's production `SpriteBatch`.
+
 ## Milestone 4: character physics and secondary motion
 
 Add physics body/colliders, static collision world, character controller, gravity, jump, grounding, landing detection, and bounded springs. Integrate animation state inputs but keep simulation independent of rendering.

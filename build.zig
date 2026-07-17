@@ -104,7 +104,7 @@ pub fn build(b: *std.Build) void {
     run_command.setName("run installed skeletal_gpu_demo");
     run_command.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed 1,000-sprite SDL GPU batch demonstration");
+    const run_step = b.step("run", "Run the installed sprite-batch or segmented-humanoid demonstration");
     run_step.dependOn(&run_command.step);
 
     const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
@@ -128,8 +128,45 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const math_module = b.createModule(.{
+        .root_source_file = b.path("src/math/transform2d.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const skeleton_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/skeleton.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    skeleton_module.addImport("math", math_module);
+    skeleton_module.addImport("fault_injection", fault_injection_module);
+    const pose_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/pose.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    pose_module.addImport("math", math_module);
+    pose_module.addImport("skeleton", skeleton_module);
+    pose_module.addImport("fault_injection", fault_injection_module);
+    const humanoid_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/humanoid.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    humanoid_module.addImport("math", math_module);
+    humanoid_module.addImport("skeleton", skeleton_module);
+    humanoid_module.addImport("pose", pose_module);
+    humanoid_module.addImport("sprite_batch", sprite_batch_module);
+    humanoid_module.addImport("fault_injection", fault_injection_module);
+    app_module.addImport("humanoid", humanoid_module);
+    app_module.addImport("sprite_batch", sprite_batch_module);
+    app_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
+    test_module.addImport("math", math_module);
+    test_module.addImport("skeleton", skeleton_module);
+    test_module.addImport("pose", pose_module);
+    test_module.addImport("humanoid", humanoid_module);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure sprite-batch, ownership, and configuration tests without SDL or a GPU");

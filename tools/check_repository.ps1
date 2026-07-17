@@ -54,6 +54,15 @@ if ($failed) {
 
 $gpuSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/gpu_demo.zig')
 $batchSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/sprite_batch.zig')
+$skeletonSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/skeleton.zig')
+$poseSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/pose.zig')
+$humanoidSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/humanoid.zig')
+$mathSource = @(
+    Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
+    Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/mat3.zig')
+    Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/transform2d.zig')
+    Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/interpolation.zig')
+) -join [Environment]::NewLine
 $ownershipPairs = @(
     @('SDL_CreateGPUDeviceWithProperties', 'SDL_DestroyGPUDevice'),
     @('SDL_ClaimWindowForGPUDevice', 'SDL_ReleaseWindowFromGPUDevice'),
@@ -118,6 +127,79 @@ if (-not $gpuLayout.Success -or [regex]::IsMatch($gpuLayout.Groups[1].Value, '\[
     $failed = $true
 }
 
+$cpuHierarchySource = $skeletonSource + [Environment]::NewLine + $poseSource + [Environment]::NewLine + $humanoidSource
+if ([regex]::IsMatch($cpuHierarchySource, 'SDL_(Draw|CreateGPU|BindGPU|UploadToGPU)')) {
+    Write-Error 'CPU hierarchy, pose, and attachment code must not contain a direct GPU path or create GPU resources.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::Matches($humanoidSource, '\bbatch\.submit\s*\(').Count -ne 1) {
+    Write-Error 'Humanoid attachments must enter the renderer through exactly one SpriteBatch submission site.' -ErrorAction Continue
+    $failed = $true
+}
+
+$boneDefinition = [regex]::Match($skeletonSource, 'pub const BoneDefinition = struct \{(.*?)\r?\n\};', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+if (-not $boneDefinition.Success -or [regex]::IsMatch($boneDefinition.Groups[1].Value, '\*|\[\]|\?\s*\*|\ballocator\b')) {
+    Write-Error 'BoneDefinition must remain an inline index-based record without pointers, slices, or per-bone allocators.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $skeletonSource.Contains('allocator.alloc(BoneDefinition, bone_inputs.len)') -or
+    -not $poseSource.Contains('allocator.alloc(math.Transform2D, definition.boneCount())') -or
+    -not $poseSource.Contains('allocator.alloc(math.Mat3, definition.boneCount())')) {
+    Write-Error 'Bones and local/world poses must remain contiguous array allocations.' -ErrorAction Continue
+    $failed = $true
+}
+
+$skeletonFieldsStart = $skeletonSource.IndexOf('pub const SkeletonDefinition = struct {')
+$skeletonFieldsEnd = $skeletonSource.IndexOf('    pub fn initHumanoid', $skeletonFieldsStart)
+if ($skeletonFieldsStart -lt 0 -or $skeletonFieldsEnd -lt 0) {
+    Write-Error 'Could not audit SkeletonDefinition fields.' -ErrorAction Continue
+    $failed = $true
+} else {
+    $skeletonFields = $skeletonSource.Substring($skeletonFieldsStart, $skeletonFieldsEnd - $skeletonFieldsStart)
+    if ([regex]::IsMatch($skeletonFields, 'local_transforms|world_transforms|current_pose|character_to_world|GPU')) {
+        Write-Error 'Immutable SkeletonDefinition must not contain mutable pose, character-world, or GPU state.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$attachmentMatch = [regex]::Match($humanoidSource, 'pub const RenderAttachment = struct \{(.*?)\r?\n\};', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+if (-not $attachmentMatch.Success -or [regex]::IsMatch($attachmentMatch.Groups[1].Value, '\bworld(_transform|_position)?\b')) {
+    Write-Error 'RenderAttachment must retain only local metadata and must not store authoritative world transforms.' -ErrorAction Continue
+    $failed = $true
+}
+
+function Get-FunctionSection {
+    param(
+        [string]$Source,
+        [string]$StartMarker,
+        [string]$EndMarker
+    )
+    $start = $Source.IndexOf($StartMarker)
+    $end = $Source.IndexOf($EndMarker, $start + $StartMarker.Length)
+    if ($start -lt 0 -or $end -lt 0) {
+        throw "Could not audit function section '$StartMarker'."
+    }
+    return $Source.Substring($start, $end - $start)
+}
+
+$hotSections = @(
+    Get-FunctionSection $poseSource '    pub fn evaluateWorld' '    pub fn worldForBone'
+    Get-FunctionSection $poseSource '    pub fn socketWorld' '    pub fn socketPosition'
+    Get-FunctionSection $humanoidSource '    pub fn applyProgrammaticPose' '    pub fn submitAttachments'
+    Get-FunctionSection $humanoidSource '    pub fn submitAttachments' '    pub fn attachmentWorld'
+)
+foreach ($section in $hotSections) {
+    if ([regex]::IsMatch($section, '\.alloc\s*\(|\.create\s*\(|std\.mem\.Allocator|std\.mem\.eql')) {
+        Write-Error 'Pose evaluation, socket evaluation, pose changes, and humanoid submission must remain allocation- and string-lookup-free.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+if ([regex]::IsMatch($mathSource, '(?i)(lerp|interpolate)[^\r\n]*Mat3|Mat3[^\r\n]*(lerp|interpolate)')) {
+    Write-Error 'Matrix-element interpolation is forbidden; transforms must interpolate components.' -ErrorAction Continue
+    $failed = $true
+}
+
 if ($failed) {
     exit 1
 }
@@ -128,3 +210,4 @@ Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test mark
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'
+Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'

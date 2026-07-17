@@ -18,6 +18,8 @@ The application is a character controller and animation system, not a ragdoll si
 
 `Vec2` values are mathematical column vectors. `Mat3` represents an affine 2D transform in homogeneous coordinates and is stored column-major. Code applies transforms as `p_result = M * p_source`.
 
+The stored columns are the transformed local X basis, transformed local Y basis, and affine translation. Points use homogeneous `w = 1`; directions use `w = 0`, so translation never affects a direction. The arbitrary character root is the authored world origin. Character and bone translations use metres; only render-attachment submission converts metres to pixels.
+
 A local transform is composed as:
 
 ```text
@@ -29,6 +31,10 @@ This means scale is applied first, then rotation, then translation. A child-to-w
 ```text
 child_world = parent_world * child_local
 ```
+
+Function names bind operand direction: `Transform2D.localToParent`, `composeParentChild(parent_to_world, child_local)`, and `Pose.evaluateWorld`. Attachment pivot belongs only to the sprite attachment in unit-quad coordinates. Bones have no pivot field, and CPU hierarchy evaluation never applies the sprite pivot.
+
+Angles wrap to `[-pi, pi)`. Interpolation is component-wise: translation and nonuniform scale are linear, while rotation follows the signed shortest arc. Matrix coefficients are never interpolated. Zero and negative finite scale are supported math values. The current humanoid uses positive bone scale; future facing mirroring must deliberately use negative X scale in the character/pose transform without changing multiplication order or independently relocating attachments.
 
 The root transform combines only physics root position and facing. Animation and secondary visual offsets remain in the pose hierarchy; they never rewrite the physics root. CPU/GPU layout tests will validate any matrix or packed-instance representation passed to HLSL. HLSL uses `mul(matrix, column_vector)` for the same convention.
 
@@ -56,7 +62,11 @@ SDL keyboard and gamepad code owns device discovery, hot-plugging, dead zones, a
 
 A `Skeleton` is immutable after initialization. It owns the bone hierarchy, bind-local transforms, sprite attachment metadata, hand sockets, and semantic bone indices. Animation clips refer to bones by validated indices; names are used for loading and diagnostics, not per-tick lookup.
 
+Prompt 3 implements this as `SkeletonDefinition`: one contiguous bone array, one contiguous socket array, one parent-before-child evaluation-order array, and fixed semantic-to-index tables. Bone and socket names use inline bounded storage, so no record owns an individual heap allocation. Authored input order is unrestricted. Validation uses a bounded iterative resolved-state pass; a pass with no progress identifies a cycle without recursion. Exactly one root, all 16 humanoid bone semantics, and all four hand/foot socket semantics are required.
+
 Each `Character` owns its controller state, animator state, current local pose, previous pose snapshot, secondary springs, and IK workspace. The demo characters may share immutable skeleton and clip data, but never share mutable pose arrays. All arrays are allocated or fixed-capacity during initialization. The steady-state loop performs no heap allocation.
+
+The current `Pose` owns separate contiguous local `Transform2D` and world `Mat3` arrays. It is compatible only with the definition allocation token and bone count captured at initialization; every evaluation receives the still-live definition explicitly. Definitions never cache current local or world pose. Render attachments are immutable local metadata and never store authoritative world transforms. `docs/HUMANOID.md` records the concrete hierarchy, proportions, layer values, and runtime allocation proof.
 
 World bone transforms are rebuilt parent-before-child from the physics root plus the local visual pose. Socket positions are calculated from those world transforms. A handshake alignment claim is valid only when the measured distance between the two selected hand sockets is within the documented tolerance.
 

@@ -1,10 +1,11 @@
 const std = @import("std");
 const gpu = @import("graphics/gpu_demo.zig");
-const fault_injection = @import("platform/fault_injection.zig");
+const fault_injection = @import("fault_injection");
 
 const Options = struct {
     gpu_smoke: bool = false,
     maximum_frames: ?u32 = null,
+    demo: gpu.DemoMode = .sprites,
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -21,7 +22,7 @@ pub fn main(init: std.process.Init) !void {
 
     var demo = try gpu.GpuDemo.init(std.heap.page_allocator, false, null);
     defer demo.deinit();
-    try demo.runVisible(options.maximum_frames);
+    try demo.runVisible(options.maximum_frames, options.demo);
 }
 
 fn runInitializationFaultChecks() !void {
@@ -51,8 +52,19 @@ fn parseOptions(arguments: []const []const u8) !Options {
             index += 1;
             if (index >= arguments.len) return error.MissingFrameCount;
             options.maximum_frames = try std.fmt.parseInt(u32, arguments[index], 10);
+        } else if (std.mem.eql(u8, argument, "--demo")) {
+            index += 1;
+            if (index >= arguments.len) return error.MissingDemoName;
+            if (std.mem.eql(u8, arguments[index], "humanoid")) {
+                options.demo = .humanoid;
+            } else if (std.mem.eql(u8, arguments[index], "sprites")) {
+                options.demo = .sprites;
+            } else {
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid", .{arguments[index]});
+                return error.UnknownDemo;
+            }
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid>", .{argument});
             return error.UnknownArgument;
         }
     }

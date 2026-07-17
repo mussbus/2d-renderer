@@ -1,7 +1,13 @@
 const std = @import("std");
 const c = @import("../platform/sdl.zig").c;
-const fault_injection = @import("../platform/fault_injection.zig");
-const sprite = @import("sprite_batch.zig");
+const fault_injection = @import("fault_injection");
+const sprite = @import("sprite_batch");
+const humanoid = @import("humanoid");
+
+pub const DemoMode = enum {
+    sprites,
+    humanoid,
+};
 
 const target_width: u32 = 640;
 const target_height: u32 = 480;
@@ -67,6 +73,14 @@ const ReadbackPixels = struct {
     inside_a: [4]u8,
     inside_b: [4]u8,
     row_pitch: u32,
+};
+
+const HierarchyPositions = struct {
+    right_shoulder: @TypeOf(humanoid.presentation_origin),
+    right_elbow: @TypeOf(humanoid.presentation_origin),
+    right_hand: @TypeOf(humanoid.presentation_origin),
+    left_knee: @TypeOf(humanoid.presentation_origin),
+    left_foot: @TypeOf(humanoid.presentation_origin),
 };
 
 pub const GpuDemo = struct {
@@ -224,10 +238,32 @@ pub const GpuDemo = struct {
         self.batch = null;
     }
 
-    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32) !void {
+    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode) !void {
+        var humanoid_storage: [64 * 1024]u8 = undefined;
+        var humanoid_allocator = std.heap.FixedBufferAllocator.init(&humanoid_storage);
+        var humanoid_demo: ?humanoid.DemoCharacter = null;
+        defer if (humanoid_demo) |*demo| demo.deinit();
+
+        const gpu_creations_before_humanoid_initialization = self.resource_metrics.gpu_resource_creations;
+        if (mode == .humanoid) {
+            try humanoid.runFaultInjectionChecks(self.allocator);
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.HumanoidInitializationCreatedGpuResources;
+            }
+            humanoid_demo = try humanoid.DemoCharacter.init(humanoid_allocator.allocator(), null);
+        }
+        const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
         var creations_after_warmup = creations_before_run;
         self.batch.?.markStabilized();
+        var pose_evaluation_allocations: usize = 0;
+        var socket_evaluation_allocations: usize = 0;
+        var humanoid_submission_allocations: usize = 0;
+        var humanoid_instances: u32 = 0;
+        var rest_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
+        var modified_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
+        var rest_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
+        var modified_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
 
         var frame: u32 = 0;
         var running = true;
@@ -238,7 +274,47 @@ pub const GpuDemo = struct {
             }
             if (!running) break;
 
-            try self.submitDemonstrationSprites(frame);
+            switch (mode) {
+                .sprites => try self.submitDemonstrationSprites(frame),
+                .humanoid => {
+                    const demo = &humanoid_demo.?;
+                    self.batch.?.beginFrame();
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try demo.character.applyProgrammaticPose(&demo.definition, frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+
+                    if (frame == 0 or frame == 100 or frame == 200 or frame == 299) {
+                        allocation_checkpoint = humanoid_allocator.end_index;
+                        const positions = try hierarchyPositions(demo);
+                        socket_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                        std.log.info("humanoid hierarchy frame={d}: right_shoulder=({d:.5},{d:.5}) right_elbow=({d:.5},{d:.5}) right_hand=({d:.5},{d:.5}) left_knee=({d:.5},{d:.5}) left_foot=({d:.5},{d:.5})", .{
+                            frame,
+                            positions.right_shoulder.x,
+                            positions.right_shoulder.y,
+                            positions.right_elbow.x,
+                            positions.right_elbow.y,
+                            positions.right_hand.x,
+                            positions.right_hand.y,
+                            positions.left_knee.x,
+                            positions.left_knee.y,
+                            positions.left_foot.x,
+                            positions.left_foot.y,
+                        });
+                        if (frame == 0) {
+                            rest_right_hand = positions.right_hand;
+                            rest_left_foot = positions.left_foot;
+                        } else if (frame == 100) {
+                            modified_right_hand = positions.right_hand;
+                        } else if (frame == 200) {
+                            modified_left_foot = positions.left_foot;
+                        }
+                    }
+
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try demo.character.submitAttachments(&demo.definition, &self.batch.?, 0);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+            }
             const prepared = self.batch.?.prepare();
             _ = try self.renderPreparedToWindow(prepared, null);
             self.resource_metrics.frames_rendered += 1;
@@ -269,6 +345,39 @@ pub const GpuDemo = struct {
         std.log.info("actual sprite draw command: SDL_DrawGPUIndexedPrimitives num_instances={d} draw_calls={d} draw_ranges={d}", .{
             metrics.visible_sprites, metrics.draw_calls, metrics.draw_ranges,
         });
+        if (mode == .humanoid) {
+            const gpu_resources_for_pose_changes = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            std.log.info("humanoid final metrics: frames={d} bones={d} sockets={d} attachments={d} humanoid_sprites={d} total_sprites={d} ranges={d} actual_draw_calls={d}", .{
+                self.resource_metrics.frames_rendered,
+                humanoid_demo.?.definition.skeleton_definition.boneCount(),
+                humanoid_demo.?.definition.skeleton_definition.socketCount(),
+                humanoid_demo.?.definition.attachments.len,
+                humanoid_instances,
+                metrics.visible_sprites,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+            });
+            std.log.info("humanoid steady state: initialized_bytes={d} final_bytes={d} pose_evaluation_allocations={d} socket_evaluation_allocations={d} humanoid_submission_allocations={d} gpu_resources_for_pose_changes={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                socket_evaluation_allocations,
+                humanoid_submission_allocations,
+                gpu_resources_for_pose_changes,
+            });
+            if (rest_right_hand != null and modified_right_hand != null and rest_left_foot != null and modified_left_foot != null) {
+                std.log.info("humanoid hierarchy proof: rest_right_hand=({d:.5},{d:.5}) modified_right_hand=({d:.5},{d:.5}) rest_left_foot=({d:.5},{d:.5}) modified_left_foot=({d:.5},{d:.5})", .{
+                    rest_right_hand.?.x,
+                    rest_right_hand.?.y,
+                    modified_right_hand.?.x,
+                    modified_right_hand.?.y,
+                    rest_left_foot.?.x,
+                    rest_left_foot.?.y,
+                    modified_left_foot.?.x,
+                    modified_left_foot.?.y,
+                });
+            }
+        }
     }
 
     pub fn runRuntimeFaultChecks(self: *GpuDemo) !void {
@@ -360,6 +469,17 @@ pub const GpuDemo = struct {
                 },
             });
         }
+    }
+
+    fn hierarchyPositions(demo: *const humanoid.DemoCharacter) !HierarchyPositions {
+        const skeleton_definition = &demo.definition.skeleton_definition;
+        return .{
+            .right_shoulder = (try demo.character.local_and_world_pose.worldForSemantic(skeleton_definition, .right_upper_arm)).translationPart(),
+            .right_elbow = (try demo.character.local_and_world_pose.worldForSemantic(skeleton_definition, .right_forearm)).translationPart(),
+            .right_hand = try demo.character.local_and_world_pose.socketPosition(skeleton_definition, .right_hand),
+            .left_knee = (try demo.character.local_and_world_pose.worldForSemantic(skeleton_definition, .left_shin)).translationPart(),
+            .left_foot = try demo.character.local_and_world_pose.socketPosition(skeleton_definition, .left_foot),
+        };
     }
 
     fn submitSmokeSprites(self: *GpuDemo) !void {

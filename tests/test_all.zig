@@ -2,6 +2,11 @@ const std = @import("std");
 const fault_injection = @import("fault_injection");
 const sprite = @import("sprite_batch");
 
+test {
+    _ = @import("math_tests.zig");
+    _ = @import("skeleton_tests.zig");
+}
+
 test "every initialization stage round-trips through its command-line name" {
     for (fault_injection.all_stages) |stage| {
         try std.testing.expectEqual(stage, fault_injection.parse(@tagName(stage)).?);
