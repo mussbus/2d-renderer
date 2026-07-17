@@ -53,6 +53,7 @@ if ($failed) {
 }
 
 $gpuSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/gpu_demo.zig')
+$batchSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/sprite_batch.zig')
 $ownershipPairs = @(
     @('SDL_CreateGPUDeviceWithProperties', 'SDL_DestroyGPUDevice'),
     @('SDL_ClaimWindowForGPUDevice', 'SDL_ReleaseWindowFromGPUDevice'),
@@ -75,7 +76,55 @@ if ($failed) {
     exit 1
 }
 
+$drawSymbol = 'SDL_' + 'DrawGPUIndexedPrimitives'
+$drawCallCount = [regex]::Matches($gpuSource, ('c\.' + $drawSymbol + '\s*\(')).Count
+if ($drawCallCount -ne 1) {
+    Write-Error "The authoritative sprite batch must own exactly one '$drawSymbol' call site; found $drawCallCount." -ErrorAction Continue
+    $failed = $true
+}
+
+$legacyPatterns = @(
+    'fn encode' + 'Draw',
+    'fn render' + 'VisibleFrame',
+    'instance_' + 'upload_offset',
+    'const inst' + 'ances ='
+)
+foreach ($pattern in $legacyPatterns) {
+    if (@(Select-String -LiteralPath $sourceFiles.FullName -SimpleMatch -CaseSensitive -Pattern $pattern).Count -ne 0) {
+        Write-Error "Legacy direct-quad marker '$pattern' remains in executable source." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+if ([regex]::Matches($gpuSource, 'c\.SDL_CreateGPUGraphicsPipeline\s*\(').Count -ne 1 -or
+    [regex]::Matches($gpuSource, 'c\.SDL_CreateGPUTexture\s*\(').Count -ne 1) {
+    Write-Error 'Persistent pipeline and texture creation must remain centralized initialization helpers, not frame-loop calls.' -ErrorAction Continue
+    $failed = $true
+}
+
+if ([regex]::IsMatch($gpuSource, 'frame_metrics\.draw_calls\s*=\s*[1-9]')) {
+    Write-Error 'Hard-coded nonzero draw-call metrics are forbidden.' -ErrorAction Continue
+    $failed = $true
+}
+
+if ([regex]::IsMatch($batchSource, '(?i)(sort|order)[^\r\n]*f32|f32[^\r\n]*(sort|order)')) {
+    Write-Error 'Float values must not be the authoritative sprite ordering key.' -ErrorAction Continue
+    $failed = $true
+}
+
+$gpuLayout = [regex]::Match($batchSource, 'pub const GpuInstance = extern struct \{(.*?)\r?\n\};', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+if (-not $gpuLayout.Success -or [regex]::IsMatch($gpuLayout.Groups[1].Value, '\[\]|\*|\?|\bbool\b|\benum\b|\busize\b')) {
+    Write-Error 'GpuInstance must remain an explicit fixed-scalar layout without pointers, slices, optionals, bools, enums, or usize.' -ErrorAction Continue
+    $failed = $true
+}
+
+if ($failed) {
+    exit 1
+}
+
 Write-Host "Repository source audit passed for $($sourceFiles.Count) files."
 Write-Host 'Forbidden SDL high-level renderer and alternate-renderer symbols are absent.'
 Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test markers were found.')
-Write-Host 'Every Prompt 1 GPU acquisition family has a matching release operation.'
+Write-Host 'Every GPU acquisition family has a matching release operation.'
+Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
+Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'

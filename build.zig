@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     if (target.result.os.tag != .windows or target.result.cpu.arch != .x86_64) {
-        std.debug.panic("Prompt 1 supports only Windows x86_64; selected target is {s}-{s}", .{
+        std.debug.panic("this repository supports only Windows x86_64; selected target is {s}-{s}", .{
             @tagName(target.result.cpu.arch),
             @tagName(target.result.os.tag),
         });
@@ -104,7 +104,7 @@ pub fn build(b: *std.Build) void {
     run_command.setName("run installed skeletal_gpu_demo");
     run_command.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed visible SDL GPU textured-quad demonstration");
+    const run_step = b.step("run", "Run the installed 1,000-sprite SDL GPU batch demonstration");
     run_step.dependOn(&run_command.step);
 
     const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
@@ -123,10 +123,16 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const sprite_batch_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/sprite_batch.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     test_module.addImport("fault_injection", fault_injection_module);
+    test_module.addImport("sprite_batch", sprite_batch_module);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
-    const test_step = b.step("test", "Run pure ownership and configuration tests without SDL or a GPU");
+    const test_step = b.step("test", "Run pure sprite-batch, ownership, and configuration tests without SDL or a GPU");
     test_step.dependOn(&run_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });

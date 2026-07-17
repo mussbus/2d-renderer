@@ -11,21 +11,22 @@ pub fn main(init: std.process.Init) !void {
     const arguments = try init.minimal.args.toSlice(init.arena.allocator());
     const options = try parseOptions(arguments);
     if (options.gpu_smoke) {
-        try runFaultInjectionChecks();
-        var demo = try gpu.GpuDemo.init(true, null);
+        try runInitializationFaultChecks();
+        var demo = try gpu.GpuDemo.init(std.heap.page_allocator, true, null);
         defer demo.deinit();
+        try demo.runRuntimeFaultChecks();
         try demo.runSmoke();
         return;
     }
 
-    var demo = try gpu.GpuDemo.init(false, null);
+    var demo = try gpu.GpuDemo.init(std.heap.page_allocator, false, null);
     defer demo.deinit();
     try demo.runVisible(options.maximum_frames);
 }
 
-fn runFaultInjectionChecks() !void {
-    for (fault_injection.all_stages) |stage| {
-        var attempt = gpu.GpuDemo.init(true, .{ .fail_after = stage }) catch |err| {
+fn runInitializationFaultChecks() !void {
+    for (fault_injection.initialization_stages) |stage| {
+        var attempt = gpu.GpuDemo.init(std.heap.page_allocator, true, .{ .fail_after = stage }) catch |err| {
             if (err != error.InjectedInitializationFailure) {
                 std.log.err("fault-injection cleanup check for {s} failed before reaching its injection point: {s}", .{ @tagName(stage), @errorName(err) });
                 return err;

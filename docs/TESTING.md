@@ -19,6 +19,8 @@ Pure tests cover small data transformations and invariants:
 
 Tests assert behavior and invariants rather than restating implementation expressions.
 
+Prompt 2 additionally tests the compile-time-bound CPU/GPU strides, independently hand-computed transform points, zero and ninety-degree rotation, nonuniform and negative scale, center/top-left/arbitrary pivots, translation order, zero scale, non-finite rejection, UV/tint/page validation, integer layer boundaries, negative unsigned layers, stable equal-key ordering, reverse order, repeated deterministic sorts, near-limit submission indices, empty batches, exactly-full and growing capacity, allocation failure, byte-size overflow, 1,000 one-page instances, two page ranges, and page-return boundaries. These remain SDL- and GPU-free.
+
 ## Deterministic simulation tests
 
 Simulation tests create no window and use explicit fixed ticks. Scenarios include:
@@ -55,13 +57,13 @@ A test that needs a larger tolerance must explain the numerical source locally. 
 2. Prove DXIL support for `direct3d12`, create that backend explicitly, log the driver returned by SDL, and verify the created driver and reported shader format.
 3. Claim the window and acquire a swapchain texture.
 4. Load the build-produced vertex and pixel DXIL, create both shaders and the sprite graphics pipeline.
-5. Upload a four-color procedural RGBA texture, quad vertex/index data, and two distinct instances through a real SDL GPU upload transfer buffer.
+5. Upload a four-color procedural RGBA texture and shared quad vertex/index data, then submit two distinct records through the production three-slot sprite-batch transfer path.
 6. Execute both shader stages and render the two instances in one indexed instanced draw, submit, and present three frames.
 7. Render again to an `R8G8B8A8_UNORM` color target and download that render target through an SDL GPU download transfer buffer.
 8. Use an explicit D3D12-compatible row pitch: `align(width * 4, 256)` bytes, pass `pixels_per_row = row_pitch / 4`, and address each mapped row with that pitch. The implementation checks SDL's texel block size instead of assuming a four-byte format contract silently.
 9. Submit with `SDL_SubmitGPUCommandBufferAndAcquireFence`, wait successfully with `SDL_WaitForGPUFences`, and only then map the download transfer buffer.
-10. Compare an exterior clear pixel and two interior pixels expected to match different uploaded procedural texels. This pattern exercises vertex transformation, fragment execution, texture sampling, render-pass output, and GPU-to-CPU readback rather than validating a clear alone.
-11. Inject a controlled failure after SDL initialization, window creation, device creation, window claim, shader creation, sampler creation, texture/buffer creation, upload transfer-buffer creation, upload completion, and pipeline creation; every attempt must clean up explicitly in reverse order.
+10. Compare an exterior clear pixel and two non-overlapping interior sprites expected to match red and yellow regions selected by distinct UV rectangles from the same texture. Channel tolerance is one integer code value.
+11. Inject controlled failures after sprite-batch CPU allocation, SDL initialization, window creation, device creation, window claim, shader creation, sampler creation, textures, shared quad vertex/index buffers, static transfer creation, upload, instance frame-slot creation, pipeline creation, transactional GPU growth replacement, and frame-fence acquisition.
 12. Release every resource and report any SDL operation plus `SDL_GetError()` on failure.
 
 The smoke test fails with a nonzero exit when a graphical session, swapchain texture, required hardware/backend, DXIL agreement, rendering operation, fence, mapped readback, or expected pixel is unavailable. It is never reported as skipped success and never falls back to another API.
@@ -94,6 +96,8 @@ Acceptance targets for the two-character demo are:
 - Stable 60 displayed frames per second on the documented reference machine, with 120 Hz simulation and no sustained fixed-step overruns.
 
 The reference GPU/CPU and measured percentile frame times will be added when performance testing begins; no unmeasured target is reported as passed.
+
+Prompt 2's executable evidence run is `zig build run -- --frames 300`. Its final metrics must show 1,000 submitted/visible/sorted sprites, zero culled sprites, one range, one actual `SDL_DrawGPUIndexedPrimitives` call with 1,000 instances, 60,000 uploaded instance bytes, no post-stabilization CPU allocation, no GPU slot growth, and identical persistent-resource creation counts before the run, after warm-up, and after frame 300. Frame-slot waits are acceptable only when a reused slot's fence was observed unsignaled.
 
 ## Build command contract
 

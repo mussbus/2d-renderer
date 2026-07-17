@@ -104,9 +104,9 @@ No SDL high-level 2D renderer participates in this boundary.
 
 ## Transparent draw order and instancing
 
-Each visible body part produces a `SpriteInstance` with transform data, atlas UV bounds, colour, character ID, semantic limb, and a CPU draw key. The key contains scene layer, character depth, bone/sprite order, and an interaction override. A stable sort preserves authored order for equal keys.
+Each visible body part produces a CPU `SpriteSubmission` with world position, rotation, nonuniform scale/size, pivot, atlas UV bounds, straight-alpha tint, texture page, and a lexicographic integer draw key. The key contains signed scene and interaction layers, unsigned actor and body-part layers, and a bounded `u64` submission index. A stable semantic order preserves original submission order for equal layers without using float depth, addresses, or packed arithmetic.
 
-The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. The texture atlas and one alpha-blended sprite pipeline allow the sorted instances to remain one contiguous material batch. The renderer uploads the ordered instance array once and calls `SDL_DrawGPUIndexedPrimitives` with six quad indices and `num_instances > 1`. A draw per body part does not qualify as instancing.
+The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. Consecutive compatible texture pages form draw ranges without reordering across page changes. The current one-page atlas and straight-alpha sprite pipeline produce one range. The renderer uploads 60-byte GPU records and calls `SDL_DrawGPUIndexedPrimitives` with six shared quad indices and `num_instances > 1`. Slot 1 is declared `SDL_GPU_VERTEXINPUTRATE_INSTANCE`; a draw per body part or CPU-expanded mesh does not qualify as instancing. `docs/SPRITE_BATCH.md` binds the complete layout and transform contract.
 
 Debug bones, colliders, sockets, and targets use their own debug pipeline and bounded primitive buffer. They do not alter simulation state.
 
@@ -116,7 +116,7 @@ Initialization proceeds from platform to window, GPU device, claimed window, swa
 
 SDL GPU resource destruction maps to the matching API: buffers, transfer buffers, textures, samplers, shaders, pipelines, fences, the claimed window, and the GPU device are each released by their documented function. Command buffers are either submitted or cancelled on every path. Destruction waits for GPU idle when in-flight access makes that necessary.
 
-All simulation arrays, poses, instance buffers, debug geometry, event queues, and interaction slots have capacities established at initialization. If an intentionally bounded collection must grow, that growth is allowed only outside the normal steady state and is reported through debug metrics. The normal simulation/render loop performs no heap allocation.
+All simulation arrays, poses, instance buffers, debug geometry, event queues, and interaction slots have capacities established at initialization. The sprite batch starts at 1,024 records, doubles transactionally to a maximum of 16,384, and reports CPU and GPU growth independently. Three per-frame upload/instance-buffer slots retain fences; a slot is overwritten only after its own fence completes. The ordinary frame loop performs no heap allocation, persistent GPU creation, or global device-idle wait.
 
 ## Error handling and logging
 
@@ -144,4 +144,3 @@ The following require a real SDL GPU device and therefore are excluded from ordi
 - DXIL shader creation and graphics-pipeline creation.
 - GPU buffers, transfers, texture upload/sampling, blending, instanced draws, fences, and presentation.
 - Visual correctness, draw order, and GPU performance measurements.
-

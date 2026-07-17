@@ -13,9 +13,9 @@ zig build gpu-smoke
 zig build check
 ```
 
-The default build compiles and validates both HLSL stages with repository-local DXC, installs `SDL3.dll` beside `skeletal_gpu_demo.exe`, and installs DXIL under `zig-out/bin/shaders`. `zig build run` launches that installed layout. The visible Prompt 1 demonstration draws two instances of a textured indexed quad; `gpu-smoke` additionally verifies fault cleanup, swapchain presentation, and fenced render-target readback. It fails rather than skipping when the required graphical session, D3D12 backend, DXIL support, pipeline, or readback is unavailable.
+The default build compiles and validates both HLSL stages with repository-local DXC, installs `SDL3.dll` beside `skeletal_gpu_demo.exe`, and installs DXIL under `zig-out/bin/shaders`. `zig build run` launches that installed layout. The visible demonstration submits 1,000 deterministic procedural sprites through one authoritative instanced batch and one actual GPU draw. `gpu-smoke` uses that same batch for fault cleanup, presentation, two UV-selected sprites, and fenced render-target readback. It fails rather than skipping when the required graphical session, D3D12 backend, DXIL support, pipeline, or readback is unavailable.
 
-This is a narrow GPU validation slice required by Prompt 1, not the full skeletal-character renderer planned for the later renderer milestone.
+The batch is the production rendering foundation, not a parallel demonstration renderer. The complete skeletal-character systems remain in later milestones.
 
 Start with:
 
@@ -24,3 +24,4 @@ Start with:
 - [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md) for exact versions, hashes, and backend policy.
 - [`docs/TESTING.md`](docs/TESTING.md) for test layers and acceptance checks.
 - [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) for staged implementation and the final build interface.
+- [`docs/SPRITE_BATCH.md`](docs/SPRITE_BATCH.md) for exact CPU/HLSL layout, ordering, capacity, and frame-safety contracts.

@@ -69,6 +69,8 @@ Every initialization failure cleans acquired resources in reverse order. Every G
 
 Exit criteria: shader compilation and validation pass; `zig build gpu-smoke` creates and destroys the full resource chain and draws at least two instances in one call; no high-level SDL renderer, API fallback, CPU rasterizer, or per-body-part submission exists.
 
+Prompt 2 establishes the authoritative sprite submission core early: explicit CPU/GPU layouts, deterministic integer ordering, texture-page range generation, a three-slot fenced upload ring, straight-alpha blending, actual-operation metrics, a deterministic 1,000-sprite demonstration, and the shared production smoke path. Later Milestone 7 work extends this same batch for character atlas content and render snapshots; it must not introduce a second sprite path.
+
 ## Milestone 8: demo scene and debug visualization
 
 Add the two-character scene, static platforms, sprite assets, full state integration, debug bones/colliders/sockets/targets, metrics, and the final controls document. Connect interpolation-only render snapshots to the renderer.
