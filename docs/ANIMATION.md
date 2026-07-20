@@ -53,6 +53,10 @@ Events are written to the animator's preallocated fixed-capacity storage and exp
 
 The fixed event types are left/right foot contact, hand contact, hand release, interaction complete, and body-part layer change. A layer event stores a fixed attachment semantic, `u16` layer value, and restoration policy. Prompt 4 emits this data but does not mutate immutable attachment definitions or coordinate cross-character ordering.
 
+Walk foot-contact records remain semantic animation events. Prompt 6 samples a deliberate contact-relative visual curve only while physical controller state makes walking relevant; a contact cannot ground the character, snap a root, create a landing event, or modify collision. During idle, jump, rise, and fall, walk amplitude fades or its output is immediately suppressed as documented in `docs/SECONDARY_MOTION.md`.
+
+After every fixed animator update, procedural composition modifies only that tick's mutable local pose: the combined walk/landing translation is added once to the root bone, and acceleration-driven follow-through is added once to head rotation. The immutable skeleton rest transforms and clip keys are never changed. A repeated composition for the same simulation tick is rejected, and the next animator update always recreates the authored pose before the next procedural composition.
+
 ## Blending and states
 
 Pose blending is local-component blending: translation linear, rotation shortest-arc, and scale component-wise. Weight must be finite and inside `[0, 1]`; it is not clamped. Output may not overlap either input. Weight zero and one reproduce the respective endpoints.

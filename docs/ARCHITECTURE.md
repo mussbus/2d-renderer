@@ -50,9 +50,10 @@ Simulation order within one tick is fixed:
 2. Advance controller velocity, gravity, jump policy, and static collision.
 3. Classify grounded state and produce physical jump/landing results.
 4. Select animation from authoritative physics and advance the animator once by `1 / 240` second.
-5. Evaluate the local pose and then the world pose from the authoritative physics root.
-6. In later milestones, apply bounded visual springs and solve interaction IK without changing the physics root.
-7. Emit animation/interaction data and preserve previous/current simulation transforms for render interpolation.
+5. Update walk weight transfer, consume a physical landing event once, and advance procedural springs once by `1 / 240` second.
+6. Compose the visual root offset and head rotational lag into the animator-produced local pose.
+7. Evaluate the hierarchical world pose from the authoritative physics character-world transform.
+8. Emit animation/interaction data and preserve previous/current simulation transforms for render interpolation.
 
 ## Input and character intent
 
@@ -80,7 +81,7 @@ The state machine owns idle, walk, jump, fall, land, and handshake transitions. 
 
 The current bounded machine has eight required states. Idle-to-walk and walk-to-idle advance both source and destination during a 0.30-second local-component blend. Requests during an active transition are rejected; a same-state request is a no-op. A one-shot exposes its final pose and events before fallback starts on the next update. `docs/ANIMATION.md` binds exact sampling boundaries, event ownership, fallback durations, and authored timelines.
 
-Walk includes an authored vertical pelvis/body component. Landing adds a bounded compression spring driven by the physical landing impulse. Other secondary offsets use stable, fixed-step spring integration and are clamped to authored limits.
+Walk includes an authored vertical pelvis/body component. Prompt 6 layers a contact-relative, speed-scaled visual-root curve without integrating an offset, so complete cycles cannot accumulate drift. Landing adds a bounded compression spring driven by the pre-resolution physical impact speed. Head rotational lag derives from horizontal acceleration and runs through the same reusable fixed-step spring primitive. The complete constants, equations, floor guard, reset policy, and composition order are bound in `docs/SECONDARY_MOTION.md`.
 
 ## Physics
 

@@ -12,7 +12,9 @@ Gameplay physics and gameplay animation share one clock at exactly 240 Hz: `fixe
 - Pause: accumulate no real time and execute no tick. `F3` may request exactly one tick. Pause transitions clear stale pending edges.
 - Rendering: interpolate previous/current physics position with bounded `alpha = accumulator / fixed_dt`; interpolation never writes to physics or advances animation.
 
-The per-tick order is pending-edge consumption, `CharacterIntent`, horizontal controller integration, gravity and jump policy, horizontal sweep/resolve, vertical sweep/resolve, ground and landing classification, physics-driven animation selection, one animator update at `1/240 s`, local-pose evaluation, and world-pose evaluation. A render evaluation may replace only the character-to-world presentation transform with an interpolated value.
+The per-tick order is pending-edge consumption, `CharacterIntent`, horizontal controller integration, gravity and jump policy, horizontal sweep/resolve, vertical sweep/resolve, ground and landing classification, physics-driven animation selection, one animator update at `1/240 s`, one procedural-motion update and local-pose composition, and world-pose evaluation. A render evaluation may replace only the character-to-world presentation transform with an interpolated value. Rendering never advances a spring.
+
+The controller captures landing impact as the positive magnitude of downward velocity immediately before vertical collision resolution zeros that velocity. A `StepResult` landing event is the only production input to visual landing compression. Animation contact events, post-resolution velocity, floor distance, and rendered movement cannot create a physical landing or a visual landing impulse. Procedural motion receives the event after controller state is authoritative and cannot write position, velocity, grounding, support ID, collider dimensions, or static geometry.
 
 ## Configuration
 

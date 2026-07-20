@@ -13,6 +13,7 @@ pub const DemoMode = enum {
     humanoid,
     animation,
     controller,
+    secondary_motion,
 };
 
 const TimeMode = enum { normal, quarter_speed, paused };
@@ -89,6 +90,15 @@ const HierarchyPositions = struct {
     right_hand: @TypeOf(humanoid.presentation_origin),
     left_knee: @TypeOf(humanoid.presentation_origin),
     left_foot: @TypeOf(humanoid.presentation_origin),
+};
+
+const maximum_landing_evidence: usize = 16;
+
+const LandingEvidence = struct {
+    simulation_tick: u64 = 0,
+    impact_speed: f32 = 0,
+    impulse: f32 = 0,
+    peak_displacement: f32 = 0,
 };
 
 pub const GpuDemo = struct {
@@ -259,26 +269,27 @@ pub const GpuDemo = struct {
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
+        var secondary_sequence = controller_demo.SecondaryMotionScriptedInput{};
         var animation_clock = try fixed_step.Clock.init(.{});
         var time_mode: TimeMode = .normal;
         var debug_geometry = true;
 
         const gpu_creations_before_humanoid_initialization = self.resource_metrics.gpu_resource_creations;
-        if (mode == .humanoid or mode == .animation or mode == .controller) {
+        if (mode == .humanoid or mode == .animation or mode == .controller or mode == .secondary_motion) {
             try humanoid.runFaultInjectionChecks(self.allocator);
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.HumanoidInitializationCreatedGpuResources;
             }
             humanoid_demo = try humanoid.DemoCharacter.init(humanoid_allocator.allocator(), null);
         }
-        if (mode == .animation or mode == .controller) {
+        if (mode == .animation or mode == .controller or mode == .secondary_motion) {
             try animation_system.runFaultInjectionChecks(self.allocator, &humanoid_demo.?.definition);
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.AnimationInitializationCreatedGpuResources;
             }
             animation_runtime = try animation_system.Runtime.init(humanoid_allocator.allocator(), &humanoid_demo.?.definition, null);
         }
-        if (mode == .controller) {
+        if (mode == .controller or mode == .secondary_motion) {
             try controller_demo.runFaultInjectionChecks(self.allocator);
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.ControllerInitializationCreatedGpuResources;
@@ -308,6 +319,12 @@ pub const GpuDemo = struct {
         var walk_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
         var world_root_before = @TypeOf(humanoid.presentation_origin).zero;
         if (humanoid_demo) |*demo| world_root_before = demo.character.character_to_world.translation;
+        var landing_evidence = [_]LandingEvidence{.{}} ** maximum_landing_evidence;
+        var landing_evidence_count: usize = 0;
+        var secondary_left_contacts: u32 = 0;
+        var secondary_right_contacts: u32 = 0;
+        var partial_speed_amplitude_peak: f32 = 0;
+        var full_speed_amplitude_peak: f32 = 0;
         var last_ticks_ns = c.SDL_GetTicksNS();
 
         var frame: u32 = 0;
@@ -452,14 +469,16 @@ pub const GpuDemo = struct {
                     humanoid_instances = try demo.character.submitAttachments(&demo.definition, &self.batch.?, 0);
                     humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
                 },
-                .controller => {
+                .controller, .secondary_motion => {
                     const demo = &humanoid_demo.?;
                     const animation = &animation_runtime.?;
                     const simulation = &controller_runtime.?;
                     const now_ticks_ns = c.SDL_GetTicksNS();
                     const measured_delta = @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;
                     last_ticks_ns = now_ticks_ns;
-                    const snapshot = if (scripted_input_enabled)
+                    const snapshot = if (scripted_input_enabled and mode == .secondary_motion)
+                        try secondary_sequence.nextFrame(&simulation.controller)
+                    else if (scripted_input_enabled)
                         try scripted_sequence.nextFrame(&simulation.controller)
                     else
                         try platform_input.?.pollFrame();
@@ -497,7 +516,62 @@ pub const GpuDemo = struct {
                     const simulation_frame = try simulation.beginFrame(scaled_delta);
                     for (0..simulation_frame.substeps) |_| {
                         const tick = try simulation.simulateTick(animation, &demo.character, &demo.definition);
-                        if (scripted_input_enabled) scripted_sequence.observe(tick, &simulation.controller);
+                        if (scripted_input_enabled and mode == .secondary_motion) {
+                            secondary_sequence.observe(tick, &simulation.controller);
+                        } else if (scripted_input_enabled) {
+                            scripted_sequence.observe(tick, &simulation.controller);
+                        }
+                        if (mode == .secondary_motion) {
+                            if (secondary_sequence.prelude_frame >= 31 and secondary_sequence.prelude_frame <= 90) {
+                                partial_speed_amplitude_peak = @max(partial_speed_amplitude_peak, simulation.procedural.walk_bounce_amplitude);
+                            } else if (secondary_sequence.prelude_frame > 90 and secondary_sequence.prelude_frame <= 150) {
+                                full_speed_amplitude_peak = @max(full_speed_amplitude_peak, simulation.procedural.walk_bounce_amplitude);
+                            }
+                            for (animation.animator.emittedEvents()) |emitted_event| {
+                                switch (emitted_event.record.event_type) {
+                                    .left_foot_contact => {
+                                        secondary_left_contacts += 1;
+                                        std.log.info("secondary contact tick={d} type=left_foot_contact speed={d:.5} walk_phase={d:.5} walk_offset={d:.6}", .{
+                                            tick.physics.simulation_tick,
+                                            @abs(simulation.controller.state.velocity.x),
+                                            simulation.procedural.walk_cycle_phase,
+                                            simulation.procedural.walk_bounce_offset,
+                                        });
+                                    },
+                                    .right_foot_contact => {
+                                        secondary_right_contacts += 1;
+                                        std.log.info("secondary contact tick={d} type=right_foot_contact speed={d:.5} walk_phase={d:.5} walk_offset={d:.6}", .{
+                                            tick.physics.simulation_tick,
+                                            @abs(simulation.controller.state.velocity.x),
+                                            simulation.procedural.walk_cycle_phase,
+                                            simulation.procedural.walk_bounce_offset,
+                                        });
+                                    },
+                                    else => {},
+                                }
+                            }
+                            if (tick.physics.landed and landing_evidence_count < landing_evidence.len) {
+                                landing_evidence[landing_evidence_count] = .{
+                                    .simulation_tick = tick.physics.simulation_tick,
+                                    .impact_speed = tick.physics.landing_impact_speed,
+                                    .impulse = simulation.procedural.last_landing_impulse,
+                                    .peak_displacement = simulation.procedural.landing_peak_displacement,
+                                };
+                                landing_evidence_count += 1;
+                                std.log.info("secondary landing tick={d} speed={d:.5} walk_phase={d:.5} walk_offset={d:.6} impact={d:.5} impulse={d:.6}", .{
+                                    tick.physics.simulation_tick,
+                                    @abs(simulation.controller.state.velocity.x),
+                                    simulation.procedural.walk_cycle_phase,
+                                    simulation.procedural.walk_bounce_offset,
+                                    tick.physics.landing_impact_speed,
+                                    simulation.procedural.last_landing_impulse,
+                                });
+                            }
+                            if (landing_evidence_count > 0) {
+                                const current = &landing_evidence[landing_evidence_count - 1];
+                                current.peak_displacement = @min(current.peak_displacement, simulation.procedural.landing_spring.offset);
+                            }
+                        }
                         const first_wall = tick.physics.wall_collision and simulation.metrics.wall_collisions == 1;
                         const first_ceiling = tick.physics.ceiling_collision and simulation.metrics.ceiling_collisions == 1;
                         const animation_changed = tick.animation_before != tick.animation_after;
@@ -658,7 +732,7 @@ pub const GpuDemo = struct {
                 demo.character.character_to_world.translation.x,
                 demo.character.character_to_world.translation.y,
             });
-        } else if (mode == .controller) {
+        } else if (mode == .controller or mode == .secondary_motion) {
             const simulation = &controller_runtime.?;
             const animation = &animation_runtime.?;
             const state = simulation.controller.state;
@@ -718,22 +792,98 @@ pub const GpuDemo = struct {
                 gpu_resources_for_movement,
             });
             if (scripted_input_enabled) {
-                std.log.info("scripted controller milestones: phase={s} complete={} ceiling={} platform1={} platform2={} coyote={} buffered={} wall={}", .{
-                    @tagName(scripted_sequence.phase),
-                    scripted_sequence.completed(),
-                    scripted_sequence.ceiling_seen,
-                    scripted_sequence.first_platform_landed,
-                    scripted_sequence.second_platform_landed,
-                    scripted_sequence.coyote_jump_seen,
-                    scripted_sequence.buffered_jump_seen,
-                    scripted_sequence.wall_seen,
-                });
-                if (!scripted_sequence.completed() or !scripted_sequence.ceiling_seen or
-                    !scripted_sequence.first_platform_landed or !scripted_sequence.second_platform_landed or
-                    !scripted_sequence.coyote_jump_seen or !scripted_sequence.buffered_jump_seen or
-                    !scripted_sequence.wall_seen or !state.grounded)
-                {
-                    return error.ScriptedControllerMilestonesIncomplete;
+                if (mode == .controller) {
+                    std.log.info("scripted controller milestones: phase={s} complete={} ceiling={} platform1={} platform2={} coyote={} buffered={} wall={}", .{
+                        @tagName(scripted_sequence.phase),
+                        scripted_sequence.completed(),
+                        scripted_sequence.ceiling_seen,
+                        scripted_sequence.first_platform_landed,
+                        scripted_sequence.second_platform_landed,
+                        scripted_sequence.coyote_jump_seen,
+                        scripted_sequence.buffered_jump_seen,
+                        scripted_sequence.wall_seen,
+                    });
+                    if (!scripted_sequence.completed() or !scripted_sequence.ceiling_seen or
+                        !scripted_sequence.first_platform_landed or !scripted_sequence.second_platform_landed or
+                        !scripted_sequence.coyote_jump_seen or !scripted_sequence.buffered_jump_seen or
+                        !scripted_sequence.wall_seen or !state.grounded)
+                    {
+                        return error.ScriptedControllerMilestonesIncomplete;
+                    }
+                } else {
+                    const route = secondary_sequence.controller_sequence;
+                    std.log.info("secondary scripted milestones: complete={} prelude_frames={d} phase={s} ceiling={} platform1={} platform2={} coyote={} buffered={} wall={} left_contacts={d} right_contacts={d}", .{
+                        secondary_sequence.completed(),
+                        secondary_sequence.prelude_frame,
+                        @tagName(route.phase),
+                        route.ceiling_seen,
+                        route.first_platform_landed,
+                        route.second_platform_landed,
+                        route.coyote_jump_seen,
+                        route.buffered_jump_seen,
+                        route.wall_seen,
+                        secondary_left_contacts,
+                        secondary_right_contacts,
+                    });
+                    var softest_index: usize = 0;
+                    var hardest_index: usize = 0;
+                    for (landing_evidence[0..landing_evidence_count], 0..) |evidence, index| {
+                        std.log.info("secondary landing evidence index={d} tick={d} impact={d:.5} impulse={d:.6} peak={d:.6}", .{
+                            index,
+                            evidence.simulation_tick,
+                            evidence.impact_speed,
+                            evidence.impulse,
+                            evidence.peak_displacement,
+                        });
+                        if (evidence.impact_speed < landing_evidence[softest_index].impact_speed) softest_index = index;
+                        if (evidence.impact_speed > landing_evidence[hardest_index].impact_speed) hardest_index = index;
+                    }
+                    const softest = landing_evidence[softest_index];
+                    const hardest = landing_evidence[hardest_index];
+                    std.log.info("secondary final metrics: walk_cycle_phase={d:.6} walk_bounce_offset={d:.6} walk_bounce_amplitude={d:.6} partial_amplitude_peak={d:.6} full_amplitude_peak={d:.6} last_landing_impact={d:.5} landing_displacement={d:.8} landing_velocity={d:.8} landing_peak={d:.6} secondary_offset={d:.8} secondary_velocity={d:.8} secondary_peak={d:.6} visual_root_offset={d:.8} final_physics_position=({d:.6},{d:.6})", .{
+                        simulation.procedural.walk_cycle_phase,
+                        simulation.procedural.walk_bounce_offset,
+                        simulation.procedural.walk_bounce_amplitude,
+                        partial_speed_amplitude_peak,
+                        full_speed_amplitude_peak,
+                        simulation.procedural.last_landing_impact_speed,
+                        simulation.procedural.landing_spring.offset,
+                        simulation.procedural.landing_spring.velocity,
+                        simulation.procedural.landing_peak_displacement,
+                        simulation.procedural.secondary_spring.offset,
+                        simulation.procedural.secondary_spring.velocity,
+                        simulation.procedural.secondary_peak_displacement,
+                        simulation.procedural.visual_root_offset_y,
+                        state.position.x,
+                        state.position.y,
+                    });
+                    std.log.info("secondary steady state: initialized_bytes={d} final_bytes={d} walk_allocations={d} landing_allocations={d} spring_allocations={d} secondary_allocations={d} pose_composition_allocations={d} measured_pose_evaluation_allocations={d} submission_allocations={d} gpu_resources_for_procedural_motion={d}", .{
+                        humanoid_initialized_bytes,
+                        humanoid_allocator.end_index,
+                        simulation.procedural.metrics.walk_update_allocations,
+                        simulation.procedural.metrics.landing_event_allocations,
+                        simulation.procedural.metrics.spring_update_allocations,
+                        simulation.procedural.metrics.secondary_update_allocations,
+                        simulation.procedural.metrics.pose_composition_allocations,
+                        pose_evaluation_allocations,
+                        humanoid_submission_allocations,
+                        gpu_resources_for_movement,
+                    });
+                    if (!secondary_sequence.completed() or !route.ceiling_seen or !route.first_platform_landed or
+                        !route.second_platform_landed or !route.coyote_jump_seen or !route.buffered_jump_seen or
+                        !route.wall_seen or !state.grounded or landing_evidence_count < 2 or
+                        hardest.impact_speed <= softest.impact_speed or
+                        @abs(hardest.peak_displacement) <= @abs(softest.peak_displacement) + 0.0001 or
+                        partial_speed_amplitude_peak <= 0 or full_speed_amplitude_peak <= partial_speed_amplitude_peak or
+                        @abs(simulation.procedural.landing_spring.offset) > 0.001 or
+                        @abs(simulation.procedural.landing_spring.velocity) > 0.02 or
+                        @abs(simulation.procedural.secondary_spring.offset) > 0.001 or
+                        @abs(simulation.procedural.secondary_spring.velocity) > 0.02 or
+                        self.resource_metrics.gpu_resource_creations != creations_before_run or
+                        animation.animator.currentState(&animation.definitions.machine) != .idle)
+                    {
+                        return error.SecondaryMotionEvidenceIncomplete;
+                    }
                 }
             }
         }

@@ -104,7 +104,7 @@ pub fn build(b: *std.Build) void {
     run_command.setName("run installed skeletal_gpu_demo");
     run_command.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed sprite-batch, humanoid, animation, or controller demonstration");
+    const run_step = b.step("run", "Run the installed sprite-batch, humanoid, animation, controller, or secondary-motion demonstration");
     run_step.dependOn(&run_command.step);
 
     const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
@@ -146,6 +146,11 @@ pub fn build(b: *std.Build) void {
     sdl_input_module.addImport("sdl", sdl_module);
     const fixed_step_module = b.createModule(.{
         .root_source_file = b.path("src/physics/fixed_step.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const spring_module = b.createModule(.{
+        .root_source_file = b.path("src/physics/spring.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -198,6 +203,15 @@ pub fn build(b: *std.Build) void {
     pose_module.addImport("math", math_module);
     pose_module.addImport("skeleton", skeleton_module);
     pose_module.addImport("fault_injection", fault_injection_module);
+    const procedural_motion_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/procedural_motion.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    procedural_motion_module.addImport("fixed_step", fixed_step_module);
+    procedural_motion_module.addImport("spring", spring_module);
+    procedural_motion_module.addImport("skeleton", skeleton_module);
+    procedural_motion_module.addImport("pose", pose_module);
     const humanoid_module = b.createModule(.{
         .root_source_file = b.path("src/scene/humanoid.zig"),
         .target = target,
@@ -275,6 +289,7 @@ pub fn build(b: *std.Build) void {
     controller_demo_module.addImport("humanoid", humanoid_module);
     controller_demo_module.addImport("animation_system", animation_system_module);
     controller_demo_module.addImport("state_machine", state_machine_module);
+    controller_demo_module.addImport("procedural_motion", procedural_motion_module);
     controller_demo_module.addImport("sprite_batch", sprite_batch_module);
     controller_demo_module.addImport("fault_injection", fault_injection_module);
     app_module.addImport("humanoid", humanoid_module);
@@ -285,10 +300,12 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("sdl", sdl_module);
     app_module.addImport("sdl_input", sdl_input_module);
     app_module.addImport("fixed_step", fixed_step_module);
+    app_module.addImport("spring", spring_module);
     app_module.addImport("collider", collider_module);
     app_module.addImport("collision_world", collision_world_module);
     app_module.addImport("character_controller", character_controller_module);
     app_module.addImport("controller_demo", controller_demo_module);
+    app_module.addImport("procedural_motion", procedural_motion_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("math", math_module);
@@ -303,13 +320,15 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("animation_system", animation_system_module);
     test_module.addImport("input", input_module);
     test_module.addImport("fixed_step", fixed_step_module);
+    test_module.addImport("spring", spring_module);
     test_module.addImport("collider", collider_module);
     test_module.addImport("collision_world", collision_world_module);
     test_module.addImport("character_controller", character_controller_module);
     test_module.addImport("controller_demo", controller_demo_module);
+    test_module.addImport("procedural_motion", procedural_motion_module);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
-    const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, collision, sprite-batch, and ownership tests without SDL or a GPU");
+    const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");
     test_step.dependOn(&run_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });

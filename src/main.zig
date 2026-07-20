@@ -62,19 +62,23 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .animation;
             } else if (std.mem.eql(u8, arguments[index], "controller")) {
                 options.demo = .controller;
+            } else if (std.mem.eql(u8, arguments[index], "secondary-motion")) {
+                options.demo = .secondary_motion;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
             options.scripted_input = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller>, --scripted-input", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion>, --scripted-input", .{argument});
             return error.UnknownArgument;
         }
     }
-    if (options.scripted_input and options.demo != .controller) return error.ScriptedInputRequiresControllerDemo;
+    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion) {
+        return error.ScriptedInputRequiresControllerDemo;
+    }
     return options;
 }

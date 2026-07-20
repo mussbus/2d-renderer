@@ -14,6 +14,14 @@ zig build run -- --frames 600 --demo controller --scripted-input
 
 The scripted mode generates raw platform-neutral button and axis state, passes it through the same frame snapshot, pending-edge, `CharacterIntent`, controller, animation, sprite-batch, and SDL GPU path as interactive control, and exits nonzero if its required milestones do not complete.
 
+Run the Prompt 6 procedural-motion evidence route with:
+
+```powershell
+zig build run -- --frames 900 --demo secondary-motion --scripted-input
+```
+
+This separate script starts idle, walks at a rescaled `0.60` gamepad axis, changes to full reverse input, settles, and sends a real reset edge. It then delegates to the unchanged controller route. Every spring update occurs inside a resulting fixed simulation tick; the script never assigns controller or spring state directly.
+
 ## Keyboard
 
 | Control | Action |
@@ -22,7 +30,7 @@ The scripted mode generates raw platform-neutral button and axis state, passes i
 | `D` or Right Arrow | Move right |
 | Space | Jump; release while rising for a shorter jump |
 | `E` | Produce interaction intent; Prompt 5 deliberately has no interaction action |
-| `R` | Reset controller, pending input, animation playback, and interpolation state |
+| `R` | Reset controller, pending input, animation playback, procedural springs, previous-motion sampling, and interpolation state |
 | `F1` | Toggle authoritative static-collider visualization |
 | `F2` | Cycle normal speed, quarter speed, and paused |
 | `F3` | Advance exactly one 240 Hz simulation/animation tick while paused |

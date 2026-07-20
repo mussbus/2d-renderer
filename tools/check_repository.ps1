@@ -70,6 +70,8 @@ $colliderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/
 $collisionWorldSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/collision_world.zig')
 $controllerSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/character_controller.zig')
 $controllerDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/controller_demo.zig')
+$springSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/spring.zig')
+$proceduralMotionSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/procedural_motion.zig')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/mat3.zig')
@@ -366,6 +368,59 @@ if ([regex]::IsMatch($fixedStepSource, 'while\s*\(')) {
     $failed = $true
 }
 
+$proceduralStateStart = $proceduralMotionSource.IndexOf('pub const State = struct {')
+$proceduralStateEnd = $proceduralMotionSource.IndexOf('pub fn walkAmplitudeForSpeed', $proceduralStateStart)
+if ($proceduralStateStart -lt 0 -or $proceduralStateEnd -lt 0) {
+    Write-Error 'Could not audit per-character procedural state fields.' -ErrorAction Continue
+    $failed = $true
+} else {
+    $proceduralStateFields = $proceduralMotionSource.Substring($proceduralStateStart, $proceduralStateEnd - $proceduralStateStart)
+    if ([regex]::IsMatch($proceduralStateFields, '\bphysics_position\b|\bphysics_velocity\b|\bgrounded\b|\bsupporting_collider\b|\bcollision_aabb\b|\bstatic_collision\b|GPU|renderer')) {
+        Write-Error 'Procedural state may not duplicate authoritative physics, collision, GPU, or renderer state.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$proceduralSources = $springSource + [Environment]::NewLine + $proceduralMotionSource
+if ([regex]::IsMatch($proceduralSources, 'SDL_|SpriteRequest|batch\.submit\s*\(|CreateGPU|createTexture|createBuffer|createPipeline')) {
+    Write-Error 'Springs and procedural motion may not create GPU resources, submit sprites, or call SDL.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($proceduralMotionSource, 'raw_delta|raw_frame_delta|measured_delta|interpolation_alpha')) {
+    Write-Error 'Raw render delta and interpolation state may not enter procedural spring simulation.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $proceduralMotionSource.Contains('pub const procedural_fixed_dt: f32 = @floatCast(fixed_step.fixed_dt_seconds)') -or
+    -not $proceduralMotionSource.Contains('if (procedural_fixed_dt != @as(f32, 1.0 / 240.0))')) {
+    Write-Error 'Procedural motion must derive its only timestep from the authoritative fixed-step module.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($proceduralMotionSource, 'controller\.state\.(position|velocity|grounded|supporting_collider)\s*=|collider_half_extents\s*=|\.bounds\s*=')) {
+    Write-Error 'Procedural motion may not mutate controller or collider authority.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($proceduralMotionSource, 'definition\.bones\s*\[.*\]\s*=|clips\s*\[.*\]\s*=')) {
+    Write-Error 'Procedural motion may not mutate immutable skeleton definitions or clip keys.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::Matches($controllerDemoSource, 'runtime\.procedural\.update\s*\(').Count -ne 1 -or
+    [regex]::Matches($controllerDemoSource, 'runtime\.procedural\.composePose\s*\(').Count -ne 1) {
+    Write-Error 'Controller simulation must update and compose procedural motion exactly once per fixed tick.' -ErrorAction Continue
+    $failed = $true
+}
+
+$proceduralHotSections = @(
+    Get-FunctionSection $proceduralMotionSource '    pub fn update(' '    pub fn composePose'
+    Get-FunctionSection $proceduralMotionSource '    pub fn composePose' '    fn consumeLandingEvent'
+    Get-FunctionSection $springSource '    pub fn step(' '};'
+)
+foreach ($section in $proceduralHotSections) {
+    if ([regex]::IsMatch($section, '\.alloc\s*\(|\.create\s*\(|std\.mem\.Allocator|ArrayList|HashMap|StringHashMap')) {
+        Write-Error 'Spring update and procedural pose composition must remain allocation-free.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -379,3 +434,4 @@ Write-Host 'GPU instance layout, integer ordering, actual metrics, and persisten
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
 Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'
 Write-Host 'Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.'
+Write-Host 'Prompt 6 procedural-motion audit passed: fixed-step-only bounded springs, one update/composition per tick, no duplicate physics authority, no controller/collider mutation, no GPU path, no immutable-definition mutation, and allocation-free hot paths.'

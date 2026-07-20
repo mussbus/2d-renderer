@@ -7,6 +7,7 @@ const character_controller = @import("character_controller");
 const humanoid = @import("humanoid");
 const animation_system = @import("animation_system");
 const state_machine = @import("state_machine");
+const procedural_motion = @import("procedural_motion");
 const sprite = @import("sprite_batch");
 const fault_injection = @import("fault_injection");
 
@@ -42,6 +43,7 @@ pub const Runtime = struct {
     controller: character_controller.CharacterController,
     clock: fixed_step.Clock,
     pending_input: input.PendingInput = .{},
+    procedural: procedural_motion.State,
     metrics: HotPathMetrics = .{},
 
     pub fn init(allocator: std.mem.Allocator, injector: ?fault_injection.Injector) !Runtime {
@@ -49,8 +51,9 @@ pub const Runtime = struct {
         errdefer world.deinit();
         const controller = try character_controller.CharacterController.init(.{}, &world, spawn_position, .right);
         const clock = try fixed_step.Clock.init(.{});
+        const procedural = try procedural_motion.State.init();
         try after(injector, .partial_controller_demo_creation);
-        return .{ .world = world, .controller = controller, .clock = clock };
+        return .{ .world = world, .controller = controller, .clock = clock, .procedural = procedural };
     }
 
     pub fn deinit(runtime: *Runtime) void {
@@ -83,6 +86,22 @@ pub const Runtime = struct {
             &definition.skeleton_definition,
             @floatCast(fixed_step.fixed_dt_seconds),
             &character.local_and_world_pose,
+        );
+        const walk_sample = currentWalkSample(animation);
+        try runtime.procedural.update(.{
+            .horizontal_velocity = runtime.controller.state.velocity.x,
+            .physically_grounded = runtime.controller.state.grounded,
+            .walk_cycle_phase = walk_sample.phase,
+            .walk_layer_weight = walk_sample.weight,
+            .landing_event = if (physics_result.landed) .{
+                .simulation_tick = physics_result.simulation_tick,
+                .impact_speed = physics_result.landing_impact_speed,
+            } else null,
+        });
+        try runtime.procedural.composePose(
+            &definition.skeleton_definition,
+            &character.local_and_world_pose,
+            runtime.controller.state.simulation_tick,
         );
         character.character_to_world = math.Transform2D.init(runtime.controller.state.position, 0, math.Vec2.one);
         try character.local_and_world_pose.evaluateWorld(&definition.skeleton_definition, character.character_to_world);
@@ -123,6 +142,7 @@ pub const Runtime = struct {
         runtime.clock.reset();
         runtime.pending_input.reset();
         runtime.metrics = .{};
+        try runtime.procedural.reset(runtime.controller.state.velocity.x);
         try animation.animator.enterState(&animation.definitions.machine, .idle);
         try animation.animator.update(
             &animation.definitions.machine,
@@ -134,6 +154,10 @@ pub const Runtime = struct {
         );
         character.character_to_world = math.Transform2D.init(runtime.controller.state.position, 0, math.Vec2.one);
         try character.local_and_world_pose.evaluateWorld(&definition.skeleton_definition, character.character_to_world);
+    }
+
+    pub fn setProceduralEnabled(runtime: *Runtime, enabled: bool) !void {
+        try runtime.procedural.setEnabled(enabled, runtime.controller.state.velocity.x);
     }
 
     pub fn submitCollisionGeometry(runtime: Runtime, batch: *sprite.SpriteBatch) !u32 {
@@ -304,6 +328,46 @@ pub const ScriptedInput = struct {
     }
 };
 
+pub const SecondaryMotionScriptedInput = struct {
+    builder: input.SnapshotBuilder = .{},
+    controller_sequence: ScriptedInput = .{},
+    prelude_frame: u32 = 0,
+
+    pub fn nextFrame(
+        script: *SecondaryMotionScriptedInput,
+        controller: *const character_controller.CharacterController,
+    ) !input.FrameInputSnapshot {
+        if (script.prelude_frame > 180) return script.controller_sequence.nextFrame(controller);
+
+        var raw = input.RawInputState{};
+        if (script.prelude_frame >= 30 and script.prelude_frame < 90) {
+            raw.gamepad_move_axis = 0.60;
+        } else if (script.prelude_frame >= 90 and script.prelude_frame < 150) {
+            raw.gamepad_move_axis = -1.0;
+        } else if (script.prelude_frame == 180) {
+            raw.reset = true;
+        }
+        script.prelude_frame += 1;
+        return script.builder.update(raw);
+    }
+
+    pub fn observe(
+        script: *SecondaryMotionScriptedInput,
+        tick: TickResult,
+        controller: *const character_controller.CharacterController,
+    ) void {
+        if (script.prelude_frame > 180) script.controller_sequence.observe(tick, controller);
+    }
+
+    pub fn completed(script: SecondaryMotionScriptedInput) bool {
+        return script.prelude_frame > 180 and script.controller_sequence.completed();
+    }
+
+    pub fn reset(script: *SecondaryMotionScriptedInput) void {
+        script.* = .{};
+    }
+};
+
 pub fn runFaultInjectionChecks(allocator: std.mem.Allocator) !void {
     for (fault_injection.controller_initialization_stages) |stage| {
         var attempt = Runtime.init(allocator, .{ .fail_after = stage }) catch |err| {
@@ -350,6 +414,44 @@ fn selectAnimation(animation: *animation_system.Runtime, controller: *const char
     } else {
         try animation.animator.enterState(machine, desired);
     }
+}
+
+const WalkSample = struct {
+    phase: f32 = 0,
+    weight: f32 = 0,
+};
+
+fn currentWalkSample(animation: *const animation_system.Runtime) WalkSample {
+    const animator = animation.animator;
+    const machine = &animation.definitions.machine;
+    const clips = animation.definitions.library.clips;
+    if (animator.active_transition) |transition| {
+        const weight = if (transition.duration == 0) 1 else @min(1, transition.elapsed / transition.duration);
+        if (machine.states[transition.destination_state_index].id == .walk) {
+            return .{
+                .phase = playbackPhase(machine, clips, transition.destination_state_index, transition.destination_playback.current_time),
+                .weight = weight,
+            };
+        }
+        if (machine.states[transition.source_state_index].id == .walk) {
+            return .{
+                .phase = playbackPhase(machine, clips, transition.source_state_index, transition.source_playback.current_time),
+                .weight = 1 - weight,
+            };
+        }
+        return .{};
+    }
+    if (machine.states[animator.current_state_index].id != .walk) return .{};
+    return .{
+        .phase = playbackPhase(machine, clips, animator.current_state_index, animator.playback.current_time),
+        .weight = 1,
+    };
+}
+
+fn playbackPhase(machine: *const state_machine.Definition, clips: anytype, state_index: u16, current_time: f32) f32 {
+    const animation_state = machine.states[state_index];
+    const duration = clips[animation_state.clip_index].duration;
+    return if (duration > 0) current_time / duration else 0;
 }
 
 fn after(injector: ?fault_injection.Injector, stage: fault_injection.InitStage) !void {
