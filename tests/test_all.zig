@@ -5,6 +5,7 @@ const sprite = @import("sprite_batch");
 test {
     _ = @import("math_tests.zig");
     _ = @import("skeleton_tests.zig");
+    _ = @import("animation_tests.zig");
 }
 
 test "every initialization stage round-trips through its command-line name" {

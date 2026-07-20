@@ -3,10 +3,12 @@ const c = @import("../platform/sdl.zig").c;
 const fault_injection = @import("fault_injection");
 const sprite = @import("sprite_batch");
 const humanoid = @import("humanoid");
+const animation_system = @import("animation_system");
 
 pub const DemoMode = enum {
     sprites,
     humanoid,
+    animation,
 };
 
 const target_width: u32 = 640;
@@ -239,18 +241,28 @@ pub const GpuDemo = struct {
     }
 
     pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode) !void {
-        var humanoid_storage: [64 * 1024]u8 = undefined;
-        var humanoid_allocator = std.heap.FixedBufferAllocator.init(&humanoid_storage);
+        const demo_storage = self.allocator.alloc(u8, 512 * 1024) catch return error.DemoStorageAllocationFailure;
+        defer self.allocator.free(demo_storage);
+        var humanoid_allocator = std.heap.FixedBufferAllocator.init(demo_storage);
         var humanoid_demo: ?humanoid.DemoCharacter = null;
         defer if (humanoid_demo) |*demo| demo.deinit();
+        var animation_runtime: ?animation_system.Runtime = null;
+        defer if (animation_runtime) |*runtime| runtime.deinit();
 
         const gpu_creations_before_humanoid_initialization = self.resource_metrics.gpu_resource_creations;
-        if (mode == .humanoid) {
+        if (mode == .humanoid or mode == .animation) {
             try humanoid.runFaultInjectionChecks(self.allocator);
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.HumanoidInitializationCreatedGpuResources;
             }
             humanoid_demo = try humanoid.DemoCharacter.init(humanoid_allocator.allocator(), null);
+        }
+        if (mode == .animation) {
+            try animation_system.runFaultInjectionChecks(self.allocator, &humanoid_demo.?.definition);
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.AnimationInitializationCreatedGpuResources;
+            }
+            animation_runtime = try animation_system.Runtime.init(humanoid_allocator.allocator(), &humanoid_demo.?.definition, null);
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
@@ -264,6 +276,16 @@ pub const GpuDemo = struct {
         var modified_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
         var rest_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
         var modified_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
+        var animation_update_allocations: usize = 0;
+        var animation_event_count: u64 = 0;
+        var left_foot_contacts: u32 = 0;
+        var right_foot_contacts: u32 = 0;
+        var idle_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
+        var walk_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
+        var idle_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
+        var walk_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
+        var world_root_before = @TypeOf(humanoid.presentation_origin).zero;
+        if (humanoid_demo) |*demo| world_root_before = demo.character.character_to_world.translation;
 
         var frame: u32 = 0;
         var running = true;
@@ -307,6 +329,94 @@ pub const GpuDemo = struct {
                             modified_right_hand = positions.right_hand;
                         } else if (frame == 200) {
                             modified_left_foot = positions.left_foot;
+                        }
+                    }
+
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try demo.character.submitAttachments(&demo.definition, &self.batch.?, 0);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+                .animation => {
+                    const demo = &humanoid_demo.?;
+                    const runtime = &animation_runtime.?;
+                    self.batch.?.beginFrame();
+                    if (frame == 60) try runtime.animator.requestState(&runtime.definitions.machine, .walk);
+                    if (frame == 300) try runtime.animator.requestState(&runtime.definitions.machine, .idle);
+
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try runtime.animator.update(
+                        &runtime.definitions.machine,
+                        runtime.definitions.library.clips,
+                        runtime.definitions.library.token(),
+                        &demo.definition.skeleton_definition,
+                        1.0 / 60.0,
+                        &demo.character.local_and_world_pose,
+                    );
+                    animation_update_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    try demo.character.local_and_world_pose.evaluateWorld(&demo.definition.skeleton_definition, demo.character.character_to_world);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+
+                    const emitted = runtime.animator.emittedEvents();
+                    animation_event_count += emitted.len;
+                    for (emitted) |emitted_event| {
+                        switch (emitted_event.record.event_type) {
+                            .left_foot_contact => {
+                                left_foot_contacts += 1;
+                                std.log.info("animation event frame={d} type=left_foot_contact clip={s} loop={d}", .{
+                                    frame,
+                                    @tagName(runtime.definitions.library.clips[emitted_event.clip_id].id),
+                                    emitted_event.loop_index,
+                                });
+                            },
+                            .right_foot_contact => {
+                                right_foot_contacts += 1;
+                                std.log.info("animation event frame={d} type=right_foot_contact clip={s} loop={d}", .{
+                                    frame,
+                                    @tagName(runtime.definitions.library.clips[emitted_event.clip_id].id),
+                                    emitted_event.loop_index,
+                                });
+                            },
+                            else => {},
+                        }
+                    }
+
+                    const should_log = frame == 0 or frame == 59 or frame == 60 or frame == 69 or frame == 77 or
+                        frame == 120 or frame == 180 or frame == 240 or frame == 299 or frame == 300 or
+                        frame == 309 or frame == 317 or frame == 359;
+                    if (should_log) {
+                        const state = runtime.animator.currentState(&runtime.definitions.machine);
+                        if (runtime.animator.transitionSnapshot(&runtime.definitions.machine)) |transition| {
+                            std.log.info("animation frame={d} state={s} clip_time={d:.5} transition={s}->{s} weight={d:.5} emitted_events={d}", .{
+                                frame,
+                                @tagName(state),
+                                runtime.animator.currentClipTime(),
+                                @tagName(transition.source),
+                                @tagName(transition.destination),
+                                transition.weight,
+                                emitted.len,
+                            });
+                        } else {
+                            std.log.info("animation frame={d} state={s} clip_time={d:.5} transition=none weight=0.00000 emitted_events={d}", .{
+                                frame,
+                                @tagName(state),
+                                runtime.animator.currentClipTime(),
+                                emitted.len,
+                            });
+                        }
+                    }
+
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    if (frame == 30 or frame == 180 or frame == 359) {
+                        const positions = try hierarchyPositions(demo);
+                        socket_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                        if (frame == 30) {
+                            idle_right_hand = positions.right_hand;
+                            idle_left_foot = positions.left_foot;
+                        } else if (frame == 180) {
+                            walk_right_hand = positions.right_hand;
+                            walk_left_foot = positions.left_foot;
                         }
                     }
 
@@ -377,6 +487,64 @@ pub const GpuDemo = struct {
                     modified_left_foot.?.y,
                 });
             }
+        } else if (mode == .animation) {
+            const demo = &humanoid_demo.?;
+            const runtime = &animation_runtime.?;
+            const gpu_resources_for_animation = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const final_positions = try hierarchyPositions(demo);
+            const right_hand_local = try demo.character.local_and_world_pose.localForSemantic(&demo.definition.skeleton_definition, .right_hand);
+            const left_foot_local = try demo.character.local_and_world_pose.localForSemantic(&demo.definition.skeleton_definition, .left_foot);
+            std.log.info("animation final metrics: frames={d} clips={d} states={d} transitions={d} humanoid_sprites={d} total_sprites={d} ranges={d} actual_draw_calls={d} events={d} left_contacts={d} right_contacts={d}", .{
+                self.resource_metrics.frames_rendered,
+                runtime.definitions.library.clips.len,
+                runtime.definitions.machine.states.len,
+                runtime.definitions.machine.transitions.len,
+                humanoid_instances,
+                metrics.visible_sprites,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+                animation_event_count,
+                left_foot_contacts,
+                right_foot_contacts,
+            });
+            std.log.info("animation steady state: initialized_bytes={d} final_bytes={d} sampling_allocations={d} blending_allocations={d} event_traversal_allocations={d} animator_update_allocations={d} measured_update_allocations={d} pose_evaluation_allocations={d} socket_evaluation_allocations={d} submission_allocations={d} gpu_resources_for_animation={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                runtime.animator.metrics.clip_sampling_allocations,
+                runtime.animator.metrics.pose_blending_allocations,
+                runtime.animator.metrics.event_traversal_allocations,
+                runtime.animator.metrics.animator_update_allocations,
+                animation_update_allocations,
+                pose_evaluation_allocations,
+                socket_evaluation_allocations,
+                humanoid_submission_allocations,
+                gpu_resources_for_animation,
+            });
+            std.log.info("animation pose proof: idle_right_hand=({d:.5},{d:.5}) walk_right_hand=({d:.5},{d:.5}) idle_left_foot=({d:.5},{d:.5}) walk_left_foot=({d:.5},{d:.5})", .{
+                idle_right_hand.?.x,
+                idle_right_hand.?.y,
+                walk_right_hand.?.x,
+                walk_right_hand.?.y,
+                idle_left_foot.?.x,
+                idle_left_foot.?.y,
+                walk_left_foot.?.x,
+                walk_left_foot.?.y,
+            });
+            std.log.info("animation final pose: state={s} right_hand_local=({d:.5},{d:.5}) right_hand_world=({d:.5},{d:.5}) left_foot_local=({d:.5},{d:.5}) left_foot_world=({d:.5},{d:.5}) world_root_before=({d:.5},{d:.5}) world_root_after=({d:.5},{d:.5})", .{
+                @tagName(runtime.animator.currentState(&runtime.definitions.machine)),
+                right_hand_local.translation.x,
+                right_hand_local.translation.y,
+                final_positions.right_hand.x,
+                final_positions.right_hand.y,
+                left_foot_local.translation.x,
+                left_foot_local.translation.y,
+                final_positions.left_foot.x,
+                final_positions.left_foot.y,
+                world_root_before.x,
+                world_root_before.y,
+                demo.character.character_to_world.translation.x,
+                demo.character.character_to_world.translation.y,
+            });
         }
     }
 

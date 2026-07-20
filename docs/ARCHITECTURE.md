@@ -74,7 +74,11 @@ World bone transforms are rebuilt parent-before-child from the physics root plus
 
 Clips are CPU-side data made of per-bone translation, rotation, and scale tracks plus timestamped events. Sampling uses binary search or a monotonic cursor chosen during implementation, linear interpolation for translation and scale, and shortest-arc interpolation for angles. Missing tracks use the skeleton bind value.
 
+Prompt 4 implements bounded binary-search sampling over immutable contiguous clip arrays. Step, linear, and smoothstep segments are explicit; smooth uses `t^2 * (3 - 2t)`. Values hold before the first and after the final key. The event interval is `(previous, current]`; time-zero records fire on state entry and loop wrap, while exact-duration records fire in the ending cycle. One update may traverse at most eight loop boundaries and writes to a per-animator preallocated event buffer.
+
 The state machine owns idle, walk, jump, fall, land, and handshake transitions. Cross-fades sample both source and destination poses and blend into a separate output pose; they do not mutate clip data. Looping event scans use half-open time intervals so an event at a loop boundary fires exactly once. Locomotion clips provide visual motion only. Physics decides whether the root rises, falls, lands, and collides.
+
+The current bounded machine has eight required states. Idle-to-walk and walk-to-idle advance both source and destination during a 0.30-second local-component blend. Requests during an active transition are rejected; a same-state request is a no-op. A one-shot exposes its final pose and events before fallback starts on the next update. `docs/ANIMATION.md` binds exact sampling boundaries, event ownership, fallback durations, and authored timelines.
 
 Walk includes an authored vertical pelvis/body component. Landing adds a bounded compression spring driven by the physical landing impulse. Other secondary offsets use stable, fixed-step spring integration and are clamped to authored limits.
 

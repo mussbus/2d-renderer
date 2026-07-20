@@ -57,6 +57,12 @@ $batchSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/gra
 $skeletonSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/skeleton.zig')
 $poseSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/pose.zig')
 $humanoidSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/humanoid.zig')
+$eventSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/events.zig')
+$clipSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/clip.zig')
+$stateMachineSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/state_machine.zig')
+$animatorSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/animator.zig')
+$authoredClipSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/authored_clips.zig')
+$animationSystemSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/animation_system.zig')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/mat3.zig')
@@ -200,6 +206,92 @@ if ([regex]::IsMatch($mathSource, '(?i)(lerp|interpolate)[^\r\n]*Mat3|Mat3[^\r\n
     $failed = $true
 }
 
+$animationSource = @(
+    $eventSource
+    $clipSource
+    $stateMachineSource
+    $animatorSource
+    $authoredClipSource
+    $animationSystemSource
+) -join [Environment]::NewLine
+
+if ([regex]::IsMatch($animationSource, 'SDL_|SpriteRequest|SpriteSubmission|batch\.submit\s*\(')) {
+    Write-Error 'Animation definitions and hot paths must not manipulate renderer submissions or contain an SDL/GPU path.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($animationSource, '(?i)(lerp|interpolate)[^\r\n]*Mat3|Mat3[^\r\n]*(lerp|interpolate)')) {
+    Write-Error 'Animation must blend Transform2D components and must not interpolate matrix elements.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($animationSource, 'milliTimestamp|microTimestamp|nanoTimestamp|Instant\.now|Timer\.start|SDL_GetTicks')) {
+    Write-Error 'Animator code must use caller-supplied deterministic delta and must not read a wall clock.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($animationSource, 'SDL_CreateGPU|createTexture|createBuffer|createPipeline')) {
+    Write-Error 'Animation state changes must not create GPU resources.' -ErrorAction Continue
+    $failed = $true
+}
+
+$clipFieldsStart = $clipSource.IndexOf('pub const ClipDefinition = struct {')
+$clipFieldsEnd = $clipSource.IndexOf('    pub fn init(', $clipFieldsStart)
+if ($clipFieldsStart -lt 0 -or $clipFieldsEnd -lt 0) {
+    Write-Error 'Could not audit immutable ClipDefinition fields.' -ErrorAction Continue
+    $failed = $true
+} else {
+    $clipFields = $clipSource.Substring($clipFieldsStart, $clipFieldsEnd - $clipFieldsStart)
+    if ([regex]::IsMatch($clipFields, 'current_time|previous_time|loop_count|completed|state_entered|current_pose|world_transform|Mat3|GPU|renderer')) {
+        Write-Error 'Immutable ClipDefinition contains mutable playback, sampled pose, world matrix, or renderer state.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+if (-not $clipSource.Contains('bone_track_indices: []const ?u16') -or
+    -not $clipSource.Contains('translation_keys: []const TranslationKey') -or
+    -not $clipSource.Contains('rotation_keys: []const RotationKey') -or
+    -not $clipSource.Contains('scale_keys: []const ScaleKey') -or
+    -not $clipSource.Contains('event_records: []const events.EventRecord')) {
+    Write-Error 'Clip definitions must retain contiguous immutable mapping, key, and event arrays.' -ErrorAction Continue
+    $failed = $true
+}
+
+$clipHotStart = $clipSource.IndexOf('pub fn sampleWithSource')
+$clipHotEnd = $clipSource.IndexOf('fn validateSamplingInputs', $clipHotStart)
+$animatorHotStart = $animatorSource.IndexOf('    pub fn update(')
+$animatorHotEnd = $animatorSource.IndexOf('    fn beginTransition(', $animatorHotStart)
+$blendHotStart = $animatorSource.IndexOf('pub fn blendLocalPoses')
+$blendHotEnd = $animatorSource.IndexOf('fn newPlayback', $blendHotStart)
+if ($clipHotStart -lt 0 -or $clipHotEnd -lt 0 -or $animatorHotStart -lt 0 -or $animatorHotEnd -lt 0 -or $blendHotStart -lt 0 -or $blendHotEnd -lt 0) {
+    Write-Error 'Could not audit animation sampling, update, and blending hot paths.' -ErrorAction Continue
+    $failed = $true
+} else {
+    $animationHotSections = @(
+        $clipSource.Substring($clipHotStart, $clipHotEnd - $clipHotStart)
+        $animatorSource.Substring($animatorHotStart, $animatorHotEnd - $animatorHotStart)
+        $animatorSource.Substring($blendHotStart, $blendHotEnd - $blendHotStart)
+    )
+    foreach ($section in $animationHotSections) {
+        if ([regex]::IsMatch($section, '\.alloc\s*\(|\.create\s*\(|std\.mem\.Allocator|HashMap|StringHashMap|std\.mem\.eql|degreesToRadians')) {
+            Write-Error 'Animation sampling, blending, event traversal, transitions, and update must remain allocation-, hash-, and string-lookup-free.' -ErrorAction Continue
+            $failed = $true
+        }
+    }
+}
+
+foreach ($requiredClip in @('createIdle', 'createWalk', 'createJumpStart', 'createRising', 'createFalling', 'createLanding', 'createHandshakeA', 'createHandshakeB')) {
+    if (-not $authoredClipSource.Contains(('fn ' + $requiredClip + '('))) {
+        Write-Error "Required authored clip function '$requiredClip' is absent." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::Matches($authoredClipSource, 'fn createHandshake(A|B)\(').Count -ne 2 -or
+    [regex]::Matches($authoredClipSource, 'handshakeMotion\(').Count -lt 5 -or
+    -not $authoredClipSource.Contains('hand_contact') -or
+    -not $authoredClipSource.Contains('hand_release') -or
+    -not $authoredClipSource.Contains('interaction_complete')) {
+    Write-Error 'Both handshake clips must contain real arm tracks and the shared typed event timeline.' -ErrorAction Continue
+    $failed = $true
+}
+
 if ($failed) {
     exit 1
 }
@@ -211,3 +303,4 @@ Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
+Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'

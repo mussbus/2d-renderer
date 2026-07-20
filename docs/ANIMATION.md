@@ -1,0 +1,90 @@
+# Animation System Contract
+
+## Authoritative data flow
+
+Animation is deterministic CPU work and follows one path:
+
+```text
+per-character animator state
+-> immutable clip sampling into local Transform2D values
+-> component-space transition blending
+-> existing Pose.evaluateWorld hierarchy traversal
+-> existing socket and attachment evaluation
+-> existing SpriteBatch
+-> existing SDL GPU indexed-instanced draw
+```
+
+Clips never evaluate world matrices, mutate skeleton rest transforms, write sprite instances, or own renderer state. Character-world position remains independent physics-root state. Every authored visual-height change targets the pelvis rather than the root semantic, so idle and walk cannot accumulate world displacement.
+
+## Immutable clip layout
+
+The authored library owns eight contiguous `ClipDefinition` records. Each clip owns contiguous arrays for its fixed bone-track mapping, bone tracks, translation keys, rotation keys, scale keys, and typed events. Individual keys, tracks, and events have no allocation. A clip records a stable `ClipId`, inline identifier and debug name, duration, playback mode, the compatible skeleton token and bone count, and immutable slices.
+
+Mutable time, loop counts, completion flags, transition progress, state-entry markers, and event traversal state exist only in each `Animator`. Two animators may share the same definitions without sharing mutable playback data.
+
+Authored input is accepted only when keys are strictly increasing within each component track. Duplicate timestamps and unsorted keys are errors; the loader does not reorder authored input. Events are nondecreasing so multiple typed events may deliberately share a timestamp while retaining authored order. Event identifiers are unique within a clip.
+
+## Component sampling
+
+Track sampling uses bounded binary search. A missing component track preserves that component from the supplied source pose. A missing bone track preserves the complete source transform. The animator uses skeleton rest locals as its source/default pose.
+
+Boundary behavior is explicit:
+
+- Before the first key, hold the first value.
+- At an exact key, use that key's value.
+- After the final key, hold the final value.
+- A one-key component track holds its value for the whole clip.
+- Direct one-shot sampling beyond duration holds the final pose.
+- Direct looping sampling beyond duration wraps; direct sampling at exactly duration uses the authored endpoint.
+- Negative or non-finite sample time is rejected.
+- Source and output overlap is rejected for the public source-pose sampler.
+
+Translation and scale use component-wise interpolation. Rotation is stored in radians, follows the shortest signed arc, and wraps to `[-pi, pi)`. Segment interpolation comes from the left key: step holds the left value, linear uses `t`, and smooth uses `t^2 * (3 - 2t)`. Matrices are never interpolated. Finite zero and negative scale remain supported consistently with `Transform2D`.
+
+## Playback and events
+
+The caller supplies deterministic delta seconds. The animator never reads a wall clock. The demonstration advances at exactly `1/60` second per displayed frame; later fixed-step simulation will call the same API with the simulation delta.
+
+Looping time uses checked direct quotient/remainder arithmetic rather than simulation microsteps. Exact arrival at duration increments the loop count and produces local time zero. At most eight loop boundaries may be crossed by one update. A ninth returns `error.EventTraversalLimitExceeded` before playback state changes or events are emitted.
+
+Event traversal uses `(previous_time, current_time]`. Time-zero events fire on state entry and at each loop boundary. An exact-duration event belongs to the ending cycle and fires before the next cycle's time-zero events. Multiple-loop output preserves cycle order, timestamp order, and authored same-time order.
+
+Events are written to the animator's preallocated fixed-capacity storage and exposed as a borrowed immutable slice. No global event list exists. An exact-capacity write succeeds. Overflow returns `error.EventOutputOverflow`, preserves already written events for diagnosis, and leaves playback uncommitted; the caller resets the buffer before retrying. The production capacity is 64 records.
+
+The fixed event types are left/right foot contact, hand contact, hand release, interaction complete, and body-part layer change. A layer event stores a fixed attachment semantic, `u16` layer value, and restoration policy. Prompt 4 emits this data but does not mutate immutable attachment definitions or coordinate cross-character ordering.
+
+## Blending and states
+
+Pose blending is local-component blending: translation linear, rotation shortest-arc, and scale component-wise. Weight must be finite and inside `[0, 1]`; it is not clamped. Output may not overlap either input. Weight zero and one reproduce the respective endpoints.
+
+The immutable state-machine definition has eight states and two ordinary transitions. Idle is initial. Idle-to-walk and walk-to-idle each blend for 0.30 seconds. Destination playback begins immediately, source playback continues while it contributes, and source events are emitted before destination events for each update. A request for the current state is a no-op. A request during an active transition is rejected with `error.ActiveTransitionRequestRejected`; explicit `enterState` deliberately replaces playback and resets entry/completion state. Zero-duration transitions enter the destination immediately.
+
+One-shots sample and expose their final pose, emit final crossed events, and mark completion once. Fallback begins on the following update, so the final pose cannot be skipped. Jump start falls back to rising over 0.12 seconds. Landing and independently played handshake roles fall back to idle over 0.20 seconds. Re-entry resets completion and time zero.
+
+## Authored library
+
+| Clip | Duration | Mode | Authored content |
+| --- | ---: | --- | --- |
+| Idle | 2.00 s | Looping | Pelvis breathing, torso scale/rotation, small bilateral arm motion |
+| Walk | 1.00 s | Looping | Alternating thighs/shins, opposing arms/forearms, pelvis-height curve |
+| Jump start | 0.40 s | One-shot | Pelvis compression and bilateral knee/hip preparation |
+| Rising | 0.60 s | Looping held motion | Extended legs and raised arms |
+| Falling | 0.60 s | Looping held motion | Bent legs and arm pose measurably distinct from rising |
+| Landing | 0.50 s | One-shot | Compression and visual recovery |
+| Handshake role A | 1.60 s | One-shot | Right-arm extension on the shared handshake timeline |
+| Handshake role B | 1.60 s | One-shot | Left-arm extension on the shared handshake timeline |
+
+Walk emits left-foot contact at `0.00` seconds and right-foot contact at `0.50` seconds. Both handshake roles emit hand contact and a layer record at `0.60`, hand release and restoration data at `1.20`, and interaction complete at `1.50` seconds. The roles assume participants begin facing each other with compatible shoulder height. These clips make no IK, physical alignment, or hand-constraint claim.
+
+## Demonstration and allocation contract
+
+Run:
+
+```powershell
+zig build run -- --frames 360 --demo animation
+```
+
+Frames 0-59 show idle. Frame 60 requests the 0.30-second idle-to-walk transition. Walk continues through frame 299, spanning multiple cycles. Frame 300 requests the 0.30-second walk-to-idle transition, which completes at frame 317; the remainder is idle.
+
+The animation definition, animator buffers, pose, skeleton, sockets, and attachments are initialized from one fixed buffer. The loop records the allocator position around animator update, hierarchy evaluation, socket reads, and attachment submission. All remain unchanged after initialization. Clip sampling, blending, event traversal, state transitions, and animator update contain no allocator call. Animation state changes create no GPU resource and all 15 page-zero attachments remain one sprite range and one indexed-instanced draw.
+

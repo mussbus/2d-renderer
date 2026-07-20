@@ -104,7 +104,7 @@ pub fn build(b: *std.Build) void {
     run_command.setName("run installed skeletal_gpu_demo");
     run_command.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed sprite-batch or segmented-humanoid demonstration");
+    const run_step = b.step("run", "Run the installed sprite-batch, humanoid, or animation demonstration");
     run_step.dependOn(&run_command.step);
 
     const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
@@ -158,7 +158,62 @@ pub fn build(b: *std.Build) void {
     humanoid_module.addImport("pose", pose_module);
     humanoid_module.addImport("sprite_batch", sprite_batch_module);
     humanoid_module.addImport("fault_injection", fault_injection_module);
+    const events_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/events.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const clip_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/clip.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    clip_module.addImport("math", math_module);
+    clip_module.addImport("skeleton", skeleton_module);
+    clip_module.addImport("events", events_module);
+    clip_module.addImport("fault_injection", fault_injection_module);
+    const state_machine_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/state_machine.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    state_machine_module.addImport("clip", clip_module);
+    state_machine_module.addImport("fault_injection", fault_injection_module);
+    const animator_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/animator.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    animator_module.addImport("math", math_module);
+    animator_module.addImport("skeleton", skeleton_module);
+    animator_module.addImport("pose", pose_module);
+    animator_module.addImport("clip", clip_module);
+    animator_module.addImport("events", events_module);
+    animator_module.addImport("state_machine", state_machine_module);
+    animator_module.addImport("fault_injection", fault_injection_module);
+    const authored_clips_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/authored_clips.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    authored_clips_module.addImport("math", math_module);
+    authored_clips_module.addImport("skeleton", skeleton_module);
+    authored_clips_module.addImport("humanoid", humanoid_module);
+    authored_clips_module.addImport("clip", clip_module);
+    authored_clips_module.addImport("events", events_module);
+    authored_clips_module.addImport("state_machine", state_machine_module);
+    authored_clips_module.addImport("fault_injection", fault_injection_module);
+    const animation_system_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/animation_system.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    animation_system_module.addImport("humanoid", humanoid_module);
+    animation_system_module.addImport("authored_clips", authored_clips_module);
+    animation_system_module.addImport("animator", animator_module);
+    animation_system_module.addImport("fault_injection", fault_injection_module);
     app_module.addImport("humanoid", humanoid_module);
+    app_module.addImport("animation_system", animation_system_module);
     app_module.addImport("sprite_batch", sprite_batch_module);
     app_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("fault_injection", fault_injection_module);
@@ -167,9 +222,15 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("skeleton", skeleton_module);
     test_module.addImport("pose", pose_module);
     test_module.addImport("humanoid", humanoid_module);
+    test_module.addImport("events", events_module);
+    test_module.addImport("clip", clip_module);
+    test_module.addImport("state_machine", state_machine_module);
+    test_module.addImport("animator", animator_module);
+    test_module.addImport("authored_clips", authored_clips_module);
+    test_module.addImport("animation_system", animation_system_module);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
-    const test_step = b.step("test", "Run pure sprite-batch, ownership, and configuration tests without SDL or a GPU");
+    const test_step = b.step("test", "Run pure math, hierarchy, animation, sprite-batch, and ownership tests without SDL or a GPU");
     test_step.dependOn(&run_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });

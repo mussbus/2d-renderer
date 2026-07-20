@@ -57,14 +57,16 @@ fn parseOptions(arguments: []const []const u8) !Options {
             if (index >= arguments.len) return error.MissingDemoName;
             if (std.mem.eql(u8, arguments[index], "humanoid")) {
                 options.demo = .humanoid;
+            } else if (std.mem.eql(u8, arguments[index], "animation")) {
+                options.demo = .animation;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid>", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation>", .{argument});
             return error.UnknownArgument;
         }
     }

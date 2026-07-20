@@ -23,6 +23,17 @@ pub const InitStage = enum {
     pose_world_transform_allocation,
     attachment_allocation,
     humanoid_character_initialization,
+    clip_definition_allocation,
+    track_allocation,
+    translation_key_allocation,
+    rotation_key_allocation,
+    scale_key_allocation,
+    event_allocation,
+    state_machine_state_allocation,
+    transition_allocation,
+    animator_pose_buffer_allocation,
+    animator_event_buffer_allocation,
+    partial_authored_animation_library,
 };
 
 pub const all_stages = std.enums.values(InitStage);
@@ -50,6 +61,19 @@ pub const humanoid_initialization_stages = [_]InitStage{
     .pose_world_transform_allocation,
     .attachment_allocation,
     .humanoid_character_initialization,
+};
+pub const animation_initialization_stages = [_]InitStage{
+    .clip_definition_allocation,
+    .track_allocation,
+    .translation_key_allocation,
+    .rotation_key_allocation,
+    .scale_key_allocation,
+    .event_allocation,
+    .state_machine_state_allocation,
+    .transition_allocation,
+    .animator_pose_buffer_allocation,
+    .animator_event_buffer_allocation,
+    .partial_authored_animation_library,
 };
 
 pub const Injector = struct {

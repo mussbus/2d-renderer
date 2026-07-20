@@ -45,6 +45,8 @@ Exit criteria: sampling, wrap events, transitions, pose ownership, and socket tr
 
 Prompt 3 advances only the foundational math and hierarchy portion of Milestones 2 and 3: `Vec2`, column-major affine `Mat3`, component `Transform2D`, shortest-angle interpolation, immutable validated humanoid definitions, independent local/world poses, sockets, render attachments, and one deterministic segmented humanoid. It deliberately does not add fixed-step timing, clips, state machines, IK, physics, or interactions. The humanoid submits exclusively through Prompt 2's production `SpriteBatch`.
 
+Prompt 4 completes the animation-core portion of Milestone 3: transactional immutable clip definitions, packed component keys, typed events, bounded multi-loop traversal, local-pose sampling and blending, per-character animator state, one-shot fallback, eight real authored clips, and the deterministic idle/walk demonstration. It deliberately leaves physical root movement, IK, constraints, eligibility, and handshake coordination to later milestones. All animation output enters Prompt 3's existing `Pose` evaluator and Prompt 2's existing `SpriteBatch`.
+
 ## Milestone 4: character physics and secondary motion
 
 Add physics body/colliders, static collision world, character controller, gravity, jump, grounding, landing detection, and bounded springs. Integrate animation state inputs but keep simulation independent of rendering.

@@ -23,6 +23,8 @@ Prompt 2 additionally tests the compile-time-bound CPU/GPU strides, independentl
 
 Prompt 3 adds independently hand-computed vector, matrix, transform-order, four-level hierarchy, direction, zero-scale, small-value, angle-wrap, shortest-interpolation, and tolerance-boundary cases. Skeleton tests cover valid semantics, invalid parents, self-parenting, two- and three-bone cycles, missing/multiple roots, missing/duplicate/invalid semantics, non-finite rest transforms, invalid/duplicate sockets, and transactional allocation faults. Pose/socket/attachment tests cover rest restoration, repeated evaluation, independent poses and character transforms, compatibility mismatch, rotated/scaled ancestors, immutable definition data, exact 15-part submission, preserved pivots/layers/page, one range, and fixed-buffer zero-allocation behavior.
 
+Prompt 4 adds malformed clip, track, key, event, state, transition, fallback, and allocation-fault cases. Sampling tests cover before/at/between/after-key behavior, one-key and missing components, step/linear/smooth interpolation, shortest-angle wrap, source immutability, alias rejection, and compatibility. Playback and event tests cover time-zero entry, exact open/closed interval boundaries, same-time authored order, exact duration, one/two/five/eight wraps, ninth-wrap rejection, speed zero, negative-speed rejection, capacity overflow, and one-shot final events. Blending and state tests cover endpoints, hand-derived midpoint, invalid weight, input independence, transition interruption policy, immediate transitions, reverse transitions, one-shot completion/fallback/re-entry, independent animators, authored timelines, and fixed-buffer zero allocation.
+
 ## Deterministic simulation tests
 
 Simulation tests create no window and use explicit fixed ticks. Scenarios include:
@@ -102,6 +104,8 @@ The reference GPU/CPU and measured percentile frame times will be added when per
 Prompt 2's executable evidence run is `zig build run -- --frames 300`. Its final metrics must show 1,000 submitted/visible/sorted sprites, zero culled sprites, one range, one actual `SDL_DrawGPUIndexedPrimitives` call with 1,000 instances, 60,000 uploaded instance bytes, no post-stabilization CPU allocation, no GPU slot growth, and identical persistent-resource creation counts before the run, after warm-up, and after frame 300. Frame-slot waits are acceptable only when a reused slot's fence was observed unsignaled.
 
 Prompt 3's executable evidence run is `zig build run -- --frames 300 --demo humanoid`. It must report 16 bones, four sockets, 15 attachments and humanoid sprite instances, one texture-page range, one actual draw, zero pose/socket/submission allocation after initialization, and zero GPU-resource creation from pose changes. Frame 0 and modified-pose logs must show different right-hand and left-foot socket positions resulting from actual ancestor rotations.
+
+Prompt 4's executable evidence run is `zig build run -- --frames 360 --demo animation`. It must report eight clips/states, the two idle/walk transitions, bounded foot-contact logs, 15 humanoid instances, one texture-page range, one actual draw, unchanged character-world root, and zero measured sampling/blending/event/update/pose/submission allocation or animation-created GPU resources. Logged idle and walk socket positions must differ through actual ancestor tracks.
 
 ## Build command contract
 
