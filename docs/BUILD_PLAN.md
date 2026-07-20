@@ -33,7 +33,7 @@ Prompt 1 explicitly required a narrower real GPU validation slice earlier than t
 
 ## Milestone 2: deterministic math and time
 
-Add only the math and timing files needed for `Vec2`, `Mat3`, transforms, interpolation, and the 120 Hz fixed-step accumulator. Add exhaustive unit tests for conventions, composition order, interpolation, overload clamping, and float tolerances.
+Add only the math and timing files needed for `Vec2`, `Mat3`, transforms, interpolation, and the 240 Hz fixed-step accumulator. Add exhaustive unit tests for conventions, composition order, interpolation, overload clamping, and float tolerances.
 
 Exit criteria: deterministic tests pass without importing SDL; no steady-tick allocation exists.
 
@@ -46,6 +46,8 @@ Exit criteria: sampling, wrap events, transitions, pose ownership, and socket tr
 Prompt 3 advances only the foundational math and hierarchy portion of Milestones 2 and 3: `Vec2`, column-major affine `Mat3`, component `Transform2D`, shortest-angle interpolation, immutable validated humanoid definitions, independent local/world poses, sockets, render attachments, and one deterministic segmented humanoid. It deliberately does not add fixed-step timing, clips, state machines, IK, physics, or interactions. The humanoid submits exclusively through Prompt 2's production `SpriteBatch`.
 
 Prompt 4 completes the animation-core portion of Milestone 3: transactional immutable clip definitions, packed component keys, typed events, bounded multi-loop traversal, local-pose sampling and blending, per-character animator state, one-shot fallback, eight real authored clips, and the deterministic idle/walk demonstration. It deliberately leaves physical root movement, IK, constraints, eligibility, and handshake coordination to later milestones. All animation output enters Prompt 3's existing `Pose` evaluator and Prompt 2's existing `SpriteBatch`.
+
+Prompt 5 establishes the authoritative 240 Hz simulation clock, platform-neutral edge-preserving input, SDL keyboard/gamepad ownership, kinematic AABB controller, swept static collision, gravity, variable-height jump, coyote time, jump buffering, physical landing reporting, physics-selected locomotion animation, render interpolation, and the finite controller demonstration. Physics owns character-world position; animation remains local visual pose. IK, springs, dynamic bodies, and interaction coordination remain in their assigned milestones.
 
 ## Milestone 4: character physics and secondary motion
 

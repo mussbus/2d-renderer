@@ -1,15 +1,21 @@
 const std = @import("std");
-const c = @import("../platform/sdl.zig").c;
+const c = @import("sdl").c;
 const fault_injection = @import("fault_injection");
 const sprite = @import("sprite_batch");
 const humanoid = @import("humanoid");
 const animation_system = @import("animation_system");
+const sdl_input = @import("sdl_input");
+const fixed_step = @import("fixed_step");
+const controller_demo = @import("controller_demo");
 
 pub const DemoMode = enum {
     sprites,
     humanoid,
     animation,
+    controller,
 };
+
+const TimeMode = enum { normal, quarter_speed, paused };
 
 const target_width: u32 = 640;
 const target_height: u32 = 480;
@@ -113,7 +119,7 @@ pub const GpuDemo = struct {
         self.batch = try sprite.SpriteBatch.init(allocator, sprite.initial_capacity, 1);
         try after(injector, .sprite_batch_cpu_allocation);
 
-        if (!c.SDL_Init(c.SDL_INIT_VIDEO)) return failSdl("SDL_Init(SDL_INIT_VIDEO)", error.SdlInitializationFailure);
+        if (!c.SDL_Init(c.SDL_INIT_VIDEO | c.SDL_INIT_GAMEPAD)) return failSdl("SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)", error.SdlInitializationFailure);
         self.sdl_initialized = true;
         try after(injector, .sdl_initialization);
 
@@ -240,7 +246,7 @@ pub const GpuDemo = struct {
         self.batch = null;
     }
 
-    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode) !void {
+    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode, scripted_input_enabled: bool) !void {
         const demo_storage = self.allocator.alloc(u8, 512 * 1024) catch return error.DemoStorageAllocationFailure;
         defer self.allocator.free(demo_storage);
         var humanoid_allocator = std.heap.FixedBufferAllocator.init(demo_storage);
@@ -248,21 +254,37 @@ pub const GpuDemo = struct {
         defer if (humanoid_demo) |*demo| demo.deinit();
         var animation_runtime: ?animation_system.Runtime = null;
         defer if (animation_runtime) |*runtime| runtime.deinit();
+        var controller_runtime: ?controller_demo.Runtime = null;
+        defer if (controller_runtime) |*runtime| runtime.deinit();
+        var platform_input: ?sdl_input.PlatformInput = null;
+        defer if (platform_input) |*platform| platform.deinit();
+        var scripted_sequence = controller_demo.ScriptedInput{};
+        var animation_clock = try fixed_step.Clock.init(.{});
+        var time_mode: TimeMode = .normal;
+        var debug_geometry = true;
 
         const gpu_creations_before_humanoid_initialization = self.resource_metrics.gpu_resource_creations;
-        if (mode == .humanoid or mode == .animation) {
+        if (mode == .humanoid or mode == .animation or mode == .controller) {
             try humanoid.runFaultInjectionChecks(self.allocator);
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.HumanoidInitializationCreatedGpuResources;
             }
             humanoid_demo = try humanoid.DemoCharacter.init(humanoid_allocator.allocator(), null);
         }
-        if (mode == .animation) {
+        if (mode == .animation or mode == .controller) {
             try animation_system.runFaultInjectionChecks(self.allocator, &humanoid_demo.?.definition);
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.AnimationInitializationCreatedGpuResources;
             }
             animation_runtime = try animation_system.Runtime.init(humanoid_allocator.allocator(), &humanoid_demo.?.definition, null);
+        }
+        if (mode == .controller) {
+            try controller_demo.runFaultInjectionChecks(self.allocator);
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.ControllerInitializationCreatedGpuResources;
+            }
+            controller_runtime = try controller_demo.Runtime.init(humanoid_allocator.allocator(), null);
+            platform_input = sdl_input.PlatformInput.init();
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
@@ -286,6 +308,7 @@ pub const GpuDemo = struct {
         var walk_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
         var world_root_before = @TypeOf(humanoid.presentation_origin).zero;
         if (humanoid_demo) |*demo| world_root_before = demo.character.character_to_world.translation;
+        var last_ticks_ns = c.SDL_GetTicksNS();
 
         var frame: u32 = 0;
         var running = true;
@@ -293,6 +316,7 @@ pub const GpuDemo = struct {
             var event: c.SDL_Event = undefined;
             while (c.SDL_PollEvent(&event)) {
                 if (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED) running = false;
+                if (platform_input) |*platform| platform.handleEvent(&event);
             }
             if (!running) break;
 
@@ -344,14 +368,40 @@ pub const GpuDemo = struct {
                     if (frame == 300) try runtime.animator.requestState(&runtime.definitions.machine, .idle);
 
                     var allocation_checkpoint = humanoid_allocator.end_index;
-                    try runtime.animator.update(
-                        &runtime.definitions.machine,
-                        runtime.definitions.library.clips,
-                        runtime.definitions.library.token(),
-                        &demo.definition.skeleton_definition,
-                        1.0 / 60.0,
-                        &demo.character.local_and_world_pose,
-                    );
+                    const animation_frame = try animation_clock.beginFrame(1.0 / 60.0);
+                    for (0..animation_frame.substeps) |_| {
+                        try runtime.animator.update(
+                            &runtime.definitions.machine,
+                            runtime.definitions.library.clips,
+                            runtime.definitions.library.token(),
+                            &demo.definition.skeleton_definition,
+                            @floatCast(fixed_step.fixed_dt_seconds),
+                            &demo.character.local_and_world_pose,
+                        );
+                        const tick_events = runtime.animator.emittedEvents();
+                        animation_event_count += tick_events.len;
+                        for (tick_events) |emitted_event| {
+                            switch (emitted_event.record.event_type) {
+                                .left_foot_contact => {
+                                    left_foot_contacts += 1;
+                                    std.log.info("animation event frame={d} type=left_foot_contact clip={s} loop={d}", .{
+                                        frame,
+                                        @tagName(runtime.definitions.library.clips[emitted_event.clip_id].id),
+                                        emitted_event.loop_index,
+                                    });
+                                },
+                                .right_foot_contact => {
+                                    right_foot_contacts += 1;
+                                    std.log.info("animation event frame={d} type=right_foot_contact clip={s} loop={d}", .{
+                                        frame,
+                                        @tagName(runtime.definitions.library.clips[emitted_event.clip_id].id),
+                                        emitted_event.loop_index,
+                                    });
+                                },
+                                else => {},
+                            }
+                        }
+                    }
                     animation_update_allocations += humanoid_allocator.end_index - allocation_checkpoint;
 
                     allocation_checkpoint = humanoid_allocator.end_index;
@@ -359,28 +409,6 @@ pub const GpuDemo = struct {
                     pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
 
                     const emitted = runtime.animator.emittedEvents();
-                    animation_event_count += emitted.len;
-                    for (emitted) |emitted_event| {
-                        switch (emitted_event.record.event_type) {
-                            .left_foot_contact => {
-                                left_foot_contacts += 1;
-                                std.log.info("animation event frame={d} type=left_foot_contact clip={s} loop={d}", .{
-                                    frame,
-                                    @tagName(runtime.definitions.library.clips[emitted_event.clip_id].id),
-                                    emitted_event.loop_index,
-                                });
-                            },
-                            .right_foot_contact => {
-                                right_foot_contacts += 1;
-                                std.log.info("animation event frame={d} type=right_foot_contact clip={s} loop={d}", .{
-                                    frame,
-                                    @tagName(runtime.definitions.library.clips[emitted_event.clip_id].id),
-                                    emitted_event.loop_index,
-                                });
-                            },
-                            else => {},
-                        }
-                    }
 
                     const should_log = frame == 0 or frame == 59 or frame == 60 or frame == 69 or frame == 77 or
                         frame == 120 or frame == 180 or frame == 240 or frame == 299 or frame == 300 or
@@ -420,6 +448,91 @@ pub const GpuDemo = struct {
                         }
                     }
 
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try demo.character.submitAttachments(&demo.definition, &self.batch.?, 0);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+                .controller => {
+                    const demo = &humanoid_demo.?;
+                    const animation = &animation_runtime.?;
+                    const simulation = &controller_runtime.?;
+                    const now_ticks_ns = c.SDL_GetTicksNS();
+                    const measured_delta = @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;
+                    last_ticks_ns = now_ticks_ns;
+                    const snapshot = if (scripted_input_enabled)
+                        try scripted_sequence.nextFrame(&simulation.controller)
+                    else
+                        try platform_input.?.pollFrame();
+
+                    var reset_this_frame = false;
+                    if (snapshot.reset.pressed) {
+                        try simulation.reset(animation, &demo.character, &demo.definition);
+                        simulation.clock.setPaused(time_mode == .paused);
+                        reset_this_frame = true;
+                        std.log.info("controller reset: authoritative and interpolated state synchronized without recreating GPU resources", .{});
+                    }
+                    if (snapshot.debug_toggle.pressed) {
+                        debug_geometry = !debug_geometry;
+                        std.log.info("controller debug collision geometry enabled={}", .{debug_geometry});
+                    }
+                    if (snapshot.time_mode_cycle.pressed) {
+                        time_mode = switch (time_mode) {
+                            .normal => .quarter_speed,
+                            .quarter_speed => .paused,
+                            .paused => .normal,
+                        };
+                        simulation.clock.setPaused(time_mode == .paused);
+                        simulation.pending_input.reset();
+                        std.log.info("controller time mode={s}", .{@tagName(time_mode)});
+                    }
+                    if (snapshot.single_step.pressed) simulation.clock.requestSingleStep();
+
+                    if (reset_this_frame or (simulation.clock.paused and !snapshot.single_step.pressed)) {
+                        simulation.pending_input.reset();
+                    } else {
+                        try simulation.acceptFrameInput(snapshot);
+                    }
+                    const raw_delta = if (scripted_input_enabled) 1.0 / 60.0 else measured_delta;
+                    const scaled_delta = if (time_mode == .quarter_speed) raw_delta * 0.25 else raw_delta;
+                    const simulation_frame = try simulation.beginFrame(scaled_delta);
+                    for (0..simulation_frame.substeps) |_| {
+                        const tick = try simulation.simulateTick(animation, &demo.character, &demo.definition);
+                        if (scripted_input_enabled) scripted_sequence.observe(tick, &simulation.controller);
+                        const first_wall = tick.physics.wall_collision and simulation.metrics.wall_collisions == 1;
+                        const first_ceiling = tick.physics.ceiling_collision and simulation.metrics.ceiling_collisions == 1;
+                        const animation_changed = tick.animation_before != tick.animation_after;
+                        if (tick.physics.jump_pressed or tick.physics.jump_released or tick.physics.jump_accepted or
+                            tick.physics.ground_left or tick.physics.landed or tick.physics.coyote_started or
+                            tick.physics.jump_buffer_started or tick.physics.jump_buffer_consumed or
+                            first_wall or first_ceiling or animation_changed)
+                        {
+                            const jump_source = if (tick.physics.jump_source) |source| @tagName(source) else "none";
+                            std.log.info("controller milestone tick={d} jump_pressed={} jump_released={} jump_accepted={} jump_source={s} ground_left={} landed={} impact={d:.5} coyote_started={} coyote_consumed={} buffer_started={} buffer_consumed={} wall={} ceiling={} animation={s}->{s}", .{
+                                tick.physics.simulation_tick,
+                                tick.physics.jump_pressed,
+                                tick.physics.jump_released,
+                                tick.physics.jump_accepted,
+                                jump_source,
+                                tick.physics.ground_left,
+                                tick.physics.landed,
+                                tick.physics.landing_impact_speed,
+                                tick.physics.coyote_started,
+                                tick.physics.coyote_consumed,
+                                tick.physics.jump_buffer_started,
+                                tick.physics.jump_buffer_consumed,
+                                first_wall,
+                                first_ceiling,
+                                @tagName(tick.animation_before),
+                                @tagName(tick.animation_after),
+                            });
+                        }
+                    }
+
+                    self.batch.?.beginFrame();
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try simulation.evaluateRenderPose(&demo.character, &demo.definition);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    if (debug_geometry) _ = try simulation.submitCollisionGeometry(&self.batch.?);
                     allocation_checkpoint = humanoid_allocator.end_index;
                     humanoid_instances = try demo.character.submitAttachments(&demo.definition, &self.batch.?, 0);
                     humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
@@ -545,6 +658,84 @@ pub const GpuDemo = struct {
                 demo.character.character_to_world.translation.x,
                 demo.character.character_to_world.translation.y,
             });
+        } else if (mode == .controller) {
+            const simulation = &controller_runtime.?;
+            const animation = &animation_runtime.?;
+            const state = simulation.controller.state;
+            const gpu_resources_for_movement = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            std.log.info("controller final metrics: frames={d} simulation_ticks={d} animator_ticks={d} humanoid_sprites={d} collider_sprites={d} total_sprites={d} ranges={d} actual_draw_calls={d} jump_events={d} coyote_jumps={d} buffered_jumps={d} landing_events={d} wall_collisions={d} ceiling_collisions={d}", .{
+                self.resource_metrics.frames_rendered,
+                simulation.metrics.simulation_ticks,
+                simulation.metrics.animator_ticks,
+                humanoid_instances,
+                simulation.world.colliders.len,
+                metrics.visible_sprites,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+                simulation.metrics.jump_events,
+                simulation.metrics.coyote_jumps,
+                simulation.metrics.buffered_jumps,
+                simulation.metrics.landing_events,
+                simulation.metrics.wall_collisions,
+                simulation.metrics.ceiling_collisions,
+            });
+            std.log.info("controller final state: position=({d:.6},{d:.6}) velocity=({d:.6},{d:.6}) grounded={} facing={s} support={any} animation={s} previous_position=({d:.6},{d:.6}) interpolation_alpha={d:.6}", .{
+                state.position.x,
+                state.position.y,
+                state.velocity.x,
+                state.velocity.y,
+                state.grounded,
+                @tagName(state.facing),
+                state.supporting_collider,
+                @tagName(animation.animator.currentState(&animation.definitions.machine)),
+                state.previous_position.x,
+                state.previous_position.y,
+                simulation.clock.last_frame.interpolation_alpha,
+            });
+            std.log.info("controller clock: fixed_dt={d:.9} raw_delta={d:.9} clamped_delta={d:.9} accumulator={d:.9} substeps={d} maximum_substeps={d} discarded_frame={d:.9} discarded_lifetime={d:.9}", .{
+                fixed_step.fixed_dt_seconds,
+                simulation.clock.last_frame.raw_frame_delta,
+                simulation.clock.last_frame.clamped_frame_delta,
+                simulation.clock.last_frame.accumulator,
+                simulation.clock.last_frame.substeps,
+                simulation.clock.last_frame.maximum_substeps,
+                simulation.clock.last_frame.discarded_time,
+                simulation.clock.last_frame.lifetime_discarded_time,
+            });
+            std.log.info("controller steady state: initialized_bytes={d} final_bytes={d} clock_allocations={d} input_allocations={d} intent_allocations={d} controller_allocations={d} collision_allocations={d} animation_selection_allocations={d} animator_allocations={d} render_interpolation_allocations={d} pose_evaluation_allocations={d} submission_allocations={d} gpu_resources_for_movement={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                simulation.metrics.clock_allocations,
+                simulation.metrics.input_allocations,
+                simulation.metrics.intent_allocations,
+                simulation.metrics.controller_allocations,
+                simulation.metrics.collision_allocations,
+                simulation.metrics.animation_selection_allocations,
+                simulation.metrics.animator_allocations,
+                simulation.metrics.render_interpolation_allocations,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                gpu_resources_for_movement,
+            });
+            if (scripted_input_enabled) {
+                std.log.info("scripted controller milestones: phase={s} complete={} ceiling={} platform1={} platform2={} coyote={} buffered={} wall={}", .{
+                    @tagName(scripted_sequence.phase),
+                    scripted_sequence.completed(),
+                    scripted_sequence.ceiling_seen,
+                    scripted_sequence.first_platform_landed,
+                    scripted_sequence.second_platform_landed,
+                    scripted_sequence.coyote_jump_seen,
+                    scripted_sequence.buffered_jump_seen,
+                    scripted_sequence.wall_seen,
+                });
+                if (!scripted_sequence.completed() or !scripted_sequence.ceiling_seen or
+                    !scripted_sequence.first_platform_landed or !scripted_sequence.second_platform_landed or
+                    !scripted_sequence.coyote_jump_seen or !scripted_sequence.buffered_jump_seen or
+                    !scripted_sequence.wall_seen or !state.grounded)
+                {
+                    return error.ScriptedControllerMilestonesIncomplete;
+                }
+            }
         }
     }
 

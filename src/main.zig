@@ -6,6 +6,7 @@ const Options = struct {
     gpu_smoke: bool = false,
     maximum_frames: ?u32 = null,
     demo: gpu.DemoMode = .sprites,
+    scripted_input: bool = false,
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -22,7 +23,7 @@ pub fn main(init: std.process.Init) !void {
 
     var demo = try gpu.GpuDemo.init(std.heap.page_allocator, false, null);
     defer demo.deinit();
-    try demo.runVisible(options.maximum_frames, options.demo);
+    try demo.runVisible(options.maximum_frames, options.demo, options.scripted_input);
 }
 
 fn runInitializationFaultChecks() !void {
@@ -59,16 +60,21 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .humanoid;
             } else if (std.mem.eql(u8, arguments[index], "animation")) {
                 options.demo = .animation;
+            } else if (std.mem.eql(u8, arguments[index], "controller")) {
+                options.demo = .controller;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller", .{arguments[index]});
                 return error.UnknownDemo;
             }
+        } else if (std.mem.eql(u8, argument, "--scripted-input")) {
+            options.scripted_input = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation>", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller>, --scripted-input", .{argument});
             return error.UnknownArgument;
         }
     }
+    if (options.scripted_input and options.demo != .controller) return error.ScriptedInputRequiresControllerDemo;
     return options;
 }

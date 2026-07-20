@@ -38,6 +38,10 @@ Simulation tests create no window and use explicit fixed ticks. Scenarios includ
 - Cancellation caused by range, participant removal, or obstruction leaves both characters independent and responsive.
 - Replaying the same initial state and intent sequence produces the same state/event trace on the Windows x64 target.
 
+Prompt 5 adds synthetic frame-snapshot tests for keyboard left/right/opposition, analog dead zone and merge, jump press/hold/release, interaction press, zero-tick preservation, multi-tick single consumption, rapid press/release, independent builders, and reset. Clock tests cover zero/one/multiple ticks, negative and non-finite deltas, `0.10 s` clamping, the eight-tick limit, explicit discarded-time accounting, pause/single-step, bounded interpolation alpha, and reset synchronization. Schedule equivalence groups an identical 240-tick intent trace into one-tick, two-tick, and mixed zero/one/multiple-tick rendered frames and compares authoritative position, velocity, grounded state, facing, tick count, and animation state within the tabled tolerance.
+
+Controller/collision tests cover configuration and AABB validation; allocation fault cleanup; gravity, ground/air acceleration, deceleration, speed clamp, facing stability; floor/ceiling/wall/platform sweeps at and beyond configured speed; floor contact and 600-tick resting stability; platform landing, underside collision, walk-off, and support clearing; grounded, coyote, and buffered jump acceptance/consumption; exact timer boundary success/failure; held-input non-repetition; tap/hold apex separation; release after apex; impact capture and landing-event uniqueness; reset while grounded, rising, falling, buffered, and transitioning; interpolation independence; one animator update per fixed physics tick; and full 600-frame scripted-route completion. Tests use `1e-4 m`/`1e-4 m/s` for controller comparisons because this is the documented contact tolerance and remains far below one presentation pixel at 82 pixels per metre.
+
 ## Floating-point tolerances
 
 Exact floating-point equality is used only for values defined by exact assignment or discrete state. Numerical assertions use the smallest tolerance appropriate to the subsystem:
@@ -97,7 +101,7 @@ Acceptance targets for the two-character demo are:
 - Zero unreported capacity growth during steady rendering.
 - One sprite instance upload and one indexed instanced sprite draw for a frame when all body parts share the atlas/pipeline; debug rendering is counted separately.
 - No command submission per body part.
-- Stable 60 displayed frames per second on the documented reference machine, with 120 Hz simulation and no sustained fixed-step overruns.
+- Stable 60 displayed frames per second on the documented reference machine, with 240 Hz simulation and no sustained fixed-step overruns.
 
 The reference GPU/CPU and measured percentile frame times will be added when performance testing begins; no unmeasured target is reported as passed.
 
@@ -106,6 +110,8 @@ Prompt 2's executable evidence run is `zig build run -- --frames 300`. Its final
 Prompt 3's executable evidence run is `zig build run -- --frames 300 --demo humanoid`. It must report 16 bones, four sockets, 15 attachments and humanoid sprite instances, one texture-page range, one actual draw, zero pose/socket/submission allocation after initialization, and zero GPU-resource creation from pose changes. Frame 0 and modified-pose logs must show different right-hand and left-foot socket positions resulting from actual ancestor rotations.
 
 Prompt 4's executable evidence run is `zig build run -- --frames 360 --demo animation`. It must report eight clips/states, the two idle/walk transitions, bounded foot-contact logs, 15 humanoid instances, one texture-page range, one actual draw, unchanged character-world root, and zero measured sampling/blending/event/update/pose/submission allocation or animation-created GPU resources. Logged idle and walk socket positions must differ through actual ancestor tracks.
+
+Prompt 5's executable evidence run is `zig build run -- --frames 600 --demo controller --scripted-input`. It must complete 2,400 physics ticks and exactly 2,400 animator ticks; exercise ceiling, both raised platforms, coyote jump, buffered jump, wall, and stable final ground; submit 15 humanoid sprites plus five collider sprites as one page-zero range and one indexed-instanced draw; report bounded clock/discard metrics; and report zero clock/input/intent/controller/collision/animation-selection/animator/interpolation allocations plus zero GPU resources created by movement. Incomplete scripted milestones cause a nonzero exit.
 
 ## Build command contract
 

@@ -34,6 +34,8 @@ pub const InitStage = enum {
     animator_pose_buffer_allocation,
     animator_event_buffer_allocation,
     partial_authored_animation_library,
+    collision_world_collider_allocation,
+    partial_controller_demo_creation,
 };
 
 pub const all_stages = std.enums.values(InitStage);
@@ -74,6 +76,10 @@ pub const animation_initialization_stages = [_]InitStage{
     .animator_pose_buffer_allocation,
     .animator_event_buffer_allocation,
     .partial_authored_animation_library,
+};
+pub const controller_initialization_stages = [_]InitStage{
+    .collision_world_collider_allocation,
+    .partial_controller_demo_creation,
 };
 
 pub const Injector = struct {

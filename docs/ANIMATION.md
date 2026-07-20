@@ -43,7 +43,7 @@ Translation and scale use component-wise interpolation. Rotation is stored in ra
 
 ## Playback and events
 
-The caller supplies deterministic delta seconds. The animator never reads a wall clock. The demonstration advances at exactly `1/60` second per displayed frame; later fixed-step simulation will call the same API with the simulation delta.
+The caller supplies deterministic delta seconds. The animator never reads a wall clock. Both the preserved animation demonstration and controller gameplay now advance from the authoritative 240 Hz fixed clock: a deterministic `1/60`-second displayed frame executes four animator updates of exactly `1/240` second. A zero-tick rendered frame advances animation zero times, a multi-tick frame advances it once per physics tick, pause advances it zero times, and single-step advances it exactly once. Render interpolation never calls animator update.
 
 Looping time uses checked direct quotient/remainder arithmetic rather than simulation microsteps. Exact arrival at duration increments the loop count and produces local time zero. At most eight loop boundaries may be crossed by one update. A ninth returns `error.EventTraversalLimitExceeded` before playback state changes or events are emitted.
 
@@ -87,4 +87,3 @@ zig build run -- --frames 360 --demo animation
 Frames 0-59 show idle. Frame 60 requests the 0.30-second idle-to-walk transition. Walk continues through frame 299, spanning multiple cycles. Frame 300 requests the 0.30-second walk-to-idle transition, which completes at frame 317; the remainder is idle.
 
 The animation definition, animator buffers, pose, skeleton, sockets, and attachments are initialized from one fixed buffer. The loop records the allocator position around animator update, hierarchy evaluation, socket reads, and attachment submission. All remain unchanged after initialization. Clip sampling, blending, event traversal, state transitions, and animator update contain no allocator call. Animation state changes create no GPU resource and all 15 page-zero attachments remain one sprite range and one indexed-instanced draw.
-

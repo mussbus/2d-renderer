@@ -63,6 +63,13 @@ $stateMachineSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '
 $animatorSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/animator.zig')
 $authoredClipSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/authored_clips.zig')
 $animationSystemSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/animation_system.zig')
+$inputSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/platform/input.zig')
+$sdlInputSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/platform/sdl_input.zig')
+$fixedStepSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/fixed_step.zig')
+$colliderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/collider.zig')
+$collisionWorldSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/collision_world.zig')
+$controllerSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/character_controller.zig')
+$controllerDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/controller_demo.zig')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/mat3.zig')
@@ -296,6 +303,73 @@ if ($failed) {
     exit 1
 }
 
+$controllerSources = $fixedStepSource + [Environment]::NewLine + $colliderSource + [Environment]::NewLine +
+    $collisionWorldSource + [Environment]::NewLine + $controllerSource + [Environment]::NewLine + $controllerDemoSource
+if ([regex]::IsMatch($controllerSources, 'SDL_(GetKeyboardState|GetGamepad|OpenGamepad|PollEvent)')) {
+    Write-Error 'SDL keyboard/gamepad access must remain isolated to PlatformInput.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $sdlInputSource.Contains('pub const PlatformInput') -or
+    -not $sdlInputSource.Contains('SDL_GetKeyboardState') -or
+    -not $sdlInputSource.Contains('SDL_GetGamepadAxis') -or
+    -not $sdlInputSource.Contains('SDL_EVENT_GAMEPAD_ADDED') -or
+    -not $sdlInputSource.Contains('SDL_EVENT_GAMEPAD_REMOVED') -or
+    -not $sdlInputSource.Contains('SDL_CloseGamepad')) {
+    Write-Error 'PlatformInput must retain real pinned SDL keyboard/gamepad polling, hot-plug, and close paths.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $fixedStepSource.Contains('pub const simulation_hz: u32 = 240') -or
+    -not $controllerSource.Contains('fixed_step.fixed_dt_seconds') -or
+    -not $controllerDemoSource.Contains('@floatCast(fixed_step.fixed_dt_seconds)')) {
+    Write-Error 'Physics and gameplay animation must share the authoritative 240 Hz fixed timestep.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($controllerSource, 'position\.[xy]\s*=.*intent') -or
+    [regex]::IsMatch($controllerDemoSource, '(?i)input[^\r\n]*position\s*=|position\s*=[^\r\n]*input')) {
+    Write-Error 'Input may not directly assign authoritative character-world position.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($controllerSources, 'left_foot_contact|right_foot_contact')) {
+    Write-Error 'Animation foot-contact events may not alter controller or collision grounding.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($controllerSources, 'SDL_CreateGPU|SDL_DrawGPU|createPipeline|createTexture')) {
+    Write-Error 'Controller, collision, input, and fixed-step code may not create GPU resources or draw directly.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::Matches($controllerSources, 'pub const CollisionWorld\s*=\s*struct').Count -ne 1) {
+    Write-Error 'Exactly one authoritative CollisionWorld representation is required.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $inputSource.Contains('pub const CharacterIntent = extern struct') -or
+    -not $inputSource.Contains('jump_pressed_pending') -or
+    -not $inputSource.Contains('pub fn consumeTick')) {
+    Write-Error 'Renderer-independent CharacterIntent and explicit pending-edge consumption are required.' -ErrorAction Continue
+    $failed = $true
+}
+
+$controllerHotSections = @(
+    Get-FunctionSection $inputSource '    pub fn acceptFrame' '    pub fn consumeTick'
+    Get-FunctionSection $inputSource '    pub fn consumeTick' '    pub fn reset'
+    Get-FunctionSection $fixedStepSource '    pub fn beginFrame' '    pub fn reset'
+    Get-FunctionSection $controllerSource '    pub fn step(' '    pub fn interpolatedPosition'
+    Get-FunctionSection $controllerDemoSource '    pub fn simulateTick' '    pub fn renderPosition'
+)
+foreach ($section in $controllerHotSections) {
+    if ([regex]::IsMatch($section, '\.alloc\s*\(|\.create\s*\(|std\.mem\.Allocator|ArrayList|HashMap')) {
+        Write-Error 'Input, clock, controller, collision, animation selection, and interpolation hot paths must remain allocation-free.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($fixedStepSource, 'while\s*\(')) {
+    Write-Error 'The fixed-step clock must not contain an unbounded accumulator loop.' -ErrorAction Continue
+    $failed = $true
+}
+
+if ($failed) {
+    exit 1
+}
+
 Write-Host "Repository source audit passed for $($sourceFiles.Count) files."
 Write-Host 'Forbidden SDL high-level renderer and alternate-renderer symbols are absent.'
 Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test markers were found.')
@@ -304,3 +378,4 @@ Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists;
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
 Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'
+Write-Host 'Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.'

@@ -40,23 +40,23 @@ The root transform combines only physics root position and facing. Animation and
 
 ## Fixed simulation and render interpolation
 
-Simulation advances at exactly 120 Hz (`dt = 1 / 120` seconds). The frame loop accumulates real elapsed time, performs whole fixed ticks, then renders an interpolation between the previous and current completed simulation snapshots. Interpolation never feeds back into simulation.
+Simulation advances at exactly 240 Hz (`dt = 1 / 240` seconds). One `f64` accumulator receives validated real elapsed time, performs whole fixed ticks, then renders an interpolation between the previous and current completed simulation snapshots. Controller integration uses the validated `f32` form of the same constant. Interpolation never feeds back into simulation and never advances the animator.
 
-At most eight simulation ticks may be processed for one displayed frame. If the accumulator still exceeds that budget, the application records a fixed-step overrun metric and clamps the backlog to eight ticks. This produces visible time dilation under a sustained overload instead of changing `dt` or entering an unbounded catch-up loop. Tests drive ticks directly and do not use wall-clock time.
+Real frame delta is rejected when non-finite, sanitized to zero when negative, and clamped to `0.10 s`. At most eight simulation ticks may be processed for one displayed frame. Whole ticks beyond that budget are discarded explicitly and reported as both per-frame and lifetime discarded seconds; only the fractional accumulator remainder is retained. The loop never performs unbounded catch-up or claims discarded time was simulated. Pause accumulates no real time; a pending single-step executes exactly one physics/animation tick. Tests drive explicit elapsed values and do not read wall-clock time.
 
 Simulation order within one tick is fixed:
 
-1. Convert the already sampled `CharacterIntent` values into controller requests.
-2. Advance interaction session state and publish per-character interaction constraints.
-3. Advance locomotion state, root velocity, gravity, and static-platform collision.
-4. Sample and blend animation poses.
-5. Apply step/landing springs as visual pose offsets.
-6. Solve interaction IK and measure final socket error.
-7. Emit animation/interaction events and capture the current snapshot.
+1. Consume pending frame edges once and produce `CharacterIntent`.
+2. Advance controller velocity, gravity, jump policy, and static collision.
+3. Classify grounded state and produce physical jump/landing results.
+4. Select animation from authoritative physics and advance the animator once by `1 / 240` second.
+5. Evaluate the local pose and then the world pose from the authoritative physics root.
+6. In later milestones, apply bounded visual springs and solve interaction IK without changing the physics root.
+7. Emit animation/interaction data and preserve previous/current simulation transforms for render interpolation.
 
 ## Input and character intent
 
-SDL keyboard and gamepad code owns device discovery, hot-plugging, dead zones, and raw button state. It produces one `CharacterIntent` per controlled character containing normalized horizontal movement, jump edge, interaction edge, and debug toggles. Character, animation, physics, and interaction systems never query SDL directly. Tests construct intents without platform input.
+SDL keyboard and gamepad code owns device discovery, hot-plugging, dead zones, and raw button state. It produces one renderer-independent frame snapshot whose buttons distinguish pressed, held, and released state. A pending-edge layer retains jump press/release and interaction press through zero-tick rendered frames, consumes each edge on the first following simulation tick, and preserves held state for every applicable tick. It then produces `CharacterIntent` containing normalized horizontal movement and jump/interaction semantics; reset and debug/time controls remain frame controls. Character, animation, physics, and interaction systems never query SDL directly. Tests construct snapshots and intents without platform input. `docs/CONTROLS.md` binds the exact key, gamepad, merge, and dead-zone policies.
 
 ## Skeleton and pose ownership
 
@@ -84,7 +84,7 @@ Walk includes an authored vertical pelvis/body component. Landing adds a bounded
 
 ## Physics
 
-The physics body is a character-controller shape anchored at the root, not one rigid body per bone. Static platforms are immutable colliders. The collision world resolves swept or conservative root motion against those colliders, maintains grounded state, and applies gravity and jump velocity. The exact collision algorithm is selected and tested in its implementation milestone; it must not replace physical motion with prerecorded animation.
+The physics body is one stable axis-aligned character-controller box anchored at the root, not one rigid body per bone. The collision world owns one contiguous immutable array containing floor, wall, ceiling/overhang, and two raised platforms with stable IDs. Movement uses axis-separated continuous sweeps, horizontal before vertical, followed by ground classification. Only a downward vertical support hit produces normal `(0, +1)`, grounded state, and a supporting ID; wall and ceiling hits cannot. Initial penetration is rejected, while runtime contact validation tolerates only the documented `0.0001 m` floating-point contact epsilon. `docs/PHYSICS.md` binds all configuration values, timers, collision consequences, and ownership details.
 
 Root position and velocity are authoritative physics state. Pelvis bounce, landing compression, hand IK, and spring offsets are visual pose state. Animation cannot move the collider through a platform, and collision correction cannot erase visual secondary motion.
 
