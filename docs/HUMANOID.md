@@ -6,7 +6,7 @@ The deterministic CPU world uses an arbitrary character-root origin, positive X 
 
 `Transform2D` is authoritative component state: translation, rotation in radians, and nonuniform scale. Its affine value is `translation * rotation * scale`, so scale acts first. `composeParentChild(parent_to_world, child_local)` returns `parent_to_world * child_local.localToParent()`. Matrix elements are never interpolated; translation and scale use linear interpolation and rotation uses the signed shortest angular path.
 
-Render-attachment pivot is expressed in unit-quad coordinates and is sent once to `SpriteBatch`. Bone transforms have no separate pivot, preventing double pivot application. Zero and negative scale remain finite supported math values. The current humanoid uses positive unit bone scales. Future facing mirroring must use one deliberate negative-X character or pose scale and preserve this same composition convention; it must not reorder attachment sprites independently.
+Render-attachment pivot is expressed in unit-quad coordinates and is sent once to `SpriteBatch`. Bone transforms have no separate pivot, preventing double pivot application. Zero and negative scale remain finite supported math values. Authored bones use positive unit scales. Prompt 7 left facing applies one deliberate negative-X character-root scale and preserves this composition convention; it does not swap anatomical bones or mirror sockets a second time.
 
 ## Immutable definition and mutable pose
 
@@ -35,6 +35,8 @@ Body sizes are authored in metres:
 | Foot | 0.35 | 0.18 | ankle |
 
 The left chain samples the procedural red region and uses back-limb layers. The right chain samples green and uses front-limb layers. Pelvis, torso, and head sample blue/yellow regions. Explicit body-part layers are left leg 10–12, left arm 20–22, pelvis/torso 30–31, head 40, right leg 50–52, and right arm 60–62. Hierarchy order never determines visual front/back order.
+
+Those immutable layer values are the right-facing authored defaults. Runtime order resolution uses the same centralized role values and maps anatomical right limbs to back roles and anatomical left limbs to front roles when facing left. Attachment definitions remain unchanged.
 
 ## Attachment submission
 

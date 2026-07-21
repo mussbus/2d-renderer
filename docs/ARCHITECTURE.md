@@ -46,14 +46,16 @@ Real frame delta is rejected when non-finite, sanitized to zero when negative, a
 
 Simulation order within one tick is fixed:
 
-1. Consume pending frame edges once and produce `CharacterIntent`.
-2. Advance controller velocity, gravity, jump policy, and static collision.
-3. Classify grounded state and produce physical jump/landing results.
-4. Select animation from authoritative physics and advance the animator once by `1 / 240` second.
-5. Update walk weight transfer, consume a physical landing event once, and advance procedural springs once by `1 / 240` second.
-6. Compose the visual root offset and head rotational lag into the animator-produced local pose.
-7. Evaluate the hierarchical world pose from the authoritative physics character-world transform.
-8. Emit animation/interaction data and preserve previous/current simulation transforms for render interpolation.
+1. Convert the current platform snapshot through pending edges and produce `CharacterIntent`.
+2. Advance controller velocity, gravity, jump policy, horizontal/vertical static collision, and grounded/support classification; emit physical jump/landing results.
+3. When not interaction-locked, select animation from authoritative physics and advance the animator exactly once by `1 / 240` second.
+4. Update walk weight transfer, consume a physical landing event once, advance procedural springs, compose local visual offsets, and evaluate the pre-leg hierarchy.
+5. Freeze both feet's pre-IK sole/hip inputs, query the authoritative collision world, update plant state, apply both analytical leg constraints, and leave the hierarchy evaluated.
+6. Process an interaction edge after the ordinary locomotion state is current.
+7. For each active interaction, advance its one shared tick counter, sample both role poses, compose procedural motion, and evaluate both pre-arm hierarchies.
+8. Freeze both pre-IK hands, compute one shared midpoint, apply both analytical arm constraints, then reapply only already-owned foot constraints. Arm and leg chains are disjoint; no new foot lock is acquired in this interaction branch.
+9. Observe lifecycle milestones and copy optional diagnostics after authoritative updates.
+10. Preserve previous/current physics transforms for render interpolation. On the render frame, globally submit all attachments and optional debug primitives, sort/build ranges, and issue the SDL GPU draw.
 
 ## Input and character intent
 
@@ -65,7 +67,7 @@ A `Skeleton` is immutable after initialization. It owns the bone hierarchy, bind
 
 Prompt 3 implements this as `SkeletonDefinition`: one contiguous bone array, one contiguous socket array, one parent-before-child evaluation-order array, and fixed semantic-to-index tables. Bone and socket names use inline bounded storage, so no record owns an individual heap allocation. Authored input order is unrestricted. Validation uses a bounded iterative resolved-state pass; a pass with no progress identifies a cycle without recursion. Exactly one root, all 16 humanoid bone semantics, and all four hand/foot socket semantics are required.
 
-Each `Character` owns its controller state, animator state, current local pose, previous pose snapshot, secondary springs, and IK workspace. The demo characters may share immutable skeleton and clip data, but never share mutable pose arrays. All arrays are allocated or fixed-capacity during initialization. The steady-state loop performs no heap allocation.
+Each `Character` owns its controller state, animator state, current local pose, previous pose snapshot, secondary springs, arm IK workspace, immutable-index leg bindings, and independent left/right plant state. The demo characters may share immutable skeleton and clip data, but never share mutable pose arrays or foot locks. All arrays are allocated or fixed-capacity during initialization. The steady-state loop performs no heap allocation.
 
 The current `Pose` owns separate contiguous local `Transform2D` and world `Mat3` arrays. It is compatible only with the definition allocation token and bone count captured at initialization; every evaluation receives the still-live definition explicitly. Definitions never cache current local or world pose. Render attachments are immutable local metadata and never store authoritative world transforms. `docs/HUMANOID.md` records the concrete hierarchy, proportions, layer values, and runtime allocation proof.
 
@@ -89,20 +91,22 @@ The physics body is one stable axis-aligned character-controller box anchored at
 
 Root position and velocity are authoritative physics state. Pelvis bounce, landing compression, hand IK, and spring offsets are visual pose state. Animation cannot move the collider through a platform, and collision correction cannot erase visual secondary motion.
 
+Prompt 10 adds visual foot placement without a second collision representation. Authored contact events create only pending anatomical intent; `CollisionWorld.queryGroundDown` validates an eligible top surface from the controller's collider array. The exact pose pipeline is authored sampling, Prompt 6 procedural composition, pre-leg hierarchy evaluation, frozen left/right query and target inputs, analytical leg solves, optional disjoint arm solve, and attachment submission. Locks are world-space character/foot-local state. No foot path writes the physics root, collider, grounding, support, velocity, landing state, animator clock, interaction clock, GPU state, or draw topology. `docs/FOOT_PLANTING.md` binds the detailed query and stance policy.
+
 ## Interaction ownership and handshake coordination
 
-`InteractionSystem` owns transient pair sessions. A handshake session records both participant IDs, selected hands, phase, shared target, approach timing, socket-error history, and release state. Characters receive constraints from the session but do not own or permanently reference each other.
+Prompt 8's `interaction.Definition` is an immutable value separate from requests and runtime instances. The fixed-position handshake definition names two explicit roles, validates their clips and matching paired events, owns the authoritative duration/event timeline, and records an inclusive spatial envelope. `interaction_system.Manager` embeds four preallocated slots. Every active slot owns one stable nonzero `u32` instance ID, both participant entity IDs, stable role assignment, start/elapsed ticks, lifecycle, phase, deduplicated event state, cancellation reason, contact measurement, and exact layer-override handles. No persistent participant pointer, singleton handshake state, or runtime allocation is used.
 
-Handshake phases are request, approach, grip, release, and complete/cancelled. The shared target is derived from both characters' reachable regions. Small root alignment is achieved through ordinary bounded controller velocity during approach; full-body teleportation is not the normal alignment mechanism. Excess separation, obstruction, invalid participants, or failure to converge cancels the session cleanly.
+The manager implements shared-time sampling: both animators enter their role states transactionally on the same fixed tick, then the one instance elapsed-tick counter determines both clip sample times. Participant clip events are validation inputs only; the definition collapses matching role events into one contact/release/complete stream. Legal lifecycle transitions are `inactive -> requested -> active -> completing -> completed` and `requested|active|completing -> cancelled`; terminal instances cannot reactivate. Completion and cancellation synchronously restore owned overrides, release both locks, and choose grounded idle/walk fallback states.
 
-During grip, each arm uses a two-bone analytic IK solve with a configured elbow bend preference. The solve targets the same world-space grip point while preserving shoulder ownership. After world transforms are rebuilt, the system calculates both hand socket positions and records their separation. Visual acceptance requires the measured grip error to remain at or below 0.015 m during the hold phase.
+Prompt 8's original manager construction remains the non-IK baseline. Prompt 9's opt-in construction adds one interaction-owned midpoint target and fixed-tick weight without approach movement, root alignment, motion warping, or collision. Both role poses are sampled and evaluated first; the manager freezes the midpoint of both pre-IK right-hand sockets before independently solving either arm. Only mutable shoulder and elbow rotations change, followed by final hierarchy evaluation. Eligibility remains grounded, allowed-state, `3.70..3.74 m`, vertically aligned within `0.02 m`, and face-to-face. Neither path writes controller position, velocity, grounding, support, or collision data. `docs/INTERACTIONS.md` and `docs/IK.md` bind the coordination and solve contracts.
 
 ## CPU/GPU responsibility boundary
 
 CPU responsibilities:
 
 - Platform input to `CharacterIntent` conversion.
-- Fixed-step animation, physics, collision, springs, IK, and interaction coordination.
+- Fixed-step animation, physics, collision, ground queries, springs, interaction coordination, analytical arm/leg IK, foot-plant state, socket measurement, and target/slip/penetration metrics.
 - Skeleton traversal and socket measurement.
 - Stable transparent draw ordering and explicit limb-front overrides.
 - Building a bounded array of sprite instances and debug primitives.
@@ -123,7 +127,11 @@ Each visible body part produces a CPU `SpriteSubmission` with world position, ro
 
 The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. Consecutive compatible texture pages form draw ranges without reordering across page changes. The current one-page atlas and straight-alpha sprite pipeline produce one range. The renderer uploads 60-byte GPU records and calls `SDL_DrawGPUIndexedPrimitives` with six shared quad indices and `num_instances > 1`. Slot 1 is declared `SDL_GPU_VERTEXINPUTRATE_INSTANCE`; a draw per body part or CPU-expanded mesh does not qualify as instancing. `docs/SPRITE_BATCH.md` binds the complete layout and transform contract.
 
-Debug bones, colliders, sockets, and targets use their own debug pipeline and bounded primitive buffer. They do not alter simulation state.
+Prompt 7 formalizes `CharacterInstance` as the mutable entity boundary. It borrows immutable skeleton, attachment, clip, event, and state-machine views while independently owning pose, animator, procedural, facing, optional controller, and override state. Stable monotonic `u32` entity IDs establish deterministic global submission order without pointer identity. All attachments from both characters enter the same batch before the global semantic sort. Bounded interaction overrides can raise one hand or forearm above another character without changing either actor layer or any immutable attachment. `docs/MULTI_CHARACTER.md` binds the complete model.
+
+Visual left facing is one character-root reflection, `T(position) * S(-1,+1)`, applied during hierarchy evaluation. Socket semantics remain anatomical and the physics AABB is unchanged. Reflected attachments retain a negative presentation scale; the inspected SDL pipeline uses no face culling. Front/back body roles are recomputed from anatomical semantic and facing rather than by swapping bones or sockets.
+
+Debug bones, colliders, sockets, and targets use a bounded primitive buffer and the existing compatible sprite pipeline. They do not alter simulation state. Prompt 11's exact observer, update-order, reset, resource, and debug-submission contracts are recorded in `docs/DIAGNOSTICS.md`.
 
 ## Resource lifetime and allocation model
 
@@ -132,6 +140,8 @@ Initialization proceeds from platform to window, GPU device, claimed window, swa
 SDL GPU resource destruction maps to the matching API: buffers, transfer buffers, textures, samplers, shaders, pipelines, fences, the claimed window, and the GPU device are each released by their documented function. Command buffers are either submitted or cancelled on every path. Destruction waits for GPU idle when in-flight access makes that necessary.
 
 All simulation arrays, poses, instance buffers, debug geometry, event queues, and interaction slots have capacities established at initialization. The sprite batch starts at 1,024 records, doubles transactionally to a maximum of 16,384, and reports CPU and GPU growth independently. Three per-frame upload/instance-buffer slots retain fences; a slot is overwritten only after its own fence completes. The ordinary frame loop performs no heap allocation, persistent GPU creation, or global device-idle wait.
+
+Each Prompt 7 character embeds eight temporary layer slots and one optional controller value. Global character submission copies at most eight pointers into stack storage and sorts them by numeric entity ID. Runtime character removal is out of scope; scene teardown destroys character-owned animator and pose buffers before the shared clip and skeleton owners.
 
 ## Error handling and logging
 

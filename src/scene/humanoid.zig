@@ -9,6 +9,8 @@ pub const attachment_count: usize = 15;
 pub const pixels_per_meter: f32 = 82.0;
 pub const presentation_origin = math.Vec2.init(320, 105);
 
+pub const Facing = enum(u8) { left, right };
+
 pub const AttachmentSemantic = enum(u8) {
     pelvis,
     torso,
@@ -26,6 +28,45 @@ pub const AttachmentSemantic = enum(u8) {
     right_shin,
     right_foot,
 };
+
+pub const BodyPartLayers = struct {
+    pub const back_thigh: u16 = 10;
+    pub const back_shin: u16 = 11;
+    pub const back_foot: u16 = 12;
+    pub const back_upper_arm: u16 = 20;
+    pub const back_forearm: u16 = 21;
+    pub const back_hand: u16 = 22;
+    pub const pelvis: u16 = 30;
+    pub const torso: u16 = 31;
+    pub const head: u16 = 40;
+    pub const front_thigh: u16 = 50;
+    pub const front_shin: u16 = 51;
+    pub const front_foot: u16 = 52;
+    pub const front_upper_arm: u16 = 60;
+    pub const front_forearm: u16 = 61;
+    pub const front_hand: u16 = 62;
+};
+
+pub fn defaultBodyPartLayer(semantic: AttachmentSemantic, facing: Facing) u16 {
+    const left_is_front = facing == .left;
+    return switch (semantic) {
+        .pelvis => BodyPartLayers.pelvis,
+        .torso => BodyPartLayers.torso,
+        .head => BodyPartLayers.head,
+        .left_upper_arm => if (left_is_front) BodyPartLayers.front_upper_arm else BodyPartLayers.back_upper_arm,
+        .left_forearm => if (left_is_front) BodyPartLayers.front_forearm else BodyPartLayers.back_forearm,
+        .left_hand => if (left_is_front) BodyPartLayers.front_hand else BodyPartLayers.back_hand,
+        .right_upper_arm => if (left_is_front) BodyPartLayers.back_upper_arm else BodyPartLayers.front_upper_arm,
+        .right_forearm => if (left_is_front) BodyPartLayers.back_forearm else BodyPartLayers.front_forearm,
+        .right_hand => if (left_is_front) BodyPartLayers.back_hand else BodyPartLayers.front_hand,
+        .left_thigh => if (left_is_front) BodyPartLayers.front_thigh else BodyPartLayers.back_thigh,
+        .left_shin => if (left_is_front) BodyPartLayers.front_shin else BodyPartLayers.back_shin,
+        .left_foot => if (left_is_front) BodyPartLayers.front_foot else BodyPartLayers.back_foot,
+        .right_thigh => if (left_is_front) BodyPartLayers.back_thigh else BodyPartLayers.front_thigh,
+        .right_shin => if (left_is_front) BodyPartLayers.back_shin else BodyPartLayers.front_shin,
+        .right_foot => if (left_is_front) BodyPartLayers.back_foot else BodyPartLayers.front_foot,
+    };
+}
 
 comptime {
     if (std.enums.values(AttachmentSemantic).len != attachment_count) @compileError("humanoid attachment semantic count mismatch");
@@ -57,6 +98,34 @@ pub const RenderAttachment = struct {
     texture_page: u32,
     body_part_layer: u16,
 };
+
+pub const PresentationTransform = struct {
+    world_position: math.Vec2,
+    rotation_radians: f32,
+    signed_scale: math.Vec2,
+};
+
+pub fn presentationTransform(world: math.Mat3) !PresentationTransform {
+    if (!world.isFinite()) return error.InvalidNonFiniteTransform;
+    const x_length = @sqrt(world.values[0] * world.values[0] + world.values[1] * world.values[1]);
+    const y_length = @sqrt(world.values[3] * world.values[3] + world.values[4] * world.values[4]);
+    const determinant = world.values[0] * world.values[4] - world.values[1] * world.values[3];
+    if (!std.math.isFinite(x_length) or !std.math.isFinite(y_length) or x_length == 0 or y_length == 0) {
+        return error.InvalidPresentationBasis;
+    }
+    if (determinant < 0) {
+        return .{
+            .world_position = world.translationPart(),
+            .rotation_radians = std.math.atan2(-world.values[1], -world.values[0]),
+            .signed_scale = .{ .x = -x_length, .y = y_length },
+        };
+    }
+    return .{
+        .world_position = world.translationPart(),
+        .rotation_radians = std.math.atan2(world.values[1], world.values[0]),
+        .signed_scale = .{ .x = x_length, .y = y_length },
+    };
+}
 
 pub const HumanoidDefinition = struct {
     allocator: std.mem.Allocator,
@@ -199,13 +268,12 @@ pub const HumanoidCharacter = struct {
         var submitted: u32 = 0;
         for (definition.attachments) |attachment_definition| {
             const world = try attachmentWorld(character, definition, &attachment_definition);
-            const world_position_meters = world.translationPart();
-            const presentation_position = presentation_origin.add(world_position_meters.scale(pixels_per_meter));
-            const inherited_scale = world.basisScale();
-            const presentation_size = inherited_scale.componentMul(attachment_definition.sprite_size).scale(pixels_per_meter);
+            const presentation_transform = try presentationTransform(world);
+            const presentation_position = presentation_origin.add(presentation_transform.world_position.scale(pixels_per_meter));
+            const presentation_size = presentation_transform.signed_scale.componentMul(attachment_definition.sprite_size).scale(pixels_per_meter);
             try batch.submit(.{
                 .world_position = presentation_position.toArray(),
-                .rotation = world.rotationRadians(),
+                .rotation = presentation_transform.rotation_radians,
                 .scale = presentation_size.toArray(),
                 .pivot = attachment_definition.pivot,
                 .uv_rect = attachment_definition.uv_rect,
@@ -302,21 +370,21 @@ pub fn attachmentInputs() [attachment_count]RenderAttachmentInput {
     const yellow = [4]f32{ 0.5, 0.5, 1, 1 };
     const white = [4]f32{ 1, 1, 1, 1 };
     return .{
-        attachmentInput("pelvis", .pelvis, 1, math.Transform2D.identity(), .{ .x = 0.72, .y = 0.42 }, center, blue, white, 30),
-        attachmentInput("torso", .torso, 2, math.Transform2D.init(.{ .x = 0, .y = 0.56 }, 0, math.Vec2.one), .{ .x = 0.86, .y = 1.16 }, center, yellow, white, 31),
-        attachmentInput("head", .head, 3, math.Transform2D.identity(), .{ .x = 0.66, .y = 0.66 }, center, blue, white, 40),
-        attachmentInput("left_upper_arm", .left_upper_arm, 4, math.Transform2D.identity(), .{ .x = 0.65, .y = 0.18 }, joint, red, white, 20),
-        attachmentInput("left_forearm", .left_forearm, 5, math.Transform2D.identity(), .{ .x = 0.55, .y = 0.15 }, joint, red, white, 21),
-        attachmentInput("left_hand", .left_hand, 6, math.Transform2D.identity(), .{ .x = 0.25, .y = 0.20 }, joint, red, white, 22),
-        attachmentInput("right_upper_arm", .right_upper_arm, 7, math.Transform2D.identity(), .{ .x = 0.65, .y = 0.18 }, joint, green, white, 60),
-        attachmentInput("right_forearm", .right_forearm, 8, math.Transform2D.identity(), .{ .x = 0.55, .y = 0.15 }, joint, green, white, 61),
-        attachmentInput("right_hand", .right_hand, 9, math.Transform2D.identity(), .{ .x = 0.25, .y = 0.20 }, joint, green, white, 62),
-        attachmentInput("left_thigh", .left_thigh, 10, math.Transform2D.identity(), .{ .x = 0.90, .y = 0.22 }, joint, red, white, 10),
-        attachmentInput("left_shin", .left_shin, 11, math.Transform2D.identity(), .{ .x = 0.85, .y = 0.18 }, joint, red, white, 11),
-        attachmentInput("left_foot", .left_foot, 12, math.Transform2D.identity(), .{ .x = 0.35, .y = 0.18 }, joint, red, white, 12),
-        attachmentInput("right_thigh", .right_thigh, 13, math.Transform2D.identity(), .{ .x = 0.90, .y = 0.22 }, joint, green, white, 50),
-        attachmentInput("right_shin", .right_shin, 14, math.Transform2D.identity(), .{ .x = 0.85, .y = 0.18 }, joint, green, white, 51),
-        attachmentInput("right_foot", .right_foot, 15, math.Transform2D.identity(), .{ .x = 0.35, .y = 0.18 }, joint, green, white, 52),
+        attachmentInput("pelvis", .pelvis, 1, math.Transform2D.identity(), .{ .x = 0.72, .y = 0.42 }, center, blue, white),
+        attachmentInput("torso", .torso, 2, math.Transform2D.init(.{ .x = 0, .y = 0.56 }, 0, math.Vec2.one), .{ .x = 0.86, .y = 1.16 }, center, yellow, white),
+        attachmentInput("head", .head, 3, math.Transform2D.identity(), .{ .x = 0.66, .y = 0.66 }, center, blue, white),
+        attachmentInput("left_upper_arm", .left_upper_arm, 4, math.Transform2D.identity(), .{ .x = 0.65, .y = 0.18 }, joint, red, white),
+        attachmentInput("left_forearm", .left_forearm, 5, math.Transform2D.identity(), .{ .x = 0.55, .y = 0.15 }, joint, red, white),
+        attachmentInput("left_hand", .left_hand, 6, math.Transform2D.identity(), .{ .x = 0.25, .y = 0.20 }, joint, red, white),
+        attachmentInput("right_upper_arm", .right_upper_arm, 7, math.Transform2D.identity(), .{ .x = 0.65, .y = 0.18 }, joint, green, white),
+        attachmentInput("right_forearm", .right_forearm, 8, math.Transform2D.identity(), .{ .x = 0.55, .y = 0.15 }, joint, green, white),
+        attachmentInput("right_hand", .right_hand, 9, math.Transform2D.identity(), .{ .x = 0.25, .y = 0.20 }, joint, green, white),
+        attachmentInput("left_thigh", .left_thigh, 10, math.Transform2D.identity(), .{ .x = 0.90, .y = 0.22 }, joint, red, white),
+        attachmentInput("left_shin", .left_shin, 11, math.Transform2D.identity(), .{ .x = 0.85, .y = 0.18 }, joint, red, white),
+        attachmentInput("left_foot", .left_foot, 12, math.Transform2D.identity(), .{ .x = 0.35, .y = 0.18 }, joint, red, white),
+        attachmentInput("right_thigh", .right_thigh, 13, math.Transform2D.identity(), .{ .x = 0.90, .y = 0.22 }, joint, green, white),
+        attachmentInput("right_shin", .right_shin, 14, math.Transform2D.identity(), .{ .x = 0.85, .y = 0.18 }, joint, green, white),
+        attachmentInput("right_foot", .right_foot, 15, math.Transform2D.identity(), .{ .x = 0.35, .y = 0.18 }, joint, green, white),
     };
 }
 
@@ -329,7 +397,6 @@ fn attachmentInput(
     pivot: [2]f32,
     uv: [4]f32,
     tint: [4]f32,
-    layer: u16,
 ) RenderAttachmentInput {
     return .{
         .debug_name = name,
@@ -341,7 +408,7 @@ fn attachmentInput(
         .uv_rect = uv,
         .tint = tint,
         .texture_page = 0,
-        .body_part_layer = layer,
+        .body_part_layer = defaultBodyPartLayer(semantic, .right),
     };
 }
 

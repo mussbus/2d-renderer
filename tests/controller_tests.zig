@@ -99,6 +99,23 @@ test "pending input preserves zero-tick edges and consumes each edge once" {
     try std.testing.expect((try independent_b.update(.{ .jump = true })).jump.pressed);
     try std.testing.expect(!(try independent_a.update(.{ .jump = true })).jump.pressed);
     try std.testing.expect((try independent_b.update(.{})).jump.released);
+
+    var delayed_builder = input.SnapshotBuilder{};
+    var delayed = input.PendingInput{};
+    try delayed.acceptFrame(try delayed_builder.update(.{ .jump = true, .interact = true }));
+    for (0..19) |_| try delayed.acceptFrame(try delayed_builder.update(.{ .jump = true, .interact = true }));
+    const delayed_first = delayed.consumeTick();
+    try std.testing.expect(delayed_first.jump_pressed and delayed_first.jump_held and delayed_first.interact_pressed);
+    for (0..7) |_| {
+        const substep = delayed.consumeTick();
+        try std.testing.expect(!substep.jump_pressed and substep.jump_held and !substep.interact_pressed);
+    }
+    delayed.reset();
+    delayed_builder.reset();
+    try delayed.acceptFrame(try delayed_builder.update(.{ .jump = true, .interact = true }));
+    try delayed.acceptFrame(try delayed_builder.update(.{}));
+    delayed.reset();
+    try std.testing.expectEqual(emptyIntent(), delayed.consumeTick());
 }
 
 test "fixed-step clock covers zero one multiple clamped discarded paused and reset frames" {
@@ -135,6 +152,34 @@ test "fixed-step clock covers zero one multiple clamped discarded paused and res
     try std.testing.expectEqual(@as(f64, 0), clock.lifetime_discarded_time);
 }
 
+test "fixed-step low frame rate and discarded-time schedules account real and simulated time" {
+    var clock = try fixed_step.Clock.init(.{});
+    var requested: f64 = 0;
+    var executed_ticks: u64 = 0;
+    var discarded: f64 = 0;
+    for (0..120) |_| {
+        const delta: f64 = 1.0 / 20.0;
+        requested += delta;
+        const metrics = try clock.beginFrame(delta);
+        executed_ticks += metrics.substeps;
+        discarded += metrics.discarded_time;
+        try std.testing.expectEqual(@as(u8, 8), metrics.substeps);
+        try std.testing.expectApproxEqAbs(@as(f64, 4.0 / 240.0), metrics.discarded_time, 1e-12);
+    }
+    const executed = @as(f64, @floatFromInt(executed_ticks)) * fixed_step.fixed_dt_seconds;
+    try std.testing.expectApproxEqAbs(@as(f64, 6), requested, 1e-12);
+    try std.testing.expectApproxEqAbs(@as(f64, 4), executed, 1e-12);
+    try std.testing.expectApproxEqAbs(@as(f64, 2), discarded, 1e-10);
+    try std.testing.expectApproxEqAbs(requested, executed + discarded + clock.accumulator, 1e-10);
+
+    clock.reset();
+    const schedule = [_]f64{ 0, 8 * fixed_step.fixed_dt_seconds, 0, 8 * fixed_step.fixed_dt_seconds };
+    var schedule_ticks: u64 = 0;
+    for (0..64) |index| schedule_ticks += (try clock.beginFrame(schedule[index % schedule.len])).substeps;
+    try std.testing.expectEqual(@as(u64, 256), schedule_ticks);
+    try std.testing.expectApproxEqAbs(@as(f64, 0), clock.lifetime_discarded_time, 1e-12);
+}
+
 test "collision world rejects invalid definitions and injection cleans allocations" {
     try std.testing.expectError(error.EmptyCollisionWorld, collision_world.CollisionWorld.init(std.testing.allocator, &.{}, null));
     const invalid = [_]collider.StaticColliderInput{.{
@@ -169,6 +214,80 @@ test "swept collision catches walls floor ceiling and ignores platform underside
     try std.testing.expectApproxEqAbs(@as(f32, 1.55), ceiling.resolved_position_y, tolerance);
     const below_platform = try world.sweepVertical(.{ .x = -0.2, .y = 0.2 }, half, -0.1, tolerance);
     try std.testing.expect(!below_platform.hit_ground);
+}
+
+test "equal collision faces and initial support use stable collider IDs independent of input order" {
+    const low_first = [_]collider.StaticColliderInput{
+        .{ .id = 3, .bounds = .{ .minimum = .{ .x = -2, .y = -1 }, .maximum = .{ .x = 2, .y = 0 } } },
+        .{ .id = 9, .bounds = .{ .minimum = .{ .x = -1, .y = -2 }, .maximum = .{ .x = 1, .y = 0 } } },
+        .{ .id = 4, .bounds = .{ .minimum = .{ .x = 2, .y = 0 }, .maximum = .{ .x = 2.5, .y = 4 } }, .ground_query_eligible = false },
+        .{ .id = 7, .bounds = .{ .minimum = .{ .x = 2, .y = 1 }, .maximum = .{ .x = 3, .y = 3 } }, .ground_query_eligible = false },
+    };
+    const high_first = [_]collider.StaticColliderInput{ low_first[1], low_first[0], low_first[3], low_first[2] };
+    var world_a = try collision_world.CollisionWorld.init(std.testing.allocator, &low_first, null);
+    defer world_a.deinit();
+    var world_b = try collision_world.CollisionWorld.init(std.testing.allocator, &high_first, null);
+    defer world_b.deinit();
+    const half = math.Vec2{ .x = 0.30, .y = 1.05 };
+
+    const support_a = try world_a.supportingCollider(try collider.characterBounds(.{ .x = 0, .y = 1.05 }, half), tolerance);
+    const support_b = try world_b.supportingCollider(try collider.characterBounds(.{ .x = 0, .y = 1.05 }, half), tolerance);
+    try std.testing.expectEqual(@as(collider.ColliderId, 3), support_a.?);
+    try std.testing.expectEqual(support_a, support_b);
+
+    const floor_a = try world_a.sweepVertical(.{ .x = 0, .y = 4 }, half, -10, tolerance);
+    const floor_b = try world_b.sweepVertical(.{ .x = 0, .y = 4 }, half, -10, tolerance);
+    try std.testing.expectEqual(@as(collider.ColliderId, 3), floor_a.collider_id);
+    try std.testing.expectEqual(floor_a.collider_id, floor_b.collider_id);
+    try std.testing.expectEqual(floor_a.resolved_position_y, floor_b.resolved_position_y);
+
+    const wall_a = try world_a.sweepHorizontal(.{ .x = 0, .y = 2 }, half, 10, tolerance);
+    const wall_b = try world_b.sweepHorizontal(.{ .x = 0, .y = 2 }, half, 10, tolerance);
+    try std.testing.expectEqual(@as(collider.ColliderId, 4), wall_a.collider_id);
+    try std.testing.expectEqual(wall_a.collider_id, wall_b.collider_id);
+    try std.testing.expectEqual(wall_a.resolved_position_x, wall_b.resolved_position_x);
+}
+
+test "maximum-speed diagonal exact corner remains finite stable and lands once" {
+    const inputs = [_]collider.StaticColliderInput{
+        .{ .id = 2, .bounds = .{ .minimum = .{ .x = -10, .y = -2 }, .maximum = .{ .x = 10, .y = 0 } } },
+        .{ .id = 5, .bounds = .{ .minimum = .{ .x = 1.30, .y = 0 }, .maximum = .{ .x = 1.60, .y = 6 } }, .ground_query_eligible = false },
+    };
+    var world = try collision_world.CollisionWorld.init(std.testing.allocator, &inputs, null);
+    defer world.deinit();
+    var controller = try character_controller.CharacterController.init(.{}, &world, .{ .x = 0.25, .y = 4.05 }, .right);
+    controller.state.velocity = .{
+        .x = controller.configuration.maximum_run_speed,
+        .y = -controller.configuration.maximum_fall_speed,
+    };
+    var landings: u32 = 0;
+    for (0..80) |_| {
+        const result = try controller.step(&world, moveIntent(1));
+        if (result.landed) landings += 1;
+        try std.testing.expect(controller.state.position.isFinite());
+        try std.testing.expect(controller.state.velocity.isFinite());
+    }
+    try std.testing.expectEqual(@as(u32, 1), landings);
+    try std.testing.expect(controller.state.grounded);
+    try std.testing.expectEqual(@as(?collider.ColliderId, 2), controller.state.supporting_collider);
+    try std.testing.expectApproxEqAbs(@as(f32, 1.00), controller.state.position.x, tolerance);
+    try std.testing.expectApproxEqAbs(@as(f32, 1.05), controller.state.position.y, tolerance);
+    for (0..600) |_| {
+        const result = try controller.step(&world, emptyIntent());
+        try std.testing.expect(!result.landed);
+        try std.testing.expect(controller.state.position.isFinite());
+        try std.testing.expect(controller.state.velocity.isFinite());
+        try std.testing.expectEqual(@as(?collider.ColliderId, 2), controller.state.supporting_collider);
+    }
+
+    const epsilon_contact = try character_controller.CharacterController.init(
+        .{},
+        &world,
+        .{ .x = -2, .y = 1.05 + tolerance * 0.5 },
+        .right,
+    );
+    try std.testing.expect(epsilon_contact.state.grounded);
+    try std.testing.expectEqual(@as(?collider.ColliderId, 2), epsilon_contact.state.supporting_collider);
 }
 
 test "controller accelerates decelerates clamps speed and updates facing" {

@@ -26,6 +26,14 @@ pub const VerticalSweep = struct {
     collider_id: collider.ColliderId = collider.invalid_collider_id,
 };
 
+pub const GroundHit = struct {
+    collider_id: collider.ColliderId,
+    position: math.Vec2,
+    ground_height: f32,
+    normal: math.Vec2,
+    query_distance: f32,
+};
+
 pub const CollisionWorld = struct {
     allocator: std.mem.Allocator,
     colliders: []const collider.StaticCollider,
@@ -99,12 +107,57 @@ pub const CollisionWorld = struct {
         epsilon: f32,
     ) !?collider.ColliderId {
         try collider.validateEpsilon(epsilon);
+        var support: ?collider.ColliderId = null;
         for (world.colliders) |static_collider| {
             if (!static_collider.solid or !static_collider.ground_query_eligible) continue;
             if (!collider.overlapsX(bounds, static_collider.bounds, epsilon)) continue;
-            if (@abs(bounds.minimum.y - static_collider.bounds.maximum.y) <= epsilon) return static_collider.id;
+            if (@abs(bounds.minimum.y - static_collider.bounds.maximum.y) <= epsilon and
+                (support == null or static_collider.id < support.?))
+            {
+                support = static_collider.id;
+            }
         }
-        return null;
+        return support;
+    }
+
+    /// Returns the nearest eligible horizontal AABB top at or below `origin`.
+    /// Both an origin exactly on a top and a hit exactly at `maximum_distance`
+    /// are included. X edges are included within `epsilon`; no horizontal snap
+    /// is performed. Origins below a top (including origins inside its AABB)
+    /// cannot hit that top. Equal-distance candidates use the lower collider ID.
+    pub fn queryGroundDown(
+        world: CollisionWorld,
+        origin: math.Vec2,
+        maximum_distance: f32,
+        epsilon: f32,
+    ) !?GroundHit {
+        if (!origin.isFinite() or !std.math.isFinite(maximum_distance)) return error.NonFiniteGroundQuery;
+        if (maximum_distance < 0) return error.NegativeGroundQueryDistance;
+        try collider.validateEpsilon(epsilon);
+
+        var nearest: ?GroundHit = null;
+        for (world.colliders) |static_collider| {
+            if (!static_collider.solid or !static_collider.ground_query_eligible) continue;
+            const bounds = static_collider.bounds;
+            if (origin.x < bounds.minimum.x - epsilon or origin.x > bounds.maximum.x + epsilon) continue;
+            const top = bounds.maximum.y;
+            if (origin.y < top) continue;
+            const distance = origin.y - top;
+            if (distance > maximum_distance + epsilon) continue;
+            const candidate = GroundHit{
+                .collider_id = static_collider.id,
+                .position = .{ .x = origin.x, .y = top },
+                .ground_height = top,
+                .normal = .{ .x = 0, .y = 1 },
+                .query_distance = distance,
+            };
+            if (nearest == null or distance < nearest.?.query_distance - epsilon or
+                (@abs(distance - nearest.?.query_distance) <= epsilon and static_collider.id < nearest.?.collider_id))
+            {
+                nearest = candidate;
+            }
+        }
+        return nearest;
     }
 
     pub fn sweepHorizontal(
@@ -128,7 +181,9 @@ pub const CollisionWorld = struct {
                 const obstacle = static_collider.bounds.minimum.x;
                 if (start_edge <= obstacle + epsilon and end_edge >= obstacle) {
                     const candidate = obstacle - half_extents.x;
-                    if (!result.hit_wall or candidate < result.resolved_position_x) {
+                    if (!result.hit_wall or candidate < result.resolved_position_x or
+                        (candidate == result.resolved_position_x and static_collider.id < result.collider_id))
+                    {
                         result = .{ .resolved_position_x = candidate, .hit_wall = true, .collider_id = static_collider.id };
                     }
                 }
@@ -138,7 +193,9 @@ pub const CollisionWorld = struct {
                 const obstacle = static_collider.bounds.maximum.x;
                 if (start_edge >= obstacle - epsilon and end_edge <= obstacle) {
                     const candidate = obstacle + half_extents.x;
-                    if (!result.hit_wall or candidate > result.resolved_position_x) {
+                    if (!result.hit_wall or candidate > result.resolved_position_x or
+                        (candidate == result.resolved_position_x and static_collider.id < result.collider_id))
+                    {
                         result = .{ .resolved_position_x = candidate, .hit_wall = true, .collider_id = static_collider.id };
                     }
                 }
@@ -168,7 +225,9 @@ pub const CollisionWorld = struct {
                 const obstacle = static_collider.bounds.minimum.y;
                 if (start_edge <= obstacle + epsilon and end_edge >= obstacle) {
                     const candidate = obstacle - half_extents.y;
-                    if (!result.hit_ceiling or candidate < result.resolved_position_y) {
+                    if (!result.hit_ceiling or candidate < result.resolved_position_y or
+                        (candidate == result.resolved_position_y and static_collider.id < result.collider_id))
+                    {
                         result = .{ .resolved_position_y = candidate, .hit_ceiling = true, .collider_id = static_collider.id };
                     }
                 }
@@ -178,7 +237,9 @@ pub const CollisionWorld = struct {
                 const obstacle = static_collider.bounds.maximum.y;
                 if (start_edge >= obstacle - epsilon and end_edge <= obstacle) {
                     const candidate = obstacle + half_extents.y;
-                    if (!result.hit_ground or candidate > result.resolved_position_y) {
+                    if (!result.hit_ground or candidate > result.resolved_position_y or
+                        (candidate == result.resolved_position_y and static_collider.id < result.collider_id))
+                    {
                         result = .{ .resolved_position_y = candidate, .hit_ground = true, .collider_id = static_collider.id };
                     }
                 }
@@ -190,18 +251,19 @@ pub const CollisionWorld = struct {
 
 pub fn demoColliderInputs() [5]collider.StaticColliderInput {
     return .{
-        make(.floor, -5.0, -1.0, 5.0, 0.0),
-        make(.right_wall, 3.50, 0.0, 3.80, 6.0),
-        make(.ceiling, -2.80, 2.60, -1.80, 2.90),
-        make(.raised_platform_1, -0.70, 0.90, 0.40, 1.15),
-        make(.raised_platform_2, 1.80, 1.50, 2.70, 1.75),
+        make(.floor, -5.0, -1.0, 5.0, 0.0, true),
+        make(.right_wall, 3.50, 0.0, 3.80, 6.0, false),
+        make(.ceiling, -2.80, 2.60, -1.80, 2.90, false),
+        make(.raised_platform_1, -0.70, 0.90, 0.40, 1.15, true),
+        make(.raised_platform_2, 1.80, 1.50, 2.70, 1.75, true),
     };
 }
 
-fn make(id: DemoColliderId, min_x: f32, min_y: f32, max_x: f32, max_y: f32) collider.StaticColliderInput {
+fn make(id: DemoColliderId, min_x: f32, min_y: f32, max_x: f32, max_y: f32, ground_query_eligible: bool) collider.StaticColliderInput {
     return .{
         .id = @intFromEnum(id),
         .bounds = .{ .minimum = .{ .x = min_x, .y = min_y }, .maximum = .{ .x = max_x, .y = max_y } },
+        .ground_query_eligible = ground_query_eligible,
     };
 }
 

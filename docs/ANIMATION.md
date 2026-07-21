@@ -22,6 +22,8 @@ The authored library owns eight contiguous `ClipDefinition` records. Each clip o
 
 Mutable time, loop counts, completion flags, transition progress, state-entry markers, and event traversal state exist only in each `Animator`. Two animators may share the same definitions without sharing mutable playback data.
 
+Prompt 7 character instances borrow the same immutable clip and state-machine slices through non-owning views. Each instance still allocates its own source/destination pose scratch and event storage. Moving a scene wrapper cannot invalidate these views because their identity and compatibility derive from the stable underlying definition allocations, not the wrapper address.
+
 Authored input is accepted only when keys are strictly increasing within each component track. Duplicate timestamps and unsorted keys are errors; the loader does not reorder authored input. Events are nondecreasing so multiple typed events may deliberately share a timestamp while retaining authored order. Event identifiers are unique within a clip.
 
 ## Component sampling
@@ -76,9 +78,9 @@ One-shots sample and expose their final pose, emit final crossed events, and mar
 | Falling | 0.60 s | Looping held motion | Bent legs and arm pose measurably distinct from rising |
 | Landing | 0.50 s | One-shot | Compression and visual recovery |
 | Handshake role A | 1.60 s | One-shot | Right-arm extension on the shared handshake timeline |
-| Handshake role B | 1.60 s | One-shot | Left-arm extension on the shared handshake timeline |
+| Handshake role B | 1.60 s | One-shot | Receiver right-arm extension on the shared handshake timeline |
 
-Walk emits left-foot contact at `0.00` seconds and right-foot contact at `0.50` seconds. Both handshake roles emit hand contact and a layer record at `0.60`, hand release and restoration data at `1.20`, and interaction complete at `1.50` seconds. The roles assume participants begin facing each other with compatible shoulder height. These clips make no IK, physical alignment, or hand-constraint claim.
+Walk emits anatomical left-foot contact at `0.00` seconds and anatomical right-foot contact at `0.50` seconds. Prompt 10 consumes these only as visual stance intent: they cannot set physical grounding, support, velocity, position, or collision. A current authoritative-world ground query and controller-grounded gate are separately required, acquisition blends over `0.10 s`, and facing never swaps anatomy. Both handshake roles contain matching hand contact and layer records at `0.60`, hand release and restoration data at `1.20`, and interaction complete at `1.50` seconds. Prompt 8 validates those paired semantic times at definition construction and collapses them into one shared runtime event stream; participant animators do not emit duplicate paired events while coordinated. Role B uses its anatomical right arm because character-local left facing reflects that arm toward the initiator. The clips remain authored inputs rather than constraint authority: Prompt 9 samples them first, then optionally blends mutable shoulder/elbow rotations toward the interaction-owned shared target. Clip data, root alignment, and motion warping remain unchanged.
 
 ## Demonstration and allocation contract
 

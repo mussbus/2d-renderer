@@ -126,6 +126,42 @@ pub const Animator = struct {
         animator.active_transition = null;
     }
 
+    pub fn sampleEnteredStateAtTime(
+        animator: *Animator,
+        machine: *const state_machine.Definition,
+        clips: []const clip.ClipDefinition,
+        library_token: usize,
+        definition: *const skeleton.SkeletonDefinition,
+        required_state: state_machine.StateId,
+        shared_time_seconds: f32,
+        output_pose: *pose.Pose,
+    ) !void {
+        try animator.validateRuntime(machine, clips, library_token, definition, output_pose);
+        if (!std.math.isFinite(shared_time_seconds) or shared_time_seconds < 0) return error.InvalidAnimationTime;
+        const required_index = try machine.stateIndex(required_state);
+        if (animator.current_state_index != required_index or animator.active_transition != null) {
+            return error.InteractionAnimationStateMismatch;
+        }
+        const animation_state = machine.states[required_index];
+        const current_clip = &clips[animation_state.clip_index];
+        if (shared_time_seconds > current_clip.duration) return error.InteractionTimeBeyondClip;
+
+        animator.event_buffer.reset();
+        try clip.sampleFromRest(
+            current_clip,
+            definition,
+            shared_time_seconds,
+            output_pose.definition_token,
+            output_pose.local_transforms,
+        );
+        output_pose.evaluated = false;
+        animator.playback.previous_time = animator.playback.current_time;
+        animator.playback.current_time = shared_time_seconds;
+        animator.playback.state_entered = false;
+        animator.playback.completed = shared_time_seconds == current_clip.duration;
+        animator.playback.fallback_pending = false;
+    }
+
     pub fn requestState(animator: *Animator, machine: *const state_machine.Definition, destination: state_machine.StateId) !void {
         if (animator.active_transition != null) return error.ActiveTransitionRequestRejected;
         const destination_index = try machine.stateIndex(destination);

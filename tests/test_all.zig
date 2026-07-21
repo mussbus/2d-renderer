@@ -8,6 +8,11 @@ test {
     _ = @import("animation_tests.zig");
     _ = @import("controller_tests.zig");
     _ = @import("secondary_motion_tests.zig");
+    _ = @import("multi_character_tests.zig");
+    _ = @import("interaction_tests.zig");
+    _ = @import("ik_tests.zig");
+    _ = @import("foot_planting_tests.zig");
+    _ = @import("integration_tests.zig");
 }
 
 test "every initialization stage round-trips through its command-line name" {
@@ -138,6 +143,17 @@ test "draw-order ranges are checked lexicographically without packing overflow" 
         .actor_layer = std.math.maxInt(u16),
         .body_part_layer = std.math.maxInt(u16),
     }, std.math.maxInt(u64));
+    try std.testing.expect(sprite.keyLessThan(minimum, maximum));
+    try std.testing.expect(!sprite.keyLessThan(maximum, minimum));
+    try std.testing.expect(!sprite.keyLessThan(minimum, minimum));
+    const middle = try sprite.validateOrder(.{
+        .scene_layer = 0,
+        .interaction_layer = 0,
+        .actor_layer = 0,
+        .body_part_layer = 0,
+    }, std.math.maxInt(u64));
+    try std.testing.expect(sprite.keyLessThan(minimum, middle));
+    try std.testing.expect(sprite.keyLessThan(middle, maximum));
     try std.testing.expect(sprite.keyLessThan(minimum, maximum));
     try std.testing.expectError(error.InvalidSceneLayer, sprite.validateOrder(.{
         .scene_layer = std.math.maxInt(i16) + 1,

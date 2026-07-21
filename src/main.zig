@@ -7,6 +7,7 @@ const Options = struct {
     maximum_frames: ?u32 = null,
     demo: gpu.DemoMode = .sprites,
     scripted_input: bool = false,
+    debug_visualization: bool = false,
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -23,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
 
     var demo = try gpu.GpuDemo.init(std.heap.page_allocator, false, null);
     defer demo.deinit();
-    try demo.runVisible(options.maximum_frames, options.demo, options.scripted_input);
+    try demo.runVisible(options.maximum_frames, options.demo, options.scripted_input, options.debug_visualization);
 }
 
 fn runInitializationFaultChecks() !void {
@@ -64,21 +65,34 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .controller;
             } else if (std.mem.eql(u8, arguments[index], "secondary-motion")) {
                 options.demo = .secondary_motion;
+            } else if (std.mem.eql(u8, arguments[index], "multi-character")) {
+                options.demo = .multi_character;
+            } else if (std.mem.eql(u8, arguments[index], "handshake")) {
+                options.demo = .handshake;
+            } else if (std.mem.eql(u8, arguments[index], "handshake-ik")) {
+                options.demo = .handshake_ik;
+            } else if (std.mem.eql(u8, arguments[index], "foot-planting")) {
+                options.demo = .foot_planting;
+            } else if (std.mem.eql(u8, arguments[index], "integrated")) {
+                options.demo = .integrated;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
             options.scripted_input = true;
+        } else if (std.mem.eql(u8, argument, "--debug-visualization")) {
+            options.debug_visualization = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion>, --scripted-input", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated>, --scripted-input, --debug-visualization", .{argument});
             return error.UnknownArgument;
         }
     }
-    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion) {
+    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated) {
         return error.ScriptedInputRequiresControllerDemo;
     }
+    if (options.debug_visualization and options.demo != .integrated) return error.DebugVisualizationRequiresIntegratedDemo;
     return options;
 }

@@ -104,7 +104,7 @@ pub fn build(b: *std.Build) void {
     run_command.setName("run installed skeletal_gpu_demo");
     run_command.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed sprite-batch, humanoid, animation, controller, or secondary-motion demonstration");
+    const run_step = b.step("run", "Run the installed sprite-batch, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-IK, or foot-planting demonstration");
     run_step.dependOn(&run_command.step);
 
     const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
@@ -203,6 +203,30 @@ pub fn build(b: *std.Build) void {
     pose_module.addImport("math", math_module);
     pose_module.addImport("skeleton", skeleton_module);
     pose_module.addImport("fault_injection", fault_injection_module);
+    const two_bone_ik_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/two_bone_ik.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    two_bone_ik_module.addImport("math", math_module);
+    const arm_ik_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/arm_ik.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    arm_ik_module.addImport("math", math_module);
+    arm_ik_module.addImport("skeleton", skeleton_module);
+    arm_ik_module.addImport("pose", pose_module);
+    arm_ik_module.addImport("two_bone_ik", two_bone_ik_module);
+    const leg_ik_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/leg_ik.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    leg_ik_module.addImport("math", math_module);
+    leg_ik_module.addImport("skeleton", skeleton_module);
+    leg_ik_module.addImport("pose", pose_module);
+    leg_ik_module.addImport("two_bone_ik", two_bone_ik_module);
     const procedural_motion_module = b.createModule(.{
         .root_source_file = b.path("src/animation/procedural_motion.zig"),
         .target = target,
@@ -227,6 +251,20 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const foot_planting_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/foot_planting.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    foot_planting_module.addImport("math", math_module);
+    foot_planting_module.addImport("collider", collider_module);
+    foot_planting_module.addImport("collision_world", collision_world_module);
+    foot_planting_module.addImport("events", events_module);
+    foot_planting_module.addImport("fixed_step", fixed_step_module);
+    foot_planting_module.addImport("skeleton", skeleton_module);
+    foot_planting_module.addImport("pose", pose_module);
+    foot_planting_module.addImport("leg_ik", leg_ik_module);
+    foot_planting_module.addImport("two_bone_ik", two_bone_ik_module);
     const clip_module = b.createModule(.{
         .root_source_file = b.path("src/animation/clip.zig"),
         .target = target,
@@ -276,6 +314,169 @@ pub fn build(b: *std.Build) void {
     animation_system_module.addImport("authored_clips", authored_clips_module);
     animation_system_module.addImport("animator", animator_module);
     animation_system_module.addImport("fault_injection", fault_injection_module);
+    const character_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/character.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    character_module.addImport("math", math_module);
+    character_module.addImport("humanoid", humanoid_module);
+    character_module.addImport("skeleton", skeleton_module);
+    character_module.addImport("authored_clips", authored_clips_module);
+    character_module.addImport("clip", clip_module);
+    character_module.addImport("animator", animator_module);
+    character_module.addImport("animation_system", animation_system_module);
+    character_module.addImport("state_machine", state_machine_module);
+    character_module.addImport("procedural_motion", procedural_motion_module);
+    character_module.addImport("arm_ik", arm_ik_module);
+    character_module.addImport("leg_ik", leg_ik_module);
+    character_module.addImport("foot_planting", foot_planting_module);
+    character_module.addImport("fixed_step", fixed_step_module);
+    character_module.addImport("input", input_module);
+    character_module.addImport("collision_world", collision_world_module);
+    character_module.addImport("character_controller", character_controller_module);
+    character_module.addImport("sprite_batch", sprite_batch_module);
+    character_module.addImport("fault_injection", fault_injection_module);
+    const interaction_module = b.createModule(.{
+        .root_source_file = b.path("src/interaction/interaction.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    interaction_module.addImport("skeleton", skeleton_module);
+    interaction_module.addImport("clip", clip_module);
+    interaction_module.addImport("events", events_module);
+    interaction_module.addImport("state_machine", state_machine_module);
+    interaction_module.addImport("fixed_step", fixed_step_module);
+    const handshake_module = b.createModule(.{
+        .root_source_file = b.path("src/interaction/handshake.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    handshake_module.addImport("interaction", interaction_module);
+    handshake_module.addImport("authored_clips", authored_clips_module);
+    handshake_module.addImport("state_machine", state_machine_module);
+    handshake_module.addImport("clip", clip_module);
+    handshake_module.addImport("skeleton", skeleton_module);
+    const interaction_system_module = b.createModule(.{
+        .root_source_file = b.path("src/interaction/interaction_system.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    interaction_system_module.addImport("math", math_module);
+    interaction_system_module.addImport("input", input_module);
+    interaction_system_module.addImport("fixed_step", fixed_step_module);
+    interaction_system_module.addImport("humanoid", humanoid_module);
+    interaction_system_module.addImport("skeleton", skeleton_module);
+    interaction_system_module.addImport("state_machine", state_machine_module);
+    interaction_system_module.addImport("arm_ik", arm_ik_module);
+    interaction_system_module.addImport("character", character_module);
+    interaction_system_module.addImport("interaction", interaction_module);
+    const multi_character_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/multi_character_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    multi_character_demo_module.addImport("math", math_module);
+    multi_character_demo_module.addImport("humanoid", humanoid_module);
+    multi_character_demo_module.addImport("authored_clips", authored_clips_module);
+    multi_character_demo_module.addImport("character", character_module);
+    multi_character_demo_module.addImport("state_machine", state_machine_module);
+    multi_character_demo_module.addImport("sprite_batch", sprite_batch_module);
+    multi_character_demo_module.addImport("fault_injection", fault_injection_module);
+    const handshake_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/handshake_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    handshake_demo_module.addImport("math", math_module);
+    handshake_demo_module.addImport("input", input_module);
+    handshake_demo_module.addImport("humanoid", humanoid_module);
+    handshake_demo_module.addImport("authored_clips", authored_clips_module);
+    handshake_demo_module.addImport("character", character_module);
+    handshake_demo_module.addImport("interaction", interaction_module);
+    handshake_demo_module.addImport("interaction_system", interaction_system_module);
+    handshake_demo_module.addImport("handshake", handshake_module);
+    handshake_demo_module.addImport("sprite_batch", sprite_batch_module);
+    handshake_demo_module.addImport("state_machine", state_machine_module);
+    const handshake_ik_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/handshake_ik_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    handshake_ik_demo_module.addImport("math", math_module);
+    handshake_ik_demo_module.addImport("input", input_module);
+    handshake_ik_demo_module.addImport("arm_ik", arm_ik_module);
+    handshake_ik_demo_module.addImport("humanoid", humanoid_module);
+    handshake_ik_demo_module.addImport("authored_clips", authored_clips_module);
+    handshake_ik_demo_module.addImport("character", character_module);
+    handshake_ik_demo_module.addImport("interaction", interaction_module);
+    handshake_ik_demo_module.addImport("interaction_system", interaction_system_module);
+    handshake_ik_demo_module.addImport("handshake", handshake_module);
+    handshake_ik_demo_module.addImport("sprite_batch", sprite_batch_module);
+    const foot_planting_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/foot_planting_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    foot_planting_demo_module.addImport("math", math_module);
+    foot_planting_demo_module.addImport("input", input_module);
+    foot_planting_demo_module.addImport("fixed_step", fixed_step_module);
+    foot_planting_demo_module.addImport("collider", collider_module);
+    foot_planting_demo_module.addImport("collision_world", collision_world_module);
+    foot_planting_demo_module.addImport("character_controller", character_controller_module);
+    foot_planting_demo_module.addImport("events", events_module);
+    foot_planting_demo_module.addImport("humanoid", humanoid_module);
+    foot_planting_demo_module.addImport("authored_clips", authored_clips_module);
+    foot_planting_demo_module.addImport("character", character_module);
+    foot_planting_demo_module.addImport("foot_planting", foot_planting_module);
+    foot_planting_demo_module.addImport("leg_ik", leg_ik_module);
+    foot_planting_demo_module.addImport("sprite_batch", sprite_batch_module);
+    const diagnostics_module = b.createModule(.{
+        .root_source_file = b.path("src/debug/diagnostics.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    diagnostics_module.addImport("math", math_module);
+    diagnostics_module.addImport("collider", collider_module);
+    diagnostics_module.addImport("fixed_step", fixed_step_module);
+    diagnostics_module.addImport("humanoid", humanoid_module);
+    diagnostics_module.addImport("state_machine", state_machine_module);
+    diagnostics_module.addImport("foot_planting", foot_planting_module);
+    diagnostics_module.addImport("interaction", interaction_module);
+    diagnostics_module.addImport("character", character_module);
+    diagnostics_module.addImport("interaction_system", interaction_system_module);
+    const debug_draw_module = b.createModule(.{
+        .root_source_file = b.path("src/debug/debug_draw.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    debug_draw_module.addImport("math", math_module);
+    debug_draw_module.addImport("collider", collider_module);
+    debug_draw_module.addImport("humanoid", humanoid_module);
+    debug_draw_module.addImport("character", character_module);
+    debug_draw_module.addImport("sprite_batch", sprite_batch_module);
+    const integrated_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/integrated_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    integrated_demo_module.addImport("math", math_module);
+    integrated_demo_module.addImport("input", input_module);
+    integrated_demo_module.addImport("fixed_step", fixed_step_module);
+    integrated_demo_module.addImport("collider", collider_module);
+    integrated_demo_module.addImport("collision_world", collision_world_module);
+    integrated_demo_module.addImport("character_controller", character_controller_module);
+    integrated_demo_module.addImport("humanoid", humanoid_module);
+    integrated_demo_module.addImport("authored_clips", authored_clips_module);
+    integrated_demo_module.addImport("state_machine", state_machine_module);
+    integrated_demo_module.addImport("character", character_module);
+    integrated_demo_module.addImport("interaction", interaction_module);
+    integrated_demo_module.addImport("interaction_system", interaction_system_module);
+    integrated_demo_module.addImport("handshake", handshake_module);
+    integrated_demo_module.addImport("foot_planting", foot_planting_module);
+    integrated_demo_module.addImport("sprite_batch", sprite_batch_module);
+    integrated_demo_module.addImport("diagnostics", diagnostics_module);
+    integrated_demo_module.addImport("debug_draw", debug_draw_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -306,11 +507,26 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("character_controller", character_controller_module);
     app_module.addImport("controller_demo", controller_demo_module);
     app_module.addImport("procedural_motion", procedural_motion_module);
+    app_module.addImport("character", character_module);
+    app_module.addImport("multi_character_demo", multi_character_demo_module);
+    app_module.addImport("interaction", interaction_module);
+    app_module.addImport("handshake", handshake_module);
+    app_module.addImport("interaction_system", interaction_system_module);
+    app_module.addImport("handshake_demo", handshake_demo_module);
+    app_module.addImport("handshake_ik_demo", handshake_ik_demo_module);
+    app_module.addImport("foot_planting_demo", foot_planting_demo_module);
+    app_module.addImport("diagnostics", diagnostics_module);
+    app_module.addImport("debug_draw", debug_draw_module);
+    app_module.addImport("integrated_demo", integrated_demo_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("math", math_module);
     test_module.addImport("skeleton", skeleton_module);
     test_module.addImport("pose", pose_module);
+    test_module.addImport("two_bone_ik", two_bone_ik_module);
+    test_module.addImport("arm_ik", arm_ik_module);
+    test_module.addImport("leg_ik", leg_ik_module);
+    test_module.addImport("foot_planting", foot_planting_module);
     test_module.addImport("humanoid", humanoid_module);
     test_module.addImport("events", events_module);
     test_module.addImport("clip", clip_module);
@@ -326,6 +542,16 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("character_controller", character_controller_module);
     test_module.addImport("controller_demo", controller_demo_module);
     test_module.addImport("procedural_motion", procedural_motion_module);
+    test_module.addImport("character", character_module);
+    test_module.addImport("multi_character_demo", multi_character_demo_module);
+    test_module.addImport("interaction", interaction_module);
+    test_module.addImport("handshake", handshake_module);
+    test_module.addImport("interaction_system", interaction_system_module);
+    test_module.addImport("handshake_demo", handshake_demo_module);
+    test_module.addImport("foot_planting_demo", foot_planting_demo_module);
+    test_module.addImport("diagnostics", diagnostics_module);
+    test_module.addImport("debug_draw", debug_draw_module);
+    test_module.addImport("integrated_demo", integrated_demo_module);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");

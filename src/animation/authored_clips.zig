@@ -284,13 +284,15 @@ fn createHandshakeA(allocator: std.mem.Allocator, definition: *const skeleton.Sk
 }
 
 fn createHandshakeB(allocator: std.mem.Allocator, definition: *const skeleton.SkeletonDefinition, injector: ?fault_injection.Injector) !clip.ClipDefinition {
-    const upper = handshakeMotion(std.math.pi, -0.34);
-    const forearm = handshakeMotion(0, 0.42);
+    // Facing reflection makes the anatomical right arm the receiver's inward handshake limb.
+    // The previous left-arm track reflected outward, keeping the paired sockets a full root-spacing apart.
+    const upper = handshakeMotion(0, 0.34);
+    const forearm = handshakeMotion(0, -0.42);
     const tracks = [_]clip.TrackInput{
-        .{ .target_semantic = semantic(.left_upper_arm), .rotation_keys = &upper },
-        .{ .target_semantic = semantic(.left_forearm), .rotation_keys = &forearm },
+        .{ .target_semantic = semantic(.right_upper_arm), .rotation_keys = &upper },
+        .{ .target_semantic = semantic(.right_forearm), .rotation_keys = &forearm },
     };
-    const event_inputs = handshakeEvents(@intFromEnum(humanoid.AttachmentSemantic.left_forearm), 72);
+    const event_inputs = handshakeEvents(@intFromEnum(humanoid.AttachmentSemantic.right_forearm), 72);
     return create(allocator, definition, .handshake_role_b, "handshake_role_b", "Handshake role B", 1.60, .one_shot, &tracks, &event_inputs, injector);
 }
 

@@ -66,7 +66,11 @@ The comparator is lexicographic: signed 16-bit scene layer, signed 16-bit intera
 
 `submission_index` starts at zero in `beginFrame`, advances once for each accepted request, and is reset every frame. A frame accepts at most 16,384 submissions, so wraparound is unreachable by construction. Equal semantic keys preserve original submission order through the unique final index, even though the allocation-free sorting implementation need not itself be stable.
 
+Prompt 7's `submitGlobally` orders a fixed maximum of eight characters by stable numeric entity ID before calling `submitWithKey` for their immutable attachment order. The returned key is the exact key stored in the submission and is retained per character for bounded evidence logging. All character parts are therefore globally sortable and can interleave; there is no character-local batch, pass, GPU buffer, or draw call.
+
 Ranges are generated only after semantic sorting. Consecutive equal texture pages form one range; page transitions form new ranges, and returning to an earlier page creates another range rather than reordering through an intervening page. Production currently exposes one page, so any nonzero identifier fails before GPU work and all 1,000 demonstration sprites form one range.
+
+The two-character demonstration adds 30 page-zero humanoid instances to this same rule. Actor and body-part interleaving cannot split the range because every sorted record still names page zero, so character count remains independent from draw-call count.
 
 ## Capacity and ownership
 

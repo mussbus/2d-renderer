@@ -169,9 +169,15 @@ pub const SpriteBatch = struct {
     }
 
     pub fn submit(self: *SpriteBatch, request: SpriteRequest) BatchError!void {
+        _ = try self.submitWithKey(request);
+    }
+
+    pub fn submitWithKey(self: *SpriteBatch, request: SpriteRequest) BatchError!DrawOrderKey {
         try validateRequest(request, self.texture_page_count);
         if (self.count >= maximum_capacity) return error.InstanceCapacityOverflow;
         try self.ensureCapacity(self.count + 1);
+
+        const resolved_order = try validateOrder(request.order, @intCast(self.count));
 
         self.submissions[self.count] = .{
             .world_position = request.world_position,
@@ -181,16 +187,11 @@ pub const SpriteBatch = struct {
             .uv_rect = request.uv_rect,
             .tint = request.tint,
             .texture_page = request.texture_page,
-            .order = .{
-                .scene_layer = @intCast(request.order.scene_layer),
-                .interaction_layer = @intCast(request.order.interaction_layer),
-                .actor_layer = @intCast(request.order.actor_layer),
-                .body_part_layer = @intCast(request.order.body_part_layer),
-                .submission_index = @intCast(self.count),
-            },
+            .order = resolved_order,
         };
         self.count += 1;
         self.frame_metrics.submitted_sprites += 1;
+        return resolved_order;
     }
 
     pub fn prepare(self: *SpriteBatch) PreparedBatch {

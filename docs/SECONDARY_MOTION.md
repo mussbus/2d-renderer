@@ -4,6 +4,8 @@
 
 `procedural_motion.State` is embedded per character. It owns only visual walk state, two scalar spring channels, previous horizontal velocity for acceleration sampling, event-consumption identity, bounded metrics, and the last pose-composition tick. It does not own or duplicate physics position, physics velocity, grounding, support ID, collider data, static geometry, renderer state, GPU handles, clip keys, or skeleton rest data.
 
+Prompt 7 embeds one distinct value in every `CharacterInstance`; no pointer to shared spring state exists. The two-character demonstration advances A while B is initially settled and records A's nonzero walk offset alongside B's exact zero. Character and scene reset call the established reset policy on only the requested instance or explicitly on both.
+
 The production order is:
 
 ```text

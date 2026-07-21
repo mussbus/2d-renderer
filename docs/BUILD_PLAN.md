@@ -61,6 +61,12 @@ Add interaction sessions, handshake phase coordination, shared-target selection,
 
 Exit criteria: two independent character simulations coordinate one session, converge without normal full-body teleportation, measure hand separation no greater than 0.015 m during grip, release without welding, and pass both front-limb ordering cases.
 
+Prompt 8 completes the coordination-only portion: immutable paired definitions, deterministic eligibility/candidate ranking, a four-slot shared interaction pool, atomic role entry and locks, one 240 Hz paired clock, deduplicated semantic events, interaction-owned partial layer overrides, cancellation/completion cleanup, fixed-position contact measurement, mirroring, isolation, and one-draw GPU evidence. It deliberately adds no approach movement, root correction, collision, target constraint, or IK. Prompt 9 owns analytic arm IK and must improve the recorded authored-contact baseline without changing interaction-root alignment.
+
+Prompt 9 completes the analytical arm-constraint portion: a stateless triangle solver with near/far classification, immutable-length right-arm binding, explicit mirrored bend preference, shortest-angle pose blending, a per-instance pre-IK midpoint target, deterministic `0 -> 1 -> 0` shared-timeline weight, cancellation/reset cleanup, order-independence proof, and a perturbed legal-spacing demonstration. It adds no root alignment, leg or foot constraint, character collision, rigid-body constraint, or additional GPU path.
+
+Prompt 10 completes deterministic visual foot placement: the controller's static AABB world supplies allocation-free downward top queries, anatomical contact events create gated per-foot intent, immutable rest-derived leg bindings reuse the analytical two-bone solver, and fixed-tick world locks blend in/out without root or collision mutation. The milestone adds floor/raised-platform, jump/replant, mirroring, isolation, order, schedule, slip, penetration, hover, physics/timing invariance, one-draw, and zero-allocation evidence. It adds no physical feet, moving platform model, ragdoll, motion warping, dynamic body, pelvis solver, or GPU path.
+
 ## Milestone 6: SDL input platform
 
 Add the SDL lifecycle wrapper and raw keyboard/gamepad acquisition needed for the demo. Convert raw state and edge events into `CharacterIntent`; handle gamepad add/remove and explicit close paths. Document final controls in `docs/CONTROLS.md`.
@@ -82,6 +88,10 @@ Prompt 2 establishes the authoritative sprite submission core early: explicit CP
 Add the two-character scene, static platforms, sprite assets, full state integration, debug bones/colliders/sockets/targets, metrics, and the final controls document. Connect interpolation-only render snapshots to the renderer.
 
 Exit criteria: every manual visual acceptance item in `docs/TESTING.md` passes, including both limb-front modes and live socket-error display.
+
+Prompt 7 established the multi-character and occlusion foundation. Prompt 8 now reuses it for the fixed-position paired handshake while leaving IK, motion warping, root alignment movement, and character-to-character collision unimplemented.
+
+Prompt 11 completes the integration/observability portion without replacing those systems. It adds a deterministic ten-phase two-character route, bounded scalar snapshots, named milestone captures, fixed-capacity debug sprite commands, exact update-order assertions, debug/read invariance, adversarial resets, repeated interaction/plant cleanup, long-duration stability, and owned resource/allocation accounting. Debug mode shares the existing sprite batch and creates no GPU resources during ordinary frames. Prompt 12 hardens that implementation adversarially: it makes collision tie-breaking independent of collider storage order, reports coherent foot lifecycles and named milestone ticks, validates milestone dependencies, fixes the repository audit's pattern-array construction, and extends the retained stress coverage to 1,000 interactions and 100,000 fixed ticks.
 
 ## Milestone 9: hardening and performance
 

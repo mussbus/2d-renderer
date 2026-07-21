@@ -7,6 +7,12 @@ const animation_system = @import("animation_system");
 const sdl_input = @import("sdl_input");
 const fixed_step = @import("fixed_step");
 const controller_demo = @import("controller_demo");
+const multi_character_demo = @import("multi_character_demo");
+const handshake_demo = @import("handshake_demo");
+const handshake_ik_demo = @import("handshake_ik_demo");
+const foot_planting_demo = @import("foot_planting_demo");
+const integrated_demo = @import("integrated_demo");
+const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
     sprites,
@@ -14,6 +20,11 @@ pub const DemoMode = enum {
     animation,
     controller,
     secondary_motion,
+    multi_character,
+    handshake,
+    handshake_ik,
+    foot_planting,
+    integrated,
 };
 
 const TimeMode = enum { normal, quarter_speed, paused };
@@ -256,8 +267,8 @@ pub const GpuDemo = struct {
         self.batch = null;
     }
 
-    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode, scripted_input_enabled: bool) !void {
-        const demo_storage = self.allocator.alloc(u8, 512 * 1024) catch return error.DemoStorageAllocationFailure;
+    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode, scripted_input_enabled: bool, integrated_debug_enabled: bool) !void {
+        const demo_storage = self.allocator.alloc(u8, 1024 * 1024) catch return error.DemoStorageAllocationFailure;
         defer self.allocator.free(demo_storage);
         var humanoid_allocator = std.heap.FixedBufferAllocator.init(demo_storage);
         var humanoid_demo: ?humanoid.DemoCharacter = null;
@@ -266,6 +277,16 @@ pub const GpuDemo = struct {
         defer if (animation_runtime) |*runtime| runtime.deinit();
         var controller_runtime: ?controller_demo.Runtime = null;
         defer if (controller_runtime) |*runtime| runtime.deinit();
+        var multi_character_scene: ?multi_character_demo.Scene = null;
+        defer if (multi_character_scene) |*scene| scene.deinit();
+        var handshake_scene: ?handshake_demo.Scene = null;
+        defer if (handshake_scene) |*scene| scene.deinit();
+        var handshake_ik_scene: ?handshake_ik_demo.Scene = null;
+        defer if (handshake_ik_scene) |*scene| scene.deinit();
+        var foot_planting_scene: ?foot_planting_demo.Scene = null;
+        defer if (foot_planting_scene) |*scene| scene.deinit();
+        var integrated_scene: ?integrated_demo.Scene = null;
+        defer if (integrated_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
@@ -296,6 +317,44 @@ pub const GpuDemo = struct {
             }
             controller_runtime = try controller_demo.Runtime.init(humanoid_allocator.allocator(), null);
             platform_input = sdl_input.PlatformInput.init();
+        }
+        if (mode == .multi_character) {
+            multi_character_scene = try multi_character_demo.Scene.init(humanoid_allocator.allocator(), null);
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.MultiCharacterInitializationCreatedGpuResources;
+            }
+        }
+        if (mode == .handshake) {
+            if (!scripted_input_enabled) return error.HandshakeDemoRequiresScriptedInput;
+            handshake_scene = try handshake_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.HandshakeInitializationCreatedGpuResources;
+            }
+        }
+        if (mode == .handshake_ik) {
+            if (!scripted_input_enabled) return error.HandshakeIkDemoRequiresScriptedInput;
+            handshake_ik_scene = try handshake_ik_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.HandshakeIkInitializationCreatedGpuResources;
+            }
+        }
+        if (mode == .foot_planting) {
+            if (!scripted_input_enabled) return error.FootPlantingDemoRequiresScriptedInput;
+            foot_planting_scene = try foot_planting_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.FootPlantingInitializationCreatedGpuResources;
+            }
+        }
+        if (mode == .integrated) {
+            if (!scripted_input_enabled) return error.IntegratedDemoRequiresScriptedInput;
+            integrated_scene = try integrated_demo.Scene.init(humanoid_allocator.allocator(), .{
+                .debug_visualization = integrated_debug_enabled,
+                .diagnostics_each_tick = true,
+            });
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.IntegratedInitializationCreatedGpuResources;
+            }
+            integrated_scene.?.setResourceSnapshot(resourceSnapshot(self, humanoid_allocator.end_index, 0));
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
@@ -611,10 +670,73 @@ pub const GpuDemo = struct {
                     humanoid_instances = try demo.character.submitAttachments(&demo.definition, &self.batch.?, 0);
                     humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
                 },
+                .multi_character => {
+                    const scene = &multi_character_scene.?;
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+                .handshake => {
+                    const scene = &handshake_scene.?;
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+                .handshake_ik => {
+                    const scene = &handshake_ik_scene.?;
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+                .foot_planting => {
+                    const scene = &foot_planting_scene.?;
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame();
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+                .integrated => {
+                    const scene = &integrated_scene.?;
+                    scene.setResourceSnapshot(resourceSnapshot(self, humanoid_allocator.end_index, 0));
+                    var allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(1.0 / 60.0);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    allocation_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
             }
             const prepared = self.batch.?.prepare();
             _ = try self.renderPreparedToWindow(prepared, null);
             self.resource_metrics.frames_rendered += 1;
+            if (mode == .integrated) {
+                integrated_scene.?.recordRendering(.{
+                    .submitted_sprite_count = self.batch.?.frame_metrics.submitted_sprites,
+                    .ordinary_sprite_count = integrated_scene.?.evidence.ordinary_sprites,
+                    .debug_primitive_count = integrated_scene.?.evidence.debug_primitives,
+                    .texture_pages = 1,
+                    .sprite_draw_ranges = self.batch.?.frame_metrics.draw_ranges,
+                    .sprite_draw_calls = self.batch.?.frame_metrics.draw_calls,
+                    .debug_draw_calls = 0,
+                    .total_actual_draw_calls = self.batch.?.frame_metrics.draw_calls,
+                });
+            }
             try self.updateWindowTitle();
             if (frame == 0) creations_after_warmup = self.resource_metrics.gpu_resource_creations;
         }
@@ -885,6 +1007,456 @@ pub const GpuDemo = struct {
                         return error.SecondaryMotionEvidenceIncomplete;
                     }
                 }
+            }
+        } else if (mode == .multi_character) {
+            const scene = &multi_character_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != multi_character_demo.required_frames) {
+                return error.MultiCharacterFrameCountMismatch;
+            }
+            const gpu_resources_for_facing_and_order = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const a_metrics = scene.character_a.metrics;
+            const b_metrics = scene.character_b.metrics;
+            std.log.info("multi-character final metrics: frames={d} characters={d} attachments_per_character={d} humanoid_sprites={d} environment_debug_sprites=0 total_sprites={d} texture_pages=1 ranges={d} actual_draw_calls={d}", .{
+                self.resource_metrics.frames_rendered,
+                multi_character_demo.character_count,
+                humanoid.attachment_count,
+                humanoid_instances,
+                metrics.visible_sprites,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+            });
+            std.log.info("multi-character ownership: A_id={d} B_id={d} shared_skeleton={} shared_clip_library={} independent_pose={} independent_animator={} independent_procedural={}", .{
+                scene.character_a.id.raw(),
+                scene.character_b.id.raw(),
+                scene.character_a.definition.owner_token == scene.character_b.definition.owner_token,
+                scene.character_a.shared_animations.library_token == scene.character_b.shared_animations.library_token,
+                scene.character_a.character.local_and_world_pose.local_transforms.ptr != scene.character_b.character.local_and_world_pose.local_transforms.ptr,
+                scene.character_a.animator.source_pose.ptr != scene.character_b.animator.source_pose.ptr,
+                &scene.character_a.procedural != &scene.character_b.procedural,
+            });
+            std.log.info("multi-character independence: A_animation_time={d:.6} B_animation_time={d:.6} A_right_hand=({d:.5},{d:.5}) B_right_hand=({d:.5},{d:.5}) A_procedural={d:.8} B_procedural={d:.8}", .{
+                scene.independence.a_animation_time,
+                scene.independence.b_animation_time,
+                scene.independence.a_right_hand.x,
+                scene.independence.a_right_hand.y,
+                scene.independence.b_right_hand.x,
+                scene.independence.b_right_hand.y,
+                scene.independence.a_procedural_offset,
+                scene.independence.b_procedural_offset,
+            });
+            std.log.info("multi-character final state: phase={s} A_facing={s} B_facing={s} A_actor={d} B_actor={d} A_overrides={d} B_overrides={d} visual_ticks={d}", .{
+                @tagName(scene.current_phase.?),
+                @tagName(scene.character_a.facing),
+                @tagName(scene.character_b.facing),
+                scene.character_a.actor_layer,
+                scene.character_b.actor_layer,
+                scene.character_a.overrides.activeCount(),
+                scene.character_b.overrides.activeCount(),
+                scene.total_visual_ticks,
+            });
+            std.log.info("multi-character steady state: initialized_bytes={d} final_bytes={d} pose_allocations={d} animator_allocations={d} procedural_allocations={d} layer_resolution_allocations={d} override_allocations={d} global_submission_allocations={d} gpu_resources_for_facing_and_order={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                a_metrics.pose_allocations + b_metrics.pose_allocations,
+                a_metrics.animator_allocations + b_metrics.animator_allocations,
+                a_metrics.procedural_allocations + b_metrics.procedural_allocations,
+                a_metrics.layer_resolution_allocations + b_metrics.layer_resolution_allocations,
+                a_metrics.override_allocations + b_metrics.override_allocations,
+                a_metrics.submission_allocations + b_metrics.submission_allocations,
+                gpu_resources_for_facing_and_order,
+            });
+            if (humanoid_instances != multi_character_demo.character_count * humanoid.attachment_count or
+                metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
+                gpu_resources_for_facing_and_order != 0 or humanoid_allocator.end_index != humanoid_initialized_bytes)
+            {
+                return error.MultiCharacterEvidenceIncomplete;
+            }
+        } else if (mode == .handshake) {
+            const scene = &handshake_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != handshake_demo.required_frames) return error.HandshakeFrameCountMismatch;
+            const gpu_resources_for_interaction = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const first = scene.first;
+            const mirrored = scene.mirrored;
+            std.log.info("handshake final metrics: frames={d} characters={d} attachments_per_character={d} humanoid_sprites={d} total_sprites={d} texture_pages=1 ranges={d} actual_draw_calls={d}", .{
+                self.resource_metrics.frames_rendered,
+                handshake_demo.character_count,
+                humanoid.attachment_count,
+                humanoid_instances,
+                metrics.visible_sprites,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+            });
+            std.log.info("handshake paired timing: first={d}/{d}/{d}/{d} mirrored={d}/{d}/{d}/{d} events_first={d}/{d}/{d} events_mirrored={d}/{d}/{d}", .{
+                first.start_tick,         first.contact_tick,       first.release_tick,    first.complete_tick,
+                mirrored.start_tick,      mirrored.contact_tick,    mirrored.release_tick, mirrored.complete_tick,
+                first.event_counts[0],    first.event_counts[1],    first.event_counts[2], mirrored.event_counts[0],
+                mirrored.event_counts[1], mirrored.event_counts[2],
+            });
+            std.log.info("handshake contact baseline: first_A=({d:.6},{d:.6}) first_B=({d:.6},{d:.6}) separation={d:.6} mirrored_A=({d:.6},{d:.6}) mirrored_B=({d:.6},{d:.6}) mirrored_separation={d:.6} difference={d:.8}", .{
+                first.role_a_socket.x,                                      first.role_a_socket.y,    first.role_b_socket.x,    first.role_b_socket.y,    first.socket_separation,
+                mirrored.role_a_socket.x,                                   mirrored.role_a_socket.y, mirrored.role_b_socket.x, mirrored.role_b_socket.y, mirrored.socket_separation,
+                @abs(first.socket_separation - mirrored.socket_separation),
+            });
+            std.log.info("handshake final state: A_id={d} B_id={d} A_state={s} B_state={s} A_locked={} B_locked={} A_overrides={d} B_overrides={d} active_slots={d}", .{
+                scene.character_a.id.raw(),              scene.character_b.id.raw(),              @tagName(scene.character_a.animationState()), @tagName(scene.character_b.animationState()),
+                scene.character_a.isInteractionLocked(), scene.character_b.isInteractionLocked(), scene.character_a.overrides.activeCount(),    scene.character_b.overrides.activeCount(),
+                scene.manager.activeCount(),
+            });
+            std.log.info("handshake steady state: initialized_bytes={d} final_bytes={d} request_allocations={d} eligibility_allocations={d} candidate_allocations={d} active_update_allocations={d} event_allocations={d} completion_allocations={d} gpu_resources_for_interaction={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                scene.manager.metrics.request_allocations,
+                scene.manager.metrics.eligibility_allocations,
+                scene.manager.metrics.candidate_selection_allocations,
+                scene.manager.metrics.active_update_allocations,
+                scene.manager.metrics.event_processing_allocations,
+                scene.manager.metrics.completion_allocations,
+                gpu_resources_for_interaction,
+            });
+            if (humanoid_instances != handshake_demo.character_count * humanoid.attachment_count or
+                metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resources_for_interaction != 0 or
+                humanoid_allocator.end_index != humanoid_initialized_bytes)
+            {
+                return error.HandshakeEvidenceIncomplete;
+            }
+        } else if (mode == .handshake_ik) {
+            const scene = &handshake_ik_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != handshake_ik_demo.required_frames) return error.HandshakeIkFrameCountMismatch;
+            const gpu_resources_for_ik = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const nominal = scene.nominal;
+            const mirrored = scene.mirrored;
+            const perturbed = scene.perturbed;
+            const nominal_a = nominal.role_a_metrics.?;
+            const nominal_b = nominal.role_b_metrics.?;
+            const reduction_percent = (1.0 - perturbed.post_separation / perturbed.pre_separation) * 100.0;
+            std.log.info("handshake IK final metrics: frames={d} characters={d} humanoid_sprites={d} texture_pages=1 ranges={d} actual_draw_calls={d} gpu_resources_created_by_ik={d}", .{
+                self.resource_metrics.frames_rendered,
+                handshake_ik_demo.character_count,
+                humanoid_instances,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+                gpu_resources_for_ik,
+            });
+            std.log.info("handshake IK nominal: spacing={d:.6} pre_A=({d:.6},{d:.6}) pre_B=({d:.6},{d:.6}) pre_separation={d:.6} target=({d:.6},{d:.6}) post_A=({d:.6},{d:.6}) post_B=({d:.6},{d:.6}) error_A={d:.8} error_B={d:.8} post_separation={d:.8}", .{
+                nominal.root_spacing,        nominal.pre_a.x,             nominal.pre_a.y,         nominal.pre_b.x,
+                nominal.pre_b.y,             nominal.pre_separation,      nominal.shared_target.x, nominal.shared_target.y,
+                nominal.post_a.x,            nominal.post_a.y,            nominal.post_b.x,        nominal.post_b.y,
+                nominal.role_a_target_error, nominal.role_b_target_error, nominal.post_separation,
+            });
+            std.log.info("handshake IK perturbed: spacing={d:.6} pre_separation={d:.6} post_separation={d:.8} reduction_percent={d:.3}", .{
+                perturbed.root_spacing,
+                perturbed.pre_separation,
+                perturbed.post_separation,
+                reduction_percent,
+            });
+            std.log.info("handshake IK mirrored: pre_separation={d:.6} post_separation={d:.8} difference={d:.8}", .{
+                mirrored.pre_separation,
+                mirrored.post_separation,
+                @abs(nominal.post_separation - mirrored.post_separation),
+            });
+            std.log.info("handshake IK solver: upper={d:.6} lower={d:.6} bend_A={s} bend_B={s} reach_A={s} reach_B={s}", .{
+                nominal_a.upper_length,
+                nominal_a.lower_length,
+                @tagName(nominal_a.bend),
+                @tagName(nominal_b.bend),
+                @tagName(nominal_a.reachability),
+                @tagName(nominal_b.reachability),
+            });
+            std.log.info("handshake IK weights: start={d:.3} midpoint={d:.3} contact={d:.3} release={d:.3} post_release={d:.3} complete={d:.3}", .{
+                nominal.start_weight,
+                nominal.blend_midpoint_weight,
+                nominal.contact_weight,
+                nominal.release_weight,
+                nominal.post_release_weight,
+                nominal.after_completion_weight,
+            });
+            std.log.info("handshake IK timing: nominal={d}/{d}/{d}/{d} mirrored={d}/{d}/{d}/{d} perturbed={d}/{d}/{d}/{d}", .{
+                nominal.start_tick,   nominal.contact_tick,   nominal.release_tick,   nominal.complete_tick,
+                mirrored.start_tick,  mirrored.contact_tick,  mirrored.release_tick,  mirrored.complete_tick,
+                perturbed.start_tick, perturbed.contact_tick, perturbed.release_tick, perturbed.complete_tick,
+            });
+            std.log.info("handshake IK steady state: initialized_bytes={d} final_bytes={d} solver_allocations={d} binding_allocations={d} target_allocations={d} pose_allocations={d} hierarchy_allocations={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                scene.manager.metrics.ik_solver_allocations,
+                scene.manager.metrics.ik_binding_lookup_allocations,
+                scene.manager.metrics.ik_target_computation_allocations,
+                scene.manager.metrics.ik_pose_application_allocations,
+                scene.manager.metrics.ik_hierarchy_evaluation_allocations,
+            });
+            if (humanoid_instances != handshake_ik_demo.character_count * humanoid.attachment_count or
+                metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resources_for_ik != 0 or
+                humanoid_allocator.end_index != humanoid_initialized_bytes)
+            {
+                return error.HandshakeIkEvidenceIncomplete;
+            }
+        } else if (mode == .foot_planting) {
+            const scene = &foot_planting_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != foot_planting_demo.required_frames) return error.FootPlantingFrameCountMismatch;
+            const gpu_resources_for_foot_planting = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const enabled_state = scene.enabled.controller.?.state;
+            const disabled_state = scene.disabled.controller.?.state;
+            const left_metrics = scene.enabled.foot_plants.left.metrics;
+            const right_metrics = scene.enabled.foot_plants.right.metrics;
+            std.log.info("foot planting final metrics: frames={d} characters={d} sprites={d} texture_pages=1 ranges={d} actual_draw_calls={d} gpu_resources_created_by_foot_planting={d}", .{
+                self.resource_metrics.frames_rendered,
+                foot_planting_demo.character_count,
+                humanoid_instances,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+                gpu_resources_for_foot_planting,
+            });
+            std.log.info("foot planting left: first_contact_tick={d} first_plant_tick={d} collider_id={d} locked_target=({d:.6},{d:.6}) maximum_slip={d:.8} maximum_penetration={d:.8} maximum_hover={d:.8} stable_ticks={d}", .{
+                scene.left.first_contact_tick,
+                scene.left.first_plant_tick,
+                scene.left.collider_id,
+                scene.left.locked_target.x,
+                scene.left.locked_target.y,
+                left_metrics.maximum_world_space_slip,
+                left_metrics.maximum_penetration,
+                left_metrics.maximum_hover,
+                left_metrics.stable_plant_ticks,
+            });
+            std.log.info("foot planting right: first_contact_tick={d} first_plant_tick={d} collider_id={d} locked_target=({d:.6},{d:.6}) maximum_slip={d:.8} maximum_penetration={d:.8} maximum_hover={d:.8} stable_ticks={d}", .{
+                scene.right.first_contact_tick,
+                scene.right.first_plant_tick,
+                scene.right.collider_id,
+                scene.right.locked_target.x,
+                scene.right.locked_target.y,
+                right_metrics.maximum_world_space_slip,
+                right_metrics.maximum_penetration,
+                right_metrics.maximum_hover,
+                right_metrics.stable_plant_ticks,
+            });
+            std.log.info("foot planting flat ground: height={d:.6} pre_ik_sole_error={d:.8} post_ik_sole_error={d:.8}", .{
+                scene.flat.ground_height,
+                scene.flat.pre_ik_sole_error,
+                scene.flat.post_ik_sole_error,
+            });
+            std.log.info("foot planting raised platform: height={d:.6} pre_ik_sole_error={d:.8} post_ik_sole_error={d:.8}", .{
+                scene.raised.ground_height,
+                scene.raised.pre_ik_sole_error,
+                scene.raised.post_ik_sole_error,
+            });
+            std.log.info("foot planting jump: tick={any} left_lock_before={} right_lock_before={} left_lock_after={} right_lock_after={} landing_tick={any} false_airborne_plants={d} fresh_post_landing_plant={}", .{
+                scene.jump.jump_tick,
+                scene.jump.left_lock_before_jump,
+                scene.jump.right_lock_before_jump,
+                scene.jump.left_lock_after_takeoff,
+                scene.jump.right_lock_after_takeoff,
+                scene.jump.landing_tick,
+                scene.jump.false_airborne_plant_count,
+                scene.jump.fresh_post_landing_plant,
+            });
+            std.log.info("foot planting physics disabled: position=({d:.6},{d:.6}) velocity=({d:.6},{d:.6}) grounded={} support={any} landing_count={d}", .{
+                disabled_state.position.x,
+                disabled_state.position.y,
+                disabled_state.velocity.x,
+                disabled_state.velocity.y,
+                disabled_state.grounded,
+                disabled_state.supporting_collider,
+                scene.physics.landing_count_disabled,
+            });
+            std.log.info("foot planting physics enabled: position=({d:.6},{d:.6}) velocity=({d:.6},{d:.6}) grounded={} support={any} landing_count={d} position_agreement={} velocity_agreement={} grounded_agreement={} support_agreement={}", .{
+                enabled_state.position.x,
+                enabled_state.position.y,
+                enabled_state.velocity.x,
+                enabled_state.velocity.y,
+                enabled_state.grounded,
+                enabled_state.supporting_collider,
+                scene.physics.landing_count_enabled,
+                scene.physics.positions_agree,
+                scene.physics.velocities_agree,
+                scene.physics.grounded_agrees,
+                scene.physics.support_agrees,
+            });
+            std.log.info("foot planting timing: enabled_contact_ticks={any} disabled_contact_ticks={any} animation_state_agreement={} animation_time_agreement={}", .{
+                scene.enabled_contact_ticks[0..scene.enabled_contact_count],
+                scene.disabled_contact_ticks[0..scene.disabled_contact_count],
+                scene.physics.animation_state_agrees,
+                scene.physics.animation_time_agrees,
+            });
+            std.log.info("foot planting bindings: left_upper={d:.6} left_lower={d:.6} right_upper={d:.6} right_lower={d:.6} left_bend={s} right_bend={s}", .{
+                scene.enabled.left_leg_binding.upper_length,
+                scene.enabled.left_leg_binding.lower_length,
+                scene.enabled.right_leg_binding.upper_length,
+                scene.enabled.right_leg_binding.lower_length,
+                @tagName(scene.enabled.left_leg_binding.character_local_bend),
+                @tagName(scene.enabled.right_leg_binding.character_local_bend),
+            });
+            std.log.info("foot planting steady state: initialized_bytes={d} final_bytes={d} ground_query_allocations={d} plant_update_allocations={d} leg_binding_allocations={d} leg_ik_allocations={d} target_allocations={d} pose_evaluation_allocations={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                scene.enabled.foot_plants.metrics.ground_query_allocations,
+                scene.enabled.foot_plants.metrics.plant_update_allocations,
+                scene.enabled.foot_plants.metrics.leg_binding_allocations,
+                scene.enabled.foot_plants.metrics.leg_ik_allocations,
+                scene.enabled.foot_plants.metrics.target_storage_allocations,
+                scene.enabled.foot_plants.metrics.pose_evaluation_allocations,
+            });
+            if (humanoid_instances != humanoid.attachment_count + scene.world.colliders.len or
+                metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resources_for_foot_planting != 0 or
+                humanoid_allocator.end_index != humanoid_initialized_bytes)
+            {
+                return error.FootPlantingEvidenceIncomplete;
+            }
+        } else if (mode == .integrated) {
+            const scene = &integrated_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != integrated_demo.required_frames) return error.IntegratedFrameCountMismatch;
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const final_state = try scene.authoritativeState();
+            const final_diagnostics = try scene.captureDiagnostics();
+            const player_state = scene.player.controller.?.state;
+            const left_metrics = scene.player.foot_plants.left.metrics;
+            const right_metrics = scene.player.foot_plants.right.metrics;
+            const total_left_acquisitions = left_metrics.plant_acquisitions + scene.partner.foot_plants.left.metrics.plant_acquisitions;
+            const total_right_acquisitions = right_metrics.plant_acquisitions + scene.partner.foot_plants.right.metrics.plant_acquisitions;
+            const maximum_slip = @max(left_metrics.maximum_world_space_slip, right_metrics.maximum_world_space_slip);
+            const maximum_penetration = @max(left_metrics.maximum_penetration, right_metrics.maximum_penetration);
+            const maximum_hover = @max(left_metrics.maximum_hover, right_metrics.maximum_hover);
+            const tracked_resource_count = final_diagnostics.resources.gpu_textures + final_diagnostics.resources.gpu_buffers +
+                final_diagnostics.resources.gpu_pipelines + final_diagnostics.resources.gpu_samplers + final_diagnostics.resources.other_gpu_resources;
+            std.log.info("INTEGRATED DEMO EVIDENCE", .{});
+            std.log.info("Simulation: render_frames={d} fixed_ticks={d} maximum_substeps={d} discarded_time={d:.8}", .{
+                scene.render_frame,
+                scene.simulation_tick,
+                scene.evidence.maximum_substeps,
+                scene.clock.lifetime_discarded_time,
+            });
+            std.log.info("Characters: count={d} player_position=({d:.6},{d:.6}) player_velocity=({d:.6},{d:.6}) grounded={} support={any} partner_position=({d:.6},{d:.6})", .{
+                integrated_demo.character_count,
+                player_state.position.x,
+                player_state.position.y,
+                player_state.velocity.x,
+                player_state.velocity.y,
+                player_state.grounded,
+                player_state.supporting_collider,
+                scene.partner.world_position.x,
+                scene.partner.world_position.y,
+            });
+            std.log.info("Foot planting: left_acquisitions={d} right_acquisitions={d} maximum_slip={d:.8} maximum_penetration={d:.8} maximum_hover={d:.8} airborne_false_plants={d}", .{
+                total_left_acquisitions,
+                total_right_acquisitions,
+                maximum_slip,
+                maximum_penetration,
+                maximum_hover,
+                scene.evidence.airborne_false_plants,
+            });
+            std.log.info("Latest acquired foot lifecycle left: semantic_contact={any} candidate_acquisition={any} full_plant={any} release_start={any} full_release={any}", .{
+                left_metrics.latest_acquired_lifecycle.semantic_contact_tick,
+                left_metrics.latest_acquired_lifecycle.candidate_acquisition_tick,
+                left_metrics.latest_acquired_lifecycle.full_plant_tick,
+                left_metrics.latest_acquired_lifecycle.release_start_tick,
+                left_metrics.latest_acquired_lifecycle.full_release_tick,
+            });
+            std.log.info("Latest acquired foot lifecycle right: semantic_contact={any} candidate_acquisition={any} full_plant={any} release_start={any} full_release={any}", .{
+                right_metrics.latest_acquired_lifecycle.semantic_contact_tick,
+                right_metrics.latest_acquired_lifecycle.candidate_acquisition_tick,
+                right_metrics.latest_acquired_lifecycle.full_plant_tick,
+                right_metrics.latest_acquired_lifecycle.release_start_tick,
+                right_metrics.latest_acquired_lifecycle.full_release_tick,
+            });
+            std.log.info("Jump/landing: jumps={d} landings={d} maximum_impact={d:.6} maximum_compression={d:.6} delivery_count={d}", .{
+                scene.evidence.jump_count,
+                scene.evidence.landing_count,
+                scene.evidence.maximum_landing_impact,
+                scene.evidence.maximum_landing_compression,
+                scene.evidence.landing_event_delivery_count,
+            });
+            std.log.info("Interaction: requests={d} successful={d} rejected={d} contact={d} release={d} complete={d} final_active={d} final_locks={d} maximum_id={d}", .{
+                scene.evidence.interaction_requests,
+                scene.evidence.successful_handshakes,
+                scene.evidence.rejected_requests,
+                scene.evidence.contact_events,
+                scene.evidence.release_events,
+                scene.evidence.completion_events,
+                final_state.active_interactions,
+                final_state.participant_locks,
+                final_state.maximum_interaction_id,
+            });
+            std.log.info("Arm IK: maximum_pre_error={d:.8} maximum_post_error={d:.8} shared_target=({d:.6},{d:.6}) pre_ik_policy={} final_pose_after_ik={}", .{
+                scene.evidence.maximum_pre_ik_contact_error,
+                scene.evidence.maximum_post_ik_contact_error,
+                scene.last_shared_target.x,
+                scene.last_shared_target.y,
+                scene.evidence.shared_target_from_pre_ik,
+                scene.evidence.final_pose_after_ik,
+            });
+            std.log.info("Rendering: ordinary_sprites={d} debug_primitives={d} texture_pages=1 sprite_draw_ranges={d} sprite_draw_calls={d} debug_draw_calls=0 total_actual_draw_calls={d}", .{
+                scene.evidence.ordinary_sprites,
+                scene.evidence.debug_primitives,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+                metrics.draw_calls,
+            });
+            std.log.info("Steady-state: initialized_bytes={d} final_bytes={d} runtime_allocation_delta={d} gpu_resource_delta={d} diagnostic_history_capacity={d} history_overwrites={d} debug_command_capacity={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                final_state.allocation_total + self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+                diagnostics.history_capacity,
+                scene.history.overwrite_count,
+                @import("debug_draw").command_capacity,
+            });
+            std.log.info("Allocations: controller={d} animator={d} procedural={d} interaction={d} arm_ik={d} foot={d} ground_query={d} pose={d} layers={d} sprites={d} diagnostics={d} debug={d}", .{
+                final_diagnostics.allocations.controller,
+                final_diagnostics.allocations.animator,
+                final_diagnostics.allocations.procedural_motion,
+                final_diagnostics.allocations.interaction_update,
+                final_diagnostics.allocations.arm_ik,
+                final_diagnostics.allocations.foot_planting,
+                final_diagnostics.allocations.ground_query,
+                final_diagnostics.allocations.pose_evaluation,
+                final_diagnostics.allocations.layer_resolution,
+                final_diagnostics.allocations.sprite_submission,
+                final_diagnostics.allocations.diagnostics_snapshot_update,
+                final_diagnostics.allocations.debug_command_submission,
+            });
+            std.log.info("Resources: initial_cpu_bytes={d} final_cpu_bytes={d} live_textures={d} live_buffers={d} live_pipelines={d} live_samplers={d} live_other={d} live_tracked_gpu={d} creations_during_run={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                final_diagnostics.resources.gpu_textures,
+                final_diagnostics.resources.gpu_buffers,
+                final_diagnostics.resources.gpu_pipelines,
+                final_diagnostics.resources.gpu_samplers,
+                final_diagnostics.resources.other_gpu_resources,
+                tracked_resource_count,
+                gpu_resource_delta,
+            });
+            std.log.info("Procedural final: landing_offset={d:.8} landing_velocity={d:.8} head_offset={d:.8} head_velocity={d:.8}", .{
+                scene.player.procedural.landing_spring.offset,
+                scene.player.procedural.landing_spring.velocity,
+                scene.player.procedural.secondary_spring.offset,
+                scene.player.procedural.secondary_spring.velocity,
+            });
+            std.log.info("Final cleanup: active_interactions={d} interaction_owned_overrides={d} active_arm_constraints={d} invalid_airborne_foot_locks={d} partial_interleaving={} foot_placement_during_handshake={}", .{
+                final_state.active_interactions,
+                final_state.active_overrides,
+                final_state.active_arm_constraints,
+                scene.evidence.airborne_false_plants,
+                scene.evidence.partial_interleaving_observed,
+                scene.evidence.foot_placement_during_handshake,
+            });
+            for (scene.evidence.milestone_ticks, 0..) |tick, index| {
+                const milestone: integrated_demo.Milestone = @enumFromInt(index);
+                std.log.info("Milestone {s}: {any}", .{ @tagName(milestone), tick });
+            }
+            const expected_ordinary = integrated_demo.character_count * humanoid.attachment_count + scene.world.colliders.len;
+            if (scene.evidence.ordinary_sprites != expected_ordinary or metrics.visible_sprites != humanoid_instances or
+                metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0 or
+                humanoid_allocator.end_index != humanoid_initialized_bytes)
+            {
+                return error.IntegratedRenderingEvidenceIncomplete;
             }
         }
     }
@@ -1495,6 +2067,19 @@ fn copyBytes(destination: [*]u8, offset: usize, source: []const u8) void {
 
 fn alignForward(value: u32, alignment: u32) u32 {
     return (value + alignment - 1) & ~(alignment - 1);
+}
+
+fn resourceSnapshot(self: *const GpuDemo, cpu_allocation_bytes: usize, created_this_frame: u64) diagnostics.ResourceSnapshot {
+    return .{
+        .cpu_allocation_bytes = cpu_allocation_bytes,
+        .gpu_textures = 2,
+        .gpu_buffers = 2 + frame_slot_count,
+        .gpu_pipelines = 1,
+        .gpu_samplers = 1,
+        .other_gpu_resources = 2 + frame_slot_count,
+        .gpu_resources_created_this_frame = created_this_frame,
+        .gpu_resources_created_lifetime = self.resource_metrics.gpu_resource_creations,
+    };
 }
 
 fn readPixel(bytes: [*]const u8, row_pitch: u32, x: u32, y: u32) [4]u8 {
