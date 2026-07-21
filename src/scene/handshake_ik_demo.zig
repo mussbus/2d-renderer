@@ -113,7 +113,7 @@ pub const Scene = struct {
         const interact_held = (frame >= 30 and frame < 35) or
             (frame >= 210 and frame < 215) or
             (frame >= 390 and frame < 395);
-        const snapshot = try scene.snapshot_builder.update(.{ .interact = interact_held });
+        const snapshot = try scene.snapshot_builder.update(.{ .keyboard = .{ .e = interact_held } });
         try scene.pending_input.acceptFrame(snapshot);
         const participants_value = scene.participants();
 

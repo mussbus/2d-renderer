@@ -477,6 +477,27 @@ pub fn build(b: *std.Build) void {
     integrated_demo_module.addImport("sprite_batch", sprite_batch_module);
     integrated_demo_module.addImport("diagnostics", diagnostics_module);
     integrated_demo_module.addImport("debug_draw", debug_draw_module);
+    const playground_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/playground_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    playground_demo_module.addImport("math", math_module);
+    playground_demo_module.addImport("input", input_module);
+    playground_demo_module.addImport("fixed_step", fixed_step_module);
+    playground_demo_module.addImport("collider", collider_module);
+    playground_demo_module.addImport("collision_world", collision_world_module);
+    playground_demo_module.addImport("character_controller", character_controller_module);
+    playground_demo_module.addImport("humanoid", humanoid_module);
+    playground_demo_module.addImport("authored_clips", authored_clips_module);
+    playground_demo_module.addImport("state_machine", state_machine_module);
+    playground_demo_module.addImport("character", character_module);
+    playground_demo_module.addImport("interaction", interaction_module);
+    playground_demo_module.addImport("interaction_system", interaction_system_module);
+    playground_demo_module.addImport("handshake", handshake_module);
+    playground_demo_module.addImport("foot_planting", foot_planting_module);
+    playground_demo_module.addImport("sprite_batch", sprite_batch_module);
+    playground_demo_module.addImport("debug_draw", debug_draw_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -518,6 +539,7 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("diagnostics", diagnostics_module);
     app_module.addImport("debug_draw", debug_draw_module);
     app_module.addImport("integrated_demo", integrated_demo_module);
+    app_module.addImport("playground_demo", playground_demo_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("math", math_module);
@@ -552,6 +574,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("diagnostics", diagnostics_module);
     test_module.addImport("debug_draw", debug_draw_module);
     test_module.addImport("integrated_demo", integrated_demo_module);
+    test_module.addImport("playground_demo", playground_demo_module);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");

@@ -91,11 +91,11 @@ const Script = struct {
                 }
             },
             .jump_press => {
-                raw.jump = true;
+                raw.keyboard.space = true;
                 script.advance(.jump_hold);
             },
             .jump_hold => {
-                raw.jump = script.phase_frames < 8;
+                raw.keyboard.space = script.phase_frames < 8;
                 if (script.phase_frames >= 8) script.advance(.airborne_wait);
             },
             .airborne_wait => {},
@@ -105,20 +105,20 @@ const Script = struct {
                 if (script.phase_frames >= 120) script.advance(.platform_approach);
             },
             .platform_approach => {
-                raw.keyboard_right = true;
+                raw.keyboard.d = true;
                 if (controller.state.grounded and controller.state.position.x >= -1.75) script.advance(.platform_jump_press);
             },
             .platform_jump_press => {
-                raw.keyboard_right = true;
-                raw.jump = true;
+                raw.keyboard.d = true;
+                raw.keyboard.space = true;
                 script.advance(.platform_jump_hold);
             },
             .platform_jump_hold => {
-                raw.keyboard_right = true;
-                raw.jump = script.phase_frames < 20;
+                raw.keyboard.d = true;
+                raw.keyboard.space = script.phase_frames < 20;
                 if (script.phase_frames >= 20) script.advance(.platform_wait);
             },
-            .platform_wait => raw.keyboard_right = true,
+            .platform_wait => raw.keyboard.d = true,
             .platform_walk => {
                 if (controller.state.position.x > -0.05) script.direction_right = false;
                 if (controller.state.position.x < -0.25) script.direction_right = true;

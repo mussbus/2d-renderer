@@ -1,4 +1,22 @@
-# Controller Demonstration Controls
+# Production controls and interactive playground
+
+Run the open-ended interactive playground with:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo playground --interactive
+```
+
+It runs until Escape, an SDL window-close request, or an optional `--frames` limit. Walk right toward the passive character. A handshake can begin only when both characters are grounded, the player faces right, the passive character faces left, and their fixed roots are within the authored `3.72 m ± 0.02 m` envelope. There is no root snap, facing correction, or motion warping. Hold Space for the higher jump; releasing it while rising produces the existing shorter jump.
+
+The bounded production-path verification is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo playground --scripted-input
+```
+
+Synthetic input constructs the same per-key raw state used by SDL polling, then calls the one `SnapshotBuilder` mapping. It never constructs `CharacterIntent` directly.
+
+## Controller demonstration
 
 Run the interactive controller demonstration with:
 
@@ -66,6 +84,7 @@ The feedback-driven script idles, walks with alternating contacts, jumps from a 
 | `F1` | Toggle authoritative static-collider visualization |
 | `F2` | Cycle normal speed, quarter speed, and paused |
 | `F3` | Advance exactly one 240 Hz simulation/animation tick while paused |
+| Escape | Exit the interactive playground |
 
 Opposing keyboard directions cancel to zero. A keyboard direction has magnitude one and therefore wins an equal-magnitude gamepad tie. Zero input preserves the last meaningful facing direction.
 
@@ -84,3 +103,11 @@ The left-stick dead zone is `0.20`; magnitude outside it is rescaled continuousl
 ## Input timing
 
 SDL state is sampled once per rendered frame. `FrameInputSnapshot` records pressed, held, and released state. `PendingInput` preserves jump press, jump release, and interaction press edges through a frame that executes no fixed tick. The first following tick consumes each edge once; later ticks in the same rendered frame receive held state without replaying the edge. Reset and pause transitions clear pending edges.
+
+Keyboard gameplay edges come from previous/current polled physical state, never SDL keydown repeat or text input. `A` and Left Arrow are one logical left direction; `D` and Right Arrow are one logical right direction. Holding both logical directions resolves to zero independently of press order. Keyboard/gamepad action buttons merge by logical OR, so simultaneous sources produce one edge. Horizontal values use greatest absolute magnitude, with keyboard winning equal-magnitude ties.
+
+On keyboard-focus loss, the current keyboard hold state is cleared, pending jump/interaction presses are discarded, and a required jump release is retained for the next fixed tick. Reset, debug, and interaction presses are not synthesized. Keys physically held across focus regain remain suppressed until released, so regain cannot create a phantom press. Gamepad polling remains independent; its live state continues to participate in the merged snapshot. Existing pending edges are cleared before new state from the focus-loss frame is accepted.
+
+The latest playground input diagnostic is fixed-size and read-only. It exposes `keyboard_left_held`, `keyboard_right_held`, `jump_pressed`, `jump_held`, `jump_released`, `interact_pressed`, `reset_pressed`, `debug_toggle_pressed`, `merged_move_axis`, `substeps_this_frame`, and `pending_edge_count`. Interactive console output is transition-only and bounded by actual control transitions; held state is not printed each frame.
+
+Playground reset restores both characters, the controlled physics state, animator/procedural state, interaction ownership and overrides, arm/foot constraints, fixed-step clock, and pending gameplay edges. The current debug-enabled choice and bounded lifetime input counters are retained so a reset neither hides the overlay nor erases verification evidence; the latest diagnostic is replaced by the reset frame with zero pending edges. No GPU resource is recreated.

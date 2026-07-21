@@ -6,6 +6,9 @@ pub const PlatformInput = struct {
     snapshot_builder: input.SnapshotBuilder = .{},
     active_gamepad: ?*c.SDL_Gamepad = null,
     active_gamepad_id: c.SDL_JoystickID = 0,
+    keyboard_focused: bool = true,
+    focus_lost_pending: bool = false,
+    window_close_pending: bool = false,
 
     pub fn init() PlatformInput {
         var platform = PlatformInput{};
@@ -19,7 +22,14 @@ pub const PlatformInput = struct {
     }
 
     pub fn handleEvent(platform: *PlatformInput, event: *const c.SDL_Event) void {
-        if (event.type == c.SDL_EVENT_GAMEPAD_ADDED) {
+        if (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
+            platform.window_close_pending = true;
+        } else if (event.type == c.SDL_EVENT_WINDOW_FOCUS_LOST) {
+            platform.keyboard_focused = false;
+            platform.focus_lost_pending = true;
+        } else if (event.type == c.SDL_EVENT_WINDOW_FOCUS_GAINED) {
+            platform.keyboard_focused = true;
+        } else if (event.type == c.SDL_EVENT_GAMEPAD_ADDED) {
             platform.considerGamepad(event.gdevice.which);
         } else if (event.type == c.SDL_EVENT_GAMEPAD_REMOVED and event.gdevice.which == platform.active_gamepad_id) {
             platform.closeActiveGamepad();
@@ -40,21 +50,32 @@ pub const PlatformInput = struct {
         }
 
         var raw = input.RawInputState{
-            .keyboard_left = keyHeld(keyboard, key_count, c.SDL_SCANCODE_A) or keyHeld(keyboard, key_count, c.SDL_SCANCODE_LEFT),
-            .keyboard_right = keyHeld(keyboard, key_count, c.SDL_SCANCODE_D) or keyHeld(keyboard, key_count, c.SDL_SCANCODE_RIGHT),
-            .jump = keyHeld(keyboard, key_count, c.SDL_SCANCODE_SPACE),
-            .interact = keyHeld(keyboard, key_count, c.SDL_SCANCODE_E),
-            .reset = keyHeld(keyboard, key_count, c.SDL_SCANCODE_R),
-            .debug_toggle = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F1),
-            .time_mode_cycle = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F2),
-            .single_step = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F3),
+            .keyboard = .{
+                .a = keyHeld(keyboard, key_count, c.SDL_SCANCODE_A),
+                .left_arrow = keyHeld(keyboard, key_count, c.SDL_SCANCODE_LEFT),
+                .d = keyHeld(keyboard, key_count, c.SDL_SCANCODE_D),
+                .right_arrow = keyHeld(keyboard, key_count, c.SDL_SCANCODE_RIGHT),
+                .space = keyHeld(keyboard, key_count, c.SDL_SCANCODE_SPACE),
+                .e = keyHeld(keyboard, key_count, c.SDL_SCANCODE_E),
+                .r = keyHeld(keyboard, key_count, c.SDL_SCANCODE_R),
+                .f1 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F1),
+                .f2 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F2),
+                .f3 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F3),
+                .escape = keyHeld(keyboard, key_count, c.SDL_SCANCODE_ESCAPE),
+            },
+            .keyboard_focused = platform.keyboard_focused,
+            .focus_lost = platform.focus_lost_pending,
+            .window_close_requested = platform.window_close_pending,
         };
         if (platform.active_gamepad) |gamepad| {
             raw.gamepad_move_axis = normalizeAxis(c.SDL_GetGamepadAxis(gamepad, c.SDL_GAMEPAD_AXIS_LEFTX));
             raw.gamepad_jump = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_SOUTH);
             raw.gamepad_interact = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_WEST);
         }
-        return platform.snapshot_builder.update(raw);
+        const snapshot = try platform.snapshot_builder.update(raw);
+        platform.focus_lost_pending = false;
+        platform.window_close_pending = false;
+        return snapshot;
     }
 
     pub fn reset(platform: *PlatformInput) void {

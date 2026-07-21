@@ -102,6 +102,8 @@ $diagnosticsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 's
 $debugDrawSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/debug/debug_draw.zig')
 $integratedDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/integrated_demo.zig')
 $integrationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/integration_tests.zig')
+$playgroundSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/playground_demo.zig')
+$playgroundTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/playground_tests.zig')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/mat3.zig')
@@ -804,6 +806,85 @@ if (-not $integratedDemoSource.Contains('activeOwnedOverrideCount()') -or
     $failed = $true
 }
 
+$inputOwnershipSources = $sdlInputSource + [Environment]::NewLine + $inputSource
+if ([regex]::IsMatch($inputOwnershipSources, 'character_controller|stepController|controller\.state|world_position\s*=|setWorldPosition|enterAnimationState|startPair')) {
+    Write-Error 'Production input mapping may not import or mutate controller, character-root, animation, or interaction authority.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($playgroundSource, 'controller\.state\.(position|velocity|grounded|supporting_collider)\s*=|player\.world_position\s*=|partner\.world_position\s*=|\.elapsed_ticks\s*=|\.locked_target\s*=|\.plant_state\s*=')) {
+    Write-Error 'Playground orchestration may not write controller, character-root, interaction-clock, or foot-lock authority directly.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $sdlInputSource.Contains('SDL_GetKeyboardState') -or
+    -not $sdlInputSource.Contains('.keyboard = .{') -or
+    -not $gpuSource.Contains('playground_snapshot_builder.update(playground_sequence.nextRaw(scene))') -or
+    -not $playgroundSource.Contains('pub fn updateFrame(scene: *Scene, frame_delta: f64, snapshot: input.FrameInputSnapshot)') -or
+    [regex]::IsMatch($playgroundSource, 'CharacterIntent\s*\{')) {
+    Write-Error 'Physical and scripted playground input must share the one raw-keyboard mapping and FrameInputSnapshot path.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($sdlInputSource, 'SDL_EVENT_KEY_DOWN|\.key\.repeat|SDL_StartTextInput') -or
+    -not $inputSource.Contains('fn button(previous: bool, current: bool) ButtonSnapshot')) {
+    Write-Error 'Gameplay edges must use polled physical-state transitions and may not use key-repeat or text-input events.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $sdlInputSource.Contains('SDL_EVENT_WINDOW_FOCUS_LOST') -or
+    -not $sdlInputSource.Contains('SDL_EVENT_WINDOW_FOCUS_GAINED') -or
+    -not $inputSource.Contains('blocked_until_release') -or
+    -not $inputSource.Contains('if (snapshot.focus_lost)')) {
+    Write-Error 'Focus loss must clear pending keyboard state and suppress held keys until physical release after focus regain.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $inputSource.Contains('jump_pressed_pending') -or
+    -not $inputSource.Contains('jump_released_pending') -or
+    -not $inputSource.Contains('interact_pressed_pending') -or
+    -not $inputSource.Contains('pub fn pendingEdgeCount')) {
+    Write-Error 'Pending press and release edges plus bounded diagnostics are required across zero-substep frames.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $playgroundSource.Contains('const frame = try scene.clock.beginFrame(frame_delta);') -or
+    [regex]::IsMatch($playgroundSource, 'stepController\([^\r\n]*frame_delta|move_axis\s*\*\s*frame_delta|velocity[^\r\n]*frame_delta')) {
+    Write-Error 'Raw render delta may enter only the fixed-step clock, never movement, velocity, or CharacterIntent.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $playgroundSource.Contains('try scene.manager.reset(&participants_value)') -or
+    -not $playgroundSource.Contains('try scene.player.resetControlled(&scene.world)') -or
+    $playgroundSource.Contains('try scene.player.reset();')) {
+    Write-Error 'Playground R handling must use the world-aware controlled-character reset and interaction-manager cleanup path.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $playgroundSource.Contains('requestFromIntent') -or
+    [regex]::IsMatch($playgroundSource, 'startPair\s*\(')) {
+    Write-Error 'Playground E handling must request through CharacterIntent and may not start the handshake directly.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($playgroundSource + [Environment]::NewLine + $inputSource, 'CreateGPU|ReleaseGPU|DrawGPU|SDL_GPU|\.alloc\s*\(|\.create\s*\(|ArrayList|HashMap|StringHashMap')) {
+    Write-Error 'Input mapping and playground steady-state orchestration may not allocate collections or own GPU resources.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($playgroundSource, 'debug_visualization[^\r\n]*\{[\s\S]{0,600}(stepController|manager\.updateTick|selectControllerAnimation)')) {
+    Write-Error 'F1 may gate debug submission only and may not choose an authoritative simulation path.' -ErrorAction Continue
+    $failed = $true
+}
+$requiredPlaygroundTestPhrases = @(
+    'production keyboard horizontal alternatives map once',
+    'production action mappings emit physical transition edges',
+    'focus loss clears keyboard holds pending presses',
+    'pending edges survive zero substeps',
+    'mapped keyboard input drives real controller movement',
+    'Space early release produces lower real-controller apex',
+    'raw keyboard mapping produces identical controller state under render grouping schedules',
+    'interaction hold requires a release and new E press',
+    'F1 toggles leave authoritative playground simulation identical',
+    'bounded playground script uses raw mapping'
+)
+foreach ($phrase in $requiredPlaygroundTestPhrases) {
+    if (-not $playgroundTestsSource.Contains($phrase)) {
+        Write-Error "Required playground deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -840,4 +921,5 @@ Write-Host 'Prompt 11 observability audit passed: diagnostics are bounded read-o
 Write-Host 'Prompt 11 debug audit passed: debug commands are bounded, allocation-free, GPU-resource-free, and share the authoritative sprite batch.'
 Write-Host 'Prompt 11 integration-order audit passed: scripted input precedes physics, animation, visual pose systems, interactions/IK, and observation.'
 Write-Host 'Prompt 12 cleanup audit passed: deterministic tests cover debug/read invariance, reset timing, 1,000 interactions, 100,000 ticks, and adversarial render schedules.'
+Write-Host 'Prompt 13 input audit passed: one polled keyboard mapping, focus resynchronization, pending-edge delivery, world-aware reset, intent-owned interaction, debug invariance, zero input GPU ownership, and raw-key scripted equivalence.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

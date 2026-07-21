@@ -13,6 +13,7 @@ test {
     _ = @import("ik_tests.zig");
     _ = @import("foot_planting_tests.zig");
     _ = @import("integration_tests.zig");
+    _ = @import("playground_tests.zig");
 }
 
 test "every initialization stage round-trips through its command-line name" {

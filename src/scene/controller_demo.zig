@@ -228,70 +228,70 @@ pub const ScriptedInput = struct {
                 if (script.phase_frames >= 30) script.advance(.ceiling_press);
             },
             .ceiling_press => {
-                raw.keyboard_right = true;
-                raw.jump = true;
+                raw.keyboard.d = true;
+                raw.keyboard.space = true;
                 script.advance(.ceiling_hold);
             },
             .ceiling_hold => {
-                raw.keyboard_right = true;
-                raw.jump = script.phase_frames < 3;
+                raw.keyboard.d = true;
+                raw.keyboard.space = script.phase_frames < 3;
                 if (script.phase_frames >= 3) script.advance(.ceiling_wait);
             },
             .ceiling_wait => {
-                raw.keyboard_right = true;
+                raw.keyboard.d = true;
                 if (script.ceiling_seen and controller.state.grounded) script.advance(.platform_approach);
             },
             .platform_approach => {
-                raw.keyboard_right = true;
+                raw.keyboard.d = true;
                 if (controller.state.grounded and controller.state.position.x >= -1.75) {
-                    raw.jump = true;
+                    raw.keyboard.space = true;
                     script.advance(.platform_jump_hold);
                 }
             },
             .platform_jump_hold => {
-                raw.keyboard_right = true;
-                raw.jump = script.phase_frames < 20;
+                raw.keyboard.d = true;
+                raw.keyboard.space = script.phase_frames < 20;
                 if (script.phase_frames >= 20) script.advance(.platform_wait);
             },
             .platform_wait => {
-                raw.keyboard_right = true;
+                raw.keyboard.d = true;
                 if (script.first_platform_landed) script.advance(.walk_off_first);
             },
-            .walk_off_first => raw.keyboard_right = true,
+            .walk_off_first => raw.keyboard.d = true,
             .coyote_delay => {
-                raw.keyboard_right = true;
+                raw.keyboard.d = true;
                 if (script.phase_frames >= 2) script.advance(.coyote_press);
             },
             .coyote_press => {
-                raw.keyboard_right = true;
-                raw.jump = true;
+                raw.keyboard.d = true;
+                raw.keyboard.space = true;
                 script.advance(.coyote_hold);
             },
             .coyote_hold => {
-                raw.jump = script.phase_frames < 18;
+                raw.keyboard.space = script.phase_frames < 18;
                 if (script.phase_frames >= 18) script.advance(.coyote_wait);
             },
             .coyote_wait => {
                 if (script.second_platform_landed) script.advance(.walk_off_second);
             },
-            .walk_off_second => raw.keyboard_right = true,
+            .walk_off_second => raw.keyboard.d = true,
             .buffer_fall => {
-                raw.keyboard_right = true;
+                raw.keyboard.d = true;
                 if (controller.state.velocity.y < 0 and controller.state.position.y < 1.42) script.advance(.buffer_press);
             },
             .buffer_press => {
-                raw.keyboard_right = true;
-                raw.jump = true;
+                raw.keyboard.d = true;
+                raw.keyboard.space = true;
                 script.advance(.buffered_wait);
             },
-            .buffered_wait => raw.keyboard_right = true,
+            .buffered_wait => raw.keyboard.d = true,
             .buffered_hold => {
-                raw.keyboard_right = true;
-                raw.jump = script.phase_frames < 4;
+                raw.keyboard.d = true;
+                raw.keyboard.space = script.phase_frames < 4;
                 if (script.phase_frames >= 4) script.advance(.wall_and_land);
             },
             .wall_and_land => {
-                raw.keyboard_right = true;
+                raw.keyboard.d = true;
                 if (script.wall_seen and controller.state.grounded) script.advance(.settle);
             },
             .settle => {},
@@ -345,7 +345,7 @@ pub const SecondaryMotionScriptedInput = struct {
         } else if (script.prelude_frame >= 90 and script.prelude_frame < 150) {
             raw.gamepad_move_axis = -1.0;
         } else if (script.prelude_frame == 180) {
-            raw.reset = true;
+            raw.keyboard.r = true;
         }
         script.prelude_frame += 1;
         return script.builder.update(raw);

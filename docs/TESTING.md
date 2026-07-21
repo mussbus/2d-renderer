@@ -137,6 +137,16 @@ Prompt 11 originally added 11 deterministic integration tests. They cover a 32-e
 
 Prompt 12 adds four focused regression tests, bringing the aggregate Zig count from 179 to 183. They cover deterministic lowest-ID support and sweep-face selection under collider-array permutation; an exact wall/floor diagonal corner at maximum run/fall speeds, including stable rest and epsilon-height support; exact requested/executed/discarded time under sustained 20 FPS overload plus an alternating zero/eight-substep schedule; and four-character state isolation with deliberately different animation, spring, facing, layer, foot-lock, and interaction-lock state. Existing tests were also strengthened for 20 zero-substep input frames, eight-substep one-shot edge consumption, pending-edge reset, coherent foot lifecycle chronology across repeated semantic contacts, comparator law checks at signed integer extremes, the 1,000-cycle interaction run, and the 100,000-tick integrated stress run.
 
+Prompt 13 adds ten grouped deterministic tests, bringing the aggregate count from 183 to 193. They cover every keyboard alternative and neutral opposite-key combination; Space/E/R/F1/Escape/window-close transition edges, held-state repeat rejection, and keyboard/gamepad deduplication; focus loss, release reconciliation, held-key suppression, and phantom-free regain; 20 zero-substep frames plus press/release coalescing and eight-tick single consumption; real controller movement, deceleration, facing, and opposing-input rest; measured short/held jump apex ordering; identical raw-key controller outcomes under one-tick and four-tick render grouping; real interaction completion, held-E non-restart, release/new-press restart, and world-aware reset cleanup; authoritative F1 invariance; and the complete 1,800-frame raw-key playground route without a window or GPU.
+
+Prompt 13's GPU-backed evidence run is:
+
+```text
+zig build run -- --frames 1800 --demo playground --scripted-input
+```
+
+It must demonstrate idle, left and right movement, release deceleration, opposing-key neutrality, measured short and held jumps, landing, debug on/off, controller-driven approach, exactly one E request and handshake completion while E stays held, one R reset, and a stable initial final state. It reports two characters, five environment colliders, 35 ordinary sprites, one texture page/range/actual draw, zero input-created GPU resources, and zero steady-state mapping/intent/playground allocation growth. Missing milestones or cleanup evidence returns nonzero.
+
 Prompt 11's GPU-backed evidence run is:
 
 ```text

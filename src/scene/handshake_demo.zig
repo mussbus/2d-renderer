@@ -105,7 +105,7 @@ pub const Scene = struct {
     pub fn updateFrame(scene: *Scene, frame: u32) !void {
         if (frame == 180) try scene.stageMirroredArrangement();
         const interact_held = (frame >= 30 and frame < 35) or (frame >= 210 and frame < 215);
-        const snapshot = try scene.snapshot_builder.update(.{ .interact = interact_held });
+        const snapshot = try scene.snapshot_builder.update(.{ .keyboard = .{ .e = interact_held } });
         try scene.pending_input.acceptFrame(snapshot);
         const participants = scene.characters();
 

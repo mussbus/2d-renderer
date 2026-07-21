@@ -292,7 +292,7 @@ test "interact edge is buffered across zero steps consumed once and requires a n
     const participants = fixture.characters();
     var builder = input.SnapshotBuilder{};
     var pending = input.PendingInput{};
-    try pending.acceptFrame(try builder.update(.{ .interact = true }));
+    try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .e = true } }));
     try std.testing.expectEqual(@as(usize, 0), fixture.manager.activeCount());
     const first_intent = pending.consumeTick();
     try std.testing.expect(first_intent.interact_pressed);
@@ -301,11 +301,11 @@ test "interact edge is buffered across zero steps consumed once and requires a n
     try runToTick(&fixture.manager, &participants, 1, 360);
     try std.testing.expectEqual(interaction.Lifecycle.completed, fixture.manager.instance(id).?.lifecycle);
 
-    try pending.acceptFrame(try builder.update(.{ .interact = true }));
+    try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .e = true } }));
     try std.testing.expect(!(pending.consumeTick().interact_pressed));
-    try pending.acceptFrame(try builder.update(.{ .interact = false }));
+    try pending.acceptFrame(try builder.update(.{}));
     _ = pending.consumeTick();
-    try pending.acceptFrame(try builder.update(.{ .interact = true }));
+    try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .e = true } }));
     const second_intent = pending.consumeTick();
     try std.testing.expect(second_intent.interact_pressed);
     try std.testing.expect((try fixture.manager.requestFromIntent(fixture.a.id, second_intent, &participants, 361)) != null);

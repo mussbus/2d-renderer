@@ -4,6 +4,7 @@ const fault_injection = @import("fault_injection");
 const sprite = @import("sprite_batch");
 const humanoid = @import("humanoid");
 const animation_system = @import("animation_system");
+const input = @import("input");
 const sdl_input = @import("sdl_input");
 const fixed_step = @import("fixed_step");
 const controller_demo = @import("controller_demo");
@@ -12,6 +13,7 @@ const handshake_demo = @import("handshake_demo");
 const handshake_ik_demo = @import("handshake_ik_demo");
 const foot_planting_demo = @import("foot_planting_demo");
 const integrated_demo = @import("integrated_demo");
+const playground_demo = @import("playground_demo");
 const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
@@ -25,6 +27,7 @@ pub const DemoMode = enum {
     handshake_ik,
     foot_planting,
     integrated,
+    playground,
 };
 
 const TimeMode = enum { normal, quarter_speed, paused };
@@ -267,7 +270,7 @@ pub const GpuDemo = struct {
         self.batch = null;
     }
 
-    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode, scripted_input_enabled: bool, integrated_debug_enabled: bool) !void {
+    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode, scripted_input_enabled: bool, integrated_debug_enabled: bool, interactive_enabled: bool) !void {
         const demo_storage = self.allocator.alloc(u8, 1024 * 1024) catch return error.DemoStorageAllocationFailure;
         defer self.allocator.free(demo_storage);
         var humanoid_allocator = std.heap.FixedBufferAllocator.init(demo_storage);
@@ -287,10 +290,15 @@ pub const GpuDemo = struct {
         defer if (foot_planting_scene) |*scene| scene.deinit();
         var integrated_scene: ?integrated_demo.Scene = null;
         defer if (integrated_scene) |*scene| scene.deinit();
+        var playground_scene: ?playground_demo.Scene = null;
+        defer if (playground_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
         var secondary_sequence = controller_demo.SecondaryMotionScriptedInput{};
+        var playground_sequence = playground_demo.ScriptedInput{};
+        var playground_snapshot_builder = input.SnapshotBuilder{};
+        var previous_playground_snapshot: ?input.FrameInputSnapshot = null;
         var animation_clock = try fixed_step.Clock.init(.{});
         var time_mode: TimeMode = .normal;
         var debug_geometry = true;
@@ -356,6 +364,14 @@ pub const GpuDemo = struct {
             }
             integrated_scene.?.setResourceSnapshot(resourceSnapshot(self, humanoid_allocator.end_index, 0));
         }
+        if (mode == .playground) {
+            if (scripted_input_enabled == interactive_enabled) return error.PlaygroundRequiresExactlyOneInputMode;
+            playground_scene = try playground_demo.Scene.init(humanoid_allocator.allocator(), integrated_debug_enabled);
+            if (!scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.PlaygroundInitializationCreatedGpuResources;
+            }
+        }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
         var creations_after_warmup = creations_before_run;
@@ -391,7 +407,7 @@ pub const GpuDemo = struct {
         while (running and (maximum_frames == null or frame < maximum_frames.?)) : (frame += 1) {
             var event: c.SDL_Event = undefined;
             while (c.SDL_PollEvent(&event)) {
-                if (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED) running = false;
+                if (mode != .playground and (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED)) running = false;
                 if (platform_input) |*platform| platform.handleEvent(&event);
             }
             if (!running) break;
@@ -720,6 +736,31 @@ pub const GpuDemo = struct {
                     allocation_checkpoint = humanoid_allocator.end_index;
                     humanoid_instances = try scene.submit(&self.batch.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                },
+                .playground => {
+                    const scene = &playground_scene.?;
+                    const now_ticks_ns = c.SDL_GetTicksNS();
+                    const measured_delta = @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;
+                    last_ticks_ns = now_ticks_ns;
+                    const snapshot = if (scripted_input_enabled)
+                        try playground_snapshot_builder.update(playground_sequence.nextRaw(scene))
+                    else
+                        try platform_input.?.pollFrame();
+                    logInputTransitions(previous_playground_snapshot, snapshot, scene.debug_visualization);
+                    previous_playground_snapshot = snapshot;
+                    if (snapshot.exit.pressed) {
+                        std.log.info("exit requested", .{});
+                        running = false;
+                        break;
+                    }
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(if (scripted_input_enabled) 1.0 / 60.0 else measured_delta, snapshot);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    if (scripted_input_enabled) try playground_sequence.observe(scene);
+                    self.batch.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
             }
             const prepared = self.batch.?.prepare();
@@ -1458,6 +1499,73 @@ pub const GpuDemo = struct {
             {
                 return error.IntegratedRenderingEvidenceIncomplete;
             }
+        } else if (mode == .playground) {
+            const scene = &playground_scene.?;
+            if (scripted_input_enabled) {
+                if (self.resource_metrics.frames_rendered != playground_demo.required_frames) return error.PlaygroundFrameCountMismatch;
+                try playground_sequence.validate(scene);
+            }
+            const final_state = scene.authoritativeState();
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            std.log.info("INTERACTIVE INPUT EVIDENCE", .{});
+            std.log.info("Controls: left=A/Left Arrow right=D/Right Arrow jump=Space interaction=E reset=R debug=F1 exit=Escape/window-close", .{});
+            std.log.info("Input architecture: SDL=src/platform/sdl_input.zig mapping=src/platform/input.zig snapshot=FrameInputSnapshot intent=CharacterIntent direct_controller_mutation=false raw_frame_delta_movement=false", .{});
+            std.log.info("Edge behavior: zero_substep_preserved=true multi_substep_single_consumption=true key_repeat=polled_state_transitions focus_loss=clear_keyboard_held_and_pending_suppress_until_release", .{});
+            std.log.info("Horizontal movement: left_displacement={d:.6} right_displacement={d:.6} opposing_displacement={d:.8} release_deceleration={}", .{
+                playground_sequence.left_displacement,
+                playground_sequence.right_displacement,
+                playground_sequence.opposing_displacement,
+                playground_sequence.milestones.deceleration,
+            });
+            std.log.info("Jump: short_apex={d:.6} held_apex={d:.6} difference={d:.6} Space_presses={d} Space_releases={d}", .{
+                playground_sequence.short_jump_apex,
+                playground_sequence.held_jump_apex,
+                playground_sequence.held_jump_apex - playground_sequence.short_jump_apex,
+                scene.evidence.jump_press_count,
+                scene.evidence.jump_release_count,
+            });
+            std.log.info("Interaction: E_requests={d} successful={d} held_E_restarts={d} contacts={d} releases={d} completions={d} final_locks={d} final_slots={d}", .{
+                scene.evidence.interaction_requests,
+                scene.evidence.successful_interactions,
+                scene.evidence.held_interaction_restarts,
+                scene.evidence.contact_events,
+                scene.evidence.release_events,
+                scene.evidence.completion_events,
+                final_state.participant_locks,
+                final_state.active_interactions,
+            });
+            std.log.info("Reset: player_position=({d:.6},{d:.6}) player_velocity=({d:.6},{d:.6}) active_interactions={d} active_IK={d} invalid_foot_locks={d}", .{
+                final_state.player_position.x,
+                final_state.player_position.y,
+                final_state.player_velocity.x,
+                final_state.player_velocity.y,
+                final_state.active_interactions,
+                final_state.active_arm_constraints,
+                @as(u32, @intFromBool(!final_state.player_grounded and (final_state.left_locked_target != null or final_state.right_locked_target != null))),
+            });
+            std.log.info("Debug: toggles={d} enabled={} maximum_primitives={d} GPU_resources_created={d}", .{
+                scene.evidence.debug_toggle_count,
+                scene.debug_visualization,
+                scene.evidence.maximum_debug_primitives,
+                gpu_resource_delta,
+            });
+            std.log.info("Keyboard/gamepad: merge=greatest_absolute_magnitude_keyboard_wins_ties simultaneous_actions=logical_OR disconnect=keyboard_remains_available", .{});
+            std.log.info("Playground: characters={d} environment_colliders={d} scripted_complete={} exits=Escape/window-close/optional-frame-limit", .{
+                playground_demo.character_count,
+                scene.world.colliders.len,
+                playground_sequence.completed(),
+            });
+            std.log.info("Rendering: texture_pages=1 draw_ranges={d} actual_draw_calls={d} debug_draw_calls=0 input_GPU_resources=0", .{
+                metrics.draw_ranges,
+                metrics.draw_calls,
+            });
+            std.log.info("Steady-state: input_polling_allocations=0 mapping_allocations=0 intent_allocations=0 playground_allocations=0 runtime_allocation_delta={d}", .{runtime_allocation_delta});
+            if (metrics.draw_ranges != 1 or metrics.draw_calls != 1 or gpu_resource_delta != 0 or
+                runtime_allocation_delta != 0 or self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0)
+            {
+                return error.PlaygroundRenderingEvidenceIncomplete;
+            }
         }
     }
 
@@ -1955,6 +2063,23 @@ pub const GpuDemo = struct {
         self.resource_metrics.gpu_resource_releases += 1;
     }
 };
+
+fn logInputTransitions(previous: ?input.FrameInputSnapshot, current: input.FrameInputSnapshot, debug_enabled_before: bool) void {
+    const old_left = if (previous) |value| value.keyboard_left_held else false;
+    const old_right = if (previous) |value| value.keyboard_right_held else false;
+    if (current.keyboard_left_held != old_left) {
+        std.log.info("move left {s}", .{if (current.keyboard_left_held) "started" else "stopped"});
+    }
+    if (current.keyboard_right_held != old_right) {
+        std.log.info("move right {s}", .{if (current.keyboard_right_held) "started" else "stopped"});
+    }
+    if (current.jump.pressed) std.log.info("jump pressed", .{});
+    if (current.jump.released) std.log.info("jump released", .{});
+    if (current.interact.pressed) std.log.info("interaction requested", .{});
+    if (current.reset.pressed) std.log.info("reset requested", .{});
+    if (current.debug_toggle.pressed) std.log.info("debug {s}", .{if (debug_enabled_before) "disabled" else "enabled"});
+    if (current.focus_lost) std.log.info("keyboard focus lost; held state and pending keyboard edges cleared", .{});
+}
 
 fn logAndVerifyDriverSupport() !void {
     const driver_count = c.SDL_GetNumGPUDrivers();

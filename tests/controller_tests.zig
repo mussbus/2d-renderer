@@ -53,19 +53,19 @@ test "fixed update rate is exactly 240 Hz" {
 
 test "input snapshots merge keyboard and gamepad and expose deterministic edges" {
     var builder = input.SnapshotBuilder{};
-    var snapshot = try builder.update(.{ .keyboard_left = true });
+    var snapshot = try builder.update(.{ .keyboard = .{ .a = true } });
     try std.testing.expectEqual(@as(f32, -1), snapshot.move_axis);
-    snapshot = try builder.update(.{ .keyboard_left = true, .keyboard_right = true, .gamepad_move_axis = 0.60 });
+    snapshot = try builder.update(.{ .keyboard = .{ .a = true, .d = true }, .gamepad_move_axis = 0.60 });
     try std.testing.expectApproxEqAbs(@as(f32, 0.50), snapshot.move_axis, tolerance);
-    snapshot = try builder.update(.{ .keyboard_right = true, .gamepad_move_axis = -1 });
+    snapshot = try builder.update(.{ .keyboard = .{ .d = true }, .gamepad_move_axis = -1 });
     try std.testing.expectEqual(@as(f32, 1), snapshot.move_axis);
     snapshot = try builder.update(.{ .gamepad_move_axis = input.gamepad_dead_zone });
     try std.testing.expectEqual(@as(f32, 0), snapshot.move_axis);
 
-    snapshot = try builder.update(.{ .jump = true, .interact = true });
+    snapshot = try builder.update(.{ .keyboard = .{ .space = true, .e = true } });
     try std.testing.expect(snapshot.jump.pressed and snapshot.jump.held and !snapshot.jump.released);
     try std.testing.expect(snapshot.interact.pressed);
-    snapshot = try builder.update(.{ .jump = true });
+    snapshot = try builder.update(.{ .keyboard = .{ .space = true } });
     try std.testing.expect(!snapshot.jump.pressed and snapshot.jump.held and !snapshot.jump.released);
     try std.testing.expect(snapshot.interact.released);
     snapshot = try builder.update(.{});
@@ -76,7 +76,7 @@ test "input snapshots merge keyboard and gamepad and expose deterministic edges"
 test "pending input preserves zero-tick edges and consumes each edge once" {
     var builder = input.SnapshotBuilder{};
     var pending = input.PendingInput{};
-    try pending.acceptFrame(try builder.update(.{ .jump = true, .interact = true }));
+    try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .space = true, .e = true } }));
     try pending.acceptFrame(try builder.update(.{}));
     const first = pending.consumeTick();
     try std.testing.expect(first.jump_pressed and first.jump_released and first.interact_pressed);
@@ -84,7 +84,7 @@ test "pending input preserves zero-tick edges and consumes each edge once" {
     const second = pending.consumeTick();
     try std.testing.expect(!second.jump_pressed and !second.jump_released and !second.interact_pressed);
 
-    try pending.acceptFrame(try builder.update(.{ .jump = true, .keyboard_right = true }));
+    try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .space = true, .d = true } }));
     const rapid = pending.consumeTick();
     try std.testing.expect(rapid.jump_pressed and rapid.jump_held);
     try std.testing.expectEqual(@as(f32, 1), rapid.move_axis);
@@ -95,15 +95,15 @@ test "pending input preserves zero-tick edges and consumes each edge once" {
 
     var independent_a = input.SnapshotBuilder{};
     var independent_b = input.SnapshotBuilder{};
-    try std.testing.expect((try independent_a.update(.{ .jump = true })).jump.pressed);
-    try std.testing.expect((try independent_b.update(.{ .jump = true })).jump.pressed);
-    try std.testing.expect(!(try independent_a.update(.{ .jump = true })).jump.pressed);
+    try std.testing.expect((try independent_a.update(.{ .keyboard = .{ .space = true } })).jump.pressed);
+    try std.testing.expect((try independent_b.update(.{ .keyboard = .{ .space = true } })).jump.pressed);
+    try std.testing.expect(!(try independent_a.update(.{ .keyboard = .{ .space = true } })).jump.pressed);
     try std.testing.expect((try independent_b.update(.{})).jump.released);
 
     var delayed_builder = input.SnapshotBuilder{};
     var delayed = input.PendingInput{};
-    try delayed.acceptFrame(try delayed_builder.update(.{ .jump = true, .interact = true }));
-    for (0..19) |_| try delayed.acceptFrame(try delayed_builder.update(.{ .jump = true, .interact = true }));
+    try delayed.acceptFrame(try delayed_builder.update(.{ .keyboard = .{ .space = true, .e = true } }));
+    for (0..19) |_| try delayed.acceptFrame(try delayed_builder.update(.{ .keyboard = .{ .space = true, .e = true } }));
     const delayed_first = delayed.consumeTick();
     try std.testing.expect(delayed_first.jump_pressed and delayed_first.jump_held and delayed_first.interact_pressed);
     for (0..7) |_| {
@@ -112,7 +112,7 @@ test "pending input preserves zero-tick edges and consumes each edge once" {
     }
     delayed.reset();
     delayed_builder.reset();
-    try delayed.acceptFrame(try delayed_builder.update(.{ .jump = true, .interact = true }));
+    try delayed.acceptFrame(try delayed_builder.update(.{ .keyboard = .{ .space = true, .e = true } }));
     try delayed.acceptFrame(try delayed_builder.update(.{}));
     delayed.reset();
     try std.testing.expectEqual(emptyIntent(), delayed.consumeTick());
@@ -533,7 +533,7 @@ test "controller runtime advances animator once per 240 Hz tick without hot-path
     defer runtime.deinit();
     var builder = input.SnapshotBuilder{};
     for (0..60) |_| {
-        try runtime.acceptFrameInput(try builder.update(.{ .keyboard_right = true }));
+        try runtime.acceptFrameInput(try builder.update(.{ .keyboard = .{ .d = true } }));
         const frame = try runtime.beginFrame(1.0 / 60.0);
         try std.testing.expectEqual(@as(u8, 4), frame.substeps);
         for (0..frame.substeps) |_| _ = try runtime.simulateTick(&animation, &character, &definition);
@@ -787,7 +787,7 @@ test "runtime reset clears rising falling buffered and transition state without 
     try std.testing.expect(animation.animator.active_transition == null);
 
     var builder = input.SnapshotBuilder{};
-    try runtime.acceptFrameInput(try builder.update(.{ .jump = true }));
+    try runtime.acceptFrameInput(try builder.update(.{ .keyboard = .{ .space = true } }));
     _ = try runtime.simulateTick(&animation, &character, &definition);
     try std.testing.expect(runtime.controller.state.velocity.y > 0);
     try runtime.reset(&animation, &character, &definition);

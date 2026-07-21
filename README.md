@@ -17,6 +17,32 @@ The default build compiles and validates both HLSL stages with repository-local 
 
 The batch is the production rendering foundation, not a parallel demonstration renderer. Prompt 3 adds foundational math, immutable skeleton definitions, independent mutable poses, hierarchical sockets, render attachments, and programmatic pose manipulation. Prompt 4 adds eight immutable authored clips, typed events, deterministic sampling, component-space blending, one-shot fallbacks, and the finite `zig build run -- --frames 360 --demo animation` idle/walk demonstration. Prompt 5 adds one authoritative 240 Hz physics/animation clock, SDL keyboard/gamepad input, edge-preserving `CharacterIntent`, swept static AABB collision, gravity, variable-height jump, coyote time, jump buffering, landing reporting, render interpolation, and the interactive `zig build run -- --demo controller` mode. Its deterministic GPU-backed acceptance route is `zig build run -- --frames 600 --demo controller --scripted-input`. Prompt 6 layers contact-relative speed-scaled walk bounce, physics-impact landing compression, and acceleration-driven head lag entirely into the visual local pose; its deterministic evidence route is `zig build run -- --frames 900 --demo secondary-motion --scripted-input`. Prompt 7 adds stable entity IDs, independently owned character runtime state, character-local reflection, bounded semantic layer overrides, and globally interleaved two-character ordering; its evidence route is `zig build run -- --frames 720 --demo multi-character`. Prompt 8 adds the allocation-free shared paired-interaction manager and deterministic fixed-position handshake; its non-IK evidence route remains `zig build run -- --frames 720 --demo handshake --scripted-input`. Prompt 9 adds analytical two-bone arm IK, stable humanoid bindings, symmetric pre-IK midpoint constraints, deterministic timeline weighting, mirrored bend control, and perturbed-contact proof through `zig build run -- --frames 720 --demo handshake-ik --scripted-input`. Prompt 10 adds authoritative-world ground probes, anatomical per-foot world locks, immutable leg bindings, analytical visual leg IK, fixed-tick acquisition/release, and measured floor/platform quality through `zig build run -- --frames 1200 --demo foot-planting --scripted-input`. Prompt 11 composes every production path into `zig build run -- --frames 2400 --demo integrated --scripted-input`, adds bounded read-only diagnostics and milestone snapshots, and optionally appends debug primitives with `--debug-visualization` through the same one-draw sprite batch.
 
+## Interactive playground
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo playground --interactive
+```
+
+| Control | Action |
+| --- | --- |
+| `A` / Left Arrow | Move left |
+| `D` / Right Arrow | Move right |
+| Space | Jump; hold for a higher jump or release early for a shorter jump |
+| `E` | Interact |
+| `R` | Reset the playground |
+| `F1` | Toggle debug visualization |
+| `F2` | Cycle normal, quarter-speed, and paused controller time modes where exposed |
+| `F3` | Single-step a paused controller route where exposed |
+| Escape | Exit |
+
+Walk right toward the passive character and stop near the authored handshake position. Both characters must be grounded and facing one another; spacing remains deliberately strict, and pressing `E` never snaps or warps either root. The raised platforms, short/held jump behavior, foot planting, arm IK, reset, and debug overlay all use the production runtime paths.
+
+The bounded automated route uses synthetic raw key state through the identical keyboard mapping:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo playground --scripted-input
+```
+
 Start with:
 
 - [`AGENTS.md`](AGENTS.md) for binding requirements and prohibitions.

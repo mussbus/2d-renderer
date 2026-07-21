@@ -304,23 +304,23 @@ pub const Scene = struct {
                 const interval = (scene.phase_tick / 360) % 2;
                 raw.gamepad_move_axis = if (interval == 0) 0.56 else -0.56;
             },
-            .jump => raw.jump = scene.phase_tick < 32,
+            .jump => raw.keyboard.space = scene.phase_tick < 32,
             .airborne => {},
             .landing => {
                 const interval = (scene.phase_tick / 240) % 2;
                 raw.gamepad_move_axis = if (interval == 0) 0.48 else -0.48;
             },
             .walk_platform => switch (scene.platform_stage) {
-                0 => raw.keyboard_right = true,
+                0 => raw.keyboard.d = true,
                 1 => {
-                    raw.keyboard_right = true;
-                    raw.jump = true;
+                    raw.keyboard.d = true;
+                    raw.keyboard.space = true;
                 },
                 2 => {
-                    raw.keyboard_right = true;
-                    raw.jump = scene.phase_tick < 80;
+                    raw.keyboard.d = true;
+                    raw.keyboard.space = scene.phase_tick < 80;
                 },
-                3 => raw.keyboard_right = true,
+                3 => raw.keyboard.d = true,
                 else => {
                     const position = scene.player.controller.?.state.position.x;
                     raw.gamepad_move_axis = if (position > -0.05) -0.44 else 0.44;
@@ -337,7 +337,7 @@ pub const Scene = struct {
                 else => {
                     const participants_value = scene.participants();
                     const eligibility = scene.manager.evaluateEligibility(scene.player.id, scene.partner.id, &participants_value);
-                    if (eligibility.isEligible()) raw.interact = true;
+                    if (eligibility.isEligible()) raw.keyboard.e = true;
                 },
             },
             .handshake, .post_interaction, .final_idle => {},
