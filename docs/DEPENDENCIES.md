@@ -63,6 +63,8 @@ The actual `include/SDL3/SDL_gpu.h` confirms the APIs and constants the renderer
 - `SDL_PROP_GPU_DEVICE_CREATE_SHADERS_DXIL_BOOLEAN` and `SDL_GPU_SHADERFORMAT_DXIL` for DXIL capability declaration.
 - `SDL_GetGPUDeviceDriver` and `SDL_GetGPUShaderFormats` for post-creation verification.
 - `SDL_ClaimWindowForGPUDevice` and `SDL_WaitAndAcquireGPUSwapchainTexture` for presentation.
+- `SDL_WINDOW_RESIZABLE`, `SDL_GetWindowSizeInPixels`, and window resized/pixel-size/minimized/restored events for resizable high-DPI drawable tracking.
+- `SDL_GetGPUSwapchainTextureFormat` for the persistent swapchain-compatible graphics pipeline; fixed readback retains `R8G8B8A8_UNORM`.
 - `SDL_DrawGPUIndexedPrimitives` with an explicit `num_instances` parameter for instanced indexed drawing.
 - Matching release functions for GPU buffers, transfer buffers, textures, samplers, shaders, graphics pipelines, fences, and claimed windows, plus `SDL_DestroyGPUDevice`.
 

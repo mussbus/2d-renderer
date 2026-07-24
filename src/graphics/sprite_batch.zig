@@ -27,6 +27,7 @@ pub const SpriteRequest = struct {
     uv_rect: [4]f32,
     tint: [4]f32,
     texture_page: u32,
+    camera_x_factor: f32 = 1.0,
     order: OrderInput,
 };
 
@@ -38,6 +39,7 @@ pub const SpriteSubmission = extern struct {
     uv_rect: [4]f32,
     tint: [4]f32,
     texture_page: u32,
+    camera_x_factor: f32,
     order: DrawOrderKey,
 };
 
@@ -48,6 +50,7 @@ pub const GpuInstance = extern struct {
     pivot: [2]f32,
     uv_rect: [4]f32,
     tint: [4]f32,
+    camera_x_factor: f32,
 
     pub fn fromSubmission(sprite: SpriteSubmission) GpuInstance {
         return .{
@@ -57,6 +60,7 @@ pub const GpuInstance = extern struct {
             .pivot = sprite.pivot,
             .uv_rect = sprite.uv_rect,
             .tint = sprite.tint,
+            .camera_x_factor = sprite.camera_x_factor,
         };
     }
 };
@@ -64,10 +68,11 @@ pub const GpuInstance = extern struct {
 comptime {
     if (@sizeOf(DrawOrderKey) != 16 or @alignOf(DrawOrderKey) != 8) @compileError("DrawOrderKey layout must remain explicit");
     if (@offsetOf(DrawOrderKey, "submission_index") != 8) @compileError("DrawOrderKey.submission_index offset mismatch");
-    if (@sizeOf(SpriteSubmission) != 80 or @alignOf(SpriteSubmission) != 8) @compileError("SpriteSubmission CPU stride mismatch");
+    if (@sizeOf(SpriteSubmission) != 88 or @alignOf(SpriteSubmission) != 8) @compileError("SpriteSubmission CPU stride mismatch");
     if (@offsetOf(SpriteSubmission, "texture_page") != 60) @compileError("SpriteSubmission.texture_page offset mismatch");
-    if (@offsetOf(SpriteSubmission, "order") != 64) @compileError("SpriteSubmission.order offset mismatch");
-    if (@sizeOf(GpuInstance) != 60) @compileError("GpuInstance must have a 60-byte HLSL-matched stride");
+    if (@offsetOf(SpriteSubmission, "camera_x_factor") != 64) @compileError("SpriteSubmission.camera_x_factor offset mismatch");
+    if (@offsetOf(SpriteSubmission, "order") != 72) @compileError("SpriteSubmission.order offset mismatch");
+    if (@sizeOf(GpuInstance) != 64) @compileError("GpuInstance must have a 64-byte HLSL-matched stride");
     if (@alignOf(GpuInstance) != 4) @compileError("GpuInstance must be aligned to one f32 scalar");
     if (@offsetOf(GpuInstance, "world_position") != 0) @compileError("GpuInstance.world_position offset mismatch");
     if (@offsetOf(GpuInstance, "rotation") != 8) @compileError("GpuInstance.rotation offset mismatch");
@@ -75,6 +80,7 @@ comptime {
     if (@offsetOf(GpuInstance, "pivot") != 20) @compileError("GpuInstance.pivot offset mismatch");
     if (@offsetOf(GpuInstance, "uv_rect") != 28) @compileError("GpuInstance.uv_rect offset mismatch");
     if (@offsetOf(GpuInstance, "tint") != 44) @compileError("GpuInstance.tint offset mismatch");
+    if (@offsetOf(GpuInstance, "camera_x_factor") != 60) @compileError("GpuInstance.camera_x_factor offset mismatch");
 }
 
 pub const DrawRange = struct {
@@ -110,6 +116,7 @@ pub const BatchError = error{
     InvalidNonFiniteTransform,
     InvalidUvRectangle,
     InvalidTint,
+    InvalidCameraXFactor,
     InvalidTexturePage,
     InvalidSceneLayer,
     InvalidInteractionLayer,
@@ -187,6 +194,7 @@ pub const SpriteBatch = struct {
             .uv_rect = request.uv_rect,
             .tint = request.tint,
             .texture_page = request.texture_page,
+            .camera_x_factor = request.camera_x_factor,
             .order = resolved_order,
         };
         self.count += 1;
@@ -261,6 +269,9 @@ pub fn validateRequest(request: SpriteRequest, texture_page_count: u32) BatchErr
     if (!allFinite(&request.tint)) return error.InvalidTint;
     for (request.tint) |component| {
         if (component < 0 or component > 1) return error.InvalidTint;
+    }
+    if (!std.math.isFinite(request.camera_x_factor) or request.camera_x_factor < 0 or request.camera_x_factor > 1) {
+        return error.InvalidCameraXFactor;
     }
     if (request.texture_page >= texture_page_count) return error.InvalidTexturePage;
     _ = try validateOrder(request.order, 0);

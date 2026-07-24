@@ -18,7 +18,7 @@ The application is a character controller and animation system, not a ragdoll si
 
 `Vec2` values are mathematical column vectors. `Mat3` represents an affine 2D transform in homogeneous coordinates and is stored column-major. Code applies transforms as `p_result = M * p_source`.
 
-The stored columns are the transformed local X basis, transformed local Y basis, and affine translation. Points use homogeneous `w = 1`; directions use `w = 0`, so translation never affects a direction. The arbitrary character root is the authored world origin. Character and bone translations use metres; only render-attachment submission converts metres to pixels.
+The stored columns are the transformed local X basis, transformed local Y basis, and affine translation. Points use homogeneous `w = 1`; directions use `w = 0`, so translation never affects a direction. The arbitrary character root is the authored world origin. Character, bone, collider, debug, and sprite submissions remain in metres; only the GPU camera boundary converts those values to clip space.
 
 A local transform is composed as:
 
@@ -37,6 +37,18 @@ Function names bind operand direction: `Transform2D.localToParent`, `composePare
 Angles wrap to `[-pi, pi)`. Interpolation is component-wise: translation and nonuniform scale are linear, while rotation follows the signed shortest arc. Matrix coefficients are never interpolated. Zero and negative finite scale are supported math values. The current humanoid uses positive bone scale; future facing mirroring must deliberately use negative X scale in the character/pose transform without changing multiplication order or independently relocating attachments.
 
 The root transform combines only physics root position and facing. Animation and secondary visual offsets remain in the pose hierarchy; they never rewrite the physics root. CPU/GPU layout tests will validate any matrix or packed-instance representation passed to HLSL. HLSL uses `mul(matrix, column_vector)` for the same convention.
+
+## Camera, viewport, and parallax ownership
+
+`src/graphics/camera2d.zig` owns presentation state: a finite world-space center, nonzero drawable-pixel width and height, and a positive pixels-per-metre zoom. It imports only the renderer-independent math module. `worldToPresentation`, `presentationToWorld`, `worldToClip`, visible half-extents, the 16-byte GPU uniform, and deterministic horizontal following are therefore testable without SDL, a window, or a GPU.
+
+The default camera uses 82 pixels per metre and center `(0, 135 / 82) m`. At 640×480 this maps world origin to the previous `(320, 105)` presentation point, so existing scenes remain visually comparable. Resizing changes only the half-width and half-height visible in world metres. Zoom and character size do not change, so a larger window reveals more world instead of stretching it.
+
+Visible windows are created with `SDL_WINDOW_RESIZABLE`. SDL window-resize, drawable-pixel-size, minimize, and restore events refresh `SDL_GetWindowSizeInPixels`; the dimensions returned by `SDL_WaitAndAcquireGPUSwapchainTexture` are the final per-frame authority. A zero or absent swapchain texture skips drawing without changing the last valid camera. Restoration applies the new nonzero pixel extent. Resize handling updates scalar camera state only and does not recreate shaders, textures, buffers, samplers, or pipelines.
+
+Horizontal camera following is a deterministic dead zone evaluated from the already-authoritative character position after simulation. It writes only `Camera2D.center.x`. Camera movement never writes controller position, velocity, collision, animation clocks, foot state, or interaction eligibility.
+
+Each sprite instance carries one validated horizontal camera-response factor. Gameplay geometry and characters use `1.0`, the cave midground uses `0.45`, and the distant cave layer uses `0.125`. The vertex shader subtracts `camera_center.x * factor` while applying full vertical camera displacement. Parallax is presentation metadata in the global sprite batch; it is absent from character control and collision.
 
 ## Fixed simulation and render interpolation
 
@@ -113,7 +125,7 @@ CPU responsibilities:
 
 GPU responsibilities through the SDL3 GPU API:
 
-- Transforming unit-quad vertices from packed instance data.
+- Transforming unit-quad vertices from world metres through current camera center/zoom/viewport state into clip space.
 - Sampling the body-part texture atlas.
 - Applying vertex colour and texture alpha.
 - Alpha blending into the swapchain target.
@@ -123,9 +135,9 @@ No SDL high-level 2D renderer participates in this boundary.
 
 ## Transparent draw order and instancing
 
-Each visible body part produces a CPU `SpriteSubmission` with world position, rotation, nonuniform scale/size, pivot, atlas UV bounds, straight-alpha tint, texture page, and a lexicographic integer draw key. The key contains signed scene and interaction layers, unsigned actor and body-part layers, and a bounded `u64` submission index. A stable semantic order preserves original submission order for equal layers without using float depth, addresses, or packed arithmetic.
+Each visible body part produces a CPU `SpriteSubmission` with world position, rotation, nonuniform scale/size in metres, pivot, atlas UV bounds, straight-alpha tint, texture page, horizontal camera-response factor, and a lexicographic integer draw key. The key contains signed scene and interaction layers, unsigned actor and body-part layers, and a bounded `u64` submission index. A stable semantic order preserves original submission order for equal layers without using float depth, addresses, or packed arithmetic.
 
-The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. Consecutive compatible texture pages form draw ranges without reordering across page changes. The current one-page atlas and straight-alpha sprite pipeline produce one range. The renderer uploads 60-byte GPU records and calls `SDL_DrawGPUIndexedPrimitives` with six shared quad indices and `num_instances > 1`. Slot 1 is declared `SDL_GPU_VERTEXINPUTRATE_INSTANCE`; a draw per body part or CPU-expanded mesh does not qualify as instancing. `docs/SPRITE_BATCH.md` binds the complete layout and transform contract.
+The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. Consecutive compatible texture pages form draw ranges without reordering across page changes. The current one-page atlas and straight-alpha sprite pipeline produce one range. The renderer uploads 64-byte GPU records and calls `SDL_DrawGPUIndexedPrimitives` with six shared quad indices and `num_instances > 1`. Slot 1 is declared `SDL_GPU_VERTEXINPUTRATE_INSTANCE`; a draw per body part or CPU-expanded mesh does not qualify as instancing. `docs/SPRITE_BATCH.md` binds the complete layout and transform contract.
 
 Prompt 7 formalizes `CharacterInstance` as the mutable entity boundary. It borrows immutable skeleton, attachment, clip, event, and state-machine views while independently owning pose, animator, procedural, facing, optional controller, and override state. Stable monotonic `u32` entity IDs establish deterministic global submission order without pointer identity. All attachments from both characters enter the same batch before the global semantic sort. Bounded interaction overrides can raise one hand or forearm above another character without changing either actor layer or any immutable attachment. `docs/MULTI_CHARACTER.md` binds the complete model.
 
@@ -135,7 +147,7 @@ Debug bones, colliders, sockets, and targets use a bounded primitive buffer and 
 
 ## Resource lifetime and allocation model
 
-Initialization proceeds from platform to window, GPU device, claimed window, swapchain configuration, shaders, pipeline, sampler, textures, static geometry buffers, transfer buffers, and per-frame instance resources. Every owner has an explicit `deinit` path. Partial initialization uses `errdefer` or an equivalent scope guard to destroy already-acquired resources in reverse order.
+Initialization proceeds from platform to resizable window, GPU device, claimed window, swapchain format, shaders, fixed-readback and swapchain-compatible pipelines, sampler, textures, static geometry buffers, transfer buffers, and per-frame instance resources. Every owner has an explicit `deinit` path. Partial initialization uses `errdefer` or an equivalent scope guard to destroy already-acquired resources in reverse order.
 
 SDL GPU resource destruction maps to the matching API: buffers, transfer buffers, textures, samplers, shaders, pipelines, fences, the claimed window, and the GPU device are each released by their documented function. Command buffers are either submitted or cancelled on every path. Destruction waits for GPU idle when in-flight access makes that necessary.
 

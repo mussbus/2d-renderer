@@ -78,10 +78,12 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .integrated;
             } else if (std.mem.eql(u8, arguments[index], "playground")) {
                 options.demo = .playground;
+            } else if (std.mem.eql(u8, arguments[index], "side-scroller")) {
+                options.demo = .side_scroller;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, side-scroller", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
@@ -91,16 +93,18 @@ fn parseOptions(arguments: []const []const u8) !Options {
         } else if (std.mem.eql(u8, argument, "--interactive")) {
             options.interactive = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground>, --scripted-input, --debug-visualization, --interactive", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|side-scroller>, --scripted-input, --debug-visualization, --interactive", .{argument});
             return error.UnknownArgument;
         }
     }
-    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated and options.demo != .playground) {
+    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated and options.demo != .playground and options.demo != .side_scroller) {
         return error.ScriptedInputRequiresControllerDemo;
     }
     if (options.debug_visualization and options.demo != .integrated and options.demo != .playground) return error.DebugVisualizationRequiresIntegratedDemo;
     if (options.interactive and options.demo != .playground) return error.InteractiveRequiresPlaygroundDemo;
     if (options.demo == .playground and options.interactive == options.scripted_input) return error.PlaygroundRequiresExactlyOneInputMode;
     if (options.demo == .playground and options.scripted_input and options.maximum_frames != 1800) return error.PlaygroundScriptRequiresExactFrameCount;
+    if (options.demo == .side_scroller and (!options.scripted_input or options.interactive)) return error.SideScrollerRequiresScriptedInput;
+    if (options.demo == .side_scroller and options.maximum_frames != 1100) return error.SideScrollerScriptRequiresExactFrameCount;
     return options;
 }

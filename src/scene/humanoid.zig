@@ -6,8 +6,6 @@ const sprite = @import("sprite_batch");
 const fault_injection = @import("fault_injection");
 
 pub const attachment_count: usize = 15;
-pub const pixels_per_meter: f32 = 82.0;
-pub const presentation_origin = math.Vec2.init(320, 105);
 
 pub const Facing = enum(u8) { left, right };
 
@@ -99,19 +97,19 @@ pub const RenderAttachment = struct {
     body_part_layer: u16,
 };
 
-pub const PresentationTransform = struct {
+pub const SpriteTransform = struct {
     world_position: math.Vec2,
     rotation_radians: f32,
     signed_scale: math.Vec2,
 };
 
-pub fn presentationTransform(world: math.Mat3) !PresentationTransform {
+pub fn spriteTransform(world: math.Mat3) !SpriteTransform {
     if (!world.isFinite()) return error.InvalidNonFiniteTransform;
     const x_length = @sqrt(world.values[0] * world.values[0] + world.values[1] * world.values[1]);
     const y_length = @sqrt(world.values[3] * world.values[3] + world.values[4] * world.values[4]);
     const determinant = world.values[0] * world.values[4] - world.values[1] * world.values[3];
     if (!std.math.isFinite(x_length) or !std.math.isFinite(y_length) or x_length == 0 or y_length == 0) {
-        return error.InvalidPresentationBasis;
+        return error.InvalidSpriteBasis;
     }
     if (determinant < 0) {
         return .{
@@ -268,13 +266,12 @@ pub const HumanoidCharacter = struct {
         var submitted: u32 = 0;
         for (definition.attachments) |attachment_definition| {
             const world = try attachmentWorld(character, definition, &attachment_definition);
-            const presentation_transform = try presentationTransform(world);
-            const presentation_position = presentation_origin.add(presentation_transform.world_position.scale(pixels_per_meter));
-            const presentation_size = presentation_transform.signed_scale.componentMul(attachment_definition.sprite_size).scale(pixels_per_meter);
+            const sprite_transform = try spriteTransform(world);
+            const world_size = sprite_transform.signed_scale.componentMul(attachment_definition.sprite_size);
             try batch.submit(.{
-                .world_position = presentation_position.toArray(),
-                .rotation = presentation_transform.rotation_radians,
-                .scale = presentation_size.toArray(),
+                .world_position = sprite_transform.world_position.toArray(),
+                .rotation = sprite_transform.rotation_radians,
+                .scale = world_size.toArray(),
                 .pivot = attachment_definition.pivot,
                 .uv_rect = attachment_definition.uv_rect,
                 .tint = attachment_definition.tint,

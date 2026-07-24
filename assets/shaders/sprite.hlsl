@@ -7,6 +7,7 @@ struct VertexInput
     float2 pivot : TEXCOORD4;
     float4 uv_rect : TEXCOORD5;
     float4 tint : TEXCOORD6;
+    float camera_x_factor : TEXCOORD7;
 };
 
 struct VertexOutput
@@ -21,7 +22,8 @@ SamplerState sprite_sampler : register(s0, space2);
 
 cbuffer Camera : register(b0, space1)
 {
-    float4 viewport_data;
+    float2 camera_center;
+    float2 clip_scale;
 };
 
 VertexOutput VSMain(VertexInput input)
@@ -34,7 +36,10 @@ VertexOutput VSMain(VertexInput input)
         cosine_value * pivoted.x - sine_value * pivoted.y,
         sine_value * pivoted.x + cosine_value * pivoted.y);
     float2 world = rotated + input.world_position;
-    float2 clip = world / viewport_data.xy * 2.0f - 1.0f;
+    float2 camera_relative = float2(
+        world.x - camera_center.x * input.camera_x_factor,
+        world.y - camera_center.y);
+    float2 clip = camera_relative * clip_scale;
     output.position = float4(clip, 0.0f, 1.0f);
     output.uv = float2(
         lerp(input.uv_rect.x, input.uv_rect.z, input.local_position.x),

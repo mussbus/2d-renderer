@@ -4,6 +4,7 @@ const math = @import("math");
 const collision_world = @import("collision_world");
 const character_controller = @import("character_controller");
 const playground = @import("playground_demo");
+const sprite = @import("sprite_batch");
 
 test "production keyboard horizontal alternatives map once and opposing controls are neutral" {
     const cases = [_]struct { keyboard: input.KeyboardState, expected: f32 }{
@@ -250,6 +251,50 @@ test "bounded playground script uses raw mapping and completes every production 
     }
     try script.validate(&scene);
     try std.testing.expectEqual(@as(u8, 4), scene.evidence.maximum_substeps);
+}
+
+test "playground world extends horizontally while retaining raised platforms" {
+    const inputs = playground.sideScrollingColliderInputs();
+    try std.testing.expectEqual(@as(usize, 5), inputs.len);
+    try std.testing.expectApproxEqAbs(playground.world_min_x, inputs[0].bounds.minimum.x, 0.000001);
+    try std.testing.expectApproxEqAbs(playground.world_max_x, inputs[0].bounds.maximum.x, 0.000001);
+    try std.testing.expectEqual(@intFromEnum(collision_world.DemoColliderId.raised_platform_1), inputs[3].id);
+    try std.testing.expectEqual(@intFromEnum(collision_world.DemoColliderId.raised_platform_2), inputs[4].id);
+}
+
+test "cave submission carries distant midground and gameplay camera factors in world metres" {
+    var scene = try playground.Scene.init(std.testing.allocator, false);
+    defer scene.deinit();
+    var batch = try sprite.SpriteBatch.init(std.testing.allocator, sprite.initial_capacity, 1);
+    defer batch.deinit();
+    batch.beginFrame();
+    _ = try scene.submit(&batch);
+    const prepared = batch.prepare();
+    var distant: usize = 0;
+    var midground: usize = 0;
+    var gameplay: usize = 0;
+    for (prepared.sprites) |submitted| {
+        if (submitted.camera_x_factor == playground.distant_camera_x_factor) distant += 1;
+        if (submitted.camera_x_factor == playground.midground_camera_x_factor) midground += 1;
+        if (submitted.camera_x_factor == 1) gameplay += 1;
+    }
+    try std.testing.expect(distant >= 3);
+    try std.testing.expect(midground >= 3);
+    try std.testing.expect(gameplay >= playground.character_count * 15 + 5);
+    try std.testing.expect(prepared.sprites[0].scale[0] < 100);
+}
+
+test "bounded side-scroller input crosses the extended world deterministically" {
+    var scene = try playground.Scene.init(std.testing.allocator, false);
+    defer scene.deinit();
+    var script = playground.SideScrollerScriptedInput{};
+    var builder = input.SnapshotBuilder{};
+    for (0..playground.side_scroller_required_frames) |_| {
+        const snapshot = try builder.update(script.nextRaw(&scene));
+        try scene.updateFrame(1.0 / 60.0, snapshot);
+        script.observe(&scene);
+    }
+    try script.validate(&scene);
 }
 
 fn jumpApex(hold_ticks: u32) !f32 {

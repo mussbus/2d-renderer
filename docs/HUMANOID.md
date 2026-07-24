@@ -40,7 +40,7 @@ Those immutable layer values are the right-facing authored defaults. Runtime ord
 
 ## Attachment submission
 
-Each attachment stores only parent index, local transform, sprite size, pivot, UV rectangle, straight-alpha tint, texture page, body-part layer, stable semantic, and inline debug name. Per frame, CPU code computes `bone_world * attachment_local`, extracts presentation position/rotation/scale, and submits it through the existing `SpriteBatch`. All 15 attachments use texture page 0 and therefore form one range and one `SDL_DrawGPUIndexedPrimitives` command. Pose changes create no GPU resources and do not change the pinned shader or pipeline.
+Each attachment stores only parent index, local transform, sprite size, pivot, UV rectangle, straight-alpha tint, texture page, body-part layer, stable semantic, and inline debug name. Per frame, CPU code computes `bone_world * attachment_local`, extracts world position/rotation/signed scale in metres, and submits it through the existing `SpriteBatch`. Camera and viewport conversion occur later in the GPU vertex boundary. All 15 attachments use texture page 0 and therefore form one range and one `SDL_DrawGPUIndexedPrimitives` command. Pose changes create no GPU resources and do not change the pinned shader or pipelines.
 
 ## Deterministic demonstration
 

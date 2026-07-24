@@ -165,12 +165,10 @@ pub const Runtime = struct {
         for (runtime.world.colliders) |static_collider| {
             const center = static_collider.bounds.center();
             const size = static_collider.bounds.size();
-            const presentation = humanoid.presentation_origin.add(center.scale(humanoid.pixels_per_meter));
-            const presentation_size = size.scale(humanoid.pixels_per_meter);
             try batch.submit(.{
-                .world_position = presentation.toArray(),
+                .world_position = center.toArray(),
                 .rotation = 0,
-                .scale = presentation_size.toArray(),
+                .scale = size.toArray(),
                 .pivot = .{ 0.5, 0.5 },
                 .uv_rect = .{ 0, 0.5, 0.5, 1 },
                 .tint = .{ 0.30, 0.38, 0.48, 0.75 },

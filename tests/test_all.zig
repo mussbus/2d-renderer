@@ -4,6 +4,7 @@ const sprite = @import("sprite_batch");
 
 test {
     _ = @import("math_tests.zig");
+    _ = @import("camera_tests.zig");
     _ = @import("skeleton_tests.zig");
     _ = @import("animation_tests.zig");
     _ = @import("controller_tests.zig");
@@ -62,14 +63,16 @@ fn expectPoint(expected: [2]f32, actual: [2]f32) !void {
 }
 
 test "GPU instance layout is exact and contains only transferred scalar data" {
-    try std.testing.expectEqual(@as(usize, 80), @sizeOf(sprite.SpriteSubmission));
+    try std.testing.expectEqual(@as(usize, 88), @sizeOf(sprite.SpriteSubmission));
     try std.testing.expectEqual(@as(usize, 8), @alignOf(sprite.SpriteSubmission));
     try std.testing.expectEqual(@as(usize, 60), @offsetOf(sprite.SpriteSubmission, "texture_page"));
-    try std.testing.expectEqual(@as(usize, 64), @offsetOf(sprite.SpriteSubmission, "order"));
-    try std.testing.expectEqual(@as(usize, 60), @sizeOf(sprite.GpuInstance));
+    try std.testing.expectEqual(@as(usize, 64), @offsetOf(sprite.SpriteSubmission, "camera_x_factor"));
+    try std.testing.expectEqual(@as(usize, 72), @offsetOf(sprite.SpriteSubmission, "order"));
+    try std.testing.expectEqual(@as(usize, 64), @sizeOf(sprite.GpuInstance));
     try std.testing.expectEqual(@as(usize, 4), @alignOf(sprite.GpuInstance));
     try std.testing.expectEqual(@as(usize, 28), @offsetOf(sprite.GpuInstance, "uv_rect"));
     try std.testing.expectEqual(@as(usize, 44), @offsetOf(sprite.GpuInstance, "tint"));
+    try std.testing.expectEqual(@as(usize, 60), @offsetOf(sprite.GpuInstance, "camera_x_factor"));
 }
 
 test "hand-computed transform cases cover pivots rotation scale translation and degeneracy" {
@@ -124,6 +127,11 @@ test "submission rejects non-finite transforms invalid UV tint page and unsigned
     value.texture_page = 1;
     try std.testing.expectError(error.InvalidTexturePage, sprite.validateRequest(value, 1));
     value.texture_page = 0;
+    value.camera_x_factor = -0.01;
+    try std.testing.expectError(error.InvalidCameraXFactor, sprite.validateRequest(value, 1));
+    value.camera_x_factor = 1.01;
+    try std.testing.expectError(error.InvalidCameraXFactor, sprite.validateRequest(value, 1));
+    value.camera_x_factor = 1;
     value.order.actor_layer = -1;
     try std.testing.expectError(error.InvalidActorLayer, sprite.validateRequest(value, 1));
     value.order.actor_layer = 0;

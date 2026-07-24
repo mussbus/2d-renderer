@@ -16,10 +16,15 @@ const sprite = @import("sprite_batch");
 const debug_draw = @import("debug_draw");
 
 pub const required_frames: u32 = 1800;
+pub const side_scroller_required_frames: u32 = 1100;
 pub const character_count: usize = 2;
 pub const player_spawn = math.Vec2{ .x = -3.15, .y = 1.05 };
 pub const partner_spawn = math.Vec2{ .x = 2.70, .y = 1.05 };
 pub const handshake_player_x: f32 = partner_spawn.x - handshake.authored_horizontal_separation;
+pub const world_min_x: f32 = -32;
+pub const world_max_x: f32 = 32;
+pub const distant_camera_x_factor: f32 = 0.125;
+pub const midground_camera_x_factor: f32 = 0.45;
 
 pub const InputDiagnostics = struct {
     keyboard_left_held: bool = false,
@@ -100,7 +105,8 @@ pub const Scene = struct {
         errdefer definition.deinit();
         var animations = try authored.Definitions.init(allocator, &definition.skeleton_definition, null);
         errdefer animations.deinit();
-        var world = try collision_world.CollisionWorld.initDemo(allocator, null);
+        const world_inputs = sideScrollingColliderInputs();
+        var world = try collision_world.CollisionWorld.init(allocator, &world_inputs, null);
         errdefer world.deinit();
         var player = try character.CharacterInstance.initControlled(
             allocator,
@@ -294,15 +300,15 @@ pub const Scene = struct {
 
     pub fn submit(scene: *Scene, batch: *sprite.SpriteBatch) !u32 {
         const participants_value = scene.participants();
-        var ordinary = try character.submitGlobally(&participants_value, batch);
+        var ordinary = try submitCaveEnvironment(batch);
+        ordinary += try character.submitGlobally(&participants_value, batch);
         for (scene.world.colliders) |static_collider| {
             const center = static_collider.bounds.center();
             const size = static_collider.bounds.size();
-            const presentation = humanoid.presentation_origin.add(center.scale(humanoid.pixels_per_meter));
             try batch.submit(.{
-                .world_position = presentation.toArray(),
+                .world_position = center.toArray(),
                 .rotation = 0,
-                .scale = size.scale(humanoid.pixels_per_meter).toArray(),
+                .scale = size.toArray(),
                 .pivot = .{ 0.5, 0.5 },
                 .uv_rect = .{ 0, 0.5, 0.5, 1 },
                 .tint = .{ 0.24, 0.31, 0.42, 0.75 },
@@ -356,6 +362,97 @@ pub const Scene = struct {
         return .{ &scene.player, &scene.partner };
     }
 };
+
+pub fn sideScrollingColliderInputs() [5]collider.StaticColliderInput {
+    return .{
+        staticCollider(@intFromEnum(collision_world.DemoColliderId.floor), world_min_x, -1, world_max_x, 0, true),
+        staticCollider(@intFromEnum(collision_world.DemoColliderId.right_wall), world_max_x - 0.3, 0, world_max_x, 6, false),
+        staticCollider(@intFromEnum(collision_world.DemoColliderId.ceiling), -2.8, 2.6, -1.8, 2.9, false),
+        staticCollider(@intFromEnum(collision_world.DemoColliderId.raised_platform_1), -0.7, 0.9, 0.4, 1.15, true),
+        staticCollider(@intFromEnum(collision_world.DemoColliderId.raised_platform_2), 1.8, 1.5, 2.7, 1.75, true),
+    };
+}
+
+fn staticCollider(
+    id: collider.ColliderId,
+    minimum_x: f32,
+    minimum_y: f32,
+    maximum_x: f32,
+    maximum_y: f32,
+    ground_query_eligible: bool,
+) collider.StaticColliderInput {
+    return .{
+        .id = id,
+        .bounds = .{
+            .minimum = .{ .x = minimum_x, .y = minimum_y },
+            .maximum = .{ .x = maximum_x, .y = maximum_y },
+        },
+        .ground_query_eligible = ground_query_eligible,
+    };
+}
+
+const CaveQuad = struct {
+    position: [2]f32,
+    size: [2]f32,
+    tint: [4]f32,
+};
+
+fn submitCaveEnvironment(batch: *sprite.SpriteBatch) !u32 {
+    const distant = [_]CaveQuad{
+        .{ .position = .{ 0, 3.0 }, .size = .{ 96, 8.5 }, .tint = .{ 0.08, 0.10, 0.18, 1 } },
+        .{ .position = .{ -24, 1.6 }, .size = .{ 5.0, 4.2 }, .tint = .{ 0.13, 0.17, 0.27, 0.92 } },
+        .{ .position = .{ -12, 1.3 }, .size = .{ 3.2, 3.5 }, .tint = .{ 0.12, 0.16, 0.25, 0.94 } },
+        .{ .position = .{ 0, 1.5 }, .size = .{ 4.5, 4.0 }, .tint = .{ 0.15, 0.18, 0.29, 0.90 } },
+        .{ .position = .{ 12, 1.2 }, .size = .{ 3.8, 3.4 }, .tint = .{ 0.11, 0.15, 0.24, 0.94 } },
+        .{ .position = .{ 24, 1.7 }, .size = .{ 5.4, 4.4 }, .tint = .{ 0.14, 0.17, 0.28, 0.92 } },
+    };
+    const midground = [_]CaveQuad{
+        .{ .position = .{ -28, 1.4 }, .size = .{ 0.65, 4.4 }, .tint = .{ 0.20, 0.24, 0.34, 0.88 } },
+        .{ .position = .{ -20, 1.1 }, .size = .{ 0.45, 3.6 }, .tint = .{ 0.24, 0.27, 0.38, 0.84 } },
+        .{ .position = .{ -12, 1.6 }, .size = .{ 0.75, 4.6 }, .tint = .{ 0.19, 0.23, 0.35, 0.88 } },
+        .{ .position = .{ -4, 1.0 }, .size = .{ 0.50, 3.3 }, .tint = .{ 0.25, 0.29, 0.40, 0.84 } },
+        .{ .position = .{ 4, 1.5 }, .size = .{ 0.70, 4.3 }, .tint = .{ 0.20, 0.24, 0.36, 0.88 } },
+        .{ .position = .{ 12, 1.2 }, .size = .{ 0.55, 3.8 }, .tint = .{ 0.24, 0.28, 0.39, 0.84 } },
+        .{ .position = .{ 20, 1.7 }, .size = .{ 0.80, 4.8 }, .tint = .{ 0.18, 0.22, 0.34, 0.88 } },
+        .{ .position = .{ 28, 1.1 }, .size = .{ 0.48, 3.5 }, .tint = .{ 0.24, 0.28, 0.40, 0.84 } },
+    };
+
+    var submitted: u32 = 0;
+    for (distant, 0..) |quad, index| {
+        try submitCaveQuad(batch, quad, character.SceneLayers.background, @intCast(index), distant_camera_x_factor);
+        submitted += 1;
+    }
+    for (midground, 0..) |quad, index| {
+        try submitCaveQuad(batch, quad, character.SceneLayers.midground, @intCast(index), midground_camera_x_factor);
+        submitted += 1;
+    }
+    return submitted;
+}
+
+fn submitCaveQuad(
+    batch: *sprite.SpriteBatch,
+    quad: CaveQuad,
+    scene_layer: i16,
+    body_part_layer: u16,
+    camera_x_factor: f32,
+) !void {
+    try batch.submit(.{
+        .world_position = quad.position,
+        .rotation = 0,
+        .scale = quad.size,
+        .pivot = .{ 0.5, 0.5 },
+        .uv_rect = .{ 0, 0, 0.5, 0.5 },
+        .tint = quad.tint,
+        .texture_page = 0,
+        .camera_x_factor = camera_x_factor,
+        .order = .{
+            .scene_layer = scene_layer,
+            .interaction_layer = 0,
+            .actor_layer = 0,
+            .body_part_layer = body_part_layer,
+        },
+    });
+}
 
 pub fn authoritativeStatesEqual(left: AuthoritativeState, right: AuthoritativeState, tolerance: f32) bool {
     return left.player_position.approxEqAbs(right.player_position, tolerance) and
@@ -642,6 +739,45 @@ pub const ScriptedInput = struct {
     }
 };
 
+pub const SideScrollerScriptedInput = struct {
+    frame: u32 = 0,
+    reached_destination: bool = false,
+    maximum_player_x: f32 = player_spawn.x,
+    minimum_player_x: f32 = player_spawn.x,
+    idle_frames: u32 = 0,
+
+    pub fn nextRaw(script: *SideScrollerScriptedInput, _: *const Scene) input.RawInputState {
+        var raw = input.RawInputState{};
+        if (!script.reached_destination) raw.keyboard.a = true;
+        return raw;
+    }
+
+    pub fn observe(script: *SideScrollerScriptedInput, scene: *const Scene) void {
+        const state = scene.player.controller.?.state;
+        script.frame += 1;
+        script.maximum_player_x = @max(script.maximum_player_x, state.position.x);
+        script.minimum_player_x = @min(script.minimum_player_x, state.position.x);
+        if (!script.reached_destination and state.position.x <= -24) script.reached_destination = true;
+        if (script.reached_destination and @abs(state.velocity.x) < 0.01) script.idle_frames += 1;
+    }
+
+    pub fn validate(script: SideScrollerScriptedInput, scene: *const Scene) !void {
+        if (!script.reached_destination or script.minimum_player_x > -24 or
+            script.maximum_player_x - script.minimum_player_x < 20 or script.idle_frames < 30)
+        {
+            std.log.err("side-scroller route incomplete frame={d} min_x={d:.5} max_x={d:.5} final_x={d:.5} velocity_x={d:.5} idle_frames={d}", .{
+                script.frame,
+                script.minimum_player_x,
+                script.maximum_player_x,
+                scene.player.controller.?.state.position.x,
+                scene.player.controller.?.state.velocity.x,
+                script.idle_frames,
+            });
+            return error.SideScrollerTravelMissing;
+        }
+    }
+};
+
 fn encodeGamepadAxis(desired_axis: f32) f32 {
     if (@abs(desired_axis) <= std.math.floatEps(f32)) return 0;
     return std.math.sign(desired_axis) * (input.gamepad_dead_zone + @abs(desired_axis) * (1 - input.gamepad_dead_zone));
@@ -649,4 +785,7 @@ fn encodeGamepadAxis(desired_axis: f32) f32 {
 
 comptime {
     if (required_frames * (fixed_step.simulation_hz / 60) < 3600) @compileError("playground verification route is too short");
+    if (side_scroller_required_frames * (fixed_step.simulation_hz / 60) < 3600) {
+        @compileError("side-scroller verification route is too short");
+    }
 }

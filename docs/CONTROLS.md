@@ -16,6 +16,16 @@ The bounded production-path verification is:
 
 Synthetic input constructs the same per-key raw state used by SDL polling, then calls the one `SnapshotBuilder` mapping. It never constructs `CharacterIntent` directly.
 
+The bounded Prompt 14 camera and parallax route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1100 --demo side-scroller --scripted-input
+```
+
+It holds the mapped left control until the character crosses the extended cave, then releases to demonstrate normal controller deceleration. The deterministic camera uses a `3.25 m` horizontal dead zone; cave background, midground, and gameplay layers respond at `0.125`, `0.45`, and `1.0` respectively. This route does not write controller position or bypass collision.
+
+The visible playground window is resizable. Larger drawable pixel dimensions reveal more world at the same 82 pixels per metre. Minimize can temporarily produce no drawable and safely skips presentation; restore or repeated resize events refresh the high-DPI pixel dimensions without recreating unrelated GPU resources.
+
 ## Controller demonstration
 
 Run the interactive controller demonstration with:

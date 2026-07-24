@@ -1,13 +1,12 @@
 const std = @import("std");
 const math = @import("math");
 const collider = @import("collider");
-const humanoid = @import("humanoid");
 const character = @import("character");
 const sprite = @import("sprite_batch");
 
 pub const command_capacity: usize = 256;
-pub const line_thickness_pixels: f32 = 2;
-pub const marker_size_pixels: f32 = 7;
+pub const line_thickness_meters: f32 = 2.0 / 82.0;
+pub const marker_size_meters: f32 = 7.0 / 82.0;
 
 pub const Color = [4]f32;
 
@@ -23,11 +22,10 @@ pub const CommandBuffer = struct {
 
     pub fn addMarker(buffer: *CommandBuffer, world_position: math.Vec2, color: Color) !void {
         if (!world_position.isFinite()) return error.NonFiniteDebugPrimitive;
-        const presentation = toPresentation(world_position);
         try buffer.append(.{
-            .world_position = presentation.toArray(),
+            .world_position = world_position.toArray(),
             .rotation = 0,
-            .scale = .{ marker_size_pixels, marker_size_pixels },
+            .scale = .{ marker_size_meters, marker_size_meters },
             .pivot = .{ 0.5, 0.5 },
             .uv_rect = .{ 0, 0, 0.5, 0.5 },
             .tint = color,
@@ -38,16 +36,14 @@ pub const CommandBuffer = struct {
 
     pub fn addLine(buffer: *CommandBuffer, from_world: math.Vec2, to_world: math.Vec2, color: Color) !void {
         if (!from_world.isFinite() or !to_world.isFinite()) return error.NonFiniteDebugPrimitive;
-        const from = toPresentation(from_world);
-        const to = toPresentation(to_world);
-        const delta = to.sub(from);
+        const delta = to_world.sub(from_world);
         const length = delta.length();
         if (!std.math.isFinite(length)) return error.NonFiniteDebugPrimitive;
         if (length <= std.math.floatEps(f32)) return buffer.addMarker(from_world, color);
         try buffer.append(.{
-            .world_position = from.toArray(),
+            .world_position = from_world.toArray(),
             .rotation = std.math.atan2(delta.y, delta.x),
-            .scale = .{ length, line_thickness_pixels },
+            .scale = .{ length, line_thickness_meters },
             .pivot = .{ 0, 0.5 },
             .uv_rect = .{ 0, 0, 0.5, 0.5 },
             .tint = color,
@@ -80,10 +76,6 @@ pub const CommandBuffer = struct {
         buffer.count += 1;
     }
 };
-
-fn toPresentation(world_position: math.Vec2) math.Vec2 {
-    return humanoid.presentation_origin.add(world_position.scale(humanoid.pixels_per_meter));
-}
 
 fn debugOrder(index: usize) sprite.OrderInput {
     return .{

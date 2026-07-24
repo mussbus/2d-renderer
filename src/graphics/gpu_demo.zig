@@ -2,6 +2,8 @@ const std = @import("std");
 const c = @import("sdl").c;
 const fault_injection = @import("fault_injection");
 const sprite = @import("sprite_batch");
+const math = @import("math");
+const camera2d = @import("camera2d");
 const humanoid = @import("humanoid");
 const animation_system = @import("animation_system");
 const input = @import("input");
@@ -28,6 +30,7 @@ pub const DemoMode = enum {
     foot_planting,
     integrated,
     playground,
+    side_scroller,
 };
 
 const TimeMode = enum { normal, quarter_speed, paused };
@@ -46,13 +49,8 @@ const QuadVertex = extern struct {
     local_position: [2]f32,
 };
 
-const CameraUniform = extern struct {
-    viewport_data: [4]f32,
-};
-
 comptime {
     if (@sizeOf(QuadVertex) != 8 or @alignOf(QuadVertex) != 4) @compileError("QuadVertex layout must match one HLSL float2");
-    if (@sizeOf(CameraUniform) != 16 or @alignOf(CameraUniform) != 4) @compileError("CameraUniform must match one HLSL float4");
 }
 
 const quad_vertices = [_]QuadVertex{
@@ -89,6 +87,9 @@ const ResourceMetrics = struct {
     frame_slot_fence_waits: u64 = 0,
     upload_buffer_growths: u64 = 0,
     frames_rendered: u64 = 0,
+    resize_events: u64 = 0,
+    viewport_updates: u64 = 0,
+    zero_drawable_frames: u64 = 0,
 };
 
 const ReadbackPixels = struct {
@@ -99,11 +100,11 @@ const ReadbackPixels = struct {
 };
 
 const HierarchyPositions = struct {
-    right_shoulder: @TypeOf(humanoid.presentation_origin),
-    right_elbow: @TypeOf(humanoid.presentation_origin),
-    right_hand: @TypeOf(humanoid.presentation_origin),
-    left_knee: @TypeOf(humanoid.presentation_origin),
-    left_foot: @TypeOf(humanoid.presentation_origin),
+    right_shoulder: math.Vec2,
+    right_elbow: math.Vec2,
+    right_hand: math.Vec2,
+    left_knee: math.Vec2,
+    left_foot: math.Vec2,
 };
 
 const maximum_landing_evidence: usize = 16;
@@ -130,11 +131,16 @@ pub const GpuDemo = struct {
     quad_vertex_buffer: ?*c.SDL_GPUBuffer = null,
     quad_index_buffer: ?*c.SDL_GPUBuffer = null,
     static_upload_transfer: ?*c.SDL_GPUTransferBuffer = null,
-    pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
+    offscreen_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
+    window_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
     frame_slots: [frame_slot_count]FrameSlot = [_]FrameSlot{.{}} ** frame_slot_count,
     gpu_instance_capacity: usize = 0,
     current_frame_slot: usize = 0,
     resource_metrics: ResourceMetrics = .{},
+    visible_camera: camera2d.Camera2D = camera2d.Camera2D.initDefault(),
+    drawable_width: u32 = target_width,
+    drawable_height: u32 = target_height,
+    drawable_available: bool = true,
 
     pub fn init(allocator: std.mem.Allocator, hidden: bool, injector: ?fault_injection.Injector) !GpuDemo {
         var self = GpuDemo{ .allocator = allocator };
@@ -147,9 +153,10 @@ pub const GpuDemo = struct {
         self.sdl_initialized = true;
         try after(injector, .sdl_initialization);
 
-        const window_flags: c.SDL_WindowFlags = if (hidden) c.SDL_WINDOW_HIDDEN else 0;
+        const window_flags: c.SDL_WindowFlags = if (hidden) c.SDL_WINDOW_HIDDEN else c.SDL_WINDOW_RESIZABLE;
         self.window = c.SDL_CreateWindow("Authoritative SDL GPU sprite batch", target_width, target_height, window_flags);
         if (self.window == null) return failSdl("SDL_CreateWindow", error.WindowCreationFailure);
+        try self.refreshDrawableSize();
         try after(injector, .window_creation);
 
         try logAndVerifyDriverSupport();
@@ -241,7 +248,13 @@ pub const GpuDemo = struct {
         self.gpu_instance_capacity = sprite.initial_capacity;
         try after(injector, .instance_frame_slots);
 
-        self.pipeline = try createPipeline(self);
+        self.offscreen_pipeline = try createPipeline(self, c.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM);
+        self.resource_metrics.gpu_resource_creations += 1;
+        const swapchain_format = c.SDL_GetGPUSwapchainTextureFormat(self.device.?, self.window.?);
+        if (swapchain_format == c.SDL_GPU_TEXTUREFORMAT_INVALID) {
+            return failSdl("SDL_GetGPUSwapchainTextureFormat", error.SwapchainFormatQueryFailure);
+        }
+        self.window_pipeline = try createPipeline(self, swapchain_format);
         self.resource_metrics.gpu_resource_creations += 1;
         try after(injector, .pipeline_creation);
         return self;
@@ -252,7 +265,8 @@ pub const GpuDemo = struct {
             for (&self.frame_slots) |*slot| self.waitAndReleaseFence(slot, false) catch {};
             if (!c.SDL_WaitForGPUIdle(device)) std.log.err("SDL_WaitForGPUIdle during cleanup: {s}", .{sdlErrorText()});
             self.releaseSlotResources(&self.frame_slots);
-            if (self.pipeline) |resource| self.releasePipeline(device, resource);
+            if (self.window_pipeline) |resource| self.releasePipeline(device, resource);
+            if (self.offscreen_pipeline) |resource| self.releasePipeline(device, resource);
             if (self.static_upload_transfer) |resource| self.releaseTransfer(device, resource);
             if (self.quad_index_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.quad_vertex_buffer) |resource| self.releaseBuffer(device, resource);
@@ -270,7 +284,57 @@ pub const GpuDemo = struct {
         self.batch = null;
     }
 
+    fn handleWindowEvent(self: *GpuDemo, event: *const c.SDL_Event) !void {
+        switch (event.type) {
+            c.SDL_EVENT_WINDOW_MINIMIZED => {
+                self.resource_metrics.resize_events += 1;
+                self.drawable_available = false;
+                self.drawable_width = 0;
+                self.drawable_height = 0;
+            },
+            c.SDL_EVENT_WINDOW_RESIZED,
+            c.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
+            c.SDL_EVENT_WINDOW_RESTORED,
+            => {
+                self.resource_metrics.resize_events += 1;
+                try self.refreshDrawableSize();
+            },
+            else => {},
+        }
+    }
+
+    fn refreshDrawableSize(self: *GpuDemo) !void {
+        var pixel_width: c_int = 0;
+        var pixel_height: c_int = 0;
+        if (!c.SDL_GetWindowSizeInPixels(self.window.?, &pixel_width, &pixel_height)) {
+            return failSdl("SDL_GetWindowSizeInPixels", error.WindowPixelSizeQueryFailure);
+        }
+        if (pixel_width <= 0 or pixel_height <= 0) {
+            self.drawable_available = false;
+            self.drawable_width = 0;
+            self.drawable_height = 0;
+            return;
+        }
+        try self.applyDrawableSize(@intCast(pixel_width), @intCast(pixel_height));
+    }
+
+    fn applyDrawableSize(self: *GpuDemo, pixel_width: u32, pixel_height: u32) !void {
+        if (pixel_width == 0 or pixel_height == 0) return error.ZeroDrawableSize;
+        if (self.drawable_width != pixel_width or self.drawable_height != pixel_height or !self.drawable_available) {
+            try self.visible_camera.setViewport(pixel_width, pixel_height);
+            self.drawable_width = pixel_width;
+            self.drawable_height = pixel_height;
+            self.drawable_available = true;
+            self.resource_metrics.viewport_updates += 1;
+        }
+    }
+
     pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode, scripted_input_enabled: bool, integrated_debug_enabled: bool, interactive_enabled: bool) !void {
+        self.visible_camera = camera2d.Camera2D.initDefault();
+        if (self.drawable_available) try self.visible_camera.setViewport(self.drawable_width, self.drawable_height);
+        const camera_follower = try camera2d.HorizontalFollower.init(3.25);
+        var minimum_camera_x = self.visible_camera.center.x;
+        var maximum_camera_x = self.visible_camera.center.x;
         const demo_storage = self.allocator.alloc(u8, 1024 * 1024) catch return error.DemoStorageAllocationFailure;
         defer self.allocator.free(demo_storage);
         var humanoid_allocator = std.heap.FixedBufferAllocator.init(demo_storage);
@@ -297,6 +361,7 @@ pub const GpuDemo = struct {
         var scripted_sequence = controller_demo.ScriptedInput{};
         var secondary_sequence = controller_demo.SecondaryMotionScriptedInput{};
         var playground_sequence = playground_demo.ScriptedInput{};
+        var side_scroller_sequence = playground_demo.SideScrollerScriptedInput{};
         var playground_snapshot_builder = input.SnapshotBuilder{};
         var previous_playground_snapshot: ?input.FrameInputSnapshot = null;
         var animation_clock = try fixed_step.Clock.init(.{});
@@ -364,10 +429,11 @@ pub const GpuDemo = struct {
             }
             integrated_scene.?.setResourceSnapshot(resourceSnapshot(self, humanoid_allocator.end_index, 0));
         }
-        if (mode == .playground) {
-            if (scripted_input_enabled == interactive_enabled) return error.PlaygroundRequiresExactlyOneInputMode;
+        if (mode == .playground or mode == .side_scroller) {
+            if (mode == .playground and scripted_input_enabled == interactive_enabled) return error.PlaygroundRequiresExactlyOneInputMode;
+            if (mode == .side_scroller and (!scripted_input_enabled or interactive_enabled)) return error.SideScrollerRequiresScriptedInput;
             playground_scene = try playground_demo.Scene.init(humanoid_allocator.allocator(), integrated_debug_enabled);
-            if (!scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
+            if (mode == .playground and !scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.PlaygroundInitializationCreatedGpuResources;
             }
@@ -380,19 +446,19 @@ pub const GpuDemo = struct {
         var socket_evaluation_allocations: usize = 0;
         var humanoid_submission_allocations: usize = 0;
         var humanoid_instances: u32 = 0;
-        var rest_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
-        var modified_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
-        var rest_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
-        var modified_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
+        var rest_right_hand: ?math.Vec2 = null;
+        var modified_right_hand: ?math.Vec2 = null;
+        var rest_left_foot: ?math.Vec2 = null;
+        var modified_left_foot: ?math.Vec2 = null;
         var animation_update_allocations: usize = 0;
         var animation_event_count: u64 = 0;
         var left_foot_contacts: u32 = 0;
         var right_foot_contacts: u32 = 0;
-        var idle_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
-        var walk_right_hand: ?@TypeOf(humanoid.presentation_origin) = null;
-        var idle_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
-        var walk_left_foot: ?@TypeOf(humanoid.presentation_origin) = null;
-        var world_root_before = @TypeOf(humanoid.presentation_origin).zero;
+        var idle_right_hand: ?math.Vec2 = null;
+        var walk_right_hand: ?math.Vec2 = null;
+        var idle_left_foot: ?math.Vec2 = null;
+        var walk_left_foot: ?math.Vec2 = null;
+        var world_root_before = math.Vec2.zero;
         if (humanoid_demo) |*demo| world_root_before = demo.character.character_to_world.translation;
         var landing_evidence = [_]LandingEvidence{.{}} ** maximum_landing_evidence;
         var landing_evidence_count: usize = 0;
@@ -407,7 +473,8 @@ pub const GpuDemo = struct {
         while (running and (maximum_frames == null or frame < maximum_frames.?)) : (frame += 1) {
             var event: c.SDL_Event = undefined;
             while (c.SDL_PollEvent(&event)) {
-                if (mode != .playground and (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED)) running = false;
+                if (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED) running = false;
+                try self.handleWindowEvent(&event);
                 if (platform_input) |*platform| platform.handleEvent(&event);
             }
             if (!running) break;
@@ -757,6 +824,28 @@ pub const GpuDemo = struct {
                     try scene.updateFrame(if (scripted_input_enabled) 1.0 / 60.0 else measured_delta, snapshot);
                     pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
                     if (scripted_input_enabled) try playground_sequence.observe(scene);
+                    if (snapshot.reset.pressed) {
+                        try self.visible_camera.setCenter(camera2d.default_center);
+                    } else {
+                        try camera_follower.update(&self.visible_camera, scene.player.world_position.x);
+                    }
+                    minimum_camera_x = @min(minimum_camera_x, self.visible_camera.center.x);
+                    maximum_camera_x = @max(maximum_camera_x, self.visible_camera.center.x);
+                    self.batch.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
+                .side_scroller => {
+                    const scene = &playground_scene.?;
+                    const snapshot = try playground_snapshot_builder.update(side_scroller_sequence.nextRaw(scene));
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(1.0 / 60.0, snapshot);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    side_scroller_sequence.observe(scene);
+                    try camera_follower.update(&self.visible_camera, scene.player.world_position.x);
+                    minimum_camera_x = @min(minimum_camera_x, self.visible_camera.center.x);
+                    maximum_camera_x = @max(maximum_camera_x, self.visible_camera.center.x);
                     self.batch.?.beginFrame();
                     const submission_checkpoint = humanoid_allocator.end_index;
                     humanoid_instances = try scene.submit(&self.batch.?);
@@ -764,8 +853,11 @@ pub const GpuDemo = struct {
                 },
             }
             const prepared = self.batch.?.prepare();
-            _ = try self.renderPreparedToWindow(prepared, null);
-            self.resource_metrics.frames_rendered += 1;
+            if (try self.renderPreparedToWindow(prepared, null)) {
+                self.resource_metrics.frames_rendered += 1;
+            } else {
+                self.resource_metrics.zero_drawable_frames += 1;
+            }
             if (mode == .integrated) {
                 integrated_scene.?.recordRendering(.{
                     .submitted_sprite_count = self.batch.?.frame_metrics.submitted_sprites,
@@ -1566,6 +1658,49 @@ pub const GpuDemo = struct {
             {
                 return error.PlaygroundRenderingEvidenceIncomplete;
             }
+        } else if (mode == .side_scroller) {
+            const scene = &playground_scene.?;
+            if (self.resource_metrics.frames_rendered != playground_demo.side_scroller_required_frames) {
+                return error.SideScrollerFrameCountMismatch;
+            }
+            try side_scroller_sequence.validate(scene);
+            const camera_displacement = maximum_camera_x - minimum_camera_x;
+            if (camera_displacement < 12) return error.SideScrollerCameraTravelMissing;
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            std.log.info("SIDE-SCROLL CAMERA EVIDENCE", .{});
+            std.log.info("World travel: min_player_x={d:.5} max_player_x={d:.5} distance={d:.5} colliders={d}", .{
+                side_scroller_sequence.minimum_player_x,
+                side_scroller_sequence.maximum_player_x,
+                side_scroller_sequence.maximum_player_x - side_scroller_sequence.minimum_player_x,
+                scene.world.colliders.len,
+            });
+            std.log.info("Camera: min_center_x={d:.5} max_center_x={d:.5} displacement={d:.5} viewport={d}x{d} pixels_per_meter={d:.3}", .{
+                minimum_camera_x,
+                maximum_camera_x,
+                camera_displacement,
+                self.visible_camera.viewport_width,
+                self.visible_camera.viewport_height,
+                self.visible_camera.pixels_per_meter,
+            });
+            std.log.info("Parallax response: distant_factor={d:.3} distant_displacement={d:.5} midground_factor={d:.3} midground_displacement={d:.5} gameplay_factor=1.000 gameplay_displacement={d:.5}", .{
+                playground_demo.distant_camera_x_factor,
+                camera_displacement * playground_demo.distant_camera_x_factor,
+                playground_demo.midground_camera_x_factor,
+                camera_displacement * playground_demo.midground_camera_x_factor,
+                camera_displacement,
+            });
+            std.log.info("Resize: events={d} viewport_updates={d} zero_drawable_frames={d} unrelated_resource_recreations={d}", .{
+                self.resource_metrics.resize_events,
+                self.resource_metrics.viewport_updates,
+                self.resource_metrics.zero_drawable_frames,
+                gpu_resource_delta,
+            });
+            if (metrics.draw_ranges != 1 or metrics.draw_calls != 1 or gpu_resource_delta != 0 or
+                runtime_allocation_delta != 0 or self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0)
+            {
+                return error.SideScrollerRenderingEvidenceIncomplete;
+            }
         }
     }
 
@@ -1637,10 +1772,14 @@ pub const GpuDemo = struct {
                 2 => [4]f32{ 0.0, 0.5, 0.5, 1.0 },
                 else => [4]f32{ 0.5, 0.5, 1.0, 1.0 },
             };
+            const world_position = try camera2d.Camera2D.initDefault().presentationToWorld(.{ .x = x, .y = y });
             try batch.submit(.{
-                .world_position = .{ x, y },
+                .world_position = world_position.toArray(),
                 .rotation = @sin(time + index_f * 0.031) * 0.45,
-                .scale = .{ 7.0 + @as(f32, @floatFromInt(index % 5)), 9.0 + @as(f32, @floatFromInt(index % 7)) },
+                .scale = .{
+                    (7.0 + @as(f32, @floatFromInt(index % 5))) / camera2d.default_pixels_per_meter,
+                    (9.0 + @as(f32, @floatFromInt(index % 7))) / camera2d.default_pixels_per_meter,
+                },
                 .pivot = if (index % 2 == 0) .{ 0.5, 0.5 } else .{ 0.0, 1.0 },
                 .uv_rect = uv,
                 .tint = .{
@@ -1674,10 +1813,14 @@ pub const GpuDemo = struct {
     fn submitSmokeSprites(self: *GpuDemo) !void {
         var batch = &self.batch.?;
         batch.beginFrame();
+        const camera = camera2d.Camera2D.initDefault();
         try batch.submit(.{
-            .world_position = .{ 208, 200 },
+            .world_position = (try camera.presentationToWorld(.{ .x = 208, .y = 200 })).toArray(),
             .rotation = 0,
-            .scale = .{ 160, 160 },
+            .scale = .{
+                160.0 / camera2d.default_pixels_per_meter,
+                160.0 / camera2d.default_pixels_per_meter,
+            },
             .pivot = .{ 0.5, 0.5 },
             .uv_rect = .{ 0, 0, 0.5, 0.5 },
             .tint = .{ 1, 1, 1, 1 },
@@ -1685,9 +1828,12 @@ pub const GpuDemo = struct {
             .order = .{ .scene_layer = 0, .interaction_layer = 0, .actor_layer = 0, .body_part_layer = 0 },
         });
         try batch.submit(.{
-            .world_position = .{ 432, 280 },
+            .world_position = (try camera.presentationToWorld(.{ .x = 432, .y = 280 })).toArray(),
             .rotation = 0,
-            .scale = .{ 160, 160 },
+            .scale = .{
+                160.0 / camera2d.default_pixels_per_meter,
+                160.0 / camera2d.default_pixels_per_meter,
+            },
             .pivot = .{ 0.5, 0.5 },
             .uv_rect = .{ 0.5, 0.5, 1, 1 },
             .tint = .{ 1, 1, 1, 1 },
@@ -1697,6 +1843,7 @@ pub const GpuDemo = struct {
     }
 
     fn renderPreparedToWindow(self: *GpuDemo, prepared: sprite.PreparedBatch, injector: ?fault_injection.Injector) !bool {
+        if (!self.drawable_available) return false;
         try self.ensureGpuCapacity(prepared.sprites.len, null);
         const slot_index = try self.acquireFrameSlot();
         try self.populateInstanceTransfer(slot_index, prepared.sprites);
@@ -1713,15 +1860,36 @@ pub const GpuDemo = struct {
             return failSdl("SDL_WaitAndAcquireGPUSwapchainTexture", error.SwapchainAcquisitionFailure);
         }
         swapchain_acquired = swapchain_texture != null;
-        const encoded_draws = try self.encodeAuthoritativeSpriteBatch(command, slot_index, prepared, self.render_target.?, true);
-        if (swapchain_texture) |swapchain| {
-            var blit_info: c.SDL_GPUBlitInfo = std.mem.zeroes(c.SDL_GPUBlitInfo);
-            blit_info.source = .{ .texture = self.render_target.?, .mip_level = 0, .layer_or_depth_plane = 0, .x = 0, .y = 0, .w = target_width, .h = target_height };
-            blit_info.destination = .{ .texture = swapchain, .mip_level = 0, .layer_or_depth_plane = 0, .x = 0, .y = 0, .w = swapchain_width, .h = swapchain_height };
-            blit_info.load_op = c.SDL_GPU_LOADOP_DONT_CARE;
-            blit_info.filter = c.SDL_GPU_FILTER_LINEAR;
-            c.SDL_BlitGPUTexture(command, &blit_info);
+        if (swapchain_texture == null) {
+            if (!c.SDL_CancelGPUCommandBuffer(command)) return failSdl("SDL_CancelGPUCommandBuffer(zero drawable)", error.PipelineResourceBindingFailure);
+            command_active = false;
+            self.drawable_available = false;
+            self.drawable_width = 0;
+            self.drawable_height = 0;
+            return false;
         }
+        if (swapchain_width == 0 or swapchain_height == 0) {
+            const empty_fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
+            command_active = false;
+            if (empty_fence == null) return failSdl("SDL_SubmitGPUCommandBufferAndAcquireFence(zero drawable)", error.FrameFenceAcquisitionFailure);
+            self.resource_metrics.fence_acquisitions += 1;
+            self.frame_slots[slot_index].fence = empty_fence.?;
+            self.current_frame_slot = (slot_index + 1) % frame_slot_count;
+            self.drawable_available = false;
+            self.drawable_width = 0;
+            self.drawable_height = 0;
+            return false;
+        }
+        try self.applyDrawableSize(swapchain_width, swapchain_height);
+        const encoded_draws = try self.encodeAuthoritativeSpriteBatch(
+            command,
+            slot_index,
+            prepared,
+            swapchain_texture.?,
+            self.window_pipeline.?,
+            self.visible_camera,
+            true,
+        );
 
         const fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
         command_active = false;
@@ -1765,7 +1933,15 @@ pub const GpuDemo = struct {
         errdefer if (command_active) {
             if (!c.SDL_CancelGPUCommandBuffer(command)) std.log.err("SDL_CancelGPUCommandBuffer(readback): {s}", .{sdlErrorText()});
         };
-        const encoded_draws = try self.encodeAuthoritativeSpriteBatch(command, slot_index, prepared, self.render_target.?, false);
+        const encoded_draws = try self.encodeAuthoritativeSpriteBatch(
+            command,
+            slot_index,
+            prepared,
+            self.render_target.?,
+            self.offscreen_pipeline.?,
+            camera2d.Camera2D.initDefault(),
+            false,
+        );
         const copy_pass = c.SDL_BeginGPUCopyPass(command);
         if (copy_pass == null) return failSdl("SDL_BeginGPUCopyPass(readback)", error.UploadFailure);
         const source = c.SDL_GPUTextureRegion{
@@ -1807,7 +1983,16 @@ pub const GpuDemo = struct {
         };
     }
 
-    fn encodeAuthoritativeSpriteBatch(self: *GpuDemo, command: *c.SDL_GPUCommandBuffer, slot_index: usize, prepared: sprite.PreparedBatch, target: *c.SDL_GPUTexture, cycle_target: bool) !u32 {
+    fn encodeAuthoritativeSpriteBatch(
+        self: *GpuDemo,
+        command: *c.SDL_GPUCommandBuffer,
+        slot_index: usize,
+        prepared: sprite.PreparedBatch,
+        target: *c.SDL_GPUTexture,
+        pipeline: *c.SDL_GPUGraphicsPipeline,
+        camera: camera2d.Camera2D,
+        cycle_target: bool,
+    ) !u32 {
         const upload_bytes = try sprite.instanceByteSize(prepared.sprites.len);
         self.batch.?.recordUpload(upload_bytes);
         if (upload_bytes > 0) {
@@ -1819,8 +2004,8 @@ pub const GpuDemo = struct {
             c.SDL_EndGPUCopyPass(copy_pass.?);
         }
 
-        const camera = CameraUniform{ .viewport_data = .{ @floatFromInt(target_width), @floatFromInt(target_height), 0, 0 } };
-        c.SDL_PushGPUVertexUniformData(command, 0, &camera, @sizeOf(CameraUniform));
+        const camera_uniform = try camera.uniform();
+        c.SDL_PushGPUVertexUniformData(command, 0, &camera_uniform, @sizeOf(camera2d.CameraUniform));
         var target_info: c.SDL_GPUColorTargetInfo = std.mem.zeroes(c.SDL_GPUColorTargetInfo);
         target_info.texture = target;
         target_info.clear_color = clear_color;
@@ -1832,7 +2017,7 @@ pub const GpuDemo = struct {
 
         var encoded_draws: u32 = 0;
         if (prepared.ranges.len > 0) {
-            c.SDL_BindGPUGraphicsPipeline(render_pass.?, self.pipeline.?);
+            c.SDL_BindGPUGraphicsPipeline(render_pass.?, pipeline);
             const vertex_bindings = [_]c.SDL_GPUBufferBinding{
                 .{ .buffer = self.quad_vertex_buffer.?, .offset = 0 },
                 .{ .buffer = self.frame_slots[slot_index].instance_buffer.?, .offset = 0 },
@@ -2133,7 +2318,7 @@ fn createBuffer(device: *c.SDL_GPUDevice, usage: c.SDL_GPUBufferUsageFlags, size
     return c.SDL_CreateGPUBuffer(device, &info);
 }
 
-fn createPipeline(self: GpuDemo) !*c.SDL_GPUGraphicsPipeline {
+fn createPipeline(self: GpuDemo, target_format: c.SDL_GPUTextureFormat) !*c.SDL_GPUGraphicsPipeline {
     const descriptions = [_]c.SDL_GPUVertexBufferDescription{
         .{ .slot = 0, .pitch = @sizeOf(QuadVertex), .input_rate = c.SDL_GPU_VERTEXINPUTRATE_VERTEX, .instance_step_rate = 0 },
         .{ .slot = 1, .pitch = @sizeOf(sprite.GpuInstance), .input_rate = c.SDL_GPU_VERTEXINPUTRATE_INSTANCE, .instance_step_rate = 0 },
@@ -2146,9 +2331,10 @@ fn createPipeline(self: GpuDemo) !*c.SDL_GPUGraphicsPipeline {
         .{ .location = 4, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(sprite.GpuInstance, "pivot") },
         .{ .location = 5, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, .offset = @offsetOf(sprite.GpuInstance, "uv_rect") },
         .{ .location = 6, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, .offset = @offsetOf(sprite.GpuInstance, "tint") },
+        .{ .location = 7, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, .offset = @offsetOf(sprite.GpuInstance, "camera_x_factor") },
     };
     var color_target: c.SDL_GPUColorTargetDescription = std.mem.zeroes(c.SDL_GPUColorTargetDescription);
-    color_target.format = c.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+    color_target.format = target_format;
     color_target.blend_state.src_color_blendfactor = c.SDL_GPU_BLENDFACTOR_SRC_ALPHA;
     color_target.blend_state.dst_color_blendfactor = c.SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
     color_target.blend_state.color_blend_op = c.SDL_GPU_BLENDOP_ADD;
@@ -2199,7 +2385,7 @@ fn resourceSnapshot(self: *const GpuDemo, cpu_allocation_bytes: usize, created_t
         .cpu_allocation_bytes = cpu_allocation_bytes,
         .gpu_textures = 2,
         .gpu_buffers = 2 + frame_slot_count,
-        .gpu_pipelines = 1,
+        .gpu_pipelines = 2,
         .gpu_samplers = 1,
         .other_gpu_resources = 2 + frame_slot_count,
         .gpu_resources_created_this_frame = created_this_frame,

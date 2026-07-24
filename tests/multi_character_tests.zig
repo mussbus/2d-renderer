@@ -445,14 +445,14 @@ test "reflected attachment decomposition retains negative scale with no culling 
         .mul(math.Mat3.nonuniformScale(.{ .x = -1, .y = 1 }))
         .mul(math.Mat3.rotation(0.37))
         .mul(math.Mat3.nonuniformScale(.{ .x = 2, .y = 0.5 }));
-    const presentation = try humanoid.presentationTransform(reflected);
-    try std.testing.expect(presentation.signed_scale.x < 0);
+    const transformed = try humanoid.spriteTransform(reflected);
+    try std.testing.expect(transformed.signed_scale.x < 0);
     const local = math.Vec2{ .x = 0.31, .y = -0.42 };
     const expected = reflected.transformPoint(local);
     const actual_array = try sprite.transformLocalPoint(.{
-        .world_position = presentation.world_position.toArray(),
-        .rotation = presentation.rotation_radians,
-        .scale = presentation.signed_scale.toArray(),
+        .world_position = transformed.world_position.toArray(),
+        .rotation = transformed.rotation_radians,
+        .scale = transformed.signed_scale.toArray(),
         .pivot = .{ 0, 0 },
         .uv_rect = .{ 0, 0, 1, 1 },
         .tint = .{ 1, 1, 1, 1 },

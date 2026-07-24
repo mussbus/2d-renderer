@@ -104,7 +104,7 @@ pub fn build(b: *std.Build) void {
     run_command.setName("run installed skeletal_gpu_demo");
     run_command.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed sprite-batch, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-IK, or foot-planting demonstration");
+    const run_step = b.step("run", "Run the installed sprite-batch, character, interaction, playground, or side-scroller demonstration");
     run_step.dependOn(&run_command.step);
 
     const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
@@ -164,6 +164,12 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const camera2d_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/camera2d.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    camera2d_module.addImport("math", math_module);
     const collider_module = b.createModule(.{
         .root_source_file = b.path("src/physics/collider.zig"),
         .target = target,
@@ -452,7 +458,6 @@ pub fn build(b: *std.Build) void {
     });
     debug_draw_module.addImport("math", math_module);
     debug_draw_module.addImport("collider", collider_module);
-    debug_draw_module.addImport("humanoid", humanoid_module);
     debug_draw_module.addImport("character", character_module);
     debug_draw_module.addImport("sprite_batch", sprite_batch_module);
     const integrated_demo_module = b.createModule(.{
@@ -515,6 +520,8 @@ pub fn build(b: *std.Build) void {
     controller_demo_module.addImport("sprite_batch", sprite_batch_module);
     controller_demo_module.addImport("fault_injection", fault_injection_module);
     app_module.addImport("humanoid", humanoid_module);
+    app_module.addImport("math", math_module);
+    app_module.addImport("camera2d", camera2d_module);
     app_module.addImport("animation_system", animation_system_module);
     app_module.addImport("sprite_batch", sprite_batch_module);
     app_module.addImport("fault_injection", fault_injection_module);
@@ -543,6 +550,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("math", math_module);
+    test_module.addImport("camera2d", camera2d_module);
     test_module.addImport("skeleton", skeleton_module);
     test_module.addImport("pose", pose_module);
     test_module.addImport("two_bone_ik", two_bone_ik_module);

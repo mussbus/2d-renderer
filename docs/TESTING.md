@@ -104,6 +104,9 @@ The final visual pass records the GPU driver, resolution, and build mode, then v
 - A control or scenario switches which handshake hand/forearm is in front, with the requested order visible.
 - Debug display identifies bones, colliders, hand sockets, and the shared interaction target.
 - Alpha edges blend correctly and no body part is rendered through a per-sprite command submission path.
+- Drag the visible window through wide, tall, and square aspect ratios. Character size must remain constant while larger drawable dimensions reveal more world.
+- Minimize and restore repeatedly, including on a high-DPI display when available. A zero drawable must skip safely, restoration must resume, and no unrelated persistent GPU resource count may change.
+- Walk far left in the playground. The camera must follow without moving the physics root, and distant cave, midground pillars, and gameplay geometry must show clearly different horizontal response.
 
 ## Performance and allocation checks
 
@@ -145,7 +148,17 @@ Prompt 13's GPU-backed evidence run is:
 zig build run -- --frames 1800 --demo playground --scripted-input
 ```
 
-It must demonstrate idle, left and right movement, release deceleration, opposing-key neutrality, measured short and held jumps, landing, debug on/off, controller-driven approach, exactly one E request and handshake completion while E stays held, one R reset, and a stable initial final state. It reports two characters, five environment colliders, 35 ordinary sprites, one texture page/range/actual draw, zero input-created GPU resources, and zero steady-state mapping/intent/playground allocation growth. Missing milestones or cleanup evidence returns nonzero.
+It must demonstrate idle, left and right movement, release deceleration, opposing-key neutrality, measured short and held jumps, landing, debug on/off, controller-driven approach, exactly one E request and handshake completion while E stays held, one R reset, and a stable initial final state. It reports two characters, five environment colliders, 14 cave-layer sprites, 49 ordinary sprites, one texture page/range/actual draw, zero input-created GPU resources, and zero steady-state mapping/intent/playground allocation growth. Missing milestones or cleanup evidence returns nonzero.
+
+Prompt 14 adds 12 grouped deterministic tests, bringing the aggregate count from 193 to 205. Pure camera cases cover the original 640×480 mapping, known offsets, positive-Y-up clip behavior, 640×480 plus 1280×720 and 800×800 viewports, nonzero finite validation, transactional zero-size rejection, exact 16-byte uniform values, hand-derived parallax displacement, and bit-deterministic repeated dead-zone updates. Integration cases prove resize changes presentation without changing controller state, camera following cannot change a 720-tick physics replay, the playground keeps both raised platforms while extending its floor to `[-32, 32] m`, cave submissions contain distinct distant/midground/gameplay factors in world metres, and the bounded raw-input route crosses more than 20 metres deterministically.
+
+Prompt 14's bounded GPU-backed route is:
+
+```text
+zig build run -- --frames 1100 --demo side-scroller --scripted-input
+```
+
+It drives the real mapped `A` input through the 240 Hz controller into the extended-left world, traverses from `-3.15 m` past `-24 m`, and lets the character decelerate. The route must report at least 12 metres of deterministic camera-center travel, distant factor `0.125`, midground factor `0.45`, gameplay factor `1.0`, one texture page/range/actual draw, zero steady-state allocations, zero unrelated GPU-resource creation, and current drawable pixel dimensions. Failure to travel, follow, render, or cleanly settle returns nonzero. The fixed `zig build gpu-smoke` route remains 640×480 and verifies the same shader contract through deterministic readback independently of visible-window resizing.
 
 Prompt 11's GPU-backed evidence run is:
 

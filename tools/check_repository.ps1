@@ -104,6 +104,9 @@ $integratedDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot
 $integrationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/integration_tests.zig')
 $playgroundSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/playground_demo.zig')
 $playgroundTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/playground_tests.zig')
+$cameraSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/camera2d.zig')
+$cameraTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/camera_tests.zig')
+$shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/mat3.zig')
@@ -885,6 +888,78 @@ foreach ($phrase in $requiredPlaygroundTestPhrases) {
     }
 }
 
+if ([regex]::IsMatch($humanoidSource + [Environment]::NewLine + $characterSource, 'presentation_origin|pixels_per_meter|viewport_(width|height)|window_(width|height)')) {
+    Write-Error 'Humanoid and character ownership may not include global presentation origin, zoom, viewport, or window dimensions.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($cameraSource, 'SDL_|@import\("sdl"\)|CreateGPU|DrawGPU|CharacterController|CollisionWorld|CharacterIntent')) {
+    Write-Error 'Camera2D must remain testable without SDL, GPU, input, character-controller, or collision-world dependencies.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $cameraSource.Contains('pub const Camera2D = struct') -or
+    -not $cameraSource.Contains('pub fn worldToPresentation') -or
+    -not $cameraSource.Contains('pub fn worldToClip') -or
+    -not $cameraSource.Contains('pub fn setViewport') -or
+    -not $cameraSource.Contains('pub const HorizontalFollower = struct')) {
+    Write-Error 'Camera2D must own validated center, viewport, zoom, conversions, and deterministic horizontal following.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $gpuSource.Contains('c.SDL_WINDOW_RESIZABLE') -or
+    -not $gpuSource.Contains('c.SDL_GetWindowSizeInPixels') -or
+    -not $gpuSource.Contains('c.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED') -or
+    -not $gpuSource.Contains('c.SDL_EVENT_WINDOW_MINIMIZED') -or
+    -not $gpuSource.Contains('c.SDL_EVENT_WINDOW_RESTORED') -or
+    -not $gpuSource.Contains('c.SDL_GetGPUSwapchainTextureFormat')) {
+    Write-Error 'Visible SDL windows must use the pinned resizable, drawable-pixel, minimize/restore, and swapchain-format APIs.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $gpuSource.Contains('offscreen_pipeline') -or
+    -not $gpuSource.Contains('window_pipeline') -or
+    -not $gpuSource.Contains('camera2d.Camera2D.initDefault()') -or
+    [regex]::IsMatch($gpuSource, 'SDL_BlitGPUTexture')) {
+    Write-Error 'Visible rendering must use the current swapchain camera directly while fixed offscreen readback remains separate.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $batchSource.Contains('camera_x_factor: f32') -or
+    -not $shaderSource.Contains('world.x - camera_center.x * input.camera_x_factor') -or
+    -not $shaderSource.Contains('world.y - camera_center.y') -or
+    -not $shaderSource.Contains('camera_relative * clip_scale')) {
+    Write-Error 'The GPU instance and HLSL contracts must apply camera and horizontal parallax at the rendering boundary.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($controllerSource + [Environment]::NewLine + $collisionWorldSource, '(?i)camera|parallax')) {
+    Write-Error 'Camera following and parallax may not enter authoritative controller or collision ownership.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $playgroundSource.Contains('distant_camera_x_factor') -or
+    -not $playgroundSource.Contains('midground_camera_x_factor') -or
+    -not $playgroundSource.Contains('sideScrollingColliderInputs') -or
+    -not $playgroundSource.Contains('SideScrollerScriptedInput')) {
+    Write-Error 'The playground must provide distant, midground, gameplay, extended-world, and bounded side-scroll routes.' -ErrorAction Continue
+    $failed = $true
+}
+$requiredCameraTestPhrases = @(
+    'default camera preserves the original 640 by 480 presentation',
+    'camera keeps zoom at 640 by 480 and two other aspect ratios',
+    'positive world Y maps upward',
+    'zero and invalid camera state is rejected transactionally',
+    'parallax factors produce hand-derived relative camera displacement',
+    'resize changes presentation without changing authoritative simulation',
+    'camera follow cannot change controller physics',
+    'repeated horizontal camera updates are bit deterministic'
+)
+foreach ($phrase in $requiredCameraTestPhrases) {
+    if (-not $cameraTestsSource.Contains($phrase)) {
+        Write-Error "Required camera deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if (-not $playgroundTestsSource.Contains('bounded side-scroller input crosses the extended world deterministically') -or
+    -not $playgroundTestsSource.Contains('cave submission carries distant midground and gameplay camera factors')) {
+    Write-Error 'Side-scroller traversal and three-layer parallax submission require deterministic coverage.' -ErrorAction Continue
+    $failed = $true
+}
+
 if ($failed) {
     exit 1
 }
@@ -922,4 +997,5 @@ Write-Host 'Prompt 11 debug audit passed: debug commands are bounded, allocation
 Write-Host 'Prompt 11 integration-order audit passed: scripted input precedes physics, animation, visual pose systems, interactions/IK, and observation.'
 Write-Host 'Prompt 12 cleanup audit passed: deterministic tests cover debug/read invariance, reset timing, 1,000 interactions, 100,000 ticks, and adversarial render schedules.'
 Write-Host 'Prompt 13 input audit passed: one polled keyboard mapping, focus resynchronization, pending-edge delivery, world-aware reset, intent-owned interaction, debug invariance, zero input GPU ownership, and raw-key scripted equivalence.'
+Write-Host 'Prompt 14 camera audit passed: world-metre submissions, pure camera math, same-zoom resizing, high-DPI drawable tracking, safe zero surfaces, deterministic follow, three-layer parallax, extended collision world, fixed smoke target, and one global draw path.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

@@ -8,7 +8,7 @@ The actual draw is `SDL_DrawGPUIndexedPrimitives(render_pass, 6, range.instance_
 
 ## CPU submission layout
 
-`SpriteRequest` is the validated API input. It contains fixed-size values only. Accepted requests become the explicit `extern struct` `SpriteSubmission`, whose compile-time-asserted stride is 80 bytes and alignment is 8 bytes.
+`SpriteRequest` is the validated API input. It contains fixed-size values only. Accepted requests become the explicit `extern struct` `SpriteSubmission`, whose compile-time-asserted stride is 88 bytes and alignment is 8 bytes.
 
 | Absolute offset | Bytes | Required alignment | Scalar representation | Field | Use |
 | ---: | ---: | ---: | --- | --- | --- |
@@ -19,17 +19,19 @@ The actual draw is `SDL_DrawGPUIndexedPrimitives(render_pass, 6, range.instance_
 | 28 | 16 | 4 | four `f32` | `uv_rect = (min_u, min_v, max_u, max_v)` | Transferred |
 | 44 | 16 | 4 | four `f32` | straight-alpha RGBA `tint` | Transferred |
 | 60 | 4 | 4 | `u32` | `texture_page` | CPU-only; creates consecutive draw ranges and selects compatible GPU state |
-| 64 | 2 | 2 | `i16` | `order.scene_layer` | CPU-only stable ordering |
-| 66 | 2 | 2 | `i16` | `order.interaction_layer` | CPU-only stable ordering |
-| 68 | 2 | 2 | `u16` | `order.actor_layer` | CPU-only stable ordering |
-| 70 | 2 | 2 | `u16` | `order.body_part_layer` | CPU-only stable ordering |
-| 72 | 8 | 8 | `u64` | `order.submission_index` | CPU-only final stable tie-breaker |
+| 64 | 4 | 4 | `f32` | `camera_x_factor` | Transferred; validated in `[0,1]` |
+| 68 | 4 | 8 | padding | aligns `DrawOrderKey` |
+| 72 | 2 | 2 | `i16` | `order.scene_layer` | CPU-only stable ordering |
+| 74 | 2 | 2 | `i16` | `order.interaction_layer` | CPU-only stable ordering |
+| 76 | 2 | 2 | `u16` | `order.actor_layer` | CPU-only stable ordering |
+| 78 | 2 | 2 | `u16` | `order.body_part_layer` | CPU-only stable ordering |
+| 80 | 8 | 8 | `u64` | `order.submission_index` | CPU-only final stable tie-breaker |
 
-There is no CPU padding between semantic fields. The first four order fields occupy exactly eight bytes before the naturally required eight-byte alignment of `submission_index`. `@sizeOf`, `@alignOf`, and important `@offsetOf` values are compile-time assertions. No pointer, slice, optional, Zig `bool`, or unspecified enum representation is transferred.
+The only CPU padding is the explicit layout gap before the eight-byte-aligned ordering record. The first four order fields occupy exactly eight bytes before the naturally required eight-byte alignment of `submission_index`. `@sizeOf`, `@alignOf`, and important `@offsetOf` values are compile-time assertions. No pointer, slice, optional, Zig `bool`, or unspecified enum representation is transferred.
 
 ## GPU and HLSL layout
 
-Sorting converts each CPU record into the padding-free `extern struct` `GpuInstance`. Its compile-time-asserted stride is 60 bytes and alignment is 4 bytes.
+Sorting converts each CPU record into the padding-free `extern struct` `GpuInstance`. Its compile-time-asserted stride is 64 bytes and alignment is 4 bytes.
 
 | Byte offset | Bytes | Required alignment | Zig field | HLSL input | SDL format |
 | ---: | ---: | ---: | --- | --- | --- |
@@ -39,20 +41,22 @@ Sorting converts each CPU record into the padding-free `extern struct` `GpuInsta
 | 20 | 8 | 4 | `pivot: [2]f32` | `float2 pivot : TEXCOORD4` | `FLOAT2` |
 | 28 | 16 | 4 | `uv_rect: [4]f32` | `float4 uv_rect : TEXCOORD5` | `FLOAT4` |
 | 44 | 16 | 4 | `tint: [4]f32` | `float4 tint : TEXCOORD6` | `FLOAT4` |
+| 60 | 4 | 4 | `camera_x_factor: f32` | `float camera_x_factor : TEXCOORD7` | `FLOAT` |
 
-The shared quad supplies only `float2 local_position : TEXCOORD0` from vertex slot 0. Instance slot 1 has pitch 60, `SDL_GPU_VERTEXINPUTRATE_INSTANCE`, and the pinned-header-required `instance_step_rate = 0`. D3D12 advances slot 1 once per instance. HLSL does not need `SV_InstanceID` because the per-instance input slot itself performs unique record selection.
+The shared quad supplies only `float2 local_position : TEXCOORD0` from vertex slot 0. Instance slot 1 has pitch 64, `SDL_GPU_VERTEXINPUTRATE_INSTANCE`, and the pinned-header-required `instance_step_rate = 0`. D3D12 advances slot 1 once per instance. HLSL does not need `SV_InstanceID` because the per-instance input slot itself performs unique record selection.
 
-The vertex camera is one 16-byte `float4` pushed to DXIL vertex uniform slot `b0, space1`; its `.xy` values contain the 640 by 480 viewport. Fragment resources retain Prompt 1's pinned DXIL mapping at `t0, space2` and `s0, space2`.
+The vertex camera is one 16-byte block pushed to DXIL vertex uniform slot `b0, space1`: `camera_center.xy` is the world-space center and `clip_scale.xy` is `2 * pixels_per_metre / drawable_pixels`. The visible path updates this block from current swapchain pixel dimensions. The fixed 640×480 readback path uses the default camera independently. Fragment resources retain Prompt 1's pinned DXIL mapping at `t0, space2` and `s0, space2`.
 
 ## Transform and UV semantics
 
 The unit quad uses local corners `(0,0)` through `(1,1)`, with positive local Y upward. The shader evaluates this sequence:
 
-1. Multiply the unit coordinate by `scale`; `scale` explicitly represents sprite size and nonuniform scaling.
+1. Multiply the unit coordinate by `scale`; `scale` explicitly represents sprite size in world metres and nonuniform scaling.
 2. Subtract `pivot * scale`, making rotation occur around that pivot.
 3. Apply the two-dimensional rotation.
 4. Add `world_position` after rotation.
-5. Divide by viewport size and convert to clip space.
+5. Subtract full vertical camera center and horizontal camera center multiplied by the instance's parallax factor.
+6. Multiply by `clip_scale` to produce clip space.
 
 Negative scale is supported for deliberate mirroring. Zero scale is valid and collapses the quad to `world_position`. Every transform component must be finite. Pivot values are finite unit-quad coordinates; values outside `[0,1]` are allowed for deliberate off-sprite rotation centers.
 
@@ -82,14 +86,14 @@ GPU growth creates all six replacement resources for three slots before touching
 
 ## Frames in flight
 
-The application asks SDL for three frames in flight and owns three fixed `FrameSlot` records. Each slot owns one 60-byte-stride GPU instance buffer, one upload transfer buffer of the same capacity, and at most one submission fence. Mapping and `SDL_UploadToGPUBuffer` use `cycle = false` because a slot cannot be reused until its own fence is signaled.
+The application asks SDL for three frames in flight and owns three fixed `FrameSlot` records. Each slot owns one 64-byte-stride GPU instance buffer, one upload transfer buffer of the same capacity, and at most one submission fence. Mapping and `SDL_UploadToGPUBuffer` use `cycle = false` because a slot cannot be reused until its own fence is signaled.
 
 At slot reuse, `SDL_QueryGPUFence` first checks completion. A wait and the `frame_slot_fence_waits` increment occur only if that reused slot is still busy. The fence is then released. Successful submission stores the newly acquired fence and advances the ring. A failed frame does not advance the slot. Fence-acquisition fault injection waits and releases the acquired fence before returning. Device-idle waits occur only during final destruction or an exceptional submitted-command cleanup path, never in the ordinary frame loop.
 
-Persistent shaders, pipeline, sampler, textures, shared quad buffers, and all six frame-slot buffers are created during initialization. Ordinary frames acquire command buffers, swapchain textures, and per-submit fences but create no persistent GPU resources. Runtime counters distinguish persistent resource creation/release from fence acquisition/release.
+Persistent shaders, the fixed-readback and swapchain-format pipelines, sampler, textures, shared quad buffers, and all six frame-slot buffers are created during initialization. Ordinary frames acquire command buffers, swapchain textures, and per-submit fences but create no persistent GPU resources. Resize events update camera scalars only. Runtime counters distinguish persistent resource creation/release from fence acquisition/release.
 
 ## Metrics
 
 Per-frame metrics reset in `beginFrame`: submitted, visible, culled, sorted, ranges, actual submitted sprite draws, and uploaded bytes. Lifetime metrics separately track CPU capacity growth, allocation attempts, post-stabilization allocation attempts, GPU slot growth, frame-slot waits, frames, persistent resource creation/release, and fences.
 
-Draw calls are committed only after a command buffer returns a valid submission fence. The window title is formatted into stack storage and displays current actual values. Copies, render-pass boundaries, blits, readback, and debug work do not increment sprite draw calls.
+Draw calls are committed only after a command buffer returns a valid submission fence. The window title is formatted into stack storage and displays current actual values. Copies, render-pass boundaries, readback, skipped zero-drawable frames, and debug work do not increment sprite draw calls.
