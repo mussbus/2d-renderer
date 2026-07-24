@@ -209,6 +209,15 @@ pub fn build(b: *std.Build) void {
     pose_module.addImport("math", math_module);
     pose_module.addImport("skeleton", skeleton_module);
     pose_module.addImport("fault_injection", fault_injection_module);
+    const appearance_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/appearance.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    appearance_module.addImport("math", math_module);
+    appearance_module.addImport("skeleton", skeleton_module);
+    appearance_module.addImport("pose", pose_module);
+    appearance_module.addImport("fault_injection", fault_injection_module);
     const two_bone_ik_module = b.createModule(.{
         .root_source_file = b.path("src/animation/two_bone_ik.zig"),
         .target = target,
@@ -250,6 +259,7 @@ pub fn build(b: *std.Build) void {
     humanoid_module.addImport("math", math_module);
     humanoid_module.addImport("skeleton", skeleton_module);
     humanoid_module.addImport("pose", pose_module);
+    humanoid_module.addImport("appearance", appearance_module);
     humanoid_module.addImport("sprite_batch", sprite_batch_module);
     humanoid_module.addImport("fault_injection", fault_injection_module);
     const events_module = b.createModule(.{
@@ -327,6 +337,7 @@ pub fn build(b: *std.Build) void {
     });
     character_module.addImport("math", math_module);
     character_module.addImport("humanoid", humanoid_module);
+    character_module.addImport("appearance", appearance_module);
     character_module.addImport("skeleton", skeleton_module);
     character_module.addImport("authored_clips", authored_clips_module);
     character_module.addImport("clip", clip_module);
@@ -520,6 +531,7 @@ pub fn build(b: *std.Build) void {
     controller_demo_module.addImport("sprite_batch", sprite_batch_module);
     controller_demo_module.addImport("fault_injection", fault_injection_module);
     app_module.addImport("humanoid", humanoid_module);
+    app_module.addImport("appearance", appearance_module);
     app_module.addImport("math", math_module);
     app_module.addImport("camera2d", camera2d_module);
     app_module.addImport("animation_system", animation_system_module);
@@ -553,6 +565,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("camera2d", camera2d_module);
     test_module.addImport("skeleton", skeleton_module);
     test_module.addImport("pose", pose_module);
+    test_module.addImport("appearance", appearance_module);
     test_module.addImport("two_bone_ik", two_bone_ik_module);
     test_module.addImport("arm_ik", arm_ik_module);
     test_module.addImport("leg_ik", leg_ik_module);

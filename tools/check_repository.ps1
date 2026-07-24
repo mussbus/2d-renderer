@@ -70,6 +70,7 @@ $gpuSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graph
 $batchSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/sprite_batch.zig')
 $skeletonSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/skeleton.zig')
 $poseSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/pose.zig')
+$appearanceSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/appearance.zig')
 $humanoidSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/humanoid.zig')
 $eventSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/events.zig')
 $clipSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/clip.zig')
@@ -106,6 +107,7 @@ $playgroundSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'sr
 $playgroundTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/playground_tests.zig')
 $cameraSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/camera2d.zig')
 $cameraTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/camera_tests.zig')
+$appearanceTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/appearance_tests.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
@@ -259,7 +261,7 @@ if (-not $gpuLayout.Success -or [regex]::IsMatch($gpuLayout.Groups[1].Value, '\[
     $failed = $true
 }
 
-$cpuHierarchySource = $skeletonSource + [Environment]::NewLine + $poseSource + [Environment]::NewLine + $humanoidSource
+$cpuHierarchySource = $skeletonSource + [Environment]::NewLine + $poseSource + [Environment]::NewLine + $appearanceSource + [Environment]::NewLine + $humanoidSource
 if ([regex]::IsMatch($cpuHierarchySource, 'SDL_(Draw|CreateGPU|BindGPU|UploadToGPU)')) {
     Write-Error 'CPU hierarchy, pose, and attachment code must not contain a direct GPU path or create GPU resources.' -ErrorAction Continue
     $failed = $true
@@ -294,9 +296,9 @@ if ($skeletonFieldsStart -lt 0 -or $skeletonFieldsEnd -lt 0) {
     }
 }
 
-$attachmentMatch = [regex]::Match($humanoidSource, 'pub const RenderAttachment = struct \{(.*?)\r?\n\};', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+$attachmentMatch = [regex]::Match($appearanceSource, 'pub const VisualAttachment = struct \{(.*?)\r?\n\};', [System.Text.RegularExpressions.RegexOptions]::Singleline)
 if (-not $attachmentMatch.Success -or [regex]::IsMatch($attachmentMatch.Groups[1].Value, '\bworld(_transform|_position)?\b')) {
-    Write-Error 'RenderAttachment must retain only local metadata and must not store authoritative world transforms.' -ErrorAction Continue
+    Write-Error 'VisualAttachment must retain only immutable local metadata and must not store authoritative world transforms.' -ErrorAction Continue
     $failed = $true
 }
 
@@ -317,12 +319,13 @@ function Get-FunctionSection {
 $hotSections = @(
     Get-FunctionSection $poseSource '    pub fn evaluateWorld' '    pub fn worldForBone'
     Get-FunctionSection $poseSource '    pub fn socketWorld' '    pub fn socketPosition'
+    Get-FunctionSection $appearanceSource '    pub fn evaluate' '    pub fn setVisible'
     Get-FunctionSection $humanoidSource '    pub fn applyProgrammaticPose' '    pub fn submitAttachments'
     Get-FunctionSection $humanoidSource '    pub fn submitAttachments' '    pub fn attachmentWorld'
 )
 foreach ($section in $hotSections) {
     if ([regex]::IsMatch($section, '\.alloc\s*\(|\.create\s*\(|std\.mem\.Allocator|std\.mem\.eql')) {
-        Write-Error 'Pose evaluation, socket evaluation, pose changes, and humanoid submission must remain allocation- and string-lookup-free.' -ErrorAction Continue
+        Write-Error 'Pose, appearance, socket, and humanoid submission hot paths must remain allocation- and string-lookup-free.' -ErrorAction Continue
         $failed = $true
     }
 }
@@ -960,6 +963,68 @@ if (-not $playgroundTestsSource.Contains('bounded side-scroller input crosses th
     $failed = $true
 }
 
+if (-not $humanoidSource.Contains('pub const canonical_attachment_semantic_count: usize = 15') -or
+    -not $humanoidSource.Contains('pub const default_visual_count: usize = 15') -or
+    $humanoidSource.Contains('attachment_inputs.len !=') -or
+    $humanoidSource.Contains('MissingAttachmentSemantic')) {
+    Write-Error 'Prompt 15 must preserve the 15 canonical lookup semantics without requiring exactly 15 visual records.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $appearanceSource.Contains('pub const maximum_visual_attachments: usize = 128') -or
+    -not $appearanceSource.Contains('pub const maximum_hierarchy_depth: u8 = 16') -or
+    -not $appearanceSource.Contains('pub const TransformSource = union(enum)') -or
+    -not $appearanceSource.Contains('visual_attachment: VisualAttachmentId') -or
+    -not $appearanceSource.Contains('return error.VisualAttachmentCycle') -or
+    -not $appearanceSource.Contains('return error.AttachmentPointCycle')) {
+    Write-Error 'Generalized visual and attachment hierarchies must use bounded resolved IDs and reject cycles.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $appearanceSource.Contains('pub const AttachmentPointId = enum(u16)') -or
+    -not $appearanceSource.Contains('pub const VisualAttachmentId = enum(u16)') -or
+    -not $appearanceSource.Contains('pub const BodyRegionId = enum(u16)') -or
+    -not $appearanceSource.Contains('pub const VisualGroupId = enum(u16)') -or
+    -not $appearanceSource.Contains('pub fn attachmentPointId') -or
+    -not $appearanceSource.Contains('pub fn visualId')) {
+    Write-Error 'Appearance definitions must resolve initialization-time names to compact typed runtime IDs.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $appearanceSource.Contains('pub const RigModule = struct') -or
+    -not $appearanceSource.Contains('pub const ModuleJoint = struct') -or
+    -not $appearanceSource.Contains('pub const ModuleSocket = struct') -or
+    -not $appearanceSource.Contains('parent_attachment_point: AttachmentPointId') -or
+    -not $appearanceSource.Contains('module_joint_local: []math.Transform2D') -or
+    -not $appearanceSource.Contains('return error.ModuleJointCycle')) {
+    Write-Error 'Optional rig modules must use bounded parented local joints and character-owned mutable local pose.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $characterSource.Contains('appearance_runtime: appearance.Runtime') -and
+    -not $humanoidSource.Contains('appearance_runtime: appearance.Runtime')) {
+    Write-Error 'Mutable appearance and module state must be owned by each character runtime.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($appearanceSource, 'SDL_|SpriteBatch|batch\.submit|CreateGPU|DrawGPU') -or
+    -not $characterSource.Contains('instance.character.appearance_runtime.evaluate') -or
+    -not $characterSource.Contains('instance.definition.visual_definition')) {
+    Write-Error 'Appearance evaluation must remain CPU-only and feed the established character submission path.' -ErrorAction Continue
+    $failed = $true
+}
+$requiredAppearanceTestPhrases = @(
+    'generalized definition keeps canonical rig invariant and assigns stable custom ids',
+    'zero visuals and variable counts initialize submit and clean up without a special path',
+    'multiple visuals share one data-defined attachment point and visual hierarchy is bounded',
+    'invalid duplicate dangling and cyclic definitions fail transactionally',
+    'appearance and module mutable state are instance-owned and resettable',
+    'custom attachment and module visuals mirror with the canonical character root',
+    'extended visuals preserve deterministic input order for equal draw layers',
+    'appearance evaluation and mutation allocate zero bytes after initialization'
+)
+foreach ($phrase in $requiredAppearanceTestPhrases) {
+    if (-not $appearanceTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 15 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -998,4 +1063,5 @@ Write-Host 'Prompt 11 integration-order audit passed: scripted input precedes ph
 Write-Host 'Prompt 12 cleanup audit passed: deterministic tests cover debug/read invariance, reset timing, 1,000 interactions, 100,000 ticks, and adversarial render schedules.'
 Write-Host 'Prompt 13 input audit passed: one polled keyboard mapping, focus resynchronization, pending-edge delivery, world-aware reset, intent-owned interaction, debug invariance, zero input GPU ownership, and raw-key scripted equivalence.'
 Write-Host 'Prompt 14 camera audit passed: world-metre submissions, pure camera math, same-zoom resizing, high-DPI drawable tracking, safe zero surfaces, deterministic follow, three-layer parallax, extended collision world, fixed smoke target, and one global draw path.'
+Write-Host 'Prompt 15 appearance audit passed: stable runtime IDs, variable visuals, bounded attachment hierarchies, optional module-local joints, character-owned mutable state, canonical-rig isolation, and allocation-free hot paths.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

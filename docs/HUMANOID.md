@@ -8,7 +8,7 @@ The deterministic CPU world uses an arbitrary character-root origin, positive X 
 
 Render-attachment pivot is expressed in unit-quad coordinates and is sent once to `SpriteBatch`. Bone transforms have no separate pivot, preventing double pivot application. Zero and negative scale remain finite supported math values. Authored bones use positive unit scales. Prompt 7 left facing applies one deliberate negative-X character-root scale and preserves this composition convention; it does not swap anatomical bones or mirror sockets a second time.
 
-## Immutable definition and mutable pose
+## Canonical rig definition and mutable pose
 
 `SkeletonDefinition` owns three contiguous allocations: 16 stable bone records, a 16-entry topological evaluation order, and four socket records. Bone records contain an inline fixed-capacity debug name, parent index/root marker, rest-local `Transform2D`, and fixed `BoneSemantic`. They contain no current pose, world pose, character transform, allocator, pointer link, or GPU state.
 
@@ -18,7 +18,9 @@ Each `Pose` owns one contiguous local-transform array and one contiguous world-m
 
 ## Humanoid hierarchy and proportions
 
-The definition has 16 bones: root, pelvis, torso, head, bilateral upper arm/forearm/hand chains, and bilateral thigh/shin/foot chains. It has four sockets attached to the terminal hand and foot bones. The root has no sprite; the other 15 bones have one immutable render attachment.
+The canonical definition has 16 bones: root, pelvis, torso, head, bilateral upper arm/forearm/hand chains, and bilateral thigh/shin/foot chains. It has four semantic sockets attached to the terminal hand and foot bones. This topology, its lengths, its animation tracks, and its semantic lookup tables remain authoritative for locomotion, arm IK, foot planting, controller integration, interaction geometry, and handshake behavior.
+
+The default legacy appearance still supplies 15 body-piece visuals and gives the root no visual. That is a default data set, not a cardinality rule and not a one-bone/one-visual invariant. A valid definition may contain zero through 128 visuals, several visuals may use the same canonical bone or attachment point, and arbitrary visuals do not add members to `AttachmentSemantic`.
 
 Body sizes are authored in metres:
 
@@ -38,9 +40,31 @@ The left chain samples the procedural red region and uses back-limb layers. The 
 
 Those immutable layer values are the right-facing authored defaults. Runtime order resolution uses the same centralized role values and maps anatomical right limbs to back roles and anatomical left limbs to front roles when facing left. Attachment definitions remain unchanged.
 
+## Visual definitions, attachment points, and registries
+
+`appearance.Definition` is immutable initialization data adjacent to, but distinct from, `SkeletonDefinition`. It owns contiguous arrays for attachment points, body regions, visual groups, optional rig modules, flattened module joints and sockets, visual attachments, and their bounded parent-before-child evaluation orders. Names are copied into inline `DebugName` storage and resolved only during initialization. Input order assigns compact typed `u16` IDs for attachment points, visuals, regions, groups, modules, and module-local members. Per-frame string or hash lookup is not part of evaluation or submission.
+
+The conventional humanoid provides data-defined `head_scalp`, `face`, `neck`, `upper_back`, `chest`, `waist_pelvis`, left/right shoulder, left/right wrist, left/right hand, left/right ankle, and left/right foot attachment points. These names are conveniences in the default definition, not a closed enum. An attachment point has a stable ID, a canonical-bone or attachment-point parent, a finite local transform, and a validated hierarchy depth. Definitions reject empty or duplicate IDs, dangling parents, cycles, and depth beyond 16.
+
+Body regions and visual groups are independent many-to-many classification concepts. A visual names one body region and one group, but multiple visuals may share either ID. The default regions group the pelvis, torso, head, anatomical arms/hands, and anatomical legs/feet; future clothing coverage, deformation, wetness, material, damage, and armor systems may use the IDs without assuming a region maps to one sprite. Equipment and loadout state are deliberately not implemented here.
+
+A visual attachment contains a stable ID, optional canonical semantic, transform source, finite local transform, region/group IDs, hierarchy depth, draw layer, and sprite metadata. Its transform source may be a canonical bone, data-defined attachment point, module joint, module socket, or another visual. Visual-parent edges are resolved to IDs and topologically ordered at initialization. The optional canonical semantic is only the fast primary lookup used by existing diagnostics and hand/forearm interaction overrides; extra visuals leave it null.
+
+## Optional rig modules
+
+A rig module attaches to one validated attachment-point ID and has its own finite module-local transform. It may contain zero through 16 local joints and zero through 16 named local sockets; a complete definition supports at most eight modules, 128 flattened module joints, and 128 flattened module sockets. Joint parents are module-local stable IDs, roots use the module origin, and sockets may use the module origin or a local joint. Duplicate names, dangling members, self-parenting, and joint cycles fail initialization transactionally.
+
+Module joints do not enter `BoneSemantic`, canonical clips, locomotion sampling, ordinary arm/leg IK, controller state, or interaction geometry. Their rest transforms are immutable definition data. A future anatomy system may explicitly drive the character-owned local module pose without replacing the canonical humanoid skeleton.
+
+## Mutable appearance runtime
+
+Every `HumanoidCharacter` owns an `appearance.Runtime` compatible with its borrowed immutable definition. It contains contiguous attachment-point world matrices, module-local joint transforms, module joint/socket world matrices, per-visual visibility and local deformation state, and final visual world matrices. Two characters sharing one definition never share these arrays. Reset restores module joints to immutable rest transforms, makes every visual visible, clears local deformation, and rebuilds derived matrices from the current canonical pose.
+
+Initialization allocates every runtime array. Evaluation, visibility changes, local deformation, module-pose changes, reset, and submission perform no steady-state allocation. The single character-root `S(-1,+1)` facing reflection reaches attachment points, module chains, module sockets, visual parents, and final sprites through normal matrix composition; no anatomical semantic is swapped.
+
 ## Attachment submission
 
-Each attachment stores only parent index, local transform, sprite size, pivot, UV rectangle, straight-alpha tint, texture page, body-part layer, stable semantic, and inline debug name. Per frame, CPU code computes `bone_world * attachment_local`, extracts world position/rotation/signed scale in metres, and submits it through the existing `SpriteBatch`. Camera and viewport conversion occur later in the GPU vertex boundary. All 15 attachments use texture page 0 and therefore form one range and one `SDL_DrawGPUIndexedPrimitives` command. Pose changes create no GPU resources and do not change the pinned shader or pipelines.
+After canonical pose evaluation, the CPU evaluates attachment points, module-local joints and sockets, then visuals in their precomputed orders. Submission skips character-local hidden visuals, extracts world position/rotation/signed scale in metres from the already-owned runtime matrix, and submits each visible visual through the existing `SpriteBatch`. Camera and viewport conversion occur later at the GPU vertex boundary. The default 15 visuals still use texture page 0 and therefore form one range and one `SDL_DrawGPUIndexedPrimitives` command. Additional compatible visuals join that same global batch; appearance changes create no GPU resources and do not change the pinned shader or pipelines.
 
 ## Deterministic demonstration
 
@@ -52,4 +76,4 @@ zig build run -- --frames 300 --demo humanoid
 
 Frames 0–74 use rest pose. Frames 75–149 rotate the right upper arm and forearm. Frames 150–224 additionally rotate the left thigh and shin. Frames 225 onward additionally translate and rotate the character root. The program logs right shoulder, elbow, hand socket, left knee, and foot socket positions at frames 0, 100, 200, and 299.
 
-The demo definition, attachments, and pose use a 64 KiB fixed allocator during initialization. Its exact used byte count is recorded before the frame loop. Pose evaluation, socket queries, and attachment submission each compare that allocator position before and after their operations, providing separate runtime zero-allocation evidence. Pure tests repeat the proof and exercise two independent poses sharing one immutable definition.
+The demo definition, appearance runtime, and pose use a fixed allocator during initialization. Its exact used byte count is recorded before the frame loop. Pose evaluation, attachment-point/module/visual evaluation, socket queries, and attachment submission compare allocator position before and after their operations, providing separate runtime zero-allocation evidence. Pure tests repeat the proof, including zero and extended visual counts, two independent runtimes sharing one immutable definition, module-local pose/reset, hierarchy rejection, mirroring, and deterministic ordering.

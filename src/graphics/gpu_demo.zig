@@ -565,6 +565,7 @@ pub const GpuDemo = struct {
 
                     allocation_checkpoint = humanoid_allocator.end_index;
                     try demo.character.local_and_world_pose.evaluateWorld(&demo.definition.skeleton_definition, demo.character.character_to_world);
+                    try demo.character.evaluateAppearance(&demo.definition);
                     pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
 
                     const emitted = runtime.animator.emittedEvents();
@@ -1153,7 +1154,7 @@ pub const GpuDemo = struct {
             std.log.info("multi-character final metrics: frames={d} characters={d} attachments_per_character={d} humanoid_sprites={d} environment_debug_sprites=0 total_sprites={d} texture_pages=1 ranges={d} actual_draw_calls={d}", .{
                 self.resource_metrics.frames_rendered,
                 multi_character_demo.character_count,
-                humanoid.attachment_count,
+                humanoid.default_visual_count,
                 humanoid_instances,
                 metrics.visible_sprites,
                 metrics.draw_ranges,
@@ -1199,7 +1200,7 @@ pub const GpuDemo = struct {
                 a_metrics.submission_allocations + b_metrics.submission_allocations,
                 gpu_resources_for_facing_and_order,
             });
-            if (humanoid_instances != multi_character_demo.character_count * humanoid.attachment_count or
+            if (humanoid_instances != multi_character_demo.character_count * humanoid.default_visual_count or
                 metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
                 self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
                 gpu_resources_for_facing_and_order != 0 or humanoid_allocator.end_index != humanoid_initialized_bytes)
@@ -1216,7 +1217,7 @@ pub const GpuDemo = struct {
             std.log.info("handshake final metrics: frames={d} characters={d} attachments_per_character={d} humanoid_sprites={d} total_sprites={d} texture_pages=1 ranges={d} actual_draw_calls={d}", .{
                 self.resource_metrics.frames_rendered,
                 handshake_demo.character_count,
-                humanoid.attachment_count,
+                humanoid.default_visual_count,
                 humanoid_instances,
                 metrics.visible_sprites,
                 metrics.draw_ranges,
@@ -1249,7 +1250,7 @@ pub const GpuDemo = struct {
                 scene.manager.metrics.completion_allocations,
                 gpu_resources_for_interaction,
             });
-            if (humanoid_instances != handshake_demo.character_count * humanoid.attachment_count or
+            if (humanoid_instances != handshake_demo.character_count * humanoid.default_visual_count or
                 metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
                 self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resources_for_interaction != 0 or
                 humanoid_allocator.end_index != humanoid_initialized_bytes)
@@ -1322,7 +1323,7 @@ pub const GpuDemo = struct {
                 scene.manager.metrics.ik_pose_application_allocations,
                 scene.manager.metrics.ik_hierarchy_evaluation_allocations,
             });
-            if (humanoid_instances != handshake_ik_demo.character_count * humanoid.attachment_count or
+            if (humanoid_instances != handshake_ik_demo.character_count * humanoid.default_visual_count or
                 metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
                 self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resources_for_ik != 0 or
                 humanoid_allocator.end_index != humanoid_initialized_bytes)
@@ -1434,7 +1435,7 @@ pub const GpuDemo = struct {
                 scene.enabled.foot_plants.metrics.target_storage_allocations,
                 scene.enabled.foot_plants.metrics.pose_evaluation_allocations,
             });
-            if (humanoid_instances != humanoid.attachment_count + scene.world.colliders.len or
+            if (humanoid_instances != humanoid.default_visual_count + scene.world.colliders.len or
                 metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
                 self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resources_for_foot_planting != 0 or
                 humanoid_allocator.end_index != humanoid_initialized_bytes)
@@ -1583,7 +1584,7 @@ pub const GpuDemo = struct {
                 const milestone: integrated_demo.Milestone = @enumFromInt(index);
                 std.log.info("Milestone {s}: {any}", .{ @tagName(milestone), tick });
             }
-            const expected_ordinary = integrated_demo.character_count * humanoid.attachment_count + scene.world.colliders.len;
+            const expected_ordinary = integrated_demo.character_count * humanoid.default_visual_count + scene.world.colliders.len;
             if (scene.evidence.ordinary_sprites != expected_ordinary or metrics.visible_sprites != humanoid_instances or
                 metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
                 self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0 or

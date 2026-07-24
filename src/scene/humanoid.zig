@@ -2,10 +2,12 @@ const std = @import("std");
 const math = @import("math");
 const skeleton = @import("skeleton");
 const pose = @import("pose");
+const appearance = @import("appearance");
 const sprite = @import("sprite_batch");
 const fault_injection = @import("fault_injection");
 
-pub const attachment_count: usize = 15;
+pub const canonical_attachment_semantic_count: usize = 15;
+pub const default_visual_count: usize = 15;
 
 pub const Facing = enum(u8) { left, right };
 
@@ -67,35 +69,19 @@ pub fn defaultBodyPartLayer(semantic: AttachmentSemantic, facing: Facing) u16 {
 }
 
 comptime {
-    if (std.enums.values(AttachmentSemantic).len != attachment_count) @compileError("humanoid attachment semantic count mismatch");
+    if (std.enums.values(AttachmentSemantic).len != canonical_attachment_semantic_count) @compileError("humanoid attachment semantic count mismatch");
 }
 
-pub const RenderAttachmentInput = struct {
-    debug_name: []const u8,
-    semantic: u8,
-    parent_bone: u16,
-    local_to_bone: math.Transform2D,
-    sprite_size: math.Vec2,
-    pivot: [2]f32,
-    uv_rect: [4]f32,
-    tint: [4]f32,
-    texture_page: u32,
-    body_part_layer: u16,
-};
-
-pub const RenderAttachment = struct {
-    id: u16,
-    debug_name: skeleton.DebugName,
-    semantic: AttachmentSemantic,
-    parent_bone: u16,
-    local_to_bone: math.Transform2D,
-    sprite_size: math.Vec2,
-    pivot: [2]f32,
-    uv_rect: [4]f32,
-    tint: [4]f32,
-    texture_page: u32,
-    body_part_layer: u16,
-};
+pub const RenderAttachmentInput = appearance.VisualAttachmentInput;
+pub const RenderAttachment = appearance.VisualAttachment;
+pub const VisualDefinitionInputs = appearance.DefinitionInputs;
+pub const AttachmentPointId = appearance.AttachmentPointId;
+pub const VisualAttachmentId = appearance.VisualAttachmentId;
+pub const BodyRegionId = appearance.BodyRegionId;
+pub const VisualGroupId = appearance.VisualGroupId;
+pub const RigModuleId = appearance.RigModuleId;
+pub const ModuleJointId = appearance.ModuleJointId;
+pub const ModuleSocketId = appearance.ModuleSocketId;
 
 pub const SpriteTransform = struct {
     world_position: math.Vec2,
@@ -128,14 +114,25 @@ pub fn spriteTransform(world: math.Mat3) !SpriteTransform {
 pub const HumanoidDefinition = struct {
     allocator: std.mem.Allocator,
     skeleton_definition: skeleton.SkeletonDefinition,
+    visual_definition: appearance.Definition,
     attachments: []const RenderAttachment,
-    attachment_semantic_indices: [attachment_count]?u16,
+    attachment_semantic_indices: [canonical_attachment_semantic_count]?VisualAttachmentId,
 
     pub fn init(allocator: std.mem.Allocator, injector: ?fault_injection.Injector) !HumanoidDefinition {
         const bones = boneInputs();
         const sockets = socketInputs();
-        const attachment_inputs = attachmentInputs();
-        return initFromInputs(allocator, &bones, &sockets, &attachment_inputs, injector);
+        const attachment_points = attachmentPointInputs();
+        const body_regions = bodyRegionInputs();
+        const visual_groups = visualGroupInputs();
+        const rig_modules = [_]appearance.RigModuleInput{};
+        const visual_inputs = attachmentInputs();
+        return initFromVisualDefinition(allocator, &bones, &sockets, .{
+            .attachment_points = &attachment_points,
+            .body_regions = &body_regions,
+            .visual_groups = &visual_groups,
+            .rig_modules = &rig_modules,
+            .visuals = &visual_inputs,
+        }, injector);
     }
 
     pub fn initFromInputs(
@@ -145,87 +142,94 @@ pub const HumanoidDefinition = struct {
         attachment_inputs: []const RenderAttachmentInput,
         injector: ?fault_injection.Injector,
     ) !HumanoidDefinition {
+        const attachment_points = attachmentPointInputs();
+        const body_regions = bodyRegionInputs();
+        const visual_groups = visualGroupInputs();
+        const rig_modules = [_]appearance.RigModuleInput{};
+        return initFromVisualDefinition(allocator, bones, sockets, .{
+            .attachment_points = &attachment_points,
+            .body_regions = &body_regions,
+            .visual_groups = &visual_groups,
+            .rig_modules = &rig_modules,
+            .visuals = attachment_inputs,
+        }, injector);
+    }
+
+    pub fn initFromVisualDefinition(
+        allocator: std.mem.Allocator,
+        bones: []const skeleton.BoneDefinitionInput,
+        sockets: []const skeleton.SocketDefinitionInput,
+        visual_inputs: VisualDefinitionInputs,
+        injector: ?fault_injection.Injector,
+    ) !HumanoidDefinition {
         var skeleton_definition = try skeleton.SkeletonDefinition.initHumanoid(allocator, bones, sockets, injector);
         errdefer skeleton_definition.deinit();
-        if (attachment_inputs.len != attachment_count) return error.AttachmentLengthMismatch;
+        var visual_definition = try appearance.Definition.init(
+            allocator,
+            &skeleton_definition,
+            canonical_attachment_semantic_count,
+            visual_inputs,
+            injector,
+        );
+        errdefer visual_definition.deinit();
 
-        const attachments = allocator.alloc(RenderAttachment, attachment_inputs.len) catch return error.AllocationFailure;
-        errdefer allocator.free(attachments);
-        try after(injector, .attachment_allocation);
-        var lookup = [_]?u16{null} ** attachment_count;
-        for (attachment_inputs, 0..) |input, index| {
-            if (input.semantic >= attachment_count) return error.InvalidAttachmentSemantic;
-            const semantic: AttachmentSemantic = @enumFromInt(input.semantic);
-            if (lookup[input.semantic] != null) return error.DuplicateAttachmentSemantic;
-            if (input.parent_bone >= skeleton_definition.boneCount()) {
-                std.log.warn("attachment validation: attachment={d} name={s} parent={d} bone_count={d}", .{ index, input.debug_name, input.parent_bone, skeleton_definition.boneCount() });
-                return error.InvalidAttachmentParent;
-            }
-            if (!input.local_to_bone.isFinite() or !input.sprite_size.isFinite() or input.sprite_size.x <= 0 or input.sprite_size.y <= 0) {
-                return error.NonFiniteTransform;
-            }
-            const name = try skeleton.DebugName.init(input.debug_name);
-            for (attachments[0..index]) |*existing| {
-                if (name.eql(&existing.debug_name)) return error.DuplicateAttachmentName;
+        var lookup = [_]?VisualAttachmentId{null} ** canonical_attachment_semantic_count;
+        for (visual_definition.visuals) |visual| {
+            if (visual.canonical_semantic) |raw_semantic| {
+                lookup[raw_semantic] = visual.id;
             }
             try sprite.validateRequest(.{
                 .world_position = .{ 0, 0 },
                 .rotation = 0,
-                .scale = input.sprite_size.toArray(),
-                .pivot = input.pivot,
-                .uv_rect = input.uv_rect,
-                .tint = input.tint,
-                .texture_page = input.texture_page,
-                .order = .{ .scene_layer = 0, .interaction_layer = 0, .actor_layer = 0, .body_part_layer = input.body_part_layer },
+                .scale = visual.sprite_size.toArray(),
+                .pivot = visual.pivot,
+                .uv_rect = visual.uv_rect,
+                .tint = visual.tint,
+                .texture_page = visual.texture_page,
+                .order = .{ .scene_layer = 0, .interaction_layer = 0, .actor_layer = 0, .body_part_layer = visual.body_part_layer },
             }, 1);
-            attachments[index] = .{
-                .id = @intCast(index),
-                .debug_name = name,
-                .semantic = semantic,
-                .parent_bone = input.parent_bone,
-                .local_to_bone = input.local_to_bone,
-                .sprite_size = input.sprite_size,
-                .pivot = input.pivot,
-                .uv_rect = input.uv_rect,
-                .tint = input.tint,
-                .texture_page = input.texture_page,
-                .body_part_layer = input.body_part_layer,
-            };
-            lookup[input.semantic] = @intCast(index);
         }
-        for (lookup) |index| if (index == null) return error.MissingAttachmentSemantic;
 
         return .{
             .allocator = allocator,
             .skeleton_definition = skeleton_definition,
-            .attachments = attachments,
+            .visual_definition = visual_definition,
+            .attachments = visual_definition.visuals,
             .attachment_semantic_indices = lookup,
         };
     }
 
     pub fn deinit(definition: *HumanoidDefinition) void {
-        definition.allocator.free(definition.attachments);
+        definition.visual_definition.deinit();
         definition.skeleton_definition.deinit();
         definition.* = undefined;
     }
 
-    pub fn attachment(definition: HumanoidDefinition, semantic: AttachmentSemantic) *const RenderAttachment {
-        return &definition.attachments[definition.attachment_semantic_indices[@intFromEnum(semantic)].?];
+    pub fn attachment(definition: HumanoidDefinition, semantic: AttachmentSemantic) !*const RenderAttachment {
+        const id = definition.attachment_semantic_indices[@intFromEnum(semantic)] orelse return error.MissingCanonicalVisual;
+        return &definition.attachments[id.index()];
     }
 };
 
 pub const HumanoidCharacter = struct {
     local_and_world_pose: pose.Pose,
+    appearance_runtime: appearance.Runtime,
     character_to_world: math.Transform2D = math.Transform2D.identity(),
 
     pub fn init(allocator: std.mem.Allocator, definition: *const HumanoidDefinition, injector: ?fault_injection.Injector) !HumanoidCharacter {
         var pose_state = try pose.Pose.init(allocator, &definition.skeleton_definition, injector);
         errdefer pose_state.deinit();
+        var appearance_runtime = try appearance.Runtime.init(allocator, definition.visual_definition.view(), injector);
+        errdefer appearance_runtime.deinit();
         try after(injector, .humanoid_character_initialization);
-        return .{ .local_and_world_pose = pose_state };
+        return .{
+            .local_and_world_pose = pose_state,
+            .appearance_runtime = appearance_runtime,
+        };
     }
 
     pub fn deinit(character: *HumanoidCharacter) void {
+        character.appearance_runtime.deinit();
         character.local_and_world_pose.deinit();
         character.* = undefined;
     }
@@ -255,6 +259,7 @@ pub const HumanoidCharacter = struct {
             character.character_to_world = math.Transform2D.init(.{ .x = 0.55, .y = 0.18 }, 10.0 * std.math.pi / 180.0, math.Vec2.one);
         }
         try character.local_and_world_pose.evaluateWorld(skeleton_definition, character.character_to_world);
+        try character.evaluateAppearance(definition);
     }
 
     pub fn submitAttachments(
@@ -265,6 +270,7 @@ pub const HumanoidCharacter = struct {
     ) !u32 {
         var submitted: u32 = 0;
         for (definition.attachments) |attachment_definition| {
+            if (!try character.appearance_runtime.isVisible(definition.visual_definition.view(), attachment_definition.id)) continue;
             const world = try attachmentWorld(character, definition, &attachment_definition);
             const sprite_transform = try spriteTransform(world);
             const world_size = sprite_transform.signed_scale.componentMul(attachment_definition.sprite_size);
@@ -289,8 +295,15 @@ pub const HumanoidCharacter = struct {
     }
 
     pub fn attachmentWorld(character: *const HumanoidCharacter, definition: *const HumanoidDefinition, attachment_definition: *const RenderAttachment) !math.Mat3 {
-        const bone_world = try character.local_and_world_pose.worldForBone(&definition.skeleton_definition, attachment_definition.parent_bone);
-        return bone_world.mul(try attachment_definition.local_to_bone.localToParent());
+        return character.appearance_runtime.visualWorld(definition.visual_definition.view(), attachment_definition.id);
+    }
+
+    pub fn evaluateAppearance(character: *HumanoidCharacter, definition: *const HumanoidDefinition) !void {
+        try character.appearance_runtime.evaluate(
+            definition.visual_definition.view(),
+            &definition.skeleton_definition,
+            &character.local_and_world_pose,
+        );
     }
 };
 
@@ -358,7 +371,53 @@ pub fn socketInputs() [skeleton.socket_semantic_count]skeleton.SocketDefinitionI
     };
 }
 
-pub fn attachmentInputs() [attachment_count]RenderAttachmentInput {
+pub const conventional_attachment_point_count: usize = 16;
+pub const default_body_region_count: usize = 11;
+pub const default_visual_group_count: usize = 1;
+
+pub fn attachmentPointInputs() [conventional_attachment_point_count]appearance.AttachmentPointInput {
+    const identity = math.Transform2D.identity();
+    return .{
+        .{ .debug_name = "head_scalp", .parent = .{ .canonical_bone = 3 }, .local_to_parent = math.Transform2D.init(.{ .x = 0, .y = 0.32 }, 0, math.Vec2.one) },
+        .{ .debug_name = "face", .parent = .{ .attachment_point = "head_scalp" }, .local_to_parent = math.Transform2D.init(.{ .x = 0.28, .y = -0.25 }, 0, math.Vec2.one) },
+        .{ .debug_name = "neck", .parent = .{ .canonical_bone = 2 }, .local_to_parent = math.Transform2D.init(.{ .x = 0, .y = 1.30 }, 0, math.Vec2.one) },
+        .{ .debug_name = "upper_back", .parent = .{ .canonical_bone = 2 }, .local_to_parent = math.Transform2D.init(.{ .x = 0, .y = 1.0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "chest", .parent = .{ .canonical_bone = 2 }, .local_to_parent = math.Transform2D.init(.{ .x = 0, .y = 0.65 }, 0, math.Vec2.one) },
+        .{ .debug_name = "waist_pelvis", .parent = .{ .canonical_bone = 1 }, .local_to_parent = identity },
+        .{ .debug_name = "left_shoulder", .parent = .{ .canonical_bone = 4 }, .local_to_parent = identity },
+        .{ .debug_name = "right_shoulder", .parent = .{ .canonical_bone = 7 }, .local_to_parent = identity },
+        .{ .debug_name = "left_wrist", .parent = .{ .canonical_bone = 5 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.55, .y = 0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "right_wrist", .parent = .{ .canonical_bone = 8 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.55, .y = 0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "left_hand", .parent = .{ .canonical_bone = 6 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.25, .y = 0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "right_hand", .parent = .{ .canonical_bone = 9 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.25, .y = 0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "left_ankle", .parent = .{ .canonical_bone = 11 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.85, .y = 0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "right_ankle", .parent = .{ .canonical_bone = 14 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.85, .y = 0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "left_foot", .parent = .{ .canonical_bone = 12 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.35, .y = 0 }, 0, math.Vec2.one) },
+        .{ .debug_name = "right_foot", .parent = .{ .canonical_bone = 15 }, .local_to_parent = math.Transform2D.init(.{ .x = 0.35, .y = 0 }, 0, math.Vec2.one) },
+    };
+}
+
+pub fn bodyRegionInputs() [default_body_region_count]appearance.BodyRegionInput {
+    return .{
+        .{ .debug_name = "pelvis" },
+        .{ .debug_name = "torso" },
+        .{ .debug_name = "head" },
+        .{ .debug_name = "left_arm" },
+        .{ .debug_name = "left_hand" },
+        .{ .debug_name = "right_arm" },
+        .{ .debug_name = "right_hand" },
+        .{ .debug_name = "left_leg" },
+        .{ .debug_name = "left_foot" },
+        .{ .debug_name = "right_leg" },
+        .{ .debug_name = "right_foot" },
+    };
+}
+
+pub fn visualGroupInputs() [default_visual_group_count]appearance.VisualGroupInput {
+    return .{.{ .debug_name = "body" }};
+}
+
+pub fn attachmentInputs() [default_visual_count]RenderAttachmentInput {
     const center = [2]f32{ 0.5, 0.5 };
     const joint = [2]f32{ 0.0, 0.5 };
     const red = [4]f32{ 0, 0, 0.5, 0.5 };
@@ -397,15 +456,33 @@ fn attachmentInput(
 ) RenderAttachmentInput {
     return .{
         .debug_name = name,
-        .semantic = @intFromEnum(semantic),
-        .parent_bone = parent,
-        .local_to_bone = local,
+        .canonical_semantic = @intFromEnum(semantic),
+        .transform_source = .{ .canonical_bone = parent },
+        .local_to_source = local,
+        .body_region = bodyRegionForSemantic(semantic),
+        .visual_group = "body",
         .sprite_size = size,
         .pivot = pivot,
         .uv_rect = uv,
         .tint = tint,
         .texture_page = 0,
         .body_part_layer = defaultBodyPartLayer(semantic, .right),
+    };
+}
+
+fn bodyRegionForSemantic(semantic: AttachmentSemantic) []const u8 {
+    return switch (semantic) {
+        .pelvis => "pelvis",
+        .torso => "torso",
+        .head => "head",
+        .left_upper_arm, .left_forearm => "left_arm",
+        .left_hand => "left_hand",
+        .right_upper_arm, .right_forearm => "right_arm",
+        .right_hand => "right_hand",
+        .left_thigh, .left_shin => "left_leg",
+        .left_foot => "left_foot",
+        .right_thigh, .right_shin => "right_leg",
+        .right_foot => "right_foot",
     };
 }
 

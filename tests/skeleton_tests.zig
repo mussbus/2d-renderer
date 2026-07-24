@@ -272,7 +272,7 @@ test "attachments follow hierarchy preserve pivots layers page and pose immutabi
     var demo = try humanoid.DemoCharacter.init(std.testing.allocator, null);
     defer demo.deinit();
     try demo.character.applyProgrammaticPose(&demo.definition, 0);
-    const right_hand_attachment = demo.definition.attachment(.right_hand);
+    const right_hand_attachment = try demo.definition.attachment(.right_hand);
     const right_hand_world = try demo.character.attachmentWorld(&demo.definition, right_hand_attachment);
     try expectVec(.{ .x = 1.65, .y = 2.25 }, right_hand_world.translationPart());
 
@@ -282,9 +282,9 @@ test "attachments follow hierarchy preserve pivots layers page and pose immutabi
     defer batch.deinit();
     batch.beginFrame();
     const submitted = try demo.character.submitAttachments(&demo.definition, &batch, 7);
-    try std.testing.expectEqual(@as(u32, humanoid.attachment_count), submitted);
+    try std.testing.expectEqual(@as(u32, humanoid.default_visual_count), submitted);
     const prepared = batch.prepare();
-    try std.testing.expectEqual(@as(usize, humanoid.attachment_count), prepared.sprites.len);
+    try std.testing.expectEqual(@as(usize, humanoid.default_visual_count), prepared.sprites.len);
     try std.testing.expectEqual(@as(usize, 1), prepared.ranges.len);
     for (demo.character.local_and_world_pose.local_transforms, 0..) |local, index| {
         try std.testing.expect(local.approxEqAbs(local_copy[index], tolerance));
@@ -308,10 +308,11 @@ test "attachment validation retains texture-page and parent checks" {
     attachments[0].texture_page = 1;
     try std.testing.expectError(error.InvalidTexturePage, humanoid.HumanoidDefinition.initFromInputs(std.testing.allocator, &bones, &sockets, &attachments, null));
     attachments = humanoid.attachmentInputs();
-    attachments[0].parent_bone = 99;
-    try std.testing.expectError(error.InvalidAttachmentParent, humanoid.HumanoidDefinition.initFromInputs(std.testing.allocator, &bones, &sockets, &attachments, null));
+    attachments[0].transform_source = .{ .canonical_bone = 99 };
+    try std.testing.expectError(error.InvalidVisualTransformSource, humanoid.HumanoidDefinition.initFromInputs(std.testing.allocator, &bones, &sockets, &attachments, null));
     attachments = humanoid.attachmentInputs();
-    try std.testing.expectError(error.AttachmentLengthMismatch, humanoid.HumanoidDefinition.initFromInputs(std.testing.allocator, &bones, &sockets, attachments[0 .. attachments.len - 1], null));
+    var variable = try humanoid.HumanoidDefinition.initFromInputs(std.testing.allocator, &bones, &sockets, attachments[0 .. attachments.len - 1], null);
+    variable.deinit();
 }
 
 test "pose socket and attachment submission allocate zero bytes after initialization" {

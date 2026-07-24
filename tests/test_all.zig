@@ -6,6 +6,7 @@ test {
     _ = @import("math_tests.zig");
     _ = @import("camera_tests.zig");
     _ = @import("skeleton_tests.zig");
+    _ = @import("appearance_tests.zig");
     _ = @import("animation_tests.zig");
     _ = @import("controller_tests.zig");
     _ = @import("secondary_motion_tests.zig");

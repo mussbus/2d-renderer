@@ -105,6 +105,7 @@ pub const Runtime = struct {
         );
         character.character_to_world = math.Transform2D.init(runtime.controller.state.position, 0, math.Vec2.one);
         try character.local_and_world_pose.evaluateWorld(&definition.skeleton_definition, character.character_to_world);
+        try character.evaluateAppearance(definition);
         const after_state = animation.animator.currentState(&animation.definitions.machine);
 
         runtime.metrics.simulation_ticks += 1;
@@ -130,6 +131,7 @@ pub const Runtime = struct {
         const render_position = try runtime.renderPosition();
         character.character_to_world = math.Transform2D.init(render_position, 0, math.Vec2.one);
         try character.local_and_world_pose.evaluateWorld(&definition.skeleton_definition, character.character_to_world);
+        try character.evaluateAppearance(definition);
     }
 
     pub fn reset(
@@ -154,6 +156,8 @@ pub const Runtime = struct {
         );
         character.character_to_world = math.Transform2D.init(runtime.controller.state.position, 0, math.Vec2.one);
         try character.local_and_world_pose.evaluateWorld(&definition.skeleton_definition, character.character_to_world);
+        try character.appearance_runtime.reset(definition.visual_definition.view());
+        try character.evaluateAppearance(definition);
     }
 
     pub fn setProceduralEnabled(runtime: *Runtime, enabled: bool) !void {

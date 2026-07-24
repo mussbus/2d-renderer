@@ -65,7 +65,7 @@ fn submitPair(
 ) !sprite.PreparedBatch {
     batch.beginFrame();
     const instances = [_]*character.CharacterInstance{ b, a };
-    try std.testing.expectEqual(@as(u32, 2 * humanoid.attachment_count), try character.submitGlobally(&instances, batch));
+    try std.testing.expectEqual(@as(u32, 2 * humanoid.default_visual_count), try character.submitGlobally(&instances, batch));
     return batch.prepare();
 }
 
@@ -317,9 +317,9 @@ test "global actor ordering is reversible stable and interleaves equal-layer cha
     const prepared = try submitPair(&a, &b, &batch);
     try std.testing.expect((try a.submittedKey(.torso)).submission_index < (try b.submittedKey(.torso)).submission_index);
     var ownership_switches: usize = 0;
-    var previous_is_a = prepared.sprites[0].order.submission_index < humanoid.attachment_count;
+    var previous_is_a = prepared.sprites[0].order.submission_index < humanoid.default_visual_count;
     for (prepared.sprites[1..]) |submission| {
-        const is_a = submission.order.submission_index < humanoid.attachment_count;
+        const is_a = submission.order.submission_index < humanoid.default_visual_count;
         if (is_a != previous_is_a) ownership_switches += 1;
         previous_is_a = is_a;
     }
@@ -342,13 +342,13 @@ test "cross-character hand and forearm overrides provide partial anatomical inte
     var batch = try sprite.SpriteBatch.init(std.testing.allocator, 64, 1);
     defer batch.deinit();
 
-    const a_hand_default = a.resolvedOrder(.right_hand);
+    const a_hand_default = try a.resolvedOrder(.right_hand);
     _ = try a.applySemanticOverride(.right_hand, .{ .interaction_layer = 1 });
     _ = try submitPair(&a, &b, &batch);
     try std.testing.expect(sprite.keyLessThan(try a.submittedKey(.torso), try b.submittedKey(.torso)));
     try std.testing.expect(sprite.keyLessThan(try b.submittedKey(.right_hand), try a.submittedKey(.right_hand)));
     a.clearOverrides();
-    try std.testing.expectEqualDeep(a_hand_default, a.resolvedOrder(.right_hand));
+    try std.testing.expectEqualDeep(a_hand_default, try a.resolvedOrder(.right_hand));
 
     try a.setActorLayer(1);
     try b.setActorLayer(0);
@@ -374,17 +374,17 @@ test "override precedence clearing validation and bounded capacity are explicit"
 
     const first = try a.applySemanticOverride(.right_hand, .{ .interaction_layer = -1, .body_part_layer = 70 });
     const second = try a.applySemanticOverride(.right_hand, .{ .interaction_layer = 2 });
-    var resolved = a.resolvedOrder(.right_hand);
+    var resolved = try a.resolvedOrder(.right_hand);
     try std.testing.expectEqual(@as(i32, 2), resolved.interaction_layer);
     try std.testing.expectEqual(@as(i32, 70), resolved.body_part_layer);
     try a.clearOverride(second);
-    resolved = a.resolvedOrder(.right_hand);
+    resolved = try a.resolvedOrder(.right_hand);
     try std.testing.expectEqual(@as(i32, -1), resolved.interaction_layer);
     try std.testing.expectEqual(@as(i32, 70), resolved.body_part_layer);
     try a.clearOverride(first);
     try std.testing.expectEqualDeep(
         sprite.OrderInput{ .scene_layer = 0, .interaction_layer = 0, .actor_layer = 0, .body_part_layer = humanoid.BodyPartLayers.front_hand },
-        a.resolvedOrder(.right_hand),
+        try a.resolvedOrder(.right_hand),
     );
 
     try std.testing.expectError(error.InvalidAttachmentTarget, a.applyAttachmentOverride(100, .{ .interaction_layer = 1 }));
@@ -433,8 +433,8 @@ test "horizontal reflection preserves anatomical sockets through rotated ancesto
     try expectVec(.{ .x = -(left_foot_right.x - root.x), .y = left_foot_right.y - root.y }, .{ .x = left_foot_left.x - root.x, .y = left_foot_left.y - root.y });
     try std.testing.expect(!right_hand_left.approxEqAbs(left_hand_left, tolerance));
 
-    try std.testing.expectEqual(@as(i32, humanoid.BodyPartLayers.back_hand), instance.resolvedOrder(.right_hand).body_part_layer);
-    try std.testing.expectEqual(@as(i32, humanoid.BodyPartLayers.front_hand), instance.resolvedOrder(.left_hand).body_part_layer);
+    try std.testing.expectEqual(@as(i32, humanoid.BodyPartLayers.back_hand), (try instance.resolvedOrder(.right_hand)).body_part_layer);
+    try std.testing.expectEqual(@as(i32, humanoid.BodyPartLayers.front_hand), (try instance.resolvedOrder(.left_hand)).body_part_layer);
     try instance.setFacing(.right);
     try expectVec(right_hand_right, try instance.socketPosition(.right_hand));
     try expectVec(left_foot_right, try instance.socketPosition(.left_foot));

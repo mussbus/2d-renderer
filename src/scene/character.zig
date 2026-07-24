@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = @import("math");
 const humanoid = @import("humanoid");
+const appearance = @import("appearance");
 const skeleton = @import("skeleton");
 const authored = @import("authored_clips");
 const clip = @import("clip");
@@ -174,7 +175,7 @@ pub const LayerOverrideTable = struct {
         semantic: humanoid.AttachmentSemantic,
         request: LayerOverrideRequest,
     ) !OverrideHandle {
-        return table.applyAttachment(definition, definition.attachment(semantic).id, request);
+        return table.applyAttachment(definition, @intFromEnum((try definition.attachment(semantic)).id), request);
     }
 
     pub fn applySemanticRaw(
@@ -183,7 +184,7 @@ pub const LayerOverrideTable = struct {
         raw_semantic: u8,
         request: LayerOverrideRequest,
     ) !OverrideHandle {
-        if (raw_semantic >= humanoid.attachment_count) return error.InvalidBodyPartSemantic;
+        if (raw_semantic >= humanoid.canonical_attachment_semantic_count) return error.InvalidBodyPartSemantic;
         return table.applySemantic(definition, @enumFromInt(raw_semantic), request);
     }
 
@@ -290,21 +291,24 @@ pub const VisualTickInput = struct {
 
 pub const HumanoidDefinitionView = struct {
     skeleton_definition: skeleton.SkeletonDefinition,
+    visual_definition: appearance.DefinitionView,
     attachments: []const humanoid.RenderAttachment,
-    attachment_semantic_indices: [humanoid.attachment_count]?u16,
+    attachment_semantic_indices: [humanoid.canonical_attachment_semantic_count]?humanoid.VisualAttachmentId,
     owner_token: usize,
 
     fn init(definition: *const humanoid.HumanoidDefinition) HumanoidDefinitionView {
         return .{
             .skeleton_definition = definition.skeleton_definition,
+            .visual_definition = definition.visual_definition.view(),
             .attachments = definition.attachments,
             .attachment_semantic_indices = definition.attachment_semantic_indices,
             .owner_token = definition.skeleton_definition.compatibilityToken(),
         };
     }
 
-    pub fn attachment(view: HumanoidDefinitionView, semantic: humanoid.AttachmentSemantic) *const humanoid.RenderAttachment {
-        return &view.attachments[view.attachment_semantic_indices[@intFromEnum(semantic)].?];
+    pub fn attachment(view: HumanoidDefinitionView, semantic: humanoid.AttachmentSemantic) !*const humanoid.RenderAttachment {
+        const id = view.attachment_semantic_indices[@intFromEnum(semantic)] orelse return error.MissingCanonicalVisual;
+        return &view.attachments[id.index()];
     }
 };
 
@@ -345,7 +349,7 @@ pub const CharacterInstance = struct {
     interaction_owner_id: u32 = 0,
     passive_grounded: bool = true,
     simulation_tick: u64 = 0,
-    last_submitted_keys: [humanoid.attachment_count]?sprite.DrawOrderKey = [_]?sprite.DrawOrderKey{null} ** humanoid.attachment_count,
+    last_submitted_keys: [humanoid.canonical_attachment_semantic_count]?sprite.DrawOrderKey = [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count,
     metrics: HotPathMetrics = .{},
 
     pub fn init(
@@ -367,8 +371,11 @@ pub const CharacterInstance = struct {
             .body_part_layer = 0,
         }, 0);
         for (definition.attachments) |attachment| {
-            if (attachment.body_part_layer != humanoid.defaultBodyPartLayer(attachment.semantic, .right)) {
-                return error.ImmutableDefaultLayerMismatch;
+            if (attachment.canonical_semantic) |raw_semantic| {
+                const semantic: humanoid.AttachmentSemantic = @enumFromInt(raw_semantic);
+                if (attachment.body_part_layer != humanoid.defaultBodyPartLayer(semantic, .right)) {
+                    return error.ImmutableDefaultLayerMismatch;
+                }
             }
         }
 
@@ -571,7 +578,35 @@ pub const CharacterInstance = struct {
     }
 
     pub fn applySemanticOverride(instance: *CharacterInstance, semantic: humanoid.AttachmentSemantic, request: LayerOverrideRequest) !OverrideHandle {
-        return instance.applyAttachmentOverride(instance.definition.attachment(semantic).id, request);
+        return instance.applyAttachmentOverride(@intFromEnum((try instance.definition.attachment(semantic)).id), request);
+    }
+
+    pub fn setVisualVisible(instance: *CharacterInstance, visual_id: humanoid.VisualAttachmentId, visible: bool) !void {
+        try instance.character.appearance_runtime.setVisible(instance.definition.visual_definition, visual_id, visible);
+    }
+
+    pub fn setVisualDeformation(
+        instance: *CharacterInstance,
+        visual_id: humanoid.VisualAttachmentId,
+        deformation: math.Transform2D,
+    ) !void {
+        try instance.character.appearance_runtime.setVisualDeformation(instance.definition.visual_definition, visual_id, deformation);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn setModuleJointLocal(
+        instance: *CharacterInstance,
+        module_id: humanoid.RigModuleId,
+        joint_id: humanoid.ModuleJointId,
+        local: math.Transform2D,
+    ) !void {
+        try instance.character.appearance_runtime.setModuleJointLocal(
+            instance.definition.visual_definition,
+            module_id,
+            joint_id,
+            local,
+        );
+        try instance.evaluateAppearance();
     }
 
     pub fn clearOverride(instance: *CharacterInstance, handle: OverrideHandle) !void {
@@ -628,6 +663,7 @@ pub const CharacterInstance = struct {
             .emitted_events = &.{},
             .simulation_tick = instance.simulation_tick,
         });
+        try instance.evaluateAppearance();
     }
 
     fn advanceVisualTickInternal(
@@ -677,6 +713,7 @@ pub const CharacterInstance = struct {
                 .emitted_events = instance.animator.emittedEvents(),
                 .simulation_tick = next_tick,
             });
+            try instance.evaluateAppearance();
         }
     }
 
@@ -757,10 +794,11 @@ pub const CharacterInstance = struct {
         instance.actor_layer = instance.default_actor_layer;
         instance.world_position = instance.default_world_position;
         instance.simulation_tick = 0;
-        instance.last_submitted_keys = [_]?sprite.DrawOrderKey{null} ** humanoid.attachment_count;
+        instance.last_submitted_keys = [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
         instance.metrics = .{};
         instance.right_arm_ik = .{};
         instance.foot_plants.reset();
+        try instance.character.appearance_runtime.reset(instance.definition.visual_definition);
         try instance.evaluateWorldPose();
     }
 
@@ -785,6 +823,7 @@ pub const CharacterInstance = struct {
             .pre_middle_local = application.pre_middle_local,
             .metrics = application.metrics,
         };
+        try instance.evaluateAppearance();
         return application.metrics;
     }
 
@@ -803,6 +842,7 @@ pub const CharacterInstance = struct {
             saved.pre_root_local,
             saved.pre_middle_local,
         );
+        try instance.evaluateAppearance();
     }
 
     pub fn rightHandIkMetrics(instance: CharacterInstance) ?arm_ik.Metrics {
@@ -813,10 +853,17 @@ pub const CharacterInstance = struct {
         return instance.character.local_and_world_pose.socketPosition(&instance.definition.skeleton_definition, semantic);
     }
 
-    pub fn resolvedOrder(instance: CharacterInstance, semantic: humanoid.AttachmentSemantic) sprite.OrderInput {
-        const attachment = instance.definition.attachment(semantic);
-        const default_body_layer = humanoid.defaultBodyPartLayer(semantic, instance.facing);
-        const resolved = instance.overrides.resolve(attachment.id, default_body_layer);
+    pub fn resolvedOrder(instance: CharacterInstance, semantic: humanoid.AttachmentSemantic) !sprite.OrderInput {
+        const attachment = try instance.definition.attachment(semantic);
+        return instance.resolvedOrderForAttachment(attachment);
+    }
+
+    pub fn resolvedOrderForAttachment(instance: CharacterInstance, attachment: *const humanoid.RenderAttachment) sprite.OrderInput {
+        const default_body_layer = if (attachment.canonical_semantic) |raw_semantic|
+            humanoid.defaultBodyPartLayer(@enumFromInt(raw_semantic), instance.facing)
+        else
+            attachment.body_part_layer;
+        const resolved = instance.overrides.resolve(@intFromEnum(attachment.id), default_body_layer);
         return .{
             .scene_layer = characters_scene_layer,
             .interaction_layer = resolved.interaction_layer,
@@ -830,14 +877,14 @@ pub const CharacterInstance = struct {
     }
 
     pub fn submitAttachments(instance: *CharacterInstance, batch: *sprite.SpriteBatch) !u32 {
-        instance.last_submitted_keys = [_]?sprite.DrawOrderKey{null} ** humanoid.attachment_count;
+        instance.last_submitted_keys = [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
         var submitted: u32 = 0;
         for (instance.definition.attachments) |attachment| {
-            const bone_world = try instance.character.local_and_world_pose.worldForBone(&instance.definition.skeleton_definition, attachment.parent_bone);
-            const world = bone_world.mul(try attachment.local_to_bone.localToParent());
+            if (!try instance.character.appearance_runtime.isVisible(instance.definition.visual_definition, attachment.id)) continue;
+            const world = try instance.character.appearance_runtime.visualWorld(instance.definition.visual_definition, attachment.id);
             const sprite_transform = try humanoid.spriteTransform(world);
             const world_size = sprite_transform.signed_scale.componentMul(attachment.sprite_size);
-            const order = instance.resolvedOrder(attachment.semantic);
+            const order = instance.resolvedOrderForAttachment(&attachment);
             const key = try batch.submitWithKey(.{
                 .world_position = sprite_transform.world_position.toArray(),
                 .rotation = sprite_transform.rotation_radians,
@@ -848,7 +895,9 @@ pub const CharacterInstance = struct {
                 .texture_page = attachment.texture_page,
                 .order = order,
             });
-            instance.last_submitted_keys[@intFromEnum(attachment.semantic)] = key;
+            if (attachment.canonical_semantic) |raw_semantic| {
+                instance.last_submitted_keys[raw_semantic] = key;
+            }
             submitted += 1;
         }
         return submitted;
@@ -864,6 +913,19 @@ pub const CharacterInstance = struct {
         try instance.character.local_and_world_pose.evaluateWorld(
             &instance.definition.skeleton_definition,
             instance.character.character_to_world,
+        );
+        try instance.character.appearance_runtime.evaluate(
+            instance.definition.visual_definition,
+            &instance.definition.skeleton_definition,
+            &instance.character.local_and_world_pose,
+        );
+    }
+
+    fn evaluateAppearance(instance: *CharacterInstance) !void {
+        try instance.character.appearance_runtime.evaluate(
+            instance.definition.visual_definition,
+            &instance.definition.skeleton_definition,
+            &instance.character.local_and_world_pose,
         );
     }
 

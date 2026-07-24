@@ -308,7 +308,7 @@ fn create(
     event_inputs: []const events.EventInput,
     injector: ?fault_injection.Injector,
 ) !clip.ClipDefinition {
-    return clip.ClipDefinition.init(allocator, definition, humanoid.attachment_count, .{
+    return clip.ClipDefinition.init(allocator, definition, humanoid.canonical_attachment_semantic_count, .{
         .clip_id = @intFromEnum(id),
         .identifier = identifier,
         .debug_name = debug_name,

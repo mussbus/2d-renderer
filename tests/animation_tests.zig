@@ -37,7 +37,7 @@ fn minimalInput(tracks: []const clip.TrackInput, event_inputs: []const events.Ev
 }
 
 fn initClip(definition: *const skeleton.SkeletonDefinition, input: clip.ClipDefinitionInput) !clip.ClipDefinition {
-    return clip.ClipDefinition.init(std.testing.allocator, definition, humanoid.attachment_count, input, null);
+    return clip.ClipDefinition.init(std.testing.allocator, definition, humanoid.canonical_attachment_semantic_count, input, null);
 }
 
 fn fillRest(definition: *const skeleton.SkeletonDefinition, output: []math.Transform2D) void {

@@ -367,16 +367,16 @@ test "contact layering is partial owned and preserves unrelated overrides throug
     const participants = fixture.characters();
     const id = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, .none);
     try runToTick(&fixture.manager, &participants, 1, 144);
-    try std.testing.expectEqual(@as(i32, 3), fixture.a.resolvedOrder(.right_hand).interaction_layer);
-    try std.testing.expectEqual(@as(i32, 2), fixture.b.resolvedOrder(.right_hand).interaction_layer);
-    try std.testing.expectEqual(@as(i32, 1), fixture.a.resolvedOrder(.right_forearm).interaction_layer);
-    try std.testing.expectEqual(@as(i32, 0), fixture.a.resolvedOrder(.torso).interaction_layer);
-    try std.testing.expectEqual(@as(i32, 0), fixture.b.resolvedOrder(.torso).interaction_layer);
-    try std.testing.expectEqual(@as(i32, 90), fixture.b.resolvedOrder(.torso).body_part_layer);
+    try std.testing.expectEqual(@as(i32, 3), (try fixture.a.resolvedOrder(.right_hand)).interaction_layer);
+    try std.testing.expectEqual(@as(i32, 2), (try fixture.b.resolvedOrder(.right_hand)).interaction_layer);
+    try std.testing.expectEqual(@as(i32, 1), (try fixture.a.resolvedOrder(.right_forearm)).interaction_layer);
+    try std.testing.expectEqual(@as(i32, 0), (try fixture.a.resolvedOrder(.torso)).interaction_layer);
+    try std.testing.expectEqual(@as(i32, 0), (try fixture.b.resolvedOrder(.torso)).interaction_layer);
+    try std.testing.expectEqual(@as(i32, 90), (try fixture.b.resolvedOrder(.torso)).body_part_layer);
     try runToTick(&fixture.manager, &participants, 145, 288);
     try std.testing.expectEqual(@as(usize, 0), fixture.a.overrides.activeCount());
     try std.testing.expectEqual(@as(usize, 1), fixture.b.overrides.activeCount());
-    try std.testing.expectEqual(@as(i32, 90), fixture.b.resolvedOrder(.torso).body_part_layer);
+    try std.testing.expectEqual(@as(i32, 90), (try fixture.b.resolvedOrder(.torso)).body_part_layer);
     try runToTick(&fixture.manager, &participants, 289, 360);
     try std.testing.expectEqual(interaction.Lifecycle.completed, fixture.manager.instance(id).?.lifecycle);
     try std.testing.expectEqual(@as(usize, 1), fixture.b.overrides.activeCount());
@@ -531,8 +531,8 @@ test "mirrored arrangement preserves roles timing anatomy and socket separation"
     try std.testing.expectApproxEqAbs(first.contact.separation, mirrored.contact.separation, 0.00001);
     try std.testing.expectApproxEqAbs(first.contact.role_a_socket.x, -mirrored.contact.role_a_socket.x, 0.00001);
     try std.testing.expectApproxEqAbs(first.contact.role_b_socket.x, -mirrored.contact.role_b_socket.x, 0.00001);
-    try std.testing.expectEqual(@as(i32, 3), right_to_left.a.resolvedOrder(.right_hand).interaction_layer);
-    try std.testing.expectEqual(@as(i32, 2), right_to_left.b.resolvedOrder(.right_hand).interaction_layer);
+    try std.testing.expectEqual(@as(i32, 3), (try right_to_left.a.resolvedOrder(.right_hand)).interaction_layer);
+    try std.testing.expectEqual(@as(i32, 2), (try right_to_left.b.resolvedOrder(.right_hand)).interaction_layer);
 }
 
 const ScheduleEvidence = struct {

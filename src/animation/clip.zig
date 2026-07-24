@@ -118,7 +118,7 @@ pub const ClipDefinition = struct {
     pub fn init(
         allocator: std.mem.Allocator,
         definition: *const skeleton.SkeletonDefinition,
-        attachment_count: usize,
+        attachment_semantic_count: usize,
         input: ClipDefinitionInput,
         injector: ?fault_injection.Injector,
     ) !ClipDefinition {
@@ -210,7 +210,7 @@ pub const ClipDefinition = struct {
             const event_type = try events.validateType(event_input.event_type);
             const restoration = try events.validateRestoration(event_input.layer_change.restoration);
             if (event_type == .body_part_layer_change) {
-                if (event_input.layer_change.attachment_semantic >= attachment_count) return error.InvalidLayerEventTarget;
+                if (event_input.layer_change.attachment_semantic >= attachment_semantic_count) return error.InvalidLayerEventTarget;
             }
             event_records[index] = .{
                 .id = event_input.id,
