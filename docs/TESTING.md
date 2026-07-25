@@ -164,6 +164,16 @@ Prompt 15 adds eight grouped deterministic tests, bringing the aggregate Zig cou
 
 Prompt 15 does not add a new renderer or GPU acceptance route. The existing humanoid, animation, multi-character, handshake, foot-planting, integrated, playground, side-scroller, and GPU-smoke routes exercise the unchanged canonical semantics and global sprite batch. The extended test definition is intentionally headless and uses abstract harmless visuals plus a two-joint module to prove Prompt 16 can add real modular anatomy without changing locomotion topology.
 
+Prompt 16 adds ten grouped deterministic tests, bringing the aggregate Zig count from 213 to 223. They cover exact morphology interpolation at 0/50/100; channel and per-instance override precedence; invalid values/ranges; preset isolation and reset; conventional and repeated adult-module configurations; dangling parent and cycle rejection; independently addressable face features and three hair styles; two validated face groups using the same generic feature definition while resolving materially different visual transforms, sizes, tints, visibility, and independent character state; presentation switching with an unchanged topology fingerprint; explicit module-local articulation; unchanged controller, animation, interaction-owner, canonical rest, and IK length state; independent runtimes; repeated-run equality; and fixed-buffer zero-allocation updates.
+
+The dedicated non-sexual GPU evidence route is:
+
+```powershell
+zig build run -- --frames 240 --demo modular-body
+```
+
+It renders conventional male, conventional female, and extra-arm/tail/horn presets through one shared skeleton, animation library, global sprite batch, texture page, and indexed-instanced draw. The first two characters render the visibly distinct `conventional_face` and `angular_face` definitions side by side through the same bounded anatomy-to-appearance path. It switches profiles and hair deterministically and requires zero fixed-buffer movement or GPU-resource creation after initialization.
+
 Prompt 11's GPU-backed evidence run is:
 
 ```text

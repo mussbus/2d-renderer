@@ -2,6 +2,7 @@ const std = @import("std");
 const math = @import("math");
 const humanoid = @import("humanoid");
 const appearance = @import("appearance");
+const anatomy = @import("anatomy");
 const skeleton = @import("skeleton");
 const authored = @import("authored_clips");
 const clip = @import("clip");
@@ -292,6 +293,7 @@ pub const VisualTickInput = struct {
 pub const HumanoidDefinitionView = struct {
     skeleton_definition: skeleton.SkeletonDefinition,
     visual_definition: appearance.DefinitionView,
+    anatomy_definition: ?anatomy.DefinitionView,
     attachments: []const humanoid.RenderAttachment,
     attachment_semantic_indices: [humanoid.canonical_attachment_semantic_count]?humanoid.VisualAttachmentId,
     owner_token: usize,
@@ -300,6 +302,7 @@ pub const HumanoidDefinitionView = struct {
         return .{
             .skeleton_definition = definition.skeleton_definition,
             .visual_definition = definition.visual_definition.view(),
+            .anatomy_definition = if (definition.anatomy_definition) |*value| value.view() else null,
             .attachments = definition.attachments,
             .attachment_semantic_indices = definition.attachment_semantic_indices,
             .owner_token = definition.skeleton_definition.compatibilityToken(),
@@ -799,7 +802,69 @@ pub const CharacterInstance = struct {
         instance.right_arm_ik = .{};
         instance.foot_plants.reset();
         try instance.character.appearance_runtime.reset(instance.definition.visual_definition);
+        if (instance.character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
+            try runtime.reset(anatomy_definition);
+        }
         try instance.evaluateWorldPose();
+    }
+
+    pub fn selectBodyPreset(instance: *CharacterInstance, preset_id: anatomy.BodyPresetId) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.selectBodyPreset(definition, preset_id);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn selectMorphologyPreset(instance: *CharacterInstance, preset_id: anatomy.MorphologyPresetId) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.selectMorphologyPreset(definition, preset_id);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn setGlobalBuild(instance: *CharacterInstance, user_value: f32) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.setGlobalBuild(definition, user_value);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn setMorphologyChannelOverride(
+        instance: *CharacterInstance,
+        channel_id: anatomy.MorphologyChannelId,
+        user_value: ?f32,
+    ) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.setChannelOverride(definition, channel_id, user_value);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn setPartMorphologyOverride(
+        instance: *CharacterInstance,
+        part_id: anatomy.BodyPartInstanceId,
+        channel_id: anatomy.MorphologyChannelId,
+        user_value: ?f32,
+    ) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.setInstanceOverride(definition, part_id, channel_id, user_value);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn selectPresentationProfile(instance: *CharacterInstance, profile_id: anatomy.PresentationProfileId) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.selectPresentationProfile(definition, profile_id);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn selectHair(instance: *CharacterInstance, hair_id: ?anatomy.HairDefinitionId) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.selectHair(definition, hair_id);
+        try instance.evaluateAppearance();
     }
 
     pub fn applyRightHandIk(instance: *CharacterInstance, target_world: math.Vec2, weight: f32) !arm_ik.Metrics {
@@ -914,19 +979,31 @@ pub const CharacterInstance = struct {
             &instance.definition.skeleton_definition,
             instance.character.character_to_world,
         );
-        try instance.character.appearance_runtime.evaluate(
-            instance.definition.visual_definition,
-            &instance.definition.skeleton_definition,
-            &instance.character.local_and_world_pose,
-        );
+        try instance.evaluateAppearance();
     }
 
     fn evaluateAppearance(instance: *CharacterInstance) !void {
+        if (instance.character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
+            try runtime.applyAppearanceState(
+                anatomy_definition,
+                instance.definition.visual_definition,
+                &instance.character.appearance_runtime,
+            );
+        }
         try instance.character.appearance_runtime.evaluate(
             instance.definition.visual_definition,
             &instance.definition.skeleton_definition,
             &instance.character.local_and_world_pose,
         );
+        if (instance.character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
+            try runtime.evaluateHierarchy(
+                anatomy_definition,
+                instance.definition.visual_definition,
+                &instance.character.appearance_runtime,
+            );
+        }
     }
 
     fn restoreRightHandIkLocals(instance: *CharacterInstance) !void {

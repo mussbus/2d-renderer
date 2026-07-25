@@ -24,9 +24,11 @@ pub const InitStage = enum {
     visual_group_allocation,
     rig_module_allocation,
     visual_attachment_allocation,
+    anatomy_definition_allocation,
     pose_local_transform_allocation,
     pose_world_transform_allocation,
     appearance_runtime_allocation,
+    anatomy_runtime_allocation,
     humanoid_character_initialization,
     clip_definition_allocation,
     track_allocation,
@@ -73,6 +75,10 @@ pub const humanoid_initialization_stages = [_]InitStage{
     .pose_world_transform_allocation,
     .appearance_runtime_allocation,
     .humanoid_character_initialization,
+};
+pub const anatomy_initialization_stages = [_]InitStage{
+    .anatomy_definition_allocation,
+    .anatomy_runtime_allocation,
 };
 pub const animation_initialization_stages = [_]InitStage{
     .clip_definition_allocation,

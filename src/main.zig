@@ -28,6 +28,10 @@ pub fn main(init: std.process.Init) !void {
     try demo.runVisible(options.maximum_frames, options.demo, options.scripted_input, options.debug_visualization, options.interactive);
 }
 
+test "application entry point remains type checked" {
+    _ = &main;
+}
+
 fn runInitializationFaultChecks() !void {
     for (fault_injection.initialization_stages) |stage| {
         var attempt = gpu.GpuDemo.init(std.heap.page_allocator, true, .{ .fail_after = stage }) catch |err| {
@@ -78,12 +82,14 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .integrated;
             } else if (std.mem.eql(u8, arguments[index], "playground")) {
                 options.demo = .playground;
+            } else if (std.mem.eql(u8, arguments[index], "modular-body")) {
+                options.demo = .modular_body;
             } else if (std.mem.eql(u8, arguments[index], "side-scroller")) {
                 options.demo = .side_scroller;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, side-scroller", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, modular-body, side-scroller", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
@@ -93,7 +99,7 @@ fn parseOptions(arguments: []const []const u8) !Options {
         } else if (std.mem.eql(u8, argument, "--interactive")) {
             options.interactive = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|side-scroller>, --scripted-input, --debug-visualization, --interactive", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|side-scroller>, --scripted-input, --debug-visualization, --interactive", .{argument});
             return error.UnknownArgument;
         }
     }

@@ -16,6 +16,7 @@ const handshake_ik_demo = @import("handshake_ik_demo");
 const foot_planting_demo = @import("foot_planting_demo");
 const integrated_demo = @import("integrated_demo");
 const playground_demo = @import("playground_demo");
+const modular_body_demo = @import("modular_body_demo");
 const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
@@ -30,6 +31,7 @@ pub const DemoMode = enum {
     foot_planting,
     integrated,
     playground,
+    modular_body,
     side_scroller,
 };
 
@@ -335,7 +337,7 @@ pub const GpuDemo = struct {
         const camera_follower = try camera2d.HorizontalFollower.init(3.25);
         var minimum_camera_x = self.visible_camera.center.x;
         var maximum_camera_x = self.visible_camera.center.x;
-        const demo_storage = self.allocator.alloc(u8, 1024 * 1024) catch return error.DemoStorageAllocationFailure;
+        const demo_storage = self.allocator.alloc(u8, 4 * 1024 * 1024) catch return error.DemoStorageAllocationFailure;
         defer self.allocator.free(demo_storage);
         var humanoid_allocator = std.heap.FixedBufferAllocator.init(demo_storage);
         var humanoid_demo: ?humanoid.DemoCharacter = null;
@@ -356,6 +358,8 @@ pub const GpuDemo = struct {
         defer if (integrated_scene) |*scene| scene.deinit();
         var playground_scene: ?playground_demo.Scene = null;
         defer if (playground_scene) |*scene| scene.deinit();
+        var modular_body_scene: ?modular_body_demo.Scene = null;
+        defer if (modular_body_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
@@ -436,6 +440,13 @@ pub const GpuDemo = struct {
             if (mode == .playground and !scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.PlaygroundInitializationCreatedGpuResources;
+            }
+        }
+        if (mode == .modular_body) {
+            try modular_body_demo.runFaultInjectionChecks(self.allocator);
+            modular_body_scene = try modular_body_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.ModularBodyInitializationCreatedGpuResources;
             }
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
@@ -832,6 +843,16 @@ pub const GpuDemo = struct {
                     }
                     minimum_camera_x = @min(minimum_camera_x, self.visible_camera.center.x);
                     maximum_camera_x = @max(maximum_camera_x, self.visible_camera.center.x);
+                    self.batch.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
+                .modular_body => {
+                    const scene = &modular_body_scene.?;
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
                     self.batch.?.beginFrame();
                     const submission_checkpoint = humanoid_allocator.end_index;
                     humanoid_instances = try scene.submit(&self.batch.?);
@@ -1658,6 +1679,59 @@ pub const GpuDemo = struct {
                 runtime_allocation_delta != 0 or self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0)
             {
                 return error.PlaygroundRenderingEvidenceIncomplete;
+            }
+        } else if (mode == .modular_body) {
+            const scene = &modular_body_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != modular_body_demo.required_frames) {
+                return error.ModularBodyFrameCountMismatch;
+            }
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            const anatomy_definition = scene.definition.anatomy_definition.?.view();
+            const male_parts = try scene.conventional_male.character.anatomy_runtime.?.activePartCount(anatomy_definition);
+            const female_parts = try scene.conventional_female.character.anatomy_runtime.?.activePartCount(anatomy_definition);
+            const nonstandard_parts_count = try scene.nonstandard.character.anatomy_runtime.?.activePartCount(anatomy_definition);
+            std.log.info("MODULAR BODY EVIDENCE", .{});
+            std.log.info("Presets: conventional_male_parts={d} conventional_female_parts={d} nonstandard_parts={d} shared_skeleton={} shared_animation_library={}", .{
+                male_parts,
+                female_parts,
+                nonstandard_parts_count,
+                scene.conventional_male.definition.owner_token == scene.conventional_female.definition.owner_token and
+                    scene.conventional_female.definition.owner_token == scene.nonstandard.definition.owner_token,
+                scene.conventional_male.shared_animations.library_token == scene.conventional_female.shared_animations.library_token and
+                    scene.conventional_female.shared_animations.library_token == scene.nonstandard.shared_animations.library_token,
+            });
+            std.log.info("Nonstandard features: extra_arm=true articulated_tail=true horns=2 canonical_bones={d} canonical_right_arm_lengths=({d:.3},{d:.3})", .{
+                scene.definition.skeleton_definition.boneCount(),
+                scene.nonstandard.right_arm_binding.upper_length,
+                scene.nonstandard.right_arm_binding.lower_length,
+            });
+            std.log.info("Faces: configurations={d} conventional_male=conventional_face conventional_female=angular_face shared_modular_appearance_path=true", .{
+                anatomy_definition.faces.len,
+            });
+            std.log.info("Customization: presentation_switches={d} hair_switches={d} visual_ticks={d} submitted_sprites={d} ranges={d} actual_draw_calls={d}", .{
+                scene.presentation_switches,
+                scene.hair_switches,
+                scene.total_visual_ticks,
+                humanoid_instances,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+            });
+            std.log.info("Steady-state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} batch_allocations={d} gpu_resource_delta={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (humanoid_instances == 0 or metrics.visible_sprites != humanoid_instances or
+                metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                runtime_allocation_delta != 0 or pose_evaluation_allocations != 0 or humanoid_submission_allocations != 0 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
+            {
+                return error.ModularBodyRenderingEvidenceIncomplete;
             }
         } else if (mode == .side_scroller) {
             const scene = &playground_scene.?;

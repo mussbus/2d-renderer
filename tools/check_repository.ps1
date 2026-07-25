@@ -108,6 +108,9 @@ $playgroundTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoo
 $cameraSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/camera2d.zig')
 $cameraTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/camera_tests.zig')
 $appearanceTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/appearance_tests.zig')
+$anatomySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy.zig')
+$modularBodySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/modular_body_demo.zig')
+$anatomyTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/anatomy_tests.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
@@ -1025,6 +1028,63 @@ foreach ($phrase in $requiredAppearanceTestPhrases) {
     }
 }
 
+if ([regex]::IsMatch($anatomySource + [Environment]::NewLine + $modularBodySource, '\bis_male\b|BodyType\.(male|female)') -or
+    -not $anatomySource.Contains('pub const BodyPartDefinition = struct') -or
+    -not $anatomySource.Contains('pub const BodyPartInstance = struct') -or
+    -not $anatomySource.Contains('pub const BodyPartInstanceId = enum(u16)') -or
+    -not $anatomySource.Contains('pub const BodyPartParent = union(enum)') -or
+    -not $anatomySource.Contains('return error.BodyPartHierarchyCycle')) {
+    Write-Error 'Prompt 16 anatomy must use extensible repeated part records, resolved parents, and bounded cycle rejection rather than a sex boolean or closed topology.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $anatomySource.Contains('pub const MorphologyChannelId = enum(u16)') -or
+    -not $anatomySource.Contains('range.low + (range.high - range.low) * amount') -or
+    -not $anatomySource.Contains('instance_override_set: []bool') -or
+    -not $anatomySource.Contains('channel_override_set: []bool') -or
+    -not $anatomySource.Contains('InvalidMorphologyRange')) {
+    Write-Error 'Morphology must use data-defined channels and preset interpolation with channel and instance overrides plus range validation.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $anatomySource.Contains('pub const PresentationProfile = struct') -or
+    -not $anatomySource.Contains('topologyFingerprint') -or
+    -not $anatomySource.Contains('applyAppearanceState') -or
+    -not $anatomySource.Contains('selected_presentation_profile') -or
+    [regex]::IsMatch($anatomySource, 'SDL_|CreateGPU|DrawGPU|CharacterController|Animator|arm_ik|leg_ik|foot_planting')) {
+    Write-Error 'Presentation and morphology must remain allocation-free CPU appearance state with no GPU, controller, animation, or canonical IK ownership.' -ErrorAction Continue
+    $failed = $true
+}
+if (-not $modularBodySource.Contains('"conventional_male"') -or
+    -not $modularBodySource.Contains('"conventional_female"') -or
+    -not $modularBodySource.Contains('"nonstandard_humanoid"') -or
+    -not $modularBodySource.Contains('"two_penises"') -or
+    -not $modularBodySource.Contains('"three_breasts"') -or
+    -not $modularBodySource.Contains('"extra_arm_module"') -or
+    -not $modularBodySource.Contains('"tail_module"') -or
+    -not $modularBodySource.Contains('"angular_face"') -or
+    -not $modularBodySource.Contains('"angular_left_eye"') -or
+    -not $modularBodySource.Contains('"ponytail"')) {
+    Write-Error 'The modular-body content route must prove two visibly distinct data-defined faces, conventional and repeated adult modules, articulated appendages, horns, and multi-style hair data.' -ErrorAction Continue
+    $failed = $true
+}
+$requiredAnatomyTestPhrases = @(
+    'morphology interpolates exactly and override precedence reset and preset isolation are deterministic',
+    'morphology rejects invalid user values and invalid preset ranges',
+    'repeated adult modules and conventional presets are compositional data',
+    'hierarchical anatomy rejects dangling parents and cycles',
+    'faces and hair are per-head groups with independently addressable features',
+    'two facial configurations use shared modular data and derive distinct independent visuals',
+    'presentation switching changes visuals without changing anatomy topology',
+    'module articulation morphology and presentation leave canonical controller animation interaction and IK state unchanged',
+    'characters share immutable presets but own independent anatomy runtime state',
+    'modular body evidence route is deterministic and allocation free after initialization'
+)
+foreach ($phrase in $requiredAnatomyTestPhrases) {
+    if (-not $anatomyTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 16 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -1064,4 +1124,5 @@ Write-Host 'Prompt 12 cleanup audit passed: deterministic tests cover debug/read
 Write-Host 'Prompt 13 input audit passed: one polled keyboard mapping, focus resynchronization, pending-edge delivery, world-aware reset, intent-owned interaction, debug invariance, zero input GPU ownership, and raw-key scripted equivalence.'
 Write-Host 'Prompt 14 camera audit passed: world-metre submissions, pure camera math, same-zoom resizing, high-DPI drawable tracking, safe zero surfaces, deterministic follow, three-layer parallax, extended collision world, fixed smoke target, and one global draw path.'
 Write-Host 'Prompt 15 appearance audit passed: stable runtime IDs, variable visuals, bounded attachment hierarchies, optional module-local joints, character-owned mutable state, canonical-rig isolation, and allocation-free hot paths.'
+Write-Host 'Prompt 16 modular-anatomy audit passed: compositional repeated parts, bounded hierarchies, data morphs and presets, face/hair groups, presentation isolation, canonical-authority isolation, and allocation-free hot paths.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

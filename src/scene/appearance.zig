@@ -727,6 +727,18 @@ pub const Runtime = struct {
         return runtime.visual_world[id.index()];
     }
 
+    pub fn attachmentPointWorld(runtime: Runtime, definition: DefinitionView, id: AttachmentPointId) !math.Mat3 {
+        try runtime.validateCompatibility(definition);
+        if (id.index() >= runtime.attachment_point_world.len) return error.InvalidAttachmentPointId;
+        return runtime.attachment_point_world[id.index()];
+    }
+
+    pub fn moduleSocketWorldGlobal(runtime: Runtime, definition: DefinitionView, global_index: u16) !math.Mat3 {
+        try runtime.validateCompatibility(definition);
+        if (global_index >= runtime.module_socket_world.len) return error.InvalidModuleSocketId;
+        return runtime.module_socket_world[global_index];
+    }
+
     fn moduleOrigin(runtime: Runtime, definition: DefinitionView, module_id: RigModuleId) !math.Mat3 {
         const module = try moduleById(definition, module_id);
         return runtime.attachment_point_world[module.parent_attachment_point.index()]

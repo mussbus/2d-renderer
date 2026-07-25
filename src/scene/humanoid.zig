@@ -3,6 +3,7 @@ const math = @import("math");
 const skeleton = @import("skeleton");
 const pose = @import("pose");
 const appearance = @import("appearance");
+const anatomy = @import("anatomy");
 const sprite = @import("sprite_batch");
 const fault_injection = @import("fault_injection");
 
@@ -115,6 +116,7 @@ pub const HumanoidDefinition = struct {
     allocator: std.mem.Allocator,
     skeleton_definition: skeleton.SkeletonDefinition,
     visual_definition: appearance.Definition,
+    anatomy_definition: ?anatomy.Definition,
     attachments: []const RenderAttachment,
     attachment_semantic_indices: [canonical_attachment_semantic_count]?VisualAttachmentId,
 
@@ -162,6 +164,42 @@ pub const HumanoidDefinition = struct {
         visual_inputs: VisualDefinitionInputs,
         injector: ?fault_injection.Injector,
     ) !HumanoidDefinition {
+        return initFromVisualDefinitionOptionalAnatomy(
+            allocator,
+            bones,
+            sockets,
+            visual_inputs,
+            null,
+            injector,
+        );
+    }
+
+    pub fn initFromVisualDefinitionAndAnatomy(
+        allocator: std.mem.Allocator,
+        bones: []const skeleton.BoneDefinitionInput,
+        sockets: []const skeleton.SocketDefinitionInput,
+        visual_inputs: VisualDefinitionInputs,
+        anatomy_inputs: anatomy.DefinitionInputs,
+        injector: ?fault_injection.Injector,
+    ) !HumanoidDefinition {
+        return initFromVisualDefinitionOptionalAnatomy(
+            allocator,
+            bones,
+            sockets,
+            visual_inputs,
+            anatomy_inputs,
+            injector,
+        );
+    }
+
+    fn initFromVisualDefinitionOptionalAnatomy(
+        allocator: std.mem.Allocator,
+        bones: []const skeleton.BoneDefinitionInput,
+        sockets: []const skeleton.SocketDefinitionInput,
+        visual_inputs: VisualDefinitionInputs,
+        anatomy_inputs: ?anatomy.DefinitionInputs,
+        injector: ?fault_injection.Injector,
+    ) !HumanoidDefinition {
         var skeleton_definition = try skeleton.SkeletonDefinition.initHumanoid(allocator, bones, sockets, injector);
         errdefer skeleton_definition.deinit();
         var visual_definition = try appearance.Definition.init(
@@ -172,6 +210,16 @@ pub const HumanoidDefinition = struct {
             injector,
         );
         errdefer visual_definition.deinit();
+        var anatomy_definition: ?anatomy.Definition = null;
+        errdefer if (anatomy_definition) |*value| value.deinit();
+        if (anatomy_inputs) |inputs| {
+            anatomy_definition = try anatomy.Definition.init(
+                allocator,
+                visual_definition.view(),
+                inputs,
+                injector,
+            );
+        }
 
         var lookup = [_]?VisualAttachmentId{null} ** canonical_attachment_semantic_count;
         for (visual_definition.visuals) |visual| {
@@ -194,12 +242,14 @@ pub const HumanoidDefinition = struct {
             .allocator = allocator,
             .skeleton_definition = skeleton_definition,
             .visual_definition = visual_definition,
+            .anatomy_definition = anatomy_definition,
             .attachments = visual_definition.visuals,
             .attachment_semantic_indices = lookup,
         };
     }
 
     pub fn deinit(definition: *HumanoidDefinition) void {
+        if (definition.anatomy_definition) |*value| value.deinit();
         definition.visual_definition.deinit();
         definition.skeleton_definition.deinit();
         definition.* = undefined;
@@ -214,6 +264,7 @@ pub const HumanoidDefinition = struct {
 pub const HumanoidCharacter = struct {
     local_and_world_pose: pose.Pose,
     appearance_runtime: appearance.Runtime,
+    anatomy_runtime: ?anatomy.Runtime,
     character_to_world: math.Transform2D = math.Transform2D.identity(),
 
     pub fn init(allocator: std.mem.Allocator, definition: *const HumanoidDefinition, injector: ?fault_injection.Injector) !HumanoidCharacter {
@@ -221,14 +272,21 @@ pub const HumanoidCharacter = struct {
         errdefer pose_state.deinit();
         var appearance_runtime = try appearance.Runtime.init(allocator, definition.visual_definition.view(), injector);
         errdefer appearance_runtime.deinit();
+        var anatomy_runtime: ?anatomy.Runtime = null;
+        errdefer if (anatomy_runtime) |*value| value.deinit();
+        if (definition.anatomy_definition) |*anatomy_definition| {
+            anatomy_runtime = try anatomy.Runtime.init(allocator, anatomy_definition.view(), injector);
+        }
         try after(injector, .humanoid_character_initialization);
         return .{
             .local_and_world_pose = pose_state,
             .appearance_runtime = appearance_runtime,
+            .anatomy_runtime = anatomy_runtime,
         };
     }
 
     pub fn deinit(character: *HumanoidCharacter) void {
+        if (character.anatomy_runtime) |*value| value.deinit();
         character.appearance_runtime.deinit();
         character.local_and_world_pose.deinit();
         character.* = undefined;
@@ -299,11 +357,36 @@ pub const HumanoidCharacter = struct {
     }
 
     pub fn evaluateAppearance(character: *HumanoidCharacter, definition: *const HumanoidDefinition) !void {
+        if (character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = if (definition.anatomy_definition) |*value| value else return error.AnatomyDefinitionMismatch;
+            try runtime.applyAppearanceState(
+                anatomy_definition.view(),
+                definition.visual_definition.view(),
+                &character.appearance_runtime,
+            );
+        }
         try character.appearance_runtime.evaluate(
             definition.visual_definition.view(),
             &definition.skeleton_definition,
             &character.local_and_world_pose,
         );
+        if (character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = if (definition.anatomy_definition) |*value| value else return error.AnatomyDefinitionMismatch;
+            try runtime.evaluateHierarchy(
+                anatomy_definition.view(),
+                definition.visual_definition.view(),
+                &character.appearance_runtime,
+            );
+        }
+    }
+
+    pub fn resetAppearance(character: *HumanoidCharacter, definition: *const HumanoidDefinition) !void {
+        try character.appearance_runtime.reset(definition.visual_definition.view());
+        if (character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = if (definition.anatomy_definition) |*value| value else return error.AnatomyDefinitionMismatch;
+            try runtime.reset(anatomy_definition.view());
+        }
+        try character.evaluateAppearance(definition);
     }
 };
 
