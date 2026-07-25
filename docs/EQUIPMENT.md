@@ -20,14 +20,16 @@ The implementation deliberately does not use one universal slot:
 - An `AnatomyRoleId` names a reusable compatibility rule. The current representative catalog resolves roles to data-defined anatomy part-type tags such as `torso`, `upper_arm`, `hand`, and `foot`.
 - An `AttachmentPointId` is an existing appearance transform source such as `neck` or `upper_back`; it is not an equipment slot or anatomy instance.
 - A `BodyRegionId` records semantic coverage independently of occupancy and geometry.
-- A `VisualComponentId` identifies immutable sprite data.
+- A `VisualComponentId` identifies one immutable generalized visual primitive: a rigid sprite or a deformable mesh.
 - An `ItemVisualRecipeId` combines a component, a semantic binding rule, a local transform, a covered region, and a `VisualLayerId`.
 - A `VisualLayerId` maps declarative clothing order to the existing integer body-part draw layer.
 - `AttributeId` and `CapabilityId` identify gameplay declarations. The renderer does not inspect them.
 
 All are compact typed IDs after initialization. Bounded inline `DebugName` values exist only in immutable definition metadata and initialization lookup. Equip, unequip, replacement, reset, visual expansion, effect queries, fixed-tick updates, and rendering perform no string or hash lookup.
 
-Prompt 18 adds normalized morphology and breathing response strengths to immutable visual components. Anatomy-bound submission starts from the exact instance's undeformed binding matrix and invokes the shared appearance-deformation resolver before entering the same batch. Flexible garments therefore follow their resolved part, while a chest plate or gauntlet can attenuate or reject soft deformation without defining an item-specific breathing formula. Attachment-point-only equipment remains rigid unless a future explicit driver is authored. Full composition and invariance rules are in `docs/DEFORMATION.md`.
+Prompt 18 adds normalized morphology and breathing response strengths to immutable visual components. Anatomy-bound submission starts from the exact instance's undeformed binding matrix and invokes the shared appearance-deformation resolver before entering rendering. Flexible garments therefore follow their resolved part, while a chest plate or gauntlet can attenuate or reject soft deformation without defining an item-specific breathing formula. Attachment-point-only equipment remains rigid unless an explicit driver is authored. Full composition and invariance rules are in `docs/DEFORMATION.md`.
+
+Prompt 19 adds `deformable_mesh` beside `rigid_sprite` in the same `VisualComponent` union. Items and recipes are unchanged: a single `tailored_mesh_set` item contains a fitted torso mesh, one reusable sleeve mesh recipe expanded over every compatible upper arm, and a rigid collar clasp. No mesh-only item, loadout, anatomy, or character definition exists. A mesh component's material reference must exactly agree with its immutable mesh definition, and the mesh definition must remain alive for the equipment definition's lifetime.
 
 ## Immutable definition validation
 
@@ -57,7 +59,9 @@ An anatomy recipe supports:
 
 The reusable `long_sleeve_sweatshirt` contains one torso recipe and one `every_compatible` upper-arm recipe. A conventional preset resolves two sleeve instances. The nonstandard Prompt 16 fixture now contains two additional instances of the same optional upper-arm definition and resolves four sleeve instances. There is no four-arm sweatshirt definition.
 
-Resolved visuals store only item ID, recipe ID, and a typed source union containing a body-part instance ID or attachment-point ID. They do not cache mutable world transforms. Submission reads the current character-owned anatomy or appearance matrix, applies the recipe-local transform, and sends the sprite through `CharacterInstance.submitAttachments` and the existing global `SpriteBatch`.
+Resolved visuals store item ID, recipe ID, owning character ID, and a typed source union containing a body-part instance ID or attachment-point ID. Sprite records resolve their transform at submission. Mesh records additionally own an independent bounded `InstanceState` containing the last binding matrix, shared resolved deformation, binding identity, and update serial. Repeated sleeves and separate characters never share this mutable state.
+
+Legacy sprite-only scenes continue through `CharacterInstance.submitAttachments` and the existing global `SpriteBatch`. Mixed scenes use `submitUnified`, which submits the same anatomy and equipment records to the unified semantic queue. Calling the sprite-only route with an active mesh component fails explicitly instead of dropping or substituting the mesh.
 
 ## Transactional loadouts
 
@@ -88,7 +92,7 @@ Representative definitions cover underwear, a chest undergarment, short-sleeve s
 
 ## Rendering and authority
 
-Equipment creates no GPU resource, SDL object, controller state, physics state, animation state, IK state, or interaction state. It imports neither SDL nor the sprite batch. The character visual consumer resolves the generic visual records and submits them through the same batch used by anatomy and debug visuals.
+Equipment creates no GPU resource, SDL object, controller state, physics state, animation state, IK state, or interaction state. It imports neither SDL nor a GPU backend. The character visual consumer resolves generic visual records and submits either to the established sprite batch or to the mixed primitive queue. The renderer sees only validated primitive, material, transform/deformation, and semantic-order data; it never sees slots, modifiers, or capabilities.
 
 Facing is inherited from the reflected character root. Canonical animation, procedural offsets, IK, foot planting, and handshake layer overrides remain authoritative for their existing bones and visuals. Equipment cannot write canonical pose locals, roots, colliders, clocks, sockets, locks, or layer-override ownership.
 
@@ -102,10 +106,18 @@ The bounded route is:
 
 It renders a two-arm and four-arm character with the same sweatshirt definition, multiple simultaneous clothing layers, independent left/right armor, a multi-slot armor replacement transaction, an amulet, a backpack, independent loadouts, deterministic modifier/capability reporting, conflict rejection, unequip/restoration, one texture page, and one actual indexed-instanced draw. It fails if sleeve counts are not exactly two and four, any transaction evidence is missing, fixed-buffer usage changes after initialization, equipment creates GPU resources, or rendering leaves the global one-range/one-draw path.
 
+The mixed Prompt 19 route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo mesh-attachments
+```
+
+It renders conventional and nonstandard characters with fitted garment meshes, exactly two and four instances of one sleeve mesh definition, upper-back capes, and rigid collar clasps. It unequips and re-equips one cape, changes build and breathing deformation, checks mirrored facing and independent state, and reports separate sprite ranges/draws, mesh ranges/draws, upload bytes, persistent topology resources, and zero post-stabilization resource/allocation growth.
+
 ## Intentional limitations
 
 - Compatible roles currently match an exact data-defined anatomy part-type tag. More expressive tag predicates may be added as definition data without changing loadout algorithms.
-- Equipment visuals are rigid sprite components. Deformable clothing belongs to Prompt 19.
+- Prompt 19 deformation is affine appearance fitting. Cape/hair/cloth secondary dynamics belong to Prompt 20 and are not started here.
 - Active modifiers are declarations, not a final stacking-resolution policy.
 - Capability grants are declarations; controller consumption belongs to Prompt 21.
 - Changing topology with equipped required items calls bounded rebind validation. Ordinary gameplay should validate a proposed topology/loadout pair before exposing a topology change that may be rejected.

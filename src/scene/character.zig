@@ -20,6 +20,8 @@ const input = @import("input");
 const collision_world = @import("collision_world");
 const character_controller = @import("character_controller");
 const sprite = @import("sprite_batch");
+const mesh = @import("deformable_mesh");
+const render_queue = @import("render_queue");
 const fault_injection = @import("fault_injection");
 
 pub const maximum_characters: usize = 8;
@@ -290,6 +292,16 @@ pub const VisualTickInput = struct {
     horizontal_velocity: f32 = 0,
     physically_grounded: bool = true,
     landing_event: ?procedural_motion.LandingEvent = null,
+};
+
+pub const ResolvedEquipmentTransform = struct {
+    binding_world: math.Mat3,
+    resolved_deformation: math.Transform2D,
+    bound_identity: mesh.BoundIdentity,
+
+    pub fn world(transform: ResolvedEquipmentTransform) !math.Mat3 {
+        return transform.binding_world.mul(try transform.resolved_deformation.localToParent());
+    }
 };
 
 pub const HumanoidDefinitionView = struct {
@@ -1029,10 +1041,18 @@ pub const CharacterInstance = struct {
     }
 
     pub fn equipmentVisualWorld(instance: *CharacterInstance, visual_index: usize) !math.Mat3 {
+        return (try instance.equipmentVisualTransform(visual_index)).world();
+    }
+
+    pub fn equipmentVisualTransform(instance: *CharacterInstance, visual_index: usize) !ResolvedEquipmentTransform {
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
         const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
-        try loadout.validateCompatibility(.{ .definition = anatomy_definition, .runtime = anatomy_runtime });
+        try loadout.validateCompatibility(.{
+            .definition = anatomy_definition,
+            .runtime = anatomy_runtime,
+            .owning_character = instance.id.raw(),
+        });
         if (loadout.definition.appearance_token != instance.definition.visual_definition.owner_token) {
             return error.EquipmentAppearanceDefinitionMismatch;
         }
@@ -1044,17 +1064,24 @@ pub const CharacterInstance = struct {
         }
         const component = loadout.definition.visual_components[recipe.component.index()];
         return switch (visual.source) {
-            .anatomy_part => |part_id| (try anatomy_runtime.partBindingWorld(anatomy_definition, part_id))
-                .mul(try recipe.local_to_binding.localToParent())
-                .mul(try (try anatomy_runtime.resolvedDeformationForPart(
-                anatomy_definition,
-                part_id,
-                component.deformation_response,
-            )).localToParent()),
-            .attachment_point => |point_id| (try instance.character.appearance_runtime.attachmentPointWorld(
-                instance.definition.visual_definition,
-                point_id,
-            )).mul(try recipe.local_to_binding.localToParent()),
+            .anatomy_part => |part_id| .{
+                .binding_world = (try anatomy_runtime.partBindingWorld(anatomy_definition, part_id))
+                    .mul(try recipe.local_to_binding.localToParent()),
+                .resolved_deformation = try anatomy_runtime.resolvedDeformationForPart(
+                    anatomy_definition,
+                    part_id,
+                    component.deformation_response,
+                ),
+                .bound_identity = .{ .anatomy_part = @intFromEnum(part_id) },
+            },
+            .attachment_point => |point_id| .{
+                .binding_world = (try instance.character.appearance_runtime.attachmentPointWorld(
+                    instance.definition.visual_definition,
+                    point_id,
+                )).mul(try recipe.local_to_binding.localToParent()),
+                .resolved_deformation = math.Transform2D.identity(),
+                .bound_identity = .{ .attachment_point = @intFromEnum(point_id) },
+            },
         };
     }
 
@@ -1062,7 +1089,11 @@ pub const CharacterInstance = struct {
         const loadout = if (instance.equipment_loadout) |*value| value else return 0;
         const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
-        try loadout.validateCompatibility(.{ .definition = anatomy_definition, .runtime = anatomy_runtime });
+        try loadout.validateCompatibility(.{
+            .definition = anatomy_definition,
+            .runtime = anatomy_runtime,
+            .owning_character = instance.id.raw(),
+        });
         if (loadout.definition.appearance_token != instance.definition.visual_definition.owner_token) {
             return error.EquipmentAppearanceDefinitionMismatch;
         }
@@ -1076,6 +1107,7 @@ pub const CharacterInstance = struct {
                 return error.InvalidEquipmentVisualReference;
             }
             const component = loadout.definition.visual_components[recipe.component.index()];
+            if (component.primitive == .deformable_mesh) return error.MeshRequiresUnifiedRenderQueue;
             const layer = loadout.definition.visual_layers[recipe.visual_layer.index()];
             const world = try instance.equipmentVisualWorld(visual_index);
             const sprite_transform = try humanoid.spriteTransform(world);
@@ -1100,10 +1132,104 @@ pub const CharacterInstance = struct {
         return submitted;
     }
 
+    pub fn submitUnified(instance: *CharacterInstance, queue: *render_queue.UnifiedRenderQueue) !u32 {
+        instance.last_submitted_keys = [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
+        var submitted: u32 = 0;
+        for (instance.definition.attachments) |attachment| {
+            if (!try instance.character.appearance_runtime.isVisible(instance.definition.visual_definition, attachment.id)) continue;
+            const world = try instance.character.appearance_runtime.visualWorld(instance.definition.visual_definition, attachment.id);
+            const sprite_transform = try humanoid.spriteTransform(world);
+            const world_size = sprite_transform.signed_scale.componentMul(attachment.sprite_size);
+            const key = try queue.submitSprite(.{
+                .world_position = sprite_transform.world_position.toArray(),
+                .rotation = sprite_transform.rotation_radians,
+                .scale = world_size.toArray(),
+                .pivot = attachment.pivot,
+                .uv_rect = attachment.uv_rect,
+                .tint = attachment.tint,
+                .texture_page = attachment.texture_page,
+                .order = instance.resolvedOrderForAttachment(&attachment),
+            });
+            if (attachment.canonical_semantic) |raw_semantic| instance.last_submitted_keys[raw_semantic] = key;
+            submitted += 1;
+        }
+        submitted += try instance.submitUnifiedEquipment(queue);
+        return submitted;
+    }
+
+    fn submitUnifiedEquipment(instance: *CharacterInstance, queue: *render_queue.UnifiedRenderQueue) !u32 {
+        const loadout = if (instance.equipment_loadout) |*value| value else return 0;
+        const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try loadout.validateCompatibility(.{
+            .definition = anatomy_definition,
+            .runtime = anatomy_runtime,
+            .owning_character = instance.id.raw(),
+        });
+        if (loadout.definition.appearance_token != instance.definition.visual_definition.owner_token) {
+            return error.EquipmentAppearanceDefinitionMismatch;
+        }
+
+        var submitted: u32 = 0;
+        var visual_index: usize = 0;
+        while (visual_index < loadout.visuals().len) : (visual_index += 1) {
+            const visual = loadout.visuals()[visual_index];
+            const recipe = try loadout.definition.recipe(visual.recipe);
+            if (recipe.component.index() >= loadout.definition.visual_components.len or
+                recipe.visual_layer.index() >= loadout.definition.visual_layers.len)
+            {
+                return error.InvalidEquipmentVisualReference;
+            }
+            const component = loadout.definition.visual_components[recipe.component.index()];
+            const layer = loadout.definition.visual_layers[recipe.visual_layer.index()];
+            const resolved = try instance.equipmentVisualTransform(visual_index);
+            const order = sprite.OrderInput{
+                .scene_layer = characters_scene_layer,
+                .interaction_layer = neutral_interaction_layer,
+                .actor_layer = instance.actor_layer,
+                .body_part_layer = layer.render_layer,
+            };
+            switch (component.primitive) {
+                .rigid_sprite => {
+                    const sprite_transform = try humanoid.spriteTransform(try resolved.world());
+                    const world_size = sprite_transform.signed_scale.componentMul(component.sprite_size);
+                    _ = try queue.submitSprite(.{
+                        .world_position = sprite_transform.world_position.toArray(),
+                        .rotation = sprite_transform.rotation_radians,
+                        .scale = world_size.toArray(),
+                        .pivot = component.pivot,
+                        .uv_rect = component.uv_rect,
+                        .tint = component.tint,
+                        .texture_page = component.texture_page,
+                        .order = order,
+                    });
+                },
+                .deformable_mesh => |definition| {
+                    try loadout.resolved_visuals[visual_index].mesh_state.update(
+                        instance.id.raw(),
+                        resolved.bound_identity,
+                        resolved.binding_world,
+                        resolved.resolved_deformation,
+                    );
+                    _ = try queue.submitMesh(.{
+                        .definition = definition,
+                        .binding_world = resolved.binding_world,
+                        .resolved_deformation = resolved.resolved_deformation,
+                        .owning_character = instance.id.raw(),
+                        .bound_identity = resolved.bound_identity,
+                        .order = order,
+                    });
+                },
+            }
+            submitted += 1;
+        }
+        return submitted;
+    }
+
     fn equipmentContext(instance: *CharacterInstance) !equipment.AnatomyContext {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
-        return .{ .definition = definition, .runtime = runtime };
+        return .{ .definition = definition, .runtime = runtime, .owning_character = instance.id.raw() };
     }
 
     fn applyValidatedOverride(instance: *CharacterInstance, attachment_id: u16, validated: ValidatedOverrideRequest) !OverrideHandle {
@@ -1189,6 +1315,31 @@ pub fn submitGlobally(instances: []const *CharacterInstance, batch: *sprite.Spri
 
     var submitted: u32 = 0;
     for (ordered[0..instances.len]) |instance| submitted += try instance.submitAttachments(batch);
+    return submitted;
+}
+
+pub fn submitUnifiedGlobally(instances: []const *CharacterInstance, queue: *render_queue.UnifiedRenderQueue) !u32 {
+    if (instances.len > maximum_characters) return error.CharacterCapacityExceeded;
+    var ordered: [maximum_characters]*CharacterInstance = undefined;
+    for (instances, 0..) |instance, index| {
+        if (!instance.id.isValid()) return error.InvalidEntityId;
+        ordered[index] = instance;
+    }
+    var index: usize = 1;
+    while (index < instances.len) : (index += 1) {
+        const candidate = ordered[index];
+        var destination = index;
+        while (destination > 0 and candidate.id.raw() < ordered[destination - 1].id.raw()) : (destination -= 1) {
+            ordered[destination] = ordered[destination - 1];
+        }
+        ordered[destination] = candidate;
+    }
+    for (ordered[0..instances.len], 0..) |instance, ordered_index| {
+        if (ordered_index > 0 and ordered[ordered_index - 1].id == instance.id) return error.DuplicateEntityId;
+    }
+
+    var submitted: u32 = 0;
+    for (ordered[0..instances.len]) |instance| submitted += try instance.submitUnified(queue);
     return submitted;
 }
 

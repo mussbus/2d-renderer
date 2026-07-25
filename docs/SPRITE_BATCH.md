@@ -76,6 +76,8 @@ Ranges are generated only after semantic sorting. Consecutive equal texture page
 
 The two-character demonstration adds 30 page-zero humanoid instances to this same rule. Actor and body-part interleaving cannot split the range because every sorted record still names page zero, so character count remains independent from draw-call count.
 
+Prompt 19 preserves that sprite-only contract and adds `UnifiedRenderQueue` only for mixed scenes. Sprites and deformable meshes receive the same lexicographic key and are sorted once. The prepared queue retains semantic range order while compacting sprite records, mesh instance records, and mesh-definition draws into their own bounded buffers. The renderer walks those ranges in semantic order, binding the sprite or mesh pipeline as required. A primitive transition can therefore split work even when the texture page is unchanged; mixed scenes report their actual sprite and mesh ranges/draws separately and make no one-draw claim. See `docs/MESH_ATTACHMENTS.md` for the mesh layouts and persistent-topology contract.
+
 ## Capacity and ownership
 
 Initial CPU submission capacity, sorted capacity, range capacity, and each GPU instance slot are 1,024 records. The maximum is 16,384. Growth doubles capacity until the request fits, caps at the maximum, and uses overflow-checked byte multiplication. Empty and exactly-full batches are valid; one-past capacity grows to 2,048. Requests beyond the maximum and byte counts beyond `u32` fail meaningfully.

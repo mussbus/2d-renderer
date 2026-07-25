@@ -4,6 +4,7 @@ const deformation = @import("deformation");
 const skeleton = @import("skeleton");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
+const mesh = @import("deformable_mesh");
 
 pub const maximum_equipment_slots: usize = 32;
 pub const maximum_anatomy_roles: usize = 32;
@@ -114,6 +115,12 @@ pub const VisualComponentInput = struct {
     tint: [4]f32,
     texture_page: u32 = 0,
     deformation_response: deformation.Response = .{},
+    primitive: VisualPrimitiveInput = .rigid_sprite,
+};
+
+pub const VisualPrimitiveInput = union(enum) {
+    rigid_sprite,
+    deformable_mesh: mesh.DefinitionView,
 };
 
 pub const MatchSelection = enum(u8) {
@@ -210,6 +217,12 @@ pub const VisualComponent = struct {
     tint: [4]f32,
     texture_page: u32,
     deformation_response: deformation.Response,
+    primitive: VisualPrimitive,
+};
+
+pub const VisualPrimitive = union(enum) {
+    rigid_sprite,
+    deformable_mesh: mesh.DefinitionView,
 };
 
 pub const AnatomyBinding = struct {
@@ -367,15 +380,29 @@ pub const Definition = struct {
         const visual_components = allocator.alloc(VisualComponent, inputs.visual_components.len) catch return error.AllocationFailure;
         errdefer allocator.free(visual_components);
         for (inputs.visual_components, 0..) |input, index| {
-            if (!input.sprite_size.isFinite() or input.sprite_size.x <= 0 or input.sprite_size.y <= 0 or
-                !finiteArray(2, input.pivot) or !finiteArray(4, input.uv_rect) or !finiteArray(4, input.tint) or
-                input.pivot[0] < 0 or input.pivot[0] > 1 or input.pivot[1] < 0 or input.pivot[1] > 1 or
-                input.uv_rect[0] < 0 or input.uv_rect[0] >= input.uv_rect[2] or input.uv_rect[2] > 1 or
-                input.uv_rect[1] < 0 or input.uv_rect[1] >= input.uv_rect[3] or input.uv_rect[3] > 1 or
-                !normalizedArray(4, input.tint))
-            {
-                return error.InvalidVisualComponent;
-            }
+            const primitive: VisualPrimitive = switch (input.primitive) {
+                .rigid_sprite => rigid: {
+                    if (!input.sprite_size.isFinite() or input.sprite_size.x <= 0 or input.sprite_size.y <= 0 or
+                        !finiteArray(2, input.pivot) or !finiteArray(4, input.uv_rect) or
+                        input.pivot[0] < 0 or input.pivot[0] > 1 or input.pivot[1] < 0 or input.pivot[1] > 1 or
+                        input.uv_rect[0] < 0 or input.uv_rect[0] >= input.uv_rect[2] or input.uv_rect[2] > 1 or
+                        input.uv_rect[1] < 0 or input.uv_rect[1] >= input.uv_rect[3] or input.uv_rect[3] > 1)
+                    {
+                        return error.InvalidVisualComponent;
+                    }
+                    break :rigid .rigid_sprite;
+                },
+                .deformable_mesh => |mesh_definition| deformable: {
+                    try mesh_definition.validate();
+                    if (mesh_definition.material.texture_page != input.texture_page or
+                        !std.mem.eql(u8, std.mem.asBytes(&mesh_definition.material.tint), std.mem.asBytes(&input.tint)))
+                    {
+                        return error.MeshComponentMaterialMismatch;
+                    }
+                    break :deformable .{ .deformable_mesh = mesh_definition };
+                },
+            };
+            if (!finiteArray(4, input.tint) or !normalizedArray(4, input.tint)) return error.InvalidVisualComponent;
             try input.deformation_response.validate();
             const stable_id = try skeleton.DebugName.init(input.stable_id);
             try ensureUniqueName(VisualComponent, visual_components[0..index], stable_id);
@@ -388,6 +415,7 @@ pub const Definition = struct {
                 .tint = input.tint,
                 .texture_page = input.texture_page,
                 .deformation_response = input.deformation_response,
+                .primitive = primitive,
             };
         }
 
@@ -661,6 +689,7 @@ pub const Definition = struct {
 pub const AnatomyContext = struct {
     definition: anatomy.DefinitionView,
     runtime: *const anatomy.Runtime,
+    owning_character: u32 = 0,
 };
 
 pub const VisualSource = union(enum) {
@@ -673,6 +702,8 @@ pub const ResolvedVisualInstance = struct {
     recipe: ItemVisualRecipeId,
     source: VisualSource,
     body_region: appearance.BodyRegionId,
+    owning_character: u32,
+    mesh_state: mesh.InstanceState = .{},
 };
 
 pub const ActiveModifier = struct {
@@ -694,6 +725,7 @@ pub const ActiveCoverage = struct {
 
 pub const Loadout = struct {
     definition: DefinitionView,
+    owning_character: u32,
     equipped_items: [maximum_equipped_items]EquipmentItemId = undefined,
     equipped_count: u16 = 0,
     slot_occupants: [maximum_equipment_slots]?EquipmentItemId = [_]?EquipmentItemId{null} ** maximum_equipment_slots,
@@ -707,13 +739,16 @@ pub const Loadout = struct {
     active_coverage_count: u16 = 0,
 
     pub fn init(definition: DefinitionView, context: AnatomyContext) !Loadout {
-        var loadout = Loadout{ .definition = definition };
+        var loadout = Loadout{ .definition = definition, .owning_character = context.owning_character };
         try loadout.resetToDefault(context);
         return loadout;
     }
 
     pub fn validateCompatibility(loadout: *const Loadout, context: AnatomyContext) !void {
         if (loadout.definition.anatomy_token != context.definition.owner_token) return error.EquipmentAnatomyDefinitionMismatch;
+        if (context.owning_character != 0 and loadout.owning_character != context.owning_character) {
+            return error.EquipmentCharacterOwnerMismatch;
+        }
         try context.runtime.validateCompatibility(context.definition);
         if (loadout.definition.equipment_slots.len > maximum_equipment_slots) return error.EquipmentSlotCapacityExceeded;
     }
@@ -757,7 +792,7 @@ pub const Loadout = struct {
     }
 
     pub fn resetToDefault(loadout: *Loadout, context: AnatomyContext) !void {
-        var candidate = Loadout{ .definition = loadout.definition };
+        var candidate = Loadout{ .definition = loadout.definition, .owning_character = context.owning_character };
         try candidate.validateCompatibility(context);
         for (candidate.definition.default_loadout) |item_id| try candidate.insertItem(item_id, false);
         try candidate.rebuildDerived(context);
@@ -957,6 +992,7 @@ pub const Loadout = struct {
             .recipe = recipe_id,
             .source = source,
             .body_region = body_region,
+            .owning_character = loadout.owning_character,
         };
         loadout.resolved_visual_count += 1;
     }

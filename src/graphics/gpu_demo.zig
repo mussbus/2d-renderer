@@ -2,6 +2,9 @@ const std = @import("std");
 const c = @import("sdl").c;
 const fault_injection = @import("fault_injection");
 const sprite = @import("sprite_batch");
+const mesh = @import("deformable_mesh");
+const render_queue = @import("render_queue");
+const mesh_gpu_catalog = @import("mesh_gpu_catalog");
 const math = @import("math");
 const camera2d = @import("camera2d");
 const humanoid = @import("humanoid");
@@ -19,6 +22,7 @@ const playground_demo = @import("playground_demo");
 const modular_body_demo = @import("modular_body_demo");
 const equipment_demo = @import("equipment_demo");
 const breathing_demo = @import("breathing_demo");
+const mesh_attachment_demo = @import("mesh_attachment_demo");
 const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
@@ -36,6 +40,7 @@ pub const DemoMode = enum {
     modular_body,
     equipment,
     breathing,
+    mesh_attachments,
     side_scroller,
 };
 
@@ -82,6 +87,8 @@ const static_upload_buffer_size: u32 = index_upload_offset + @sizeOf(@TypeOf(qua
 const FrameSlot = struct {
     instance_buffer: ?*c.SDL_GPUBuffer = null,
     transfer_buffer: ?*c.SDL_GPUTransferBuffer = null,
+    mesh_instance_buffer: ?*c.SDL_GPUBuffer = null,
+    mesh_transfer_buffer: ?*c.SDL_GPUTransferBuffer = null,
     fence: ?*c.SDL_GPUFence = null,
 };
 
@@ -105,6 +112,11 @@ const ReadbackPixels = struct {
     row_pitch: u32,
 };
 
+const EncodedDrawCounts = struct {
+    sprites: u32 = 0,
+    meshes: u32 = 0,
+};
+
 const HierarchyPositions = struct {
     right_shoulder: math.Vec2,
     right_elbow: math.Vec2,
@@ -125,20 +137,27 @@ const LandingEvidence = struct {
 pub const GpuDemo = struct {
     allocator: std.mem.Allocator,
     batch: ?sprite.SpriteBatch = null,
+    unified_queue: ?render_queue.UnifiedRenderQueue = null,
+    mesh_catalog: ?mesh_gpu_catalog.Catalog = null,
     sdl_initialized: bool = false,
     window_claimed: bool = false,
     window: ?*c.SDL_Window = null,
     device: ?*c.SDL_GPUDevice = null,
     vertex_shader: ?*c.SDL_GPUShader = null,
+    mesh_vertex_shader: ?*c.SDL_GPUShader = null,
     fragment_shader: ?*c.SDL_GPUShader = null,
     sampler: ?*c.SDL_GPUSampler = null,
     sampled_texture: ?*c.SDL_GPUTexture = null,
     render_target: ?*c.SDL_GPUTexture = null,
     quad_vertex_buffer: ?*c.SDL_GPUBuffer = null,
     quad_index_buffer: ?*c.SDL_GPUBuffer = null,
+    mesh_vertex_buffer: ?*c.SDL_GPUBuffer = null,
+    mesh_index_buffer: ?*c.SDL_GPUBuffer = null,
     static_upload_transfer: ?*c.SDL_GPUTransferBuffer = null,
     offscreen_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
     window_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
+    mesh_offscreen_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
+    mesh_window_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
     frame_slots: [frame_slot_count]FrameSlot = [_]FrameSlot{.{}} ** frame_slot_count,
     gpu_instance_capacity: usize = 0,
     current_frame_slot: usize = 0,
@@ -271,15 +290,20 @@ pub const GpuDemo = struct {
             for (&self.frame_slots) |*slot| self.waitAndReleaseFence(slot, false) catch {};
             if (!c.SDL_WaitForGPUIdle(device)) std.log.err("SDL_WaitForGPUIdle during cleanup: {s}", .{sdlErrorText()});
             self.releaseSlotResources(&self.frame_slots);
+            if (self.mesh_window_pipeline) |resource| self.releasePipeline(device, resource);
+            if (self.mesh_offscreen_pipeline) |resource| self.releasePipeline(device, resource);
             if (self.window_pipeline) |resource| self.releasePipeline(device, resource);
             if (self.offscreen_pipeline) |resource| self.releasePipeline(device, resource);
             if (self.static_upload_transfer) |resource| self.releaseTransfer(device, resource);
+            if (self.mesh_index_buffer) |resource| self.releaseBuffer(device, resource);
+            if (self.mesh_vertex_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.quad_index_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.quad_vertex_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.render_target) |resource| self.releaseTexture(device, resource);
             if (self.sampled_texture) |resource| self.releaseTexture(device, resource);
             if (self.sampler) |resource| self.releaseSampler(device, resource);
             if (self.fragment_shader) |resource| self.releaseShader(device, resource);
+            if (self.mesh_vertex_shader) |resource| self.releaseShader(device, resource);
             if (self.vertex_shader) |resource| self.releaseShader(device, resource);
             if (self.window_claimed and self.window != null) c.SDL_ReleaseWindowFromGPUDevice(device, self.window.?);
             c.SDL_DestroyGPUDevice(device);
@@ -288,6 +312,98 @@ pub const GpuDemo = struct {
         if (self.sdl_initialized) c.SDL_Quit();
         if (self.batch) |*batch| batch.deinit();
         self.batch = null;
+        if (self.unified_queue) |*queue| queue.deinit();
+        self.unified_queue = null;
+        if (self.mesh_catalog) |*catalog| catalog.deinit();
+        self.mesh_catalog = null;
+    }
+
+    fn initializeMeshRendering(self: *GpuDemo, definitions: []const mesh.DefinitionView) !void {
+        if (self.unified_queue != null or self.mesh_catalog != null or self.mesh_vertex_shader != null) {
+            return error.MeshRenderingAlreadyInitialized;
+        }
+        self.unified_queue = try render_queue.UnifiedRenderQueue.init(
+            self.allocator,
+            render_queue.default_entry_capacity,
+            render_queue.default_sprite_capacity,
+            render_queue.default_mesh_capacity,
+            1,
+        );
+        self.mesh_catalog = try mesh_gpu_catalog.Catalog.init(self.allocator, definitions);
+        const catalog = &self.mesh_catalog.?;
+
+        self.mesh_vertex_shader = try createShader(
+            self.device.?,
+            "shaders\\deformable_mesh_vs.dxil",
+            "VSMain",
+            c.SDL_GPU_SHADERSTAGE_VERTEX,
+            0,
+            1,
+        );
+        self.resource_metrics.gpu_resource_creations += 1;
+
+        const vertex_bytes = try catalog.vertexBytes();
+        const index_bytes = try catalog.indexBytes();
+        self.mesh_vertex_buffer = createBuffer(self.device.?, c.SDL_GPU_BUFFERUSAGE_VERTEX, vertex_bytes) orelse
+            return failSdl("SDL_CreateGPUBuffer(mesh topology vertices)", error.MeshVertexBufferCreationFailure);
+        self.resource_metrics.gpu_resource_creations += 1;
+        self.mesh_index_buffer = createBuffer(self.device.?, c.SDL_GPU_BUFFERUSAGE_INDEX, index_bytes) orelse
+            return failSdl("SDL_CreateGPUBuffer(mesh topology indices)", error.MeshIndexBufferCreationFailure);
+        self.resource_metrics.gpu_resource_creations += 1;
+
+        const transfer_size = try catalog.uploadBytes();
+        var transfer_info: c.SDL_GPUTransferBufferCreateInfo = std.mem.zeroes(c.SDL_GPUTransferBufferCreateInfo);
+        transfer_info.usage = c.SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        transfer_info.size = transfer_size;
+        const transfer = c.SDL_CreateGPUTransferBuffer(self.device.?, &transfer_info) orelse
+            return failSdl("SDL_CreateGPUTransferBuffer(mesh static topology)", error.GpuTransferBufferCreationFailure);
+        self.resource_metrics.gpu_resource_creations += 1;
+        defer self.releaseTransfer(self.device.?, transfer);
+
+        const mapped = c.SDL_MapGPUTransferBuffer(self.device.?, transfer, false) orelse
+            return failSdl("SDL_MapGPUTransferBuffer(mesh static topology)", error.UploadFailure);
+        const bytes: [*]u8 = @ptrCast(mapped);
+        copyBytes(bytes, 0, std.mem.sliceAsBytes(catalog.vertices));
+        copyBytes(bytes, vertex_bytes, std.mem.sliceAsBytes(catalog.indices));
+        c.SDL_UnmapGPUTransferBuffer(self.device.?, transfer);
+
+        const command = c.SDL_AcquireGPUCommandBuffer(self.device.?) orelse
+            return failSdl("SDL_AcquireGPUCommandBuffer(mesh topology upload)", error.UploadFailure);
+        var command_active = true;
+        errdefer if (command_active) {
+            if (!c.SDL_CancelGPUCommandBuffer(command)) {
+                std.log.err("SDL_CancelGPUCommandBuffer(mesh topology upload): {s}", .{sdlErrorText()});
+            }
+        };
+        const copy_pass = c.SDL_BeginGPUCopyPass(command);
+        if (copy_pass == null) return failSdl("SDL_BeginGPUCopyPass(mesh topology upload)", error.UploadFailure);
+        uploadBuffer(copy_pass.?, transfer, 0, self.mesh_vertex_buffer.?, vertex_bytes);
+        uploadBuffer(copy_pass.?, transfer, vertex_bytes, self.mesh_index_buffer.?, index_bytes);
+        c.SDL_EndGPUCopyPass(copy_pass.?);
+        const fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
+        command_active = false;
+        if (fence == null) {
+            return failSdl("SDL_SubmitGPUCommandBufferAndAcquireFence(mesh topology upload)", error.UploadFailure);
+        }
+        self.resource_metrics.fence_acquisitions += 1;
+        try self.waitReleaseStandaloneFence(fence.?);
+
+        try self.createMeshSlotResources(render_queue.default_mesh_capacity);
+        self.mesh_offscreen_pipeline = try createMeshPipeline(self, c.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM);
+        self.resource_metrics.gpu_resource_creations += 1;
+        const swapchain_format = c.SDL_GetGPUSwapchainTextureFormat(self.device.?, self.window.?);
+        if (swapchain_format == c.SDL_GPU_TEXTUREFORMAT_INVALID) {
+            return failSdl("SDL_GetGPUSwapchainTextureFormat(mesh pipeline)", error.SwapchainFormatQueryFailure);
+        }
+        self.mesh_window_pipeline = try createMeshPipeline(self, swapchain_format);
+        self.resource_metrics.gpu_resource_creations += 1;
+        std.log.info("initialized persistent mesh GPU resources: definitions={d} vertices={d} indices={d} topology_upload={d}B frame_slots={d}", .{
+            catalog.entries.len,
+            catalog.vertices.len,
+            catalog.indices.len,
+            transfer_size,
+            frame_slot_count,
+        });
     }
 
     fn handleWindowEvent(self: *GpuDemo, event: *const c.SDL_Event) !void {
@@ -368,6 +484,8 @@ pub const GpuDemo = struct {
         defer if (equipment_scene) |*scene| scene.deinit();
         var breathing_scene: ?breathing_demo.Scene = null;
         defer if (breathing_scene) |*scene| scene.deinit();
+        var mesh_attachment_scene: ?mesh_attachment_demo.Scene = null;
+        defer if (mesh_attachment_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
@@ -469,10 +587,19 @@ pub const GpuDemo = struct {
                 return error.BreathingInitializationCreatedGpuResources;
             }
         }
+        if (mode == .mesh_attachments) {
+            mesh_attachment_scene = try mesh_attachment_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.MeshAttachmentSceneInitializationCreatedGpuResources;
+            }
+            const definitions = mesh_attachment_scene.?.meshDefinitions();
+            try self.initializeMeshRendering(&definitions);
+        }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
         var creations_after_warmup = creations_before_run;
         self.batch.?.markStabilized();
+        if (self.unified_queue) |*queue| queue.markStabilized();
         var pose_evaluation_allocations: usize = 0;
         var socket_evaluation_allocations: usize = 0;
         var humanoid_submission_allocations: usize = 0;
@@ -898,6 +1025,16 @@ pub const GpuDemo = struct {
                     humanoid_instances = try scene.submit(&self.batch.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
+                .mesh_attachments => {
+                    const scene = &mesh_attachment_scene.?;
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.unified_queue.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.unified_queue.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
                 .side_scroller => {
                     const scene = &playground_scene.?;
                     const snapshot = try playground_snapshot_builder.update(side_scroller_sequence.nextRaw(scene));
@@ -914,8 +1051,11 @@ pub const GpuDemo = struct {
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
             }
-            const prepared = self.batch.?.prepare();
-            if (try self.renderPreparedToWindow(prepared, null)) {
+            const rendered = if (mode == .mesh_attachments)
+                try self.renderUnifiedToWindow(self.unified_queue.?.prepare())
+            else
+                try self.renderPreparedToWindow(self.batch.?.prepare(), null);
+            if (rendered) {
                 self.resource_metrics.frames_rendered += 1;
             } else {
                 self.resource_metrics.zero_drawable_frames += 1;
@@ -932,33 +1072,39 @@ pub const GpuDemo = struct {
                     .total_actual_draw_calls = self.batch.?.frame_metrics.draw_calls,
                 });
             }
-            try self.updateWindowTitle();
+            if (mode == .mesh_attachments) {
+                try self.updateUnifiedWindowTitle();
+            } else {
+                try self.updateWindowTitle();
+            }
             if (frame == 0) creations_after_warmup = self.resource_metrics.gpu_resource_creations;
         }
 
         const metrics = self.batch.?.frame_metrics;
-        std.log.info("sprite-batch final metrics: frames={d} submitted={d} visible={d} culled={d} sorted={d} ranges={d} actual_draw_calls={d} upload_bytes={d}", .{
-            self.resource_metrics.frames_rendered,
-            metrics.submitted_sprites,
-            metrics.visible_sprites,
-            metrics.culled_sprites,
-            metrics.sorted_sprites,
-            metrics.draw_ranges,
-            metrics.draw_calls,
-            metrics.upload_bytes,
-        });
-        std.log.info("steady-state resources: creations_before_run={d} after_warmup={d} after_final_frame={d} gpu_buffer_growths={d} cpu_allocations_after_stabilization={d} frame_slot_waits={d} current_slot={d}", .{
-            creations_before_run,
-            creations_after_warmup,
-            self.resource_metrics.gpu_resource_creations,
-            self.resource_metrics.upload_buffer_growths,
-            self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization,
-            self.resource_metrics.frame_slot_fence_waits,
-            self.current_frame_slot,
-        });
-        std.log.info("actual sprite draw command: SDL_DrawGPUIndexedPrimitives num_instances={d} draw_calls={d} draw_ranges={d}", .{
-            metrics.visible_sprites, metrics.draw_calls, metrics.draw_ranges,
-        });
+        if (mode != .mesh_attachments) {
+            std.log.info("sprite-batch final metrics: frames={d} submitted={d} visible={d} culled={d} sorted={d} ranges={d} actual_draw_calls={d} upload_bytes={d}", .{
+                self.resource_metrics.frames_rendered,
+                metrics.submitted_sprites,
+                metrics.visible_sprites,
+                metrics.culled_sprites,
+                metrics.sorted_sprites,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+                metrics.upload_bytes,
+            });
+            std.log.info("steady-state resources: creations_before_run={d} after_warmup={d} after_final_frame={d} gpu_buffer_growths={d} cpu_allocations_after_stabilization={d} frame_slot_waits={d} current_slot={d}", .{
+                creations_before_run,
+                creations_after_warmup,
+                self.resource_metrics.gpu_resource_creations,
+                self.resource_metrics.upload_buffer_growths,
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                self.resource_metrics.frame_slot_fence_waits,
+                self.current_frame_slot,
+            });
+            std.log.info("actual sprite draw command: SDL_DrawGPUIndexedPrimitives num_instances={d} draw_calls={d} draw_ranges={d}", .{
+                metrics.visible_sprites, metrics.draw_calls, metrics.draw_ranges,
+            });
+        }
         if (mode == .humanoid) {
             const gpu_resources_for_pose_changes = self.resource_metrics.gpu_resource_creations - creations_before_run;
             std.log.info("humanoid final metrics: frames={d} bones={d} sockets={d} attachments={d} humanoid_sprites={d} total_sprites={d} ranges={d} actual_draw_calls={d}", .{
@@ -1873,6 +2019,62 @@ pub const GpuDemo = struct {
             {
                 return error.BreathingRenderingEvidenceIncomplete;
             }
+        } else if (mode == .mesh_attachments) {
+            const scene = &mesh_attachment_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != mesh_attachment_demo.required_frames) {
+                return error.MeshAttachmentFrameCountMismatch;
+            }
+            const unified_metrics = self.unified_queue.?.frame_metrics;
+            const catalog = &self.mesh_catalog.?;
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            std.log.info("TOPOLOGY-AWARE DEFORMABLE MESH EVIDENCE", .{});
+            std.log.info("Content: mesh_definitions={d} fitted_garments=2 conventional_sleeves={d} nonstandard_sleeves={d} capes=2 mixed_sprite_mesh=true", .{
+                catalog.entries.len,
+                scene.evidence.conventional_sleeves,
+                scene.evidence.nonstandard_sleeves,
+            });
+            std.log.info("State: repeated_sleeves_independent={} characters_independent={} mirrored_facing={} breathing_deformation_changed={} build_deformation_changed={} cape_unequipped={} cape_reequipped={}", .{
+                scene.evidence.independent_repeated_state,
+                scene.evidence.independent_character_state,
+                scene.evidence.mirrored_facing,
+                scene.evidence.breathing_deformation_changed,
+                scene.evidence.build_deformation_changed,
+                scene.evidence.cape_unequipped,
+                scene.evidence.cape_reequipped,
+            });
+            std.log.info("Unified ordering: sprite_ranges={d} mesh_ranges={d} sprite_draws={d} mesh_draws={d} total_draws={d}", .{
+                unified_metrics.sprite_ranges,
+                unified_metrics.mesh_ranges,
+                unified_metrics.sprite_draws,
+                unified_metrics.mesh_draws,
+                unified_metrics.sprite_draws + unified_metrics.mesh_draws,
+            });
+            std.log.info("Uploads/resources: sprite_instances={d} mesh_instances={d} sprite_upload={d}B mesh_upload={d}B persistent_topology_upload={d}B topology_buffers=2 frame_slots={d}", .{
+                unified_metrics.submitted_sprites,
+                unified_metrics.submitted_meshes,
+                unified_metrics.sprite_upload_bytes,
+                unified_metrics.mesh_upload_bytes,
+                try catalog.uploadBytes(),
+                frame_slot_count,
+            });
+            std.log.info("Steady-state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (humanoid_instances == 0 or unified_metrics.submitted_sprites == 0 or unified_metrics.submitted_meshes != 10 or
+                unified_metrics.sprite_ranges == 0 or unified_metrics.mesh_ranges == 0 or
+                unified_metrics.sprite_draws == 0 or unified_metrics.mesh_draws == 0 or
+                runtime_allocation_delta != 0 or pose_evaluation_allocations != 0 or humanoid_submission_allocations != 0 or
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
+            {
+                return error.MeshAttachmentRenderingEvidenceIncomplete;
+            }
         } else if (mode == .side_scroller) {
             const scene = &playground_scene.?;
             if (self.resource_metrics.frames_rendered != playground_demo.side_scroller_required_frames) {
@@ -2057,6 +2259,76 @@ pub const GpuDemo = struct {
         });
     }
 
+    fn renderUnifiedToWindow(self: *GpuDemo, prepared: render_queue.PreparedQueue) !bool {
+        if (!self.drawable_available) return false;
+        if (prepared.sprites.len > self.gpu_instance_capacity) return error.GpuInstanceCapacityExceeded;
+        if (prepared.meshes.len > render_queue.default_mesh_capacity) return error.MeshInstanceCapacityExceeded;
+        const slot_index = try self.acquireFrameSlot();
+        try self.populateInstanceTransfer(slot_index, prepared.sprites);
+        try self.populateMeshInstanceTransfer(slot_index, prepared.meshes);
+
+        const command = c.SDL_AcquireGPUCommandBuffer(self.device.?) orelse
+            return failSdl("SDL_AcquireGPUCommandBuffer(unified frame)", error.PipelineResourceBindingFailure);
+        var command_active = true;
+        var swapchain_acquired = false;
+        errdefer if (command_active) self.cleanupFailedCommand(command, swapchain_acquired);
+
+        var swapchain_texture: ?*c.SDL_GPUTexture = null;
+        var swapchain_width: u32 = 0;
+        var swapchain_height: u32 = 0;
+        if (!c.SDL_WaitAndAcquireGPUSwapchainTexture(command, self.window.?, &swapchain_texture, &swapchain_width, &swapchain_height)) {
+            return failSdl("SDL_WaitAndAcquireGPUSwapchainTexture(unified frame)", error.SwapchainAcquisitionFailure);
+        }
+        swapchain_acquired = swapchain_texture != null;
+        if (swapchain_texture == null) {
+            if (!c.SDL_CancelGPUCommandBuffer(command)) {
+                return failSdl("SDL_CancelGPUCommandBuffer(unified zero drawable)", error.PipelineResourceBindingFailure);
+            }
+            command_active = false;
+            self.drawable_available = false;
+            self.drawable_width = 0;
+            self.drawable_height = 0;
+            return false;
+        }
+        if (swapchain_width == 0 or swapchain_height == 0) {
+            const empty_fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
+            command_active = false;
+            if (empty_fence == null) {
+                return failSdl("SDL_SubmitGPUCommandBufferAndAcquireFence(unified zero drawable)", error.FrameFenceAcquisitionFailure);
+            }
+            self.resource_metrics.fence_acquisitions += 1;
+            self.frame_slots[slot_index].fence = empty_fence.?;
+            self.current_frame_slot = (slot_index + 1) % frame_slot_count;
+            self.drawable_available = false;
+            self.drawable_width = 0;
+            self.drawable_height = 0;
+            return false;
+        }
+        try self.applyDrawableSize(swapchain_width, swapchain_height);
+        const encoded = try self.encodeUnifiedQueue(
+            command,
+            slot_index,
+            prepared,
+            swapchain_texture.?,
+            self.window_pipeline.?,
+            self.mesh_window_pipeline.?,
+            self.visible_camera,
+            true,
+        );
+
+        const fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
+        command_active = false;
+        if (fence == null) {
+            _ = c.SDL_WaitForGPUIdle(self.device.?);
+            return failSdl("SDL_SubmitGPUCommandBufferAndAcquireFence(unified frame)", error.FrameFenceAcquisitionFailure);
+        }
+        self.resource_metrics.fence_acquisitions += 1;
+        self.frame_slots[slot_index].fence = fence.?;
+        self.current_frame_slot = (slot_index + 1) % frame_slot_count;
+        self.unified_queue.?.recordDraws(encoded.sprites, encoded.meshes);
+        return swapchain_acquired;
+    }
+
     fn renderPreparedToWindow(self: *GpuDemo, prepared: sprite.PreparedBatch, injector: ?fault_injection.Injector) !bool {
         if (!self.drawable_available) return false;
         try self.ensureGpuCapacity(prepared.sprites.len, null);
@@ -2198,6 +2470,120 @@ pub const GpuDemo = struct {
         };
     }
 
+    fn encodeUnifiedQueue(
+        self: *GpuDemo,
+        command: *c.SDL_GPUCommandBuffer,
+        slot_index: usize,
+        prepared: render_queue.PreparedQueue,
+        target: *c.SDL_GPUTexture,
+        sprite_pipeline: *c.SDL_GPUGraphicsPipeline,
+        mesh_pipeline: *c.SDL_GPUGraphicsPipeline,
+        camera: camera2d.Camera2D,
+        cycle_target: bool,
+    ) !EncodedDrawCounts {
+        const sprite_upload_bytes = try sprite.instanceByteSize(prepared.sprites.len);
+        const mesh_upload_bytes = try render_queue.meshInstanceByteSize(prepared.meshes.len);
+        self.unified_queue.?.recordUploads(sprite_upload_bytes, mesh_upload_bytes);
+        if (sprite_upload_bytes > 0 or mesh_upload_bytes > 0) {
+            const copy_pass = c.SDL_BeginGPUCopyPass(command);
+            if (copy_pass == null) return failSdl("SDL_BeginGPUCopyPass(unified instance upload)", error.UploadFailure);
+            if (sprite_upload_bytes > 0) {
+                const sprite_source = c.SDL_GPUTransferBufferLocation{
+                    .transfer_buffer = self.frame_slots[slot_index].transfer_buffer.?,
+                    .offset = 0,
+                };
+                const sprite_destination = c.SDL_GPUBufferRegion{
+                    .buffer = self.frame_slots[slot_index].instance_buffer.?,
+                    .offset = 0,
+                    .size = sprite_upload_bytes,
+                };
+                c.SDL_UploadToGPUBuffer(copy_pass.?, &sprite_source, &sprite_destination, false);
+            }
+            if (mesh_upload_bytes > 0) {
+                const mesh_source = c.SDL_GPUTransferBufferLocation{
+                    .transfer_buffer = self.frame_slots[slot_index].mesh_transfer_buffer.?,
+                    .offset = 0,
+                };
+                const mesh_destination = c.SDL_GPUBufferRegion{
+                    .buffer = self.frame_slots[slot_index].mesh_instance_buffer.?,
+                    .offset = 0,
+                    .size = mesh_upload_bytes,
+                };
+                c.SDL_UploadToGPUBuffer(copy_pass.?, &mesh_source, &mesh_destination, false);
+            }
+            c.SDL_EndGPUCopyPass(copy_pass.?);
+        }
+
+        const camera_uniform = try camera.uniform();
+        c.SDL_PushGPUVertexUniformData(command, 0, &camera_uniform, @sizeOf(camera2d.CameraUniform));
+        var target_info: c.SDL_GPUColorTargetInfo = std.mem.zeroes(c.SDL_GPUColorTargetInfo);
+        target_info.texture = target;
+        target_info.clear_color = clear_color;
+        target_info.load_op = c.SDL_GPU_LOADOP_CLEAR;
+        target_info.store_op = c.SDL_GPU_STOREOP_STORE;
+        target_info.cycle = cycle_target;
+        const render_pass = c.SDL_BeginGPURenderPass(command, &target_info, 1, null);
+        if (render_pass == null) return failSdl("SDL_BeginGPURenderPass(unified queue)", error.PipelineResourceBindingFailure);
+
+        var encoded = EncodedDrawCounts{};
+        const texture_binding = c.SDL_GPUTextureSamplerBinding{
+            .texture = self.sampled_texture.?,
+            .sampler = self.sampler.?,
+        };
+        for (prepared.ranges) |range| {
+            if (range.texture_page != 0) {
+                std.log.err("bind unified texture page: invalid texture_page={d}, configured_pages=1", .{range.texture_page});
+                c.SDL_EndGPURenderPass(render_pass.?);
+                return error.InvalidTexturePage;
+            }
+            c.SDL_BindGPUFragmentSamplers(render_pass.?, 0, &texture_binding, 1);
+            switch (range.kind) {
+                .rigid_sprite => {
+                    c.SDL_BindGPUGraphicsPipeline(render_pass.?, sprite_pipeline);
+                    const vertex_bindings = [_]c.SDL_GPUBufferBinding{
+                        .{ .buffer = self.quad_vertex_buffer.?, .offset = 0 },
+                        .{ .buffer = self.frame_slots[slot_index].instance_buffer.?, .offset = 0 },
+                    };
+                    c.SDL_BindGPUVertexBuffers(render_pass.?, 0, &vertex_bindings, vertex_bindings.len);
+                    const index_binding = c.SDL_GPUBufferBinding{ .buffer = self.quad_index_buffer.?, .offset = 0 };
+                    c.SDL_BindGPUIndexBuffer(render_pass.?, &index_binding, c.SDL_GPU_INDEXELEMENTSIZE_16BIT);
+                    drawIndexedPrimitives(render_pass.?, quad_indices.len, range.count, 0, 0, range.first);
+                    encoded.sprites += 1;
+                },
+                .deformable_mesh => {
+                    c.SDL_BindGPUGraphicsPipeline(render_pass.?, mesh_pipeline);
+                    const vertex_bindings = [_]c.SDL_GPUBufferBinding{
+                        .{ .buffer = self.mesh_vertex_buffer.?, .offset = 0 },
+                        .{ .buffer = self.frame_slots[slot_index].mesh_instance_buffer.?, .offset = 0 },
+                    };
+                    c.SDL_BindGPUVertexBuffers(render_pass.?, 0, &vertex_bindings, vertex_bindings.len);
+                    const index_binding = c.SDL_GPUBufferBinding{ .buffer = self.mesh_index_buffer.?, .offset = 0 };
+                    c.SDL_BindGPUIndexBuffer(render_pass.?, &index_binding, c.SDL_GPU_INDEXELEMENTSIZE_16BIT);
+                    const first_draw: usize = range.first;
+                    const draw_count: usize = range.count;
+                    for (prepared.mesh_draws[first_draw .. first_draw + draw_count]) |draw| {
+                        const topology = try self.mesh_catalog.?.find(draw.definition);
+                        if (topology.texture_page != range.texture_page) {
+                            c.SDL_EndGPURenderPass(render_pass.?);
+                            return error.MeshCatalogMaterialMismatch;
+                        }
+                        drawIndexedPrimitives(
+                            render_pass.?,
+                            topology.index_count,
+                            draw.instance_count,
+                            topology.first_index,
+                            @intCast(topology.first_vertex),
+                            draw.first_instance,
+                        );
+                        encoded.meshes += 1;
+                    }
+                },
+            }
+        }
+        c.SDL_EndGPURenderPass(render_pass.?);
+        return encoded;
+    }
+
     fn encodeAuthoritativeSpriteBatch(
         self: *GpuDemo,
         command: *c.SDL_GPUCommandBuffer,
@@ -2248,7 +2634,7 @@ pub const GpuDemo = struct {
                 }
                 const binding = c.SDL_GPUTextureSamplerBinding{ .texture = self.sampled_texture.?, .sampler = self.sampler.? };
                 c.SDL_BindGPUFragmentSamplers(render_pass.?, 0, &binding, 1);
-                c.SDL_DrawGPUIndexedPrimitives(render_pass.?, quad_indices.len, range.instance_count, 0, 0, range.first_instance);
+                drawIndexedPrimitives(render_pass.?, quad_indices.len, range.instance_count, 0, 0, range.first_instance);
                 encoded_draws += 1;
             }
         }
@@ -2269,6 +2655,30 @@ pub const GpuDemo = struct {
             const gpu_instance = sprite.GpuInstance.fromSubmission(submission);
             const offset = index * @sizeOf(sprite.GpuInstance);
             copyBytes(bytes, offset, std.mem.asBytes(&gpu_instance));
+        }
+    }
+
+    fn populateMeshInstanceTransfer(
+        self: *GpuDemo,
+        slot_index: usize,
+        submissions: []const render_queue.MeshSubmission,
+    ) !void {
+        if (submissions.len == 0) return;
+        const transfer = self.frame_slots[slot_index].mesh_transfer_buffer.?;
+        const mapped = c.SDL_MapGPUTransferBuffer(self.device.?, transfer, false) orelse {
+            std.log.err("SDL_MapGPUTransferBuffer(mesh instance upload): slot={d} instances={d} bytes={d}: {s}", .{
+                slot_index,
+                submissions.len,
+                render_queue.meshInstanceByteSize(submissions.len) catch 0,
+                sdlErrorText(),
+            });
+            return error.UploadFailure;
+        };
+        defer c.SDL_UnmapGPUTransferBuffer(self.device.?, transfer);
+        const bytes: [*]u8 = @ptrCast(mapped);
+        for (submissions, 0..) |submission, index| {
+            const offset = index * @sizeOf(mesh.GpuInstance);
+            copyBytes(bytes, offset, std.mem.asBytes(&submission.gpu_instance));
         }
     }
 
@@ -2348,11 +2758,60 @@ pub const GpuDemo = struct {
         return slots;
     }
 
+    fn createMeshSlotResources(self: *GpuDemo, capacity: usize) !void {
+        const byte_size = try render_queue.meshInstanceByteSize(capacity);
+        errdefer self.releaseMeshSlotResources();
+        for (&self.frame_slots, 0..) |*slot, index| {
+            if (slot.mesh_instance_buffer != null or slot.mesh_transfer_buffer != null) {
+                return error.MeshFrameSlotAlreadyInitialized;
+            }
+            slot.mesh_instance_buffer = createBuffer(self.device.?, c.SDL_GPU_BUFFERUSAGE_VERTEX, byte_size);
+            if (slot.mesh_instance_buffer == null) {
+                std.log.err("SDL_CreateGPUBuffer(mesh instance): capacity={d} bytes={d} slot={d}: {s}", .{
+                    capacity,
+                    byte_size,
+                    index,
+                    sdlErrorText(),
+                });
+                return error.MeshInstanceBufferCreationFailure;
+            }
+            self.resource_metrics.gpu_resource_creations += 1;
+            var transfer_info: c.SDL_GPUTransferBufferCreateInfo = std.mem.zeroes(c.SDL_GPUTransferBufferCreateInfo);
+            transfer_info.usage = c.SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+            transfer_info.size = byte_size;
+            slot.mesh_transfer_buffer = c.SDL_CreateGPUTransferBuffer(self.device.?, &transfer_info);
+            if (slot.mesh_transfer_buffer == null) {
+                std.log.err("SDL_CreateGPUTransferBuffer(mesh instance): capacity={d} bytes={d} slot={d}: {s}", .{
+                    capacity,
+                    byte_size,
+                    index,
+                    sdlErrorText(),
+                });
+                return error.GpuTransferBufferCreationFailure;
+            }
+            self.resource_metrics.gpu_resource_creations += 1;
+        }
+    }
+
+    fn releaseMeshSlotResources(self: *GpuDemo) void {
+        const device = self.device orelse return;
+        for (&self.frame_slots) |*slot| {
+            if (slot.mesh_transfer_buffer) |resource| self.releaseTransfer(device, resource);
+            if (slot.mesh_instance_buffer) |resource| self.releaseBuffer(device, resource);
+            slot.mesh_transfer_buffer = null;
+            slot.mesh_instance_buffer = null;
+        }
+    }
+
     fn releaseSlotResources(self: *GpuDemo, slots: *[frame_slot_count]FrameSlot) void {
         const device = self.device orelse return;
         for (slots) |*slot| {
+            if (slot.mesh_transfer_buffer) |resource| self.releaseTransfer(device, resource);
+            if (slot.mesh_instance_buffer) |resource| self.releaseBuffer(device, resource);
             if (slot.transfer_buffer) |resource| self.releaseTransfer(device, resource);
             if (slot.instance_buffer) |resource| self.releaseBuffer(device, resource);
+            slot.mesh_transfer_buffer = null;
+            slot.mesh_instance_buffer = null;
             slot.transfer_buffer = null;
             slot.instance_buffer = null;
         }
@@ -2431,6 +2890,24 @@ pub const GpuDemo = struct {
             self.resource_metrics.frame_slot_fence_waits,
         }) catch return error.WindowTitleFormatFailure;
         if (!c.SDL_SetWindowTitle(self.window.?, title.ptr)) return failSdl("SDL_SetWindowTitle(metrics)", error.WindowTitleUpdateFailure);
+    }
+
+    fn updateUnifiedWindowTitle(self: *GpuDemo) !void {
+        const metrics = self.unified_queue.?.frame_metrics;
+        var buffer: [256]u8 = undefined;
+        const title = std.fmt.bufPrintZ(&buffer, "sprites {d} meshes {d} sprite ranges/draws {d}/{d} mesh ranges/draws {d}/{d} upload {d}B slot {d}", .{
+            metrics.submitted_sprites,
+            metrics.submitted_meshes,
+            metrics.sprite_ranges,
+            metrics.sprite_draws,
+            metrics.mesh_ranges,
+            metrics.mesh_draws,
+            metrics.sprite_upload_bytes + metrics.mesh_upload_bytes,
+            self.current_frame_slot,
+        }) catch return error.WindowTitleFormatFailure;
+        if (!c.SDL_SetWindowTitle(self.window.?, title.ptr)) {
+            return failSdl("SDL_SetWindowTitle(unified metrics)", error.WindowTitleUpdateFailure);
+        }
     }
 
     fn releaseBuffer(self: *GpuDemo, device: *c.SDL_GPUDevice, resource: *c.SDL_GPUBuffer) void {
@@ -2574,13 +3051,107 @@ fn createPipeline(self: GpuDemo, target_format: c.SDL_GPUTextureFormat) !*c.SDL_
     info.multisample_state.sample_count = c.SDL_GPU_SAMPLECOUNT_1;
     info.target_info.color_target_descriptions = &color_target;
     info.target_info.num_color_targets = 1;
-    return c.SDL_CreateGPUGraphicsPipeline(self.device.?, &info) orelse failSdl("SDL_CreateGPUGraphicsPipeline(sprite batch)", error.PipelineCreationFailure);
+    return createGraphicsPipeline(
+        self.device.?,
+        &info,
+        "SDL_CreateGPUGraphicsPipeline(sprite batch)",
+        error.PipelineCreationFailure,
+    );
+}
+
+fn createMeshPipeline(self: *const GpuDemo, target_format: c.SDL_GPUTextureFormat) !*c.SDL_GPUGraphicsPipeline {
+    const descriptions = [_]c.SDL_GPUVertexBufferDescription{
+        .{
+            .slot = 0,
+            .pitch = @sizeOf(mesh.GpuBaseVertex),
+            .input_rate = c.SDL_GPU_VERTEXINPUTRATE_VERTEX,
+            .instance_step_rate = 0,
+        },
+        .{
+            .slot = 1,
+            .pitch = @sizeOf(mesh.GpuInstance),
+            .input_rate = c.SDL_GPU_VERTEXINPUTRATE_INSTANCE,
+            .instance_step_rate = 0,
+        },
+    };
+    const attributes = [_]c.SDL_GPUVertexAttribute{
+        .{ .location = 0, .buffer_slot = 0, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(mesh.GpuBaseVertex, "local_position") },
+        .{ .location = 1, .buffer_slot = 0, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(mesh.GpuBaseVertex, "uv") },
+        .{ .location = 2, .buffer_slot = 0, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, .offset = @offsetOf(mesh.GpuBaseVertex, "deformation_weight") },
+        .{ .location = 3, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(mesh.GpuInstance, "world_column_0") },
+        .{ .location = 4, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(mesh.GpuInstance, "world_column_1") },
+        .{ .location = 5, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(mesh.GpuInstance, "world_translation") },
+        .{ .location = 6, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(mesh.GpuInstance, "deformation_translation") },
+        .{ .location = 7, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, .offset = @offsetOf(mesh.GpuInstance, "deformation_rotation") },
+        .{ .location = 8, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = @offsetOf(mesh.GpuInstance, "deformation_scale") },
+        .{ .location = 9, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, .offset = @offsetOf(mesh.GpuInstance, "tint") },
+        .{ .location = 10, .buffer_slot = 1, .format = c.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, .offset = @offsetOf(mesh.GpuInstance, "camera_x_factor") },
+    };
+    var color_target: c.SDL_GPUColorTargetDescription = std.mem.zeroes(c.SDL_GPUColorTargetDescription);
+    color_target.format = target_format;
+    color_target.blend_state.src_color_blendfactor = c.SDL_GPU_BLENDFACTOR_SRC_ALPHA;
+    color_target.blend_state.dst_color_blendfactor = c.SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    color_target.blend_state.color_blend_op = c.SDL_GPU_BLENDOP_ADD;
+    color_target.blend_state.src_alpha_blendfactor = c.SDL_GPU_BLENDFACTOR_ONE;
+    color_target.blend_state.dst_alpha_blendfactor = c.SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    color_target.blend_state.alpha_blend_op = c.SDL_GPU_BLENDOP_ADD;
+    color_target.blend_state.enable_blend = true;
+    var info: c.SDL_GPUGraphicsPipelineCreateInfo = std.mem.zeroes(c.SDL_GPUGraphicsPipelineCreateInfo);
+    info.vertex_shader = self.mesh_vertex_shader.?;
+    info.fragment_shader = self.fragment_shader.?;
+    info.vertex_input_state = .{
+        .vertex_buffer_descriptions = &descriptions,
+        .num_vertex_buffers = descriptions.len,
+        .vertex_attributes = &attributes,
+        .num_vertex_attributes = attributes.len,
+    };
+    info.primitive_type = c.SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    info.rasterizer_state.fill_mode = c.SDL_GPU_FILLMODE_FILL;
+    info.rasterizer_state.cull_mode = c.SDL_GPU_CULLMODE_NONE;
+    info.rasterizer_state.front_face = c.SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;
+    info.rasterizer_state.enable_depth_clip = true;
+    info.multisample_state.sample_count = c.SDL_GPU_SAMPLECOUNT_1;
+    info.target_info.color_target_descriptions = &color_target;
+    info.target_info.num_color_targets = 1;
+    return createGraphicsPipeline(
+        self.device.?,
+        &info,
+        "SDL_CreateGPUGraphicsPipeline(deformable mesh)",
+        error.MeshPipelineCreationFailure,
+    );
 }
 
 fn uploadBuffer(copy_pass: *c.SDL_GPUCopyPass, transfer: *c.SDL_GPUTransferBuffer, source_offset: u32, destination_buffer: *c.SDL_GPUBuffer, size: u32) void {
     const source = c.SDL_GPUTransferBufferLocation{ .transfer_buffer = transfer, .offset = source_offset };
     const destination = c.SDL_GPUBufferRegion{ .buffer = destination_buffer, .offset = 0, .size = size };
     c.SDL_UploadToGPUBuffer(copy_pass, &source, &destination, false);
+}
+
+fn drawIndexedPrimitives(
+    render_pass: *c.SDL_GPURenderPass,
+    index_count: u32,
+    instance_count: u32,
+    first_index: u32,
+    vertex_offset: i32,
+    first_instance: u32,
+) void {
+    c.SDL_DrawGPUIndexedPrimitives(
+        render_pass,
+        index_count,
+        instance_count,
+        first_index,
+        vertex_offset,
+        first_instance,
+    );
+}
+
+fn createGraphicsPipeline(
+    device: *c.SDL_GPUDevice,
+    info: *const c.SDL_GPUGraphicsPipelineCreateInfo,
+    operation: []const u8,
+    creation_error: anyerror,
+) !*c.SDL_GPUGraphicsPipeline {
+    return c.SDL_CreateGPUGraphicsPipeline(device, info) orelse failSdl(operation, creation_error);
 }
 
 fn after(injector: ?fault_injection.Injector, stage: fault_injection.InitStage) !void {

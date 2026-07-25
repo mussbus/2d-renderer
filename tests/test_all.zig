@@ -10,6 +10,7 @@ test {
     _ = @import("anatomy_tests.zig");
     _ = @import("equipment_tests.zig");
     _ = @import("deformation_tests.zig");
+    _ = @import("mesh_attachment_tests.zig");
     _ = @import("animation_tests.zig");
     _ = @import("controller_tests.zig");
     _ = @import("secondary_motion_tests.zig");

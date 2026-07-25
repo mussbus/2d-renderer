@@ -117,8 +117,14 @@ $equipmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot
 $deformationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/deformation.zig')
 $breathingDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/breathing_demo.zig')
 $deformationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/deformation_tests.zig')
+$deformableMeshSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/deformable_mesh.zig')
+$renderQueueSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/render_queue.zig')
+$meshCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/mesh_gpu_catalog.zig')
+$meshAttachmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/mesh_attachment_demo.zig')
+$meshAttachmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/mesh_attachment_tests.zig')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
+$meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/mat3.zig')
@@ -1288,6 +1294,155 @@ foreach ($phrase in $requiredDeformationTestPhrases) {
     }
 }
 
+foreach ($phrase in @(
+    'pub const maximum_vertices_per_definition',
+    'pub const maximum_indices_per_definition',
+    'pub const DeformationBindingMetadata = struct',
+    'pub const DefinitionView = struct',
+    'pub const Definition = struct',
+    'pub const InstanceState = struct',
+    'pub const GpuBaseVertex = extern struct',
+    'pub const GpuInstance = extern struct',
+    'UnsupportedMeshTopology',
+    'MeshIndexOutOfRange',
+    'DegenerateMeshTriangle',
+    'NonFiniteMeshVertex',
+    'InvalidMeshUv'
+)) {
+    if (-not $deformableMeshSource.Contains($phrase)) {
+        Write-Error "Prompt 19 immutable deformable-mesh contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($deformableMeshSource, 'SDL_|CreateGPU|DrawGPU|CharacterController|CharacterIntent')) {
+    Write-Error 'Prompt 19 immutable mesh data and per-instance CPU state may not own SDL, GPU, input, or controller authority.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'pub const UnifiedRenderQueue = struct',
+    'pub fn submitSprite(',
+    'pub fn submitMesh(',
+    'std.mem.sort(Entry',
+    'appendPreparedSprite',
+    'appendPreparedMesh',
+    'sprite_ranges',
+    'mesh_ranges',
+    'sprite_draws',
+    'mesh_draws',
+    'sprite_upload_bytes',
+    'mesh_upload_bytes'
+)) {
+    if (-not $renderQueueSource.Contains($phrase)) {
+        Write-Error "Prompt 19 unified semantic queue contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+$queuePrepare = Get-FunctionSection $renderQueueSource '    pub fn prepare(' '    pub fn recordUploads('
+if ([regex]::IsMatch($queuePrepare, '\.alloc\s*\(|ArrayList|HashMap|StringHashMap')) {
+    Write-Error 'Prompt 19 queue preparation must remain allocation-free after bounded initialization.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'pub const maximum_mesh_definitions',
+    'pub const maximum_catalog_vertices',
+    'pub const maximum_catalog_indices',
+    'pub const Catalog = struct',
+    'DuplicateMeshDefinition',
+    'MeshCatalogCapacityExceeded'
+)) {
+    if (-not $meshCatalogSource.Contains($phrase)) {
+        Write-Error "Prompt 19 persistent topology catalog contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'pub const VisualPrimitiveInput = union(enum)',
+    'deformable_mesh: mesh.DefinitionView',
+    'owning_character: u32',
+    'mesh_state: mesh.InstanceState',
+    'pub fn submitUnified(',
+    'submitUnifiedEquipment',
+    'resolved_deformation = try anatomy_runtime.resolvedDeformationForPart'
+)) {
+    if (-not $equipmentSource.Contains($phrase) -and -not $characterSource.Contains($phrase)) {
+        Write-Error "Prompt 19 shared equipment/deformation integration is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'initializeMeshRendering',
+    'mesh_vertex_buffer',
+    'mesh_index_buffer',
+    'mesh_instance_buffer',
+    'mesh_transfer_buffer',
+    'encodeUnifiedQueue',
+    'SDL_DrawGPUIndexedPrimitives',
+    'createMeshPipeline',
+    'releaseMeshSlotResources'
+)) {
+    if (-not $gpuSource.Contains($phrase)) {
+        Write-Error "Prompt 19 SDL GPU path is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'float deformation_weight : TEXCOORD2',
+    'float2 deformation_translation : TEXCOORD6',
+    'float2 deformation_scale : TEXCOORD8',
+    'lerp(input.local_position, fully_deformed, input.deformation_weight)'
+)) {
+    if (-not $meshShaderSource.Contains($phrase)) {
+        Write-Error "Prompt 19 weighted mesh shader contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'fitted_garment_mesh_v1',
+    'reusable_sleeve_mesh_v1',
+    'upper_back_cape_mesh_v1',
+    '.every_compatible',
+    'cape_unequipped',
+    'cape_reequipped',
+    'independent_repeated_state',
+    'independent_character_state',
+    'deformation_changed',
+    'breathing_deformation_changed',
+    'build_deformation_changed',
+    'mirrored_facing'
+)) {
+    if (-not $meshAttachmentDemoSource.Contains($phrase)) {
+        Write-Error "Prompt 19 bounded mixed-scene evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'deformable_mesh_vs.dxil',
+    'app_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module)',
+    'test_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module)',
+    'app_module.addImport("render_queue", render_queue_module)',
+    'test_module.addImport("mesh_gpu_catalog", mesh_gpu_catalog_module)'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 19 build wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+$requiredMeshAttachmentTestPhrases = @(
+    'mesh definition validates finite vertices UVs topology indices capacities and degeneracy',
+    'mesh ownership and partial allocation failure cleanup are explicit',
+    'persistent topology catalog owns one immutable copy and cleans partial initialization',
+    'GPU mesh records match the shader contract and weighted deformation is bounded',
+    'unified queue interleaves semantic sprite and mesh order and batches compatible repeated meshes honestly',
+    'topology-expanded equipment owns independent mesh state per binding and character',
+    'queue capacities and allocation failure are deterministic'
+)
+foreach ($phrase in $requiredMeshAttachmentTestPhrases) {
+    if (-not $meshAttachmentTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 19 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -1330,4 +1485,5 @@ Write-Host 'Prompt 15 appearance audit passed: stable runtime IDs, variable visu
 Write-Host 'Prompt 16 modular-anatomy audit passed: compositional repeated parts, bounded hierarchies, data morphs and presets, face/hair groups, presentation isolation, canonical-authority isolation, and allocation-free hot paths.'
 Write-Host 'Prompt 17 equipment audit passed: extensible typed definitions, anatomy-aware bounded expansion, transactional loadouts, independent coverage/effects, character-owned state, and the global sprite path.'
 Write-Host 'Prompt 18 deformation audit passed: fixed-tick breathing, shared instance-bound resolution, declarative visual response, gameplay isolation, bounded evidence, and allocation-free hot paths.'
+Write-Host 'Prompt 19 mesh-attachment audit passed: validated immutable topology, per-binding mutable ownership, one semantic sprite/mesh queue, persistent SDL GPU topology, bounded frame slots, shared deformation, honest metrics, and deterministic evidence.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

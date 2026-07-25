@@ -104,6 +104,7 @@ The final visual pass records the GPU driver, resolution, and build mode, then v
 - A control or scenario switches which handshake hand/forearm is in front, with the requested order visible.
 - Debug display identifies bones, colliders, hand sockets, and the shared interaction target.
 - Alpha edges blend correctly and no body part is rendered through a per-sprite command submission path.
+- The Prompt 19 mixed route visibly interleaves a cape, body sprites, topology-expanded sleeves, fitted torso garment, and rigid clasp according to authored integer layers. The two-arm and four-arm characters must show two and four distinct sleeve instances, mirrored facing, build/breathing response, and deterministic cape removal/restoration.
 - Drag the visible window through wide, tall, and square aspect ratios. Character size must remain constant while larger drawable dimensions reveal more world.
 - Minimize and restore repeatedly, including on a high-DPI display when available. A zero drawable must skip safely, restoration must resume, and no unrelated persistent GPU resource count may change.
 - Walk far left in the playground. The camera must follow without moving the physics root, and distant cave, midground pillars, and gameplay geometry must show clearly different horizontal response.
@@ -193,6 +194,16 @@ The bounded Prompt 18 GPU-backed breathing/clothing evidence route is:
 ```
 
 It represents 960 authoritative ticks per character, requires observable restrained torso motion and clothing agreement, validates one sweatshirt across four independent arms, and fails on allocation growth, GPU-resource creation, alternate draw ranges, or gameplay-state drift.
+
+Prompt 19 adds seven grouped deterministic tests, bringing the aggregate Zig count from 236 to 243. Coverage lives in `tests/mesh_attachment_tests.zig` and checks finite/UV/topology/index/degenerate/capacity validation; immutable definition and persistent topology-catalog ownership; partial allocation cleanup; exact CPU/HLSL record sizes; bounded weighted deformation; one semantic sprite/mesh ordering stream; compatible mesh instancing; topology-expanded two/four-sleeve binding; distinct repeated and cross-character mutable state; mirrored facing; equip/unequip; deterministic queue capacity failures; and zero fixed-buffer movement after stabilization.
+
+The bounded Prompt 19 GPU-backed mixed-primitive evidence route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo mesh-attachments
+```
+
+It requires two segmented characters, body sprites, fitted garments, six topology-expanded sleeve meshes, two cape meshes, rigid clasps, separately measured build and breathing deformation, mirrored facing, cape unequip/re-equip, real mesh shader/indexed-instanced execution, separate honest sprite/mesh range/draw/upload metrics, persistent topology resources, three bounded dynamic frame slots, and zero CPU/GPU resource growth after stabilization. A linked-build or GPU failure remains a failure; pure tests and shader compilation do not substitute for that evidence.
 
 Prompt 11's GPU-backed evidence run is:
 

@@ -33,6 +33,7 @@ pub fn build(b: *std.Build) void {
     const dxil = ".deps/dxc-1.9.2602.24/bin/x64/dxil.dll";
     const dxv = ".deps/dxc-1.9.2602.24/bin/x64/dxv.exe";
     const shader_source = "assets/shaders/sprite.hlsl";
+    const mesh_shader_source = "assets/shaders/deformable_mesh.hlsl";
 
     for ([_][]const u8{
         sdl_library,
@@ -42,6 +43,7 @@ pub fn build(b: *std.Build) void {
         dxil,
         dxv,
         shader_source,
+        mesh_shader_source,
         "tools/dependencies.lock.json",
     }) |path| {
         requireFile(b, path);
@@ -71,10 +73,23 @@ pub fn build(b: *std.Build) void {
         .configuration = @tagName(optimize),
         .output_name = "sprite_ps.dxil",
     });
+    const mesh_vertex_shader = addShaderCompile(b, .{
+        .dxc = dxc,
+        .dxcompiler = dxcompiler,
+        .dxil = dxil,
+        .dxv = dxv,
+        .source = mesh_shader_source,
+        .stage = "vertex",
+        .entry_point = "VSMain",
+        .target_profile = "vs_6_0",
+        .configuration = @tagName(optimize),
+        .output_name = "deformable_mesh_vs.dxil",
+    });
 
     const shaders_step = b.step("shaders", "Compile and validate HLSL as pinned DXIL artifacts");
     shaders_step.dependOn(&vertex_shader.step.step);
     shaders_step.dependOn(&fragment_shader.step.step);
+    shaders_step.dependOn(&mesh_vertex_shader.step.step);
 
     const app_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
@@ -95,9 +110,11 @@ pub fn build(b: *std.Build) void {
     const install_sdl = b.addInstallFileWithDir(b.path(sdl_runtime), .bin, "SDL3.dll");
     const install_vertex_shader = b.addInstallFileWithDir(vertex_shader.output, .bin, "shaders/sprite_vs.dxil");
     const install_fragment_shader = b.addInstallFileWithDir(fragment_shader.output, .bin, "shaders/sprite_ps.dxil");
+    const install_mesh_vertex_shader = b.addInstallFileWithDir(mesh_vertex_shader.output, .bin, "shaders/deformable_mesh_vs.dxil");
     b.getInstallStep().dependOn(&install_sdl.step);
     b.getInstallStep().dependOn(&install_vertex_shader.step);
     b.getInstallStep().dependOn(&install_fragment_shader.step);
+    b.getInstallStep().dependOn(&install_mesh_vertex_shader.step);
 
     const installed_executable = b.getInstallPath(.bin, app.out_filename);
     const run_command = b.addSystemCommand(&.{installed_executable});
@@ -208,6 +225,28 @@ pub fn build(b: *std.Build) void {
     });
     skeleton_module.addImport("math", math_module);
     skeleton_module.addImport("fault_injection", fault_injection_module);
+    const deformable_mesh_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/deformable_mesh.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    deformable_mesh_module.addImport("math", math_module);
+    deformable_mesh_module.addImport("deformation", deformation_module);
+    deformable_mesh_module.addImport("skeleton", skeleton_module);
+    const render_queue_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/render_queue.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    render_queue_module.addImport("math", math_module);
+    render_queue_module.addImport("deformable_mesh", deformable_mesh_module);
+    render_queue_module.addImport("sprite_batch", sprite_batch_module);
+    const mesh_gpu_catalog_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/mesh_gpu_catalog.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    mesh_gpu_catalog_module.addImport("deformable_mesh", deformable_mesh_module);
     const pose_module = b.createModule(.{
         .root_source_file = b.path("src/animation/pose.zig"),
         .target = target,
@@ -246,6 +285,7 @@ pub fn build(b: *std.Build) void {
     equipment_module.addImport("skeleton", skeleton_module);
     equipment_module.addImport("appearance", appearance_module);
     equipment_module.addImport("anatomy", anatomy_module);
+    equipment_module.addImport("deformable_mesh", deformable_mesh_module);
     const two_bone_ik_module = b.createModule(.{
         .root_source_file = b.path("src/animation/two_bone_ik.zig"),
         .target = target,
@@ -385,6 +425,8 @@ pub fn build(b: *std.Build) void {
     character_module.addImport("collision_world", collision_world_module);
     character_module.addImport("character_controller", character_controller_module);
     character_module.addImport("sprite_batch", sprite_batch_module);
+    character_module.addImport("deformable_mesh", deformable_mesh_module);
+    character_module.addImport("render_queue", render_queue_module);
     character_module.addImport("fault_injection", fault_injection_module);
     const interaction_module = b.createModule(.{
         .root_source_file = b.path("src/interaction/interaction.zig"),
@@ -585,6 +627,20 @@ pub fn build(b: *std.Build) void {
     breathing_demo_module.addImport("character", character_module);
     breathing_demo_module.addImport("equipment_demo", equipment_demo_module);
     breathing_demo_module.addImport("sprite_batch", sprite_batch_module);
+    const mesh_attachment_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/mesh_attachment_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    mesh_attachment_demo_module.addImport("math", math_module);
+    mesh_attachment_demo_module.addImport("deformation", deformation_module);
+    mesh_attachment_demo_module.addImport("deformable_mesh", deformable_mesh_module);
+    mesh_attachment_demo_module.addImport("render_queue", render_queue_module);
+    mesh_attachment_demo_module.addImport("humanoid", humanoid_module);
+    mesh_attachment_demo_module.addImport("authored_clips", authored_clips_module);
+    mesh_attachment_demo_module.addImport("character", character_module);
+    mesh_attachment_demo_module.addImport("equipment", equipment_module);
+    mesh_attachment_demo_module.addImport("modular_body_demo", modular_body_demo_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -610,6 +666,9 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("camera2d", camera2d_module);
     app_module.addImport("animation_system", animation_system_module);
     app_module.addImport("sprite_batch", sprite_batch_module);
+    app_module.addImport("deformable_mesh", deformable_mesh_module);
+    app_module.addImport("render_queue", render_queue_module);
+    app_module.addImport("mesh_gpu_catalog", mesh_gpu_catalog_module);
     app_module.addImport("fault_injection", fault_injection_module);
     app_module.addImport("input", input_module);
     app_module.addImport("sdl", sdl_module);
@@ -636,8 +695,12 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("modular_body_demo", modular_body_demo_module);
     app_module.addImport("equipment_demo", equipment_demo_module);
     app_module.addImport("breathing_demo", breathing_demo_module);
+    app_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
+    test_module.addImport("deformable_mesh", deformable_mesh_module);
+    test_module.addImport("render_queue", render_queue_module);
+    test_module.addImport("mesh_gpu_catalog", mesh_gpu_catalog_module);
     test_module.addImport("math", math_module);
     test_module.addImport("camera2d", camera2d_module);
     test_module.addImport("skeleton", skeleton_module);
@@ -679,6 +742,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("modular_body_demo", modular_body_demo_module);
     test_module.addImport("equipment_demo", equipment_demo_module);
     test_module.addImport("breathing_demo", breathing_demo_module);
+    test_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");

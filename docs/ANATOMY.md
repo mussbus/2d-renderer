@@ -6,6 +6,8 @@ The canonical humanoid remains the immutable 16-bone locomotion, animation, hand
 
 Prompt 18 adds an optional immutable breathing binding to each reusable part definition. The character runtime keeps base morphology separate from tick-derived breathing and exposes both undeformed instance binding matrices and fully deformed descendant matrices. Torso, upper-arm, and chest-adjacent demonstration definitions explicitly opt in; unrelated topology remains neutral. Skin visual response metadata is resolved per visual without mutating the catalog. See `docs/DEFORMATION.md`.
 
+Prompt 19 consumes those same two matrices for mesh attachments. A resolved mesh instance retains the exact `BodyPartInstanceId`; it receives `part_binding_world` plus the result of `resolvedDeformationForPart` using the component's response. The immutable reusable sleeve mesh therefore expands over two or four active upper-arm instances without inventing left/right mesh fields or changing anatomy topology.
+
 A part definition provides an extensible category, type tag, additional tags, child-socket definitions, neutral morphology bindings, and validation metadata. No central enum attempts to list every anatomical or fantasy part. A part instance provides stable identity, a definition reference, parent attachment, local transform, pivot/anchor metadata, body region, visual group, base layer, optional Prompt 15 articulation module, and one explicit visual variant for every presentation profile.
 
 Part parents may be:
@@ -97,7 +99,7 @@ The per-frame visual order is:
 1. resolve anatomy-managed visibility and deformation into the existing appearance runtime;
 2. evaluate canonical attachment points, optional module joints/sockets, and visuals;
 3. evaluate the observational anatomy part/socket hierarchy;
-4. submit visible visuals through the one global `SpriteBatch`.
+4. submit visible visuals through the sprite fast path or the unified mixed-primitive queue.
 
 All steady-state morphology, body-preset, hair, presentation, module-pose, hierarchy, and submission operations are allocation-free. They create no GPU object. The CPU continues to own anatomy, morphology, animation, physics, IK, interactions, and ordering; the GPU continues to transform vertices, sample textures, blend alpha, and draw instances.
 
@@ -107,7 +109,7 @@ Prompt 17 consumes anatomy through existing immutable part definitions, typed in
 
 The nonstandard preset now contains `extra_arm` and `extra_arm_second`, two instances of the same `extra_arm_part` definition and two independent optional articulation modules. Together with the canonical left and right upper-arm instances, this produces four active `upper_arm` matches. Canonical locomotion, interaction, hand IK, and foot planting still use only the unchanged 16-bone semantic rig; the additional arms remain optional visual modules.
 
-Equipment recipes store instance IDs, never pointers or cached world transforms. A topology change requires the owning character loadout to rebind and revalidate. Required garments reject a topology without the required part, optional recipes produce no visual, and expansion beyond the recipe maximum rejects the complete loadout candidate.
+Equipment recipes store instance IDs, never mutable definition pointers or shared transform state. A topology change requires the owning character loadout to rebind and revalidate. Required garments reject a topology without the required part, optional recipes produce no visual, and expansion beyond the recipe maximum rejects the complete loadout candidate. Prompt 19 mesh instances store character-local derived transform/deformation state beside the resolved binding; this state is observational render input and cannot write anatomy or canonical pose state.
 
 ## Evidence route and current limitations
 

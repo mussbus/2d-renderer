@@ -103,9 +103,11 @@ Prompt 17 adds the next declarative layer without merging existing concepts. Equ
 
 An immutable `equipment.Definition` is initialized against the immutable anatomy and appearance definition tokens. Initialization resolves all names to compact IDs and validates every reference and bound. A character-owned `equipment.Loadout` then expands equipped item recipes against that character's active anatomy into fixed-capacity visual bindings. Definitions may be shared; equipped items, slot occupancy, resolved visuals, coverage, modifiers, and grants may not.
 
+Prompt 19 generalizes `VisualComponent` without adding another character or item architecture. A component is either the established rigid sprite or a validated immutable deformable mesh. Both retain owning character, resolved anatomy/attachment binding, semantic visual layer, material/texture reference, and deterministic definition identity. Repeated mesh recipes share immutable topology but each resolved record owns its mutable binding/deformation state. `docs/MESH_ATTACHMENTS.md` binds the mesh validation, queue, GPU ownership, capacity, and evidence contracts.
+
 The mutation flow is copy candidate, validate all occupied slots and required anatomy, expand every recipe within authored and global bounds, rebuild deterministic coverage/effect views, then commit the entire bounded value. Failure changes nothing. No loadout mutation or query allocates or performs string lookup.
 
-Equipment rendering is a consumer in the generalized character visual submission. A resolved record selects the current character-owned anatomy-part or attachment-point matrix, applies immutable recipe-local data, and enters the same `SpriteBatch` with the same scene and actor ordering. The equipment system itself imports no renderer, SDL, controller, physics, animation, IK, or interaction module. The renderer receives sprite and order data only and never sees armor values or capabilities.
+Equipment rendering is a consumer in generalized character visual submission. A resolved record selects the current character-owned anatomy-part or attachment-point matrix and applies immutable recipe-local data. Sprite-only scenes enter the existing `SpriteBatch`; mixed scenes enter `UnifiedRenderQueue`, which uses the same scene/interaction/actor/visual key for both primitive kinds. The equipment system imports no renderer, SDL, controller, physics, animation, IK, or interaction module. The renderer receives primitive, material, transform/deformation, and order data only and never sees armor values or capabilities.
 
 Prompt 18 inserts a shared resolved deformation stage between instance binding and visual submission. Each anatomy runtime retains both an undeformed binding matrix and a fully deformed descendant matrix. Skin and anatomy-bound equipment call the same resolver with immutable morphology/breathing bindings, character-local base morph and tick-derived breathing state, exact anatomy-instance identity, and per-visual response strengths. Rigid visuals can attenuate or opt out. `docs/DEFORMATION.md` binds the clock, composition order, invariants, and evidence.
 
@@ -150,6 +152,7 @@ CPU responsibilities:
 - Canonical skeleton traversal, attachment/module/visual traversal, and socket measurement.
 - Stable transparent draw ordering and explicit limb-front overrides.
 - Building a bounded array of sprite instances and debug primitives.
+- Building the bounded mixed render queue and per-mesh instance records.
 
 GPU responsibilities through the SDL3 GPU API:
 
@@ -158,6 +161,8 @@ GPU responsibilities through the SDL3 GPU API:
 - Applying vertex colour and texture alpha.
 - Alpha blending into the swapchain target.
 - Drawing many sprite instances from a single indexed quad and instance buffer.
+- Applying weighted local mesh deformation and world/camera transforms in the mesh vertex shader.
+- Drawing repeated compatible mesh topology with indexed instancing.
 
 No SDL high-level 2D renderer participates in this boundary.
 
@@ -165,7 +170,9 @@ No SDL high-level 2D renderer participates in this boundary.
 
 Each visible visual attachment produces a CPU `SpriteSubmission` with world position, rotation, nonuniform scale/size in metres, pivot, atlas UV bounds, straight-alpha tint, texture page, horizontal camera-response factor, and a lexicographic integer draw key. The key contains signed scene and interaction layers, unsigned actor and body-part layers, and a bounded `u64` submission index. Stable definition/input order preserves original submission order for equal layers without using float depth, addresses, or packed arithmetic.
 
-The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. Consecutive compatible texture pages form draw ranges without reordering across page changes. The current one-page atlas and straight-alpha sprite pipeline produce one range. The renderer uploads 64-byte GPU records and calls `SDL_DrawGPUIndexedPrimitives` with six shared quad indices and `num_instances > 1`. Slot 1 is declared `SDL_GPU_VERTEXINPUTRATE_INSTANCE`; a draw per body part or CPU-expanded mesh does not qualify as instancing. `docs/SPRITE_BATCH.md` binds the complete layout and transform contract.
+The handshake session explicitly raises or lowers the participating hand and forearm keys so the selected limb is in front. This is data-driven ordering, not a shader accident. Consecutive compatible texture pages form draw ranges without reordering across page changes. Sprite-only scenes retain the current one-page, one-range straight-alpha path. The renderer uploads 64-byte sprite GPU records and calls `SDL_DrawGPUIndexedPrimitives` with six shared quad indices and `num_instances > 1`. Slot 1 is declared `SDL_GPU_VERTEXINPUTRATE_INSTANCE`.
+
+Mixed scenes sort sprites and meshes in one semantic stream. Compatible adjacent sprites form sprite ranges; adjacent mesh records form mesh ranges and repeated equal mesh definitions become indexed-instanced draws. Persistent mesh topology is not expanded on the CPU or recreated per frame. Mesh instances also use an explicit 64-byte slot-1 record, while slot 0 reads the definition's persistent weighted vertex data. The renderer reports sprite and mesh ranges/draws separately and does not claim one draw for a mixed scene. `docs/SPRITE_BATCH.md` and `docs/MESH_ATTACHMENTS.md` bind the layouts and transform contracts.
 
 Prompt 7 formalizes `CharacterInstance` as the mutable entity boundary. It borrows immutable skeleton, appearance, clip, event, and state-machine views while independently owning pose, animator, procedural, facing, optional controller, appearance/module runtime, and override state. Stable monotonic `u32` entity IDs establish deterministic global submission order without pointer identity. All visible attachments from both characters enter the same batch before the global semantic sort. Bounded interaction overrides can raise one canonical hand or forearm above another character without changing either actor layer or any immutable attachment. `docs/MULTI_CHARACTER.md` binds the multi-character model.
 
@@ -175,11 +182,11 @@ Debug bones, colliders, sockets, and targets use a bounded primitive buffer and 
 
 ## Resource lifetime and allocation model
 
-Initialization proceeds from platform to resizable window, GPU device, claimed window, swapchain format, shaders, fixed-readback and swapchain-compatible pipelines, sampler, textures, static geometry buffers, transfer buffers, and per-frame instance resources. Every owner has an explicit `deinit` path. Partial initialization uses `errdefer` or an equivalent scope guard to destroy already-acquired resources in reverse order.
+Initialization proceeds from platform to resizable window, GPU device, claimed window, swapchain format, shaders, fixed-readback and swapchain-compatible pipelines, sampler, textures, static geometry buffers, transfer buffers, and per-frame instance resources. A mixed scene additionally creates one validated CPU topology catalog, one persistent mesh vertex/index buffer pair, a mesh vertex shader and target-compatible pipelines, and bounded mesh instance/upload buffers in each existing frame slot. Every owner has an explicit `deinit` path. Partial initialization uses `errdefer`, scoped owners, or the enclosing `GpuDemo` cleanup to destroy already-acquired resources in reverse order.
 
 SDL GPU resource destruction maps to the matching API: buffers, transfer buffers, textures, samplers, shaders, pipelines, fences, the claimed window, and the GPU device are each released by their documented function. Command buffers are either submitted or cancelled on every path. Destruction waits for GPU idle when in-flight access makes that necessary.
 
-All simulation arrays, canonical poses, appearance/module runtimes, instance buffers, debug geometry, event queues, and interaction slots have capacities established at initialization. Appearance definitions allow at most 64 attachment points, 128 visuals, 64 regions, 32 groups, eight modules, 16 joints and sockets per module, and hierarchy depth 16. The sprite batch starts at 1,024 records, doubles transactionally to a maximum of 16,384, and reports CPU and GPU growth independently. Three per-frame upload/instance-buffer slots retain fences; a slot is overwritten only after its own fence completes. The ordinary frame loop performs no heap allocation, persistent GPU creation, or global device-idle wait.
+All simulation arrays, canonical poses, appearance/module runtimes, instance buffers, debug geometry, event queues, and interaction slots have capacities established at initialization. Appearance definitions allow at most 64 attachment points, 128 visuals, 64 regions, 32 groups, eight modules, 16 joints and sockets per module, and hierarchy depth 16. The sprite batch starts at 1,024 records, doubles transactionally to a maximum of 16,384, and reports CPU and GPU growth independently. The mixed queue preallocates 2,048 entries, 1,792 sprite records, and 256 mesh records. Each mesh definition permits 256 vertices and 768 indices; the persistent catalog permits 32 definitions, 4,096 vertices, and 12,288 indices. Three per-frame upload/instance-buffer slots retain fences; a slot is overwritten only after its own fence completes. The ordinary frame loop performs no heap allocation, topology upload, persistent GPU creation, or global device-idle wait.
 
 Each Prompt 7 character embeds eight temporary layer slots and one optional controller value. Global character submission copies at most eight pointers into stack storage and sorts them by numeric entity ID. Runtime character removal is out of scope; scene teardown destroys character-owned animator and pose buffers before the shared clip and skeleton owners.
 

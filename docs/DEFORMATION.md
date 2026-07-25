@@ -4,7 +4,7 @@
 
 Prompt 18 adds one CPU-only resolved deformation stage shared by modular anatomy and topology-expanded equipment visuals. Immutable anatomy, appearance, and equipment definitions contain only deformation bindings and response metadata. Each character owns its morphology overrides, bounded breathing phase/configuration, resolved part transforms, and loadout records. No definition is mutated and procedural breathing is never written into the selected preset, global build value, channel overrides, or per-instance overrides.
 
-This is visual deformation. It cannot write the physics root, controller position or velocity, collider extents, grounded/support state, canonical skeleton lengths, interaction state or timing, equipment modifiers, capabilities, or character attributes. It creates no GPU resource. Resolved sprites still enter the existing global `SpriteBatch`.
+This is visual deformation. It cannot write the physics root, controller position or velocity, collider extents, grounded/support state, canonical skeleton lengths, interaction state or timing, equipment modifiers, capabilities, or character attributes. It creates no GPU resource. Resolved sprites enter the existing `SpriteBatch`; resolved meshes enter the unified queue with the same semantic key.
 
 ## Resolved data flow
 
@@ -32,7 +32,7 @@ The resolved anatomy runtime retains both:
 - `part_binding_world`: the instance's undeformed binding matrix;
 - `part_world`: the fully deformed anatomy matrix used by descendants.
 
-An anatomy-bound equipment record already retains its exact `BodyPartInstanceId`. Submission therefore evaluates `part_binding_world * recipe_local * resolved_component_deformation` for that exact instance. Four sleeves expanded from one recipe remain bound to four distinct arms; they are never collapsed into a left/right transform pair.
+An anatomy-bound equipment record already retains its exact `BodyPartInstanceId`. Sprite submission evaluates `part_binding_world * recipe_local * resolved_component_deformation` for that exact instance. Mesh submission sends `part_binding_world * recipe_local` and the same resolved component deformation as separate GPU instance fields. Each immutable mesh vertex has one normalized weight; the mesh vertex shader interpolates between its base local position and the resolved affine-deformed position, then applies the binding/world matrix. Four sleeves expanded from one recipe remain bound to four distinct arms; they are never collapsed into a left/right transform pair.
 
 ## Breathing clock
 
@@ -56,17 +56,19 @@ The fixed-tick execution order is:
 8. resolve attachment points and module joints/sockets from the final canonical pose;
 9. resolve base body morphology and procedural breathing per anatomy instance;
 10. resolve each skin/clothing/equipment response from the same instance deformation;
-11. submit all visible records through the global batch.
+11. submit all visible records through the sprite batch or unified mixed queue.
 
 IK remains canonical-pose authority; breathing does not alter its inputs or segment lengths. Facing is one character-root reflection and therefore reflects the already-resolved visual result without swapping anatomy identities.
 
-The matrix order for an anatomy visual is `source_world * attachment_local * resolved_deformation`. For anatomy-bound equipment it is `part_binding_world * recipe_local * resolved_deformation`. Because column vectors are used, the resolved deformation acts first on visual-local points, followed by the authored attachment-local transform and then the final animated/IK/facing source hierarchy. Body morphology is composed first in the resolved transform's components and breathing second; breathing is always regenerated from base state.
+The matrix order for an anatomy visual is `source_world * attachment_local * resolved_deformation`. For anatomy-bound equipment it is `part_binding_world * recipe_local * resolved_deformation`. The sprite path composes that matrix on the CPU into the existing sprite record. The mesh path preserves the same mathematical order but sends the final two stages separately: the GPU applies weighted local deformation first and the binding matrix second. Because column vectors are used, the authored attachment-local transform and final animated/IK/facing source hierarchy follow the deformation. Body morphology is composed first in the resolved transform's components and breathing second; breathing is always regenerated from base state.
 
 ## Runtime changes and future material state
 
 Preset, build, channel override, part override, phase, and breathing configuration changes recompute existing bounded arrays. Loadout changes may rebuild the Prompt 17 fixed-capacity resolved visual records. None of these changes creates textures, buffers, pipelines, samplers, shaders, or other GPU objects. Steady-state breathing and morphology do not allocate.
 
 Resolved equipment visuals are character-owned per-instance records with stable recipe and anatomy-source identity. Future wetness or other material state can be stored beside those records without mutating immutable assets or changing the deformation resolver. Prompt 18 does not implement wetness, rain, liquids, mud, snow, blood, temperature, or material simulation.
+
+Prompt 19 does not integrate a second morph system. `deformable_mesh.InstanceState.resolved_deformation` is a copy of the Prompt 18 resolver output for the bound anatomy instance. Mesh state, queue preparation, GPU upload, and draw encoding never feed values back into the resolver.
 
 ## Evidence
 

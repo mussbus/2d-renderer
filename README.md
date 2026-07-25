@@ -23,6 +23,8 @@ Prompt 17 adds topology-aware layered clothing and equipment, transactional per-
 
 Prompt 18 adds drift-resistant per-character breathing and one resolved appearance-deformation pipeline shared by anatomy and topology-generated clothing/equipment. Exact anatomy-instance bindings drive every generated sleeve, flexible visuals use declarative response strengths, rigid equipment can opt out, and physics/controller/IK/interaction/effect state remains invariant. Its bounded GPU evidence route is `zig build run -- --frames 240 --demo breathing`.
 
+Prompt 19 generalizes an equipment visual to either the established rigid sprite or a validated immutable deformable mesh without adding a second character/item architecture. Its unified semantic queue interleaves both primitive kinds, while persistent topology buffers and three bounded dynamic instance slots support fitted garments, topology-expanded sleeves, and capes. Its honest mixed-render evidence route is `zig build run -- --frames 240 --demo mesh-attachments`.
+
 ## Interactive playground
 
 ```powershell
@@ -63,6 +65,7 @@ Start with:
 - [`docs/ANATOMY.md`](docs/ANATOMY.md) for compositional adult anatomy, multiplicity, morphology, presentation, face/hair, ownership, and alternative-rig boundaries.
 - [`docs/EQUIPMENT.md`](docs/EQUIPMENT.md) for typed equipment definitions, topology-aware visual recipes, transactional loadouts, layered coverage, effect declarations, rendering integration, and evidence.
 - [`docs/DEFORMATION.md`](docs/DEFORMATION.md) for fixed-tick breathing, shared instance-resolved deformation, clothing response, composition order, gameplay invariants, and evidence.
+- [`docs/MESH_ATTACHMENTS.md`](docs/MESH_ATTACHMENTS.md) for mesh validation, topology-aware runtime ownership, unified ordering, GPU resources, batching, metrics, and evidence.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.
 - [`docs/SECONDARY_MOTION.md`](docs/SECONDARY_MOTION.md) for procedural walk, landing, spring, composition, reset, and evidence contracts.
