@@ -184,6 +184,16 @@ The dedicated Prompt 17 GPU evidence route is:
 
 It must report the same sweatshirt definition, exactly two conventional sleeves and four nonstandard sleeves, transactional conflict rejection, multi-slot replacement, unequip/restoration, independent loadouts, deterministic modifier/capability listings, two characters, one texture page/range/actual indexed-instanced draw, unchanged fixed-buffer usage, zero post-stabilization batch allocation, and zero equipment-created GPU resources. Missing evidence returns nonzero.
 
+Prompt 18 adds eight grouped deterministic tests, bringing the aggregate Zig count from 228 to 236. Coverage lives in `tests/deformation_tests.zig` and separately checks breathing neutral/extreme samples, repeated bounded cycles, reset, independent character rate/phase, body/clothing agreement, exact topology-expanded sleeve drivers, per-part isolation, rigid response, global morph composition, equip/unequip at non-neutral phase, physics/controller/canonical-IK/effect invariance, handshake timing, render-frame grouping, and fixed-buffer allocation stability.
+
+The bounded Prompt 18 GPU-backed breathing/clothing evidence route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo breathing
+```
+
+It represents 960 authoritative ticks per character, requires observable restrained torso motion and clothing agreement, validates one sweatshirt across four independent arms, and fails on allocation growth, GPU-resource creation, alternate draw ranges, or gameplay-state drift.
+
 Prompt 11's GPU-backed evidence run is:
 
 ```text

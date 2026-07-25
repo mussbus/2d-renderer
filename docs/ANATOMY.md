@@ -4,6 +4,8 @@
 
 The canonical humanoid remains the immutable 16-bone locomotion, animation, handshake, and foot-placement rig. Adult anatomy and humanoid-derived additions are a separate compositional catalog. The catalog contains reusable `BodyPartDefinition` records and a bounded list of `BodyPartInstance` records. Instances use typed definition-local IDs after initialization; names and tags are copied into bounded inline storage and are never searched in the steady-state update.
 
+Prompt 18 adds an optional immutable breathing binding to each reusable part definition. The character runtime keeps base morphology separate from tick-derived breathing and exposes both undeformed instance binding matrices and fully deformed descendant matrices. Torso, upper-arm, and chest-adjacent demonstration definitions explicitly opt in; unrelated topology remains neutral. Skin visual response metadata is resolved per visual without mutating the catalog. See `docs/DEFORMATION.md`.
+
 A part definition provides an extensible category, type tag, additional tags, child-socket definitions, neutral morphology bindings, and validation metadata. No central enum attempts to list every anatomical or fantasy part. A part instance provides stable identity, a definition reference, parent attachment, local transform, pivot/anchor metadata, body region, visual group, base layer, optional Prompt 15 articulation module, and one explicit visual variant for every presentation profile.
 
 Part parents may be:

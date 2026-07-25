@@ -18,6 +18,7 @@ const integrated_demo = @import("integrated_demo");
 const playground_demo = @import("playground_demo");
 const modular_body_demo = @import("modular_body_demo");
 const equipment_demo = @import("equipment_demo");
+const breathing_demo = @import("breathing_demo");
 const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
@@ -34,6 +35,7 @@ pub const DemoMode = enum {
     playground,
     modular_body,
     equipment,
+    breathing,
     side_scroller,
 };
 
@@ -364,6 +366,8 @@ pub const GpuDemo = struct {
         defer if (modular_body_scene) |*scene| scene.deinit();
         var equipment_scene: ?equipment_demo.Scene = null;
         defer if (equipment_scene) |*scene| scene.deinit();
+        var breathing_scene: ?breathing_demo.Scene = null;
+        defer if (breathing_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
@@ -457,6 +461,12 @@ pub const GpuDemo = struct {
             equipment_scene = try equipment_demo.Scene.init(humanoid_allocator.allocator());
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.EquipmentInitializationCreatedGpuResources;
+            }
+        }
+        if (mode == .breathing) {
+            breathing_scene = try breathing_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.BreathingInitializationCreatedGpuResources;
             }
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
@@ -870,6 +880,16 @@ pub const GpuDemo = struct {
                 },
                 .equipment => {
                     const scene = &equipment_scene.?;
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
+                .breathing => {
+                    const scene = &breathing_scene.?;
                     const allocation_checkpoint = humanoid_allocator.end_index;
                     try scene.updateFrame(frame);
                     pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
@@ -1809,6 +1829,49 @@ pub const GpuDemo = struct {
                 self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
             {
                 return error.EquipmentRenderingEvidenceIncomplete;
+            }
+        } else if (mode == .breathing) {
+            const scene = &breathing_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != breathing_demo.required_frames) {
+                return error.BreathingFrameCountMismatch;
+            }
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            std.log.info("BREATHING AND SHARED DEFORMATION EVIDENCE", .{});
+            std.log.info("Breathing: fixed_ticks={d} sample_range=({d:.5},{d:.5}) torso_scale_x_range=({d:.5},{d:.5}) body_clothing_agreement={}", .{
+                scene.fixed_ticks,
+                scene.evidence.minimum_sample,
+                scene.evidence.maximum_sample,
+                scene.evidence.minimum_torso_scale_x,
+                scene.evidence.maximum_torso_scale_x,
+                scene.evidence.body_clothing_agreement,
+            });
+            std.log.info("Topology: four_independent_sleeve_bindings={} isolated_override={} rigid_opt_out={}", .{
+                scene.evidence.four_independent_sleeve_bindings,
+                scene.evidence.isolated_sleeve_override,
+                scene.evidence.rigid_opt_out,
+            });
+            std.log.info("Rendering: characters={d} submitted_sprites={d} ranges={d} actual_draw_calls={d}", .{
+                breathing_demo.character_count,
+                humanoid_instances,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+            });
+            std.log.info("Steady-state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} batch_allocations={d} gpu_resource_delta={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (humanoid_instances == 0 or metrics.visible_sprites != humanoid_instances or
+                metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                runtime_allocation_delta != 0 or pose_evaluation_allocations != 0 or humanoid_submission_allocations != 0 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
+            {
+                return error.BreathingRenderingEvidenceIncomplete;
             }
         } else if (mode == .side_scroller) {
             const scene = &playground_scene.?;

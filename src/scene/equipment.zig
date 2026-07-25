@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = @import("math");
+const deformation = @import("deformation");
 const skeleton = @import("skeleton");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
@@ -112,6 +113,7 @@ pub const VisualComponentInput = struct {
     uv_rect: [4]f32 = .{ 0, 0, 0.5, 0.5 },
     tint: [4]f32,
     texture_page: u32 = 0,
+    deformation_response: deformation.Response = .{},
 };
 
 pub const MatchSelection = enum(u8) {
@@ -207,6 +209,7 @@ pub const VisualComponent = struct {
     uv_rect: [4]f32,
     tint: [4]f32,
     texture_page: u32,
+    deformation_response: deformation.Response,
 };
 
 pub const AnatomyBinding = struct {
@@ -373,6 +376,7 @@ pub const Definition = struct {
             {
                 return error.InvalidVisualComponent;
             }
+            try input.deformation_response.validate();
             const stable_id = try skeleton.DebugName.init(input.stable_id);
             try ensureUniqueName(VisualComponent, visual_components[0..index], stable_id);
             visual_components[index] = .{
@@ -383,6 +387,7 @@ pub const Definition = struct {
                 .uv_rect = input.uv_rect,
                 .tint = input.tint,
                 .texture_page = input.texture_page,
+                .deformation_response = input.deformation_response,
             };
         }
 

@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = @import("math");
+const deformation = @import("deformation");
 const humanoid = @import("humanoid");
 const authored = @import("authored_clips");
 const character = @import("character");
@@ -238,20 +239,20 @@ pub fn initDefinition(
         .{ .stable_id = "dash" },
     };
     const components = [_]equipment.VisualComponentInput{
-        component("pelvis_underwear_visual", .{ .x = 0.74, .y = 0.34 }, .{ 0.18, 0.20, 0.34, 1 }, .{ 0.5, 0.5 }),
-        component("chest_underwear_visual", .{ .x = 0.82, .y = 0.40 }, .{ 0.78, 0.32, 0.52, 1 }, .{ 0.5, 0.5 }),
-        component("shirt_torso", .{ .x = 0.92, .y = 1.18 }, .{ 0.12, 0.48, 0.82, 1 }, .{ 0.5, 0.5 }),
-        component("short_sleeve", .{ .x = 0.34, .y = 0.23 }, .{ 0.12, 0.48, 0.82, 1 }, .{ 0, 0.5 }),
-        component("sweatshirt_torso", .{ .x = 1.00, .y = 1.24 }, .{ 0.72, 0.22, 0.18, 1 }, .{ 0.5, 0.5 }),
-        component("long_sleeve", .{ .x = 0.72, .y = 0.25 }, .{ 0.72, 0.22, 0.18, 1 }, .{ 0, 0.5 }),
-        component("sock", .{ .x = 0.34, .y = 0.20 }, .{ 0.92, 0.92, 0.92, 1 }, .{ 0, 0.5 }),
-        component("shoe", .{ .x = 0.42, .y = 0.24 }, .{ 0.12, 0.12, 0.16, 1 }, .{ 0, 0.5 }),
-        component("boot", .{ .x = 0.46, .y = 0.30 }, .{ 0.22, 0.42, 0.16, 1 }, .{ 0, 0.5 }),
-        component("shoulder_plate", .{ .x = 0.30, .y = 0.28 }, .{ 0.62, 0.66, 0.72, 1 }, .{ 0.2, 0.5 }),
-        component("gauntlet", .{ .x = 0.30, .y = 0.24 }, .{ 0.58, 0.62, 0.70, 1 }, .{ 0, 0.5 }),
-        component("armor_torso", .{ .x = 1.02, .y = 1.16 }, .{ 0.46, 0.50, 0.58, 1 }, .{ 0.5, 0.5 }),
-        component("amulet_visual", .{ .x = 0.18, .y = 0.24 }, .{ 0.92, 0.72, 0.16, 1 }, .{ 0.5, 0.9 }),
-        component("backpack_visual", .{ .x = 0.72, .y = 0.92 }, .{ 0.28, 0.20, 0.12, 1 }, .{ 0.5, 0.5 }),
+        component("pelvis_underwear_visual", .{ .x = 0.74, .y = 0.34 }, .{ 0.18, 0.20, 0.34, 1 }, .{ 0.5, 0.5 }, .{ .breathing = 0 }),
+        component("chest_underwear_visual", .{ .x = 0.82, .y = 0.40 }, .{ 0.78, 0.32, 0.52, 1 }, .{ 0.5, 0.5 }, .{ .morphology = 0.95 }),
+        component("shirt_torso", .{ .x = 0.92, .y = 1.18 }, .{ 0.12, 0.48, 0.82, 1 }, .{ 0.5, 0.5 }, .{}),
+        component("short_sleeve", .{ .x = 0.34, .y = 0.23 }, .{ 0.12, 0.48, 0.82, 1 }, .{ 0, 0.5 }, .{ .breathing = 0.8 }),
+        component("sweatshirt_torso", .{ .x = 1.00, .y = 1.24 }, .{ 0.72, 0.22, 0.18, 1 }, .{ 0.5, 0.5 }, .{ .morphology = 0.9, .breathing = 0.85 }),
+        component("long_sleeve", .{ .x = 0.72, .y = 0.25 }, .{ 0.72, 0.22, 0.18, 1 }, .{ 0, 0.5 }, .{ .breathing = 0.75 }),
+        component("sock", .{ .x = 0.34, .y = 0.20 }, .{ 0.92, 0.92, 0.92, 1 }, .{ 0, 0.5 }, .{ .morphology = 0.7, .breathing = 0 }),
+        component("shoe", .{ .x = 0.42, .y = 0.24 }, .{ 0.12, 0.12, 0.16, 1 }, .{ 0, 0.5 }, .{ .morphology = 0.2, .breathing = 0 }),
+        component("boot", .{ .x = 0.46, .y = 0.30 }, .{ 0.22, 0.42, 0.16, 1 }, .{ 0, 0.5 }, .{ .morphology = 0.25, .breathing = 0 }),
+        component("shoulder_plate", .{ .x = 0.30, .y = 0.28 }, .{ 0.62, 0.66, 0.72, 1 }, .{ 0.2, 0.5 }, .{ .morphology = 0.15, .breathing = 0 }),
+        component("gauntlet", .{ .x = 0.30, .y = 0.24 }, .{ 0.58, 0.62, 0.70, 1 }, .{ 0, 0.5 }, .{ .morphology = 0, .breathing = 0 }),
+        component("armor_torso", .{ .x = 1.02, .y = 1.16 }, .{ 0.46, 0.50, 0.58, 1 }, .{ 0.5, 0.5 }, .{ .morphology = 0.1, .breathing = 0 }),
+        component("amulet_visual", .{ .x = 0.18, .y = 0.24 }, .{ 0.92, 0.72, 0.16, 1 }, .{ 0.5, 0.9 }, .{ .morphology = 0, .breathing = 0 }),
+        component("backpack_visual", .{ .x = 0.72, .y = 0.92 }, .{ 0.28, 0.20, 0.12, 1 }, .{ 0.5, 0.5 }, .{ .morphology = 0, .breathing = 0 }),
     };
 
     const items = [_]equipment.EquipmentItemInput{
@@ -408,12 +409,14 @@ fn component(
     size: math.Vec2,
     tint: [4]f32,
     pivot: [2]f32,
+    response: deformation.Response,
 ) equipment.VisualComponentInput {
     return .{
         .stable_id = stable_id,
         .sprite_size = size,
         .pivot = pivot,
         .tint = tint,
+        .deformation_response = response,
     };
 }
 

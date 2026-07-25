@@ -27,6 +27,8 @@ The implementation deliberately does not use one universal slot:
 
 All are compact typed IDs after initialization. Bounded inline `DebugName` values exist only in immutable definition metadata and initialization lookup. Equip, unequip, replacement, reset, visual expansion, effect queries, fixed-tick updates, and rendering perform no string or hash lookup.
 
+Prompt 18 adds normalized morphology and breathing response strengths to immutable visual components. Anatomy-bound submission starts from the exact instance's undeformed binding matrix and invokes the shared appearance-deformation resolver before entering the same batch. Flexible garments therefore follow their resolved part, while a chest plate or gauntlet can attenuate or reject soft deformation without defining an item-specific breathing formula. Attachment-point-only equipment remains rigid unless a future explicit driver is authored. Full composition and invariance rules are in `docs/DEFORMATION.md`.
+
 ## Immutable definition validation
 
 `equipment.Definition.init` copies initialization inputs into contiguous owned arrays and rejects:

@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = @import("math");
+const deformation = @import("deformation");
 const humanoid = @import("humanoid");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
@@ -495,6 +496,10 @@ pub const CharacterInstance = struct {
             &instance.character.local_and_world_pose,
             next_tick,
         );
+        if (instance.character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
+            try runtime.advanceBreathing(anatomy_definition);
+        }
         instance.simulation_tick = next_tick;
         try instance.evaluateWorldPose();
     }
@@ -593,9 +598,9 @@ pub const CharacterInstance = struct {
     pub fn setVisualDeformation(
         instance: *CharacterInstance,
         visual_id: humanoid.VisualAttachmentId,
-        deformation: math.Transform2D,
+        deformation_transform: math.Transform2D,
     ) !void {
-        try instance.character.appearance_runtime.setVisualDeformation(instance.definition.visual_definition, visual_id, deformation);
+        try instance.character.appearance_runtime.setVisualDeformation(instance.definition.visual_definition, visual_id, deformation_transform);
         try instance.evaluateAppearance();
     }
 
@@ -700,6 +705,10 @@ pub const CharacterInstance = struct {
             &instance.character.local_and_world_pose,
             next_tick,
         );
+        if (instance.character.anatomy_runtime) |*runtime| {
+            const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
+            try runtime.advanceBreathing(anatomy_definition);
+        }
         instance.simulation_tick = next_tick;
         try instance.evaluateWorldPose();
         if (world) |authoritative_world| {
@@ -857,6 +866,29 @@ pub const CharacterInstance = struct {
         try instance.evaluateAppearance();
     }
 
+    pub fn configureBreathing(
+        instance: *CharacterInstance,
+        configuration: deformation.BreathingConfiguration,
+    ) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.configureBreathing(definition, configuration);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn setBreathingPhaseTick(instance: *CharacterInstance, phase_tick: u32) !void {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try runtime.setBreathingPhaseTick(definition, phase_tick);
+        try instance.evaluateAppearance();
+    }
+
+    pub fn breathingSample(instance: *const CharacterInstance) !f32 {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = instance.character.anatomy_runtime orelse return error.CharacterHasNoAnatomy;
+        return runtime.breathingSample(definition);
+    }
+
     pub fn selectPresentationProfile(instance: *CharacterInstance, profile_id: anatomy.PresentationProfileId) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
@@ -996,6 +1028,36 @@ pub const CharacterInstance = struct {
         try loadout.unequip(context, item_id);
     }
 
+    pub fn equipmentVisualWorld(instance: *CharacterInstance, visual_index: usize) !math.Mat3 {
+        const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+        const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try loadout.validateCompatibility(.{ .definition = anatomy_definition, .runtime = anatomy_runtime });
+        if (loadout.definition.appearance_token != instance.definition.visual_definition.owner_token) {
+            return error.EquipmentAppearanceDefinitionMismatch;
+        }
+        if (visual_index >= loadout.visuals().len) return error.InvalidResolvedEquipmentVisualIndex;
+        const visual = loadout.visuals()[visual_index];
+        const recipe = try loadout.definition.recipe(visual.recipe);
+        if (recipe.component.index() >= loadout.definition.visual_components.len) {
+            return error.InvalidEquipmentVisualReference;
+        }
+        const component = loadout.definition.visual_components[recipe.component.index()];
+        return switch (visual.source) {
+            .anatomy_part => |part_id| (try anatomy_runtime.partBindingWorld(anatomy_definition, part_id))
+                .mul(try recipe.local_to_binding.localToParent())
+                .mul(try (try anatomy_runtime.resolvedDeformationForPart(
+                anatomy_definition,
+                part_id,
+                component.deformation_response,
+            )).localToParent()),
+            .attachment_point => |point_id| (try instance.character.appearance_runtime.attachmentPointWorld(
+                instance.definition.visual_definition,
+                point_id,
+            )).mul(try recipe.local_to_binding.localToParent()),
+        };
+    }
+
     fn submitEquipmentVisuals(instance: *CharacterInstance, batch: *sprite.SpriteBatch) !u32 {
         const loadout = if (instance.equipment_loadout) |*value| value else return 0;
         const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
@@ -1006,7 +1068,7 @@ pub const CharacterInstance = struct {
         }
 
         var submitted: u32 = 0;
-        for (loadout.visuals()) |visual| {
+        for (loadout.visuals(), 0..) |visual, visual_index| {
             const recipe = try loadout.definition.recipe(visual.recipe);
             if (recipe.component.index() >= loadout.definition.visual_components.len or
                 recipe.visual_layer.index() >= loadout.definition.visual_layers.len)
@@ -1015,14 +1077,7 @@ pub const CharacterInstance = struct {
             }
             const component = loadout.definition.visual_components[recipe.component.index()];
             const layer = loadout.definition.visual_layers[recipe.visual_layer.index()];
-            const source_world = switch (visual.source) {
-                .anatomy_part => |part_id| try anatomy_runtime.partWorld(anatomy_definition, part_id),
-                .attachment_point => |point_id| try instance.character.appearance_runtime.attachmentPointWorld(
-                    instance.definition.visual_definition,
-                    point_id,
-                ),
-            };
-            const world = source_world.mul(try recipe.local_to_binding.localToParent());
+            const world = try instance.equipmentVisualWorld(visual_index);
             const sprite_transform = try humanoid.spriteTransform(world);
             const world_size = sprite_transform.signed_scale.componentMul(component.sprite_size);
             _ = try batch.submitWithKey(.{

@@ -114,6 +114,9 @@ $anatomyTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '
 $equipmentSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment.zig')
 $equipmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment_demo.zig')
 $equipmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/equipment_tests.zig')
+$deformationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/deformation.zig')
+$breathingDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/breathing_demo.zig')
+$deformationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/deformation_tests.zig')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $mathSource = @(
@@ -1205,6 +1208,86 @@ foreach ($phrase in $requiredEquipmentTestPhrases) {
     }
 }
 
+foreach ($phrase in @(
+    'pub const Response = struct',
+    'pub const BreathingBinding = struct',
+    'pub const BreathingConfiguration = struct',
+    'pub const BreathingState = struct',
+    'pub const ResolveInput = struct',
+    'pub fn resolve(',
+    'cycle_tick',
+    'period_ticks',
+    'fixed_step.simulation_hz'
+)) {
+    if (-not $deformationSource.Contains($phrase)) {
+        Write-Error "Prompt 18 shared deformation boundary is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($deformationSource, 'allocator|ArrayList|HashMap|SDL_|CreateGPU|DrawGPU|nanoTimestamp|milliTimestamp')) {
+    Write-Error 'Prompt 18 deformation must remain allocation-free deterministic CPU state with no wall-clock or GPU ownership.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'breathing_binding: deformation.BreathingBinding',
+    'breathing: deformation.BreathingState',
+    'part_deformation_local',
+    'part_binding_world',
+    'resolvedDeformationForPart',
+    'advanceBreathing',
+    'deformation_response: deformation.Response',
+    'equipmentVisualWorld',
+    '.anatomy_part => |part_id|'
+)) {
+    if (-not $anatomySource.Contains($phrase) -and
+        -not $appearanceSource.Contains($phrase) -and
+        -not $equipmentSource.Contains($phrase) -and
+        -not $characterSource.Contains($phrase)) {
+        Write-Error "Prompt 18 resolved instance deformation is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'four_independent_sleeve_bindings',
+    'isolated_sleeve_override',
+    'rigid_opt_out',
+    'body_clothing_agreement',
+    'fixed_ticks_per_frame',
+    'BREATHING AND SHARED DEFORMATION EVIDENCE'
+)) {
+    if (-not $breathingDemoSource.Contains($phrase) -and -not $gpuSource.Contains($phrase)) {
+        Write-Error "Prompt 18 bounded evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'deformation_module.addImport("fixed_step", fixed_step_module)',
+    'character_module.addImport("deformation", deformation_module)',
+    'app_module.addImport("breathing_demo", breathing_demo_module)',
+    'test_module.addImport("breathing_demo", breathing_demo_module)'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 18 build wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+$requiredDeformationTestPhrases = @(
+    'breathing validates configuration and samples neutral extrema reset and repeated cycles',
+    'independent breathing states keep phase rate and amplitude character local',
+    'resolved deformation composes global morphology breathing and per visual response once',
+    'topology generated clothing follows exact bound instances with isolated overrides and rigid opt out',
+    'breathing and morph changes preserve physics controller canonical IK and declared effects',
+    'interaction event timing is invariant across breathing configurations',
+    'fixed tick breathing is deterministic across render frame grouping',
+    'steady state breathing morphing and loadout changes do not grow character storage'
+)
+foreach ($phrase in $requiredDeformationTestPhrases) {
+    if (-not $deformationTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 18 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -1246,4 +1329,5 @@ Write-Host 'Prompt 14 camera audit passed: world-metre submissions, pure camera 
 Write-Host 'Prompt 15 appearance audit passed: stable runtime IDs, variable visuals, bounded attachment hierarchies, optional module-local joints, character-owned mutable state, canonical-rig isolation, and allocation-free hot paths.'
 Write-Host 'Prompt 16 modular-anatomy audit passed: compositional repeated parts, bounded hierarchies, data morphs and presets, face/hair groups, presentation isolation, canonical-authority isolation, and allocation-free hot paths.'
 Write-Host 'Prompt 17 equipment audit passed: extensible typed definitions, anatomy-aware bounded expansion, transactional loadouts, independent coverage/effects, character-owned state, and the global sprite path.'
+Write-Host 'Prompt 18 deformation audit passed: fixed-tick breathing, shared instance-bound resolution, declarative visual response, gameplay isolation, bounded evidence, and allocation-free hot paths.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

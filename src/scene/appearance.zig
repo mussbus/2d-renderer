@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = @import("math");
+const deformation = @import("deformation");
 const skeleton = @import("skeleton");
 const pose = @import("pose");
 const fault_injection = @import("fault_injection");
@@ -150,6 +151,7 @@ pub const VisualAttachmentInput = struct {
     tint: [4]f32,
     texture_page: u32,
     body_part_layer: u16,
+    deformation_response: deformation.Response = .{},
 };
 
 pub const DefinitionInputs = struct {
@@ -220,6 +222,7 @@ pub const VisualAttachment = struct {
     tint: [4]f32,
     texture_page: u32,
     body_part_layer: u16,
+    deformation_response: deformation.Response,
 };
 
 pub const DefinitionView = struct {
@@ -421,6 +424,7 @@ pub const Definition = struct {
             if (!input.local_to_source.isFinite() or !input.sprite_size.isFinite() or input.sprite_size.x <= 0 or input.sprite_size.y <= 0) {
                 return error.NonFiniteTransform;
             }
+            try input.deformation_response.validate();
             const name = try skeleton.DebugName.init(input.debug_name);
             for (visuals[0..index]) |*existing| {
                 if (name.eql(&existing.debug_name)) return error.DuplicateVisualAttachmentId;
@@ -445,6 +449,7 @@ pub const Definition = struct {
                 .tint = input.tint,
                 .texture_page = input.texture_page,
                 .body_part_layer = input.body_part_layer,
+                .deformation_response = input.deformation_response,
             };
         }
         for (inputs.visuals, 0..) |input, index| {
@@ -687,12 +692,12 @@ pub const Runtime = struct {
         runtime: *Runtime,
         definition: DefinitionView,
         id: VisualAttachmentId,
-        deformation: math.Transform2D,
+        deformation_transform: math.Transform2D,
     ) !void {
         try runtime.validateCompatibility(definition);
         if (id.index() >= runtime.visual_states.len) return error.InvalidVisualAttachmentId;
-        if (!deformation.isFinite()) return error.NonFiniteTransform;
-        runtime.visual_states[id.index()].local_deformation = deformation;
+        if (!deformation_transform.isFinite()) return error.NonFiniteTransform;
+        runtime.visual_states[id.index()].local_deformation = deformation_transform;
     }
 
     pub fn setModuleJointLocal(

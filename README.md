@@ -21,6 +21,8 @@ Prompt 16 adds data-defined adult anatomy modules, repeated hierarchical body pa
 
 Prompt 17 adds topology-aware layered clothing and equipment, transactional per-character loadouts, separate logical slots and coverage metadata, bounded one/every/specific anatomy binding, deterministic numeric attribute modifiers, and declarative capability grants. Its evidence route is `zig build run -- --frames 240 --demo equipment`: one sweatshirt definition produces two sleeves on the conventional body and four on the modular four-arm body while layered clothing, bilateral armor, multi-slot replacement, conflict rejection, restoration, modifiers, and capabilities remain on the existing global sprite batch.
 
+Prompt 18 adds drift-resistant per-character breathing and one resolved appearance-deformation pipeline shared by anatomy and topology-generated clothing/equipment. Exact anatomy-instance bindings drive every generated sleeve, flexible visuals use declarative response strengths, rigid equipment can opt out, and physics/controller/IK/interaction/effect state remains invariant. Its bounded GPU evidence route is `zig build run -- --frames 240 --demo breathing`.
+
 ## Interactive playground
 
 ```powershell
@@ -60,6 +62,7 @@ Start with:
 - [`docs/HUMANOID.md`](docs/HUMANOID.md) for transform, hierarchy, attachment, body-proportion, and deterministic-demo contracts.
 - [`docs/ANATOMY.md`](docs/ANATOMY.md) for compositional adult anatomy, multiplicity, morphology, presentation, face/hair, ownership, and alternative-rig boundaries.
 - [`docs/EQUIPMENT.md`](docs/EQUIPMENT.md) for typed equipment definitions, topology-aware visual recipes, transactional loadouts, layered coverage, effect declarations, rendering integration, and evidence.
+- [`docs/DEFORMATION.md`](docs/DEFORMATION.md) for fixed-tick breathing, shared instance-resolved deformation, clothing response, composition order, gameplay invariants, and evidence.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.
 - [`docs/SECONDARY_MOTION.md`](docs/SECONDARY_MOTION.md) for procedural walk, landing, spring, composition, reset, and evidence contracts.

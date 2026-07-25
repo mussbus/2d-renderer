@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = @import("math");
+const deformation = @import("deformation");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
 const humanoid = @import("humanoid");
@@ -560,9 +561,28 @@ fn initDefinitionWithInjector(
     };
     const part_definitions = [_]anatomy.BodyPartDefinitionInput{
         partDefinition("pelvis_part", "core", "pelvis", &.{ "core_humanoid", "pelvis" }, &pelvis_sockets, &.{}),
-        partDefinition("torso_part", "core", "torso", &.{ "core_humanoid", "torso" }, &torso_sockets, &torso_morph),
+        breathingPartDefinition(
+            "torso_part",
+            "core",
+            "torso",
+            &.{ "core_humanoid", "torso" },
+            &torso_sockets,
+            &torso_morph,
+            .{
+                .translation_at_unit = .{ .x = 0, .y = 0.006 },
+                .scale_delta_at_unit = .{ .x = 0.03, .y = 0.012 },
+            },
+        ),
         partDefinition("head_part", "core", "head", &.{ "core_humanoid", "head" }, &head_sockets, &head_morph),
-        partDefinition("upper_arm_part", "limb", "upper_arm", &.{ "core_humanoid", "arm" }, &.{}, &upper_arm_morph),
+        breathingPartDefinition(
+            "upper_arm_part",
+            "limb",
+            "upper_arm",
+            &.{ "core_humanoid", "arm" },
+            &.{},
+            &upper_arm_morph,
+            .{ .scale_delta_at_unit = .{ .x = 0.003, .y = 0.008 } },
+        ),
         partDefinition("forearm_part", "limb", "forearm", &.{ "core_humanoid", "arm" }, &.{}, &forearm_morph),
         partDefinition("hand_part", "limb", "hand", &.{ "core_humanoid", "hand" }, &.{}, &hand_morph),
         partDefinition("thigh_part", "limb", "thigh", &.{ "core_humanoid", "leg" }, &.{}, &thigh_morph),
@@ -570,8 +590,24 @@ fn initDefinitionWithInjector(
         partDefinition("foot_part", "limb", "foot", &.{ "core_humanoid", "foot" }, &.{}, &foot_morph),
         partDefinition("face_feature_part", "face", "feature", &.{"face_feature"}, &.{}, &.{}),
         partDefinition("hair_part", "appearance", "hair", &.{"hair"}, &.{}, &.{}),
-        partDefinition("breast_part", "adult_chest", "breast", &.{ "adult_anatomy", "chest_anatomy" }, &.{}, &breast_morph),
-        partDefinition("pectoral_part", "adult_chest", "pectoral", &.{ "adult_anatomy", "chest_anatomy" }, &.{}, &.{}),
+        breathingPartDefinition(
+            "breast_part",
+            "adult_chest",
+            "breast",
+            &.{ "adult_anatomy", "chest_anatomy" },
+            &.{},
+            &breast_morph,
+            .{ .scale_delta_at_unit = .{ .x = 0.015, .y = 0.01 } },
+        ),
+        breathingPartDefinition(
+            "pectoral_part",
+            "adult_chest",
+            "pectoral",
+            &.{ "adult_anatomy", "chest_anatomy" },
+            &.{},
+            &.{},
+            .{ .scale_delta_at_unit = .{ .x = 0.015, .y = 0.01 } },
+        ),
         partDefinition("penis_part", "adult_genital", "penis", &.{"adult_anatomy"}, &.{}, &genital_morph),
         partDefinition("vulva_part", "adult_genital", "vulva_region", &.{"adult_anatomy"}, &.{}, &genital_morph),
         partDefinition("extra_arm_part", "optional_limb", "upper_arm", &.{ "arm", "articulated_module" }, &.{}, &upper_arm_morph),
@@ -746,6 +782,20 @@ fn partDefinition(
         .child_sockets = child_sockets,
         .morphology_bindings = morph_bindings,
     };
+}
+
+fn breathingPartDefinition(
+    stable_id: []const u8,
+    category: []const u8,
+    type_tag: []const u8,
+    tags: []const []const u8,
+    child_sockets: []const anatomy.ChildSocketInput,
+    morph_bindings: []const anatomy.MorphBindingInput,
+    breathing_binding: deformation.BreathingBinding,
+) anatomy.BodyPartDefinitionInput {
+    var result = partDefinition(stable_id, category, type_tag, tags, child_sockets, morph_bindings);
+    result.breathing_binding = breathing_binding;
+    return result;
 }
 
 fn setInstance(

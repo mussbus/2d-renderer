@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = @import("math");
+const deformation = @import("deformation");
 const skeleton = @import("skeleton");
 const appearance = @import("appearance");
 const fault_injection = @import("fault_injection");
@@ -133,6 +134,7 @@ pub const BodyPartDefinitionInput = struct {
     tags: []const []const u8,
     child_sockets: []const ChildSocketInput,
     morphology_bindings: []const MorphBindingInput,
+    breathing_binding: deformation.BreathingBinding = .{},
     validation: ValidationMetadataInput = .{},
 };
 
@@ -238,6 +240,7 @@ pub const BodyPartDefinition = struct {
     socket_count: u16,
     morph_binding_start: u16,
     morph_binding_count: u16,
+    breathing_binding: deformation.BreathingBinding,
     validation: ValidationMetadata,
 };
 
@@ -531,6 +534,7 @@ pub const Definition = struct {
                 };
                 morph_binding_cursor += 1;
             }
+            try input.breathing_binding.validate();
             part_definitions[index] = .{
                 .id = @enumFromInt(index),
                 .stable_id = stable_id,
@@ -542,6 +546,7 @@ pub const Definition = struct {
                 .socket_count = @intCast(input.child_sockets.len),
                 .morph_binding_start = @intCast(morph_start),
                 .morph_binding_count = @intCast(input.morphology_bindings.len),
+                .breathing_binding = input.breathing_binding,
                 .validation = .{
                     .maximum_instances = input.validation.maximum_instances,
                     .allow_children = input.validation.allow_children,
@@ -943,7 +948,10 @@ pub const Runtime = struct {
     instance_override_set: []bool,
     instance_override_normalized: []f32,
     resolved_channels: []f32,
+    breathing: deformation.BreathingState = .{},
     part_morph_local: []math.Transform2D,
+    part_deformation_local: []math.Transform2D,
+    part_binding_world: []math.Mat3,
     part_world: []math.Mat3,
     socket_world: []math.Mat3,
 
@@ -967,6 +975,10 @@ pub const Runtime = struct {
         errdefer allocator.free(resolved_channels);
         const part_morph_local = allocator.alloc(math.Transform2D, definition.part_instances.len) catch return error.AllocationFailure;
         errdefer allocator.free(part_morph_local);
+        const part_deformation_local = allocator.alloc(math.Transform2D, definition.part_instances.len) catch return error.AllocationFailure;
+        errdefer allocator.free(part_deformation_local);
+        const part_binding_world = allocator.alloc(math.Mat3, definition.part_instances.len) catch return error.AllocationFailure;
+        errdefer allocator.free(part_binding_world);
         const part_world = allocator.alloc(math.Mat3, definition.part_instances.len) catch return error.AllocationFailure;
         errdefer allocator.free(part_world);
         const socket_world = allocator.alloc(math.Mat3, definition.instance_sockets.len) catch return error.AllocationFailure;
@@ -988,6 +1000,8 @@ pub const Runtime = struct {
             .instance_override_normalized = instance_override_normalized,
             .resolved_channels = resolved_channels,
             .part_morph_local = part_morph_local,
+            .part_deformation_local = part_deformation_local,
+            .part_binding_world = part_binding_world,
             .part_world = part_world,
             .socket_world = socket_world,
         };
@@ -998,6 +1012,8 @@ pub const Runtime = struct {
     pub fn deinit(runtime: *Runtime) void {
         runtime.allocator.free(runtime.socket_world);
         runtime.allocator.free(runtime.part_world);
+        runtime.allocator.free(runtime.part_binding_world);
+        runtime.allocator.free(runtime.part_deformation_local);
         runtime.allocator.free(runtime.part_morph_local);
         runtime.allocator.free(runtime.resolved_channels);
         runtime.allocator.free(runtime.instance_override_normalized);
@@ -1018,6 +1034,8 @@ pub const Runtime = struct {
             runtime.instance_override_normalized.len != override_count or
             runtime.resolved_channels.len != definition.morphology_channels.len or
             runtime.part_morph_local.len != definition.part_instances.len or
+            runtime.part_deformation_local.len != definition.part_instances.len or
+            runtime.part_binding_world.len != definition.part_instances.len or
             runtime.part_world.len != definition.part_instances.len or
             runtime.socket_world.len != definition.instance_sockets.len)
         {
@@ -1031,7 +1049,10 @@ pub const Runtime = struct {
         @memset(runtime.channel_override_normalized, 0);
         @memset(runtime.instance_override_set, false);
         @memset(runtime.instance_override_normalized, 0);
+        runtime.breathing.reset();
         for (runtime.part_morph_local) |*value| value.* = math.Transform2D.identity();
+        for (runtime.part_deformation_local) |*value| value.* = math.Transform2D.identity();
+        for (runtime.part_binding_world) |*value| value.* = math.Mat3.identity();
         for (runtime.part_world) |*value| value.* = math.Mat3.identity();
         for (runtime.socket_world) |*value| value.* = math.Mat3.identity();
         try runtime.selectBodyPreset(definition, definition.default_body_preset);
@@ -1119,6 +1140,33 @@ pub const Runtime = struct {
         runtime.selected_hair = hair_id;
     }
 
+    pub fn configureBreathing(
+        runtime: *Runtime,
+        definition: DefinitionView,
+        configuration: deformation.BreathingConfiguration,
+    ) !void {
+        try runtime.validateCompatibility(definition);
+        try runtime.breathing.configure(configuration);
+        try runtime.refreshResolvedDeformation(definition);
+    }
+
+    pub fn setBreathingPhaseTick(runtime: *Runtime, definition: DefinitionView, phase_tick: u32) !void {
+        try runtime.validateCompatibility(definition);
+        try runtime.breathing.setPhaseTick(phase_tick);
+        try runtime.refreshResolvedDeformation(definition);
+    }
+
+    pub fn advanceBreathing(runtime: *Runtime, definition: DefinitionView) !void {
+        try runtime.validateCompatibility(definition);
+        try runtime.breathing.advance();
+        try runtime.refreshResolvedDeformation(definition);
+    }
+
+    pub fn breathingSample(runtime: Runtime, definition: DefinitionView) !f32 {
+        try runtime.validateCompatibility(definition);
+        return runtime.breathing.sample();
+    }
+
     pub fn resolvedChannel(runtime: Runtime, definition: DefinitionView, channel_id: MorphologyChannelId) !f32 {
         try runtime.validateCompatibility(definition);
         if (channel_id.index() >= runtime.resolved_channels.len) return error.InvalidMorphologyChannelId;
@@ -1188,15 +1236,20 @@ pub const Runtime = struct {
         }
 
         for (definition.part_instances) |part| {
-            const morph = if (runtime.active_parts[part.id.index()])
-                try runtime.morphForPart(definition, part.id)
+            const full_deformation = if (runtime.active_parts[part.id.index()])
+                try runtime.resolvedDeformationForPart(definition, part.id, .{})
             else
                 math.Transform2D.identity();
-            runtime.part_morph_local[part.id.index()] = morph;
+            runtime.part_deformation_local[part.id.index()] = full_deformation;
             const variants = definition.visual_variants[part.visual_variant_start .. part.visual_variant_start + part.visual_variant_count];
             for (variants) |variant| {
                 for (definition.variant_visuals[variant.visual_start .. variant.visual_start + variant.visual_count]) |visual_id| {
-                    try appearance_runtime.setVisualDeformation(appearance_definition, visual_id, morph);
+                    const response = appearance_definition.visuals[visual_id.index()].deformation_response;
+                    const resolved = if (runtime.active_parts[part.id.index()])
+                        try runtime.resolvedDeformationForPart(definition, part.id, response)
+                    else
+                        math.Transform2D.identity();
+                    try appearance_runtime.setVisualDeformation(appearance_definition, visual_id, resolved);
                 }
             }
             if (!runtime.active_parts[part.id.index()]) continue;
@@ -1218,6 +1271,7 @@ pub const Runtime = struct {
         for (definition.instance_evaluation_order) |raw_index| {
             const part = definition.part_instances[raw_index];
             if (!runtime.active_parts[part.id.index()]) {
+                runtime.part_binding_world[part.id.index()] = math.Mat3.identity();
                 runtime.part_world[part.id.index()] = math.Mat3.identity();
                 for (definition.instance_sockets[part.instance_socket_start .. part.instance_socket_start + part.instance_socket_count]) |socket| {
                     runtime.socket_world[socket.id.index()] = math.Mat3.identity();
@@ -1229,9 +1283,9 @@ pub const Runtime = struct {
                 .body_part_socket => |id| runtime.socket_world[id.index()],
                 .module_socket => |global_index| try appearance_runtime.moduleSocketWorldGlobal(appearance_definition, global_index),
             };
-            const world = parent_world
-                .mul(try part.local_to_parent.localToParent())
-                .mul(try runtime.part_morph_local[part.id.index()].localToParent());
+            const binding_world = parent_world.mul(try part.local_to_parent.localToParent());
+            const world = binding_world.mul(try runtime.part_deformation_local[part.id.index()].localToParent());
+            runtime.part_binding_world[part.id.index()] = binding_world;
             runtime.part_world[part.id.index()] = world;
             for (definition.instance_sockets[part.instance_socket_start .. part.instance_socket_start + part.instance_socket_count]) |socket| {
                 runtime.socket_world[socket.id.index()] = world.mul(try socket.local_to_part.localToParent());
@@ -1260,6 +1314,30 @@ pub const Runtime = struct {
         return runtime.part_world[part_id.index()];
     }
 
+    pub fn partBindingWorld(runtime: Runtime, definition: DefinitionView, part_id: BodyPartInstanceId) !math.Mat3 {
+        try runtime.validateCompatibility(definition);
+        if (part_id.index() >= runtime.part_binding_world.len) return error.InvalidBodyPartInstanceId;
+        return runtime.part_binding_world[part_id.index()];
+    }
+
+    pub fn resolvedDeformationForPart(
+        runtime: Runtime,
+        definition: DefinitionView,
+        part_id: BodyPartInstanceId,
+        response: deformation.Response,
+    ) !math.Transform2D {
+        try runtime.validateCompatibility(definition);
+        if (part_id.index() >= definition.part_instances.len) return error.InvalidBodyPartInstanceId;
+        const part = definition.part_instances[part_id.index()];
+        const part_definition = definition.part_definitions[part.definition.index()];
+        return deformation.resolve(.{
+            .base_morphology = runtime.part_morph_local[part_id.index()],
+            .breathing_binding = part_definition.breathing_binding,
+            .breathing_sample = try runtime.breathing.sample(),
+            .response = response,
+        });
+    }
+
     fn resolveMorphology(runtime: *Runtime, definition: DefinitionView) !void {
         for (definition.morphology_channels) |channel| {
             const amount = if (runtime.channel_override_set[channel.id.index()])
@@ -1270,6 +1348,16 @@ pub const Runtime = struct {
         }
         for (definition.part_instances) |part| {
             runtime.part_morph_local[part.id.index()] = try runtime.morphForPart(definition, part.id);
+        }
+        try runtime.refreshResolvedDeformation(definition);
+    }
+
+    fn refreshResolvedDeformation(runtime: *Runtime, definition: DefinitionView) !void {
+        for (definition.part_instances) |part| {
+            runtime.part_deformation_local[part.id.index()] = if (runtime.active_parts[part.id.index()])
+                try runtime.resolvedDeformationForPart(definition, part.id, .{})
+            else
+                math.Transform2D.identity();
         }
     }
 
