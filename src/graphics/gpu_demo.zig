@@ -17,6 +17,7 @@ const foot_planting_demo = @import("foot_planting_demo");
 const integrated_demo = @import("integrated_demo");
 const playground_demo = @import("playground_demo");
 const modular_body_demo = @import("modular_body_demo");
+const equipment_demo = @import("equipment_demo");
 const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
@@ -32,6 +33,7 @@ pub const DemoMode = enum {
     integrated,
     playground,
     modular_body,
+    equipment,
     side_scroller,
 };
 
@@ -360,6 +362,8 @@ pub const GpuDemo = struct {
         defer if (playground_scene) |*scene| scene.deinit();
         var modular_body_scene: ?modular_body_demo.Scene = null;
         defer if (modular_body_scene) |*scene| scene.deinit();
+        var equipment_scene: ?equipment_demo.Scene = null;
+        defer if (equipment_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
@@ -447,6 +451,12 @@ pub const GpuDemo = struct {
             modular_body_scene = try modular_body_demo.Scene.init(humanoid_allocator.allocator());
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.ModularBodyInitializationCreatedGpuResources;
+            }
+        }
+        if (mode == .equipment) {
+            equipment_scene = try equipment_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.EquipmentInitializationCreatedGpuResources;
             }
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
@@ -850,6 +860,16 @@ pub const GpuDemo = struct {
                 },
                 .modular_body => {
                     const scene = &modular_body_scene.?;
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(frame);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
+                .equipment => {
+                    const scene = &equipment_scene.?;
                     const allocation_checkpoint = humanoid_allocator.end_index;
                     try scene.updateFrame(frame);
                     pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
@@ -1702,7 +1722,7 @@ pub const GpuDemo = struct {
                 scene.conventional_male.shared_animations.library_token == scene.conventional_female.shared_animations.library_token and
                     scene.conventional_female.shared_animations.library_token == scene.nonstandard.shared_animations.library_token,
             });
-            std.log.info("Nonstandard features: extra_arm=true articulated_tail=true horns=2 canonical_bones={d} canonical_right_arm_lengths=({d:.3},{d:.3})", .{
+            std.log.info("Nonstandard features: extra_arms=2 articulated_tail=true horns=2 canonical_bones={d} canonical_right_arm_lengths=({d:.3},{d:.3})", .{
                 scene.definition.skeleton_definition.boneCount(),
                 scene.nonstandard.right_arm_binding.upper_length,
                 scene.nonstandard.right_arm_binding.lower_length,
@@ -1732,6 +1752,63 @@ pub const GpuDemo = struct {
                 self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
             {
                 return error.ModularBodyRenderingEvidenceIncomplete;
+            }
+        } else if (mode == .equipment) {
+            const scene = &equipment_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != equipment_demo.required_frames) {
+                return error.EquipmentFrameCountMismatch;
+            }
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            std.log.info("EQUIPMENT EVIDENCE", .{});
+            std.log.info("Topology: same_sweatshirt=true two_arm_sleeves={d} four_arm_sleeves={d} one_global_batch=true", .{
+                scene.evidence.two_arm_sleeves,
+                scene.evidence.four_arm_sleeves,
+            });
+            std.log.info("Transactions: conflict_rejected={} multi_slot_replacement={} unequip_restoration={} independent_loadouts=true", .{
+                scene.evidence.conflict_rejected_transactionally,
+                scene.evidence.multi_slot_replacement_proved,
+                scene.evidence.unequip_restoration_proved,
+            });
+            for (scene.two_arm.equipment_loadout.?.modifiers()) |modifier| {
+                const item = scene.two_arm.equipment_loadout.?.definition.items[modifier.item.index()];
+                const attribute = scene.two_arm.equipment_loadout.?.definition.attributes[modifier.attribute.index()];
+                std.log.info("Two-arm modifier: item={s} attribute={s} operation={s} amount={d:.3}", .{
+                    item.stable_id.slice(),
+                    attribute.stable_id.slice(),
+                    @tagName(modifier.operation),
+                    modifier.amount,
+                });
+            }
+            for (scene.four_arm.equipment_loadout.?.capabilities()) |grant| {
+                const item = scene.four_arm.equipment_loadout.?.definition.items[grant.item.index()];
+                const capability = scene.four_arm.equipment_loadout.?.definition.capabilities[grant.capability.index()];
+                std.log.info("Four-arm capability: item={s} capability={s}", .{
+                    item.stable_id.slice(),
+                    capability.stable_id.slice(),
+                });
+            }
+            std.log.info("Rendering: characters={d} submitted_sprites={d} ranges={d} actual_draw_calls={d}", .{
+                equipment_demo.character_count,
+                humanoid_instances,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+            });
+            std.log.info("Steady-state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} batch_allocations={d} gpu_resource_delta={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (humanoid_instances == 0 or metrics.visible_sprites != humanoid_instances or
+                metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                runtime_allocation_delta != 0 or pose_evaluation_allocations != 0 or humanoid_submission_allocations != 0 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
+            {
+                return error.EquipmentRenderingEvidenceIncomplete;
             }
         } else if (mode == .side_scroller) {
             const scene = &playground_scene.?;

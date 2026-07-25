@@ -97,6 +97,16 @@ Prompt 16 adds an immutable modular-anatomy catalog beside the appearance defini
 
 Each character owns its anatomy runtime next to its canonical pose and appearance runtime. Morphology and presentation are applied before appearance evaluation; the anatomy part/socket world hierarchy is evaluated afterward as bounded derived state. These operations cannot write canonical bones, controller roots, colliders, animation clocks, interaction state, or standard IK lengths and cannot create GPU resources.
 
+## Equipment definitions, loadouts, and consumers
+
+Prompt 17 adds the next declarative layer without merging existing concepts. Equipment slots are exclusive logical loadout claims; attachment points and anatomy instances are transform sources; body regions are coverage metadata; visual layers are ordering metadata; attributes and capabilities are gameplay declarations. All have separate typed IDs. `docs/EQUIPMENT.md` binds the full validation, ownership, transaction, capacity, and demonstration contracts.
+
+An immutable `equipment.Definition` is initialized against the immutable anatomy and appearance definition tokens. Initialization resolves all names to compact IDs and validates every reference and bound. A character-owned `equipment.Loadout` then expands equipped item recipes against that character's active anatomy into fixed-capacity visual bindings. Definitions may be shared; equipped items, slot occupancy, resolved visuals, coverage, modifiers, and grants may not.
+
+The mutation flow is copy candidate, validate all occupied slots and required anatomy, expand every recipe within authored and global bounds, rebuild deterministic coverage/effect views, then commit the entire bounded value. Failure changes nothing. No loadout mutation or query allocates or performs string lookup.
+
+Equipment rendering is a consumer in the generalized character visual submission. A resolved record selects the current character-owned anatomy-part or attachment-point matrix, applies immutable recipe-local data, and enters the same `SpriteBatch` with the same scene and actor ordering. The equipment system itself imports no renderer, SDL, controller, physics, animation, IK, or interaction module. The renderer receives sprite and order data only and never sees armor values or capabilities.
+
 An optional rig module attaches to a validated attachment point and contributes at most 16 local joints plus 16 local sockets. Module joint parents and sockets are resolved and cycle-checked during initialization, then flattened into bounded contiguous arrays. Module joints are not automatically sampled by canonical clips or consumed by locomotion, standard arm IK, foot planting, controllers, or interactions. Integration with any future anatomy-specific driver must be explicit.
 
 `appearance.Runtime` is character-owned mutable state: attachment-point world matrices, module local pose and derived joint/socket matrices, visual visibility, local deformation, and derived visual matrices. Reset copies immutable module rest transforms and clears character-local appearance changes. Evaluation order is canonical pose, attachment points, module joints/sockets, then visuals. Facing remains one canonical character-root reflection inherited by every downstream transform.

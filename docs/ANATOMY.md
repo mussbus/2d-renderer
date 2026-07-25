@@ -20,7 +20,7 @@ This architecture is for humanoid-derived characters. A dragon, horse, spider, s
 
 A part may reference one optional `appearance.RigModule`. The module retains its own bounded local joint chain and sockets. The anatomy runtime exposes an explicit part-to-module joint update, but these joints do not enter `BoneSemantic`, canonical clips, controller motion, ordinary arm IK, handshake reach, foot placement, or collision. An extra arm, tail, wing, tentacle, or neck becomes part of one of those systems only through a future explicit integration.
 
-The modular-body evidence definition includes a three-joint extra arm and a three-joint tail. The canonical rig remains exactly 16 bones and the canonical right-arm IK lengths remain `0.65 m` and `0.80 m`.
+The modular-body evidence definition includes two instances of a three-joint extra-arm definition and a three-joint tail. The canonical rig remains exactly 16 bones and the canonical right-arm IK lengths remain `0.65 m` and `0.80 m`.
 
 ## Morphology
 
@@ -98,6 +98,14 @@ The per-frame visual order is:
 4. submit visible visuals through the one global `SpriteBatch`.
 
 All steady-state morphology, body-preset, hair, presentation, module-pose, hierarchy, and submission operations are allocation-free. They create no GPU object. The CPU continues to own anatomy, morphology, animation, physics, IK, interactions, and ordering; the GPU continues to transform vertices, sample textures, blend alpha, and draw instances.
+
+## Equipment compatibility
+
+Prompt 17 consumes anatomy through existing immutable part definitions, typed instance IDs, active-instance state, and evaluated part matrices. It does not add a parallel anatomy model. Equipment anatomy roles resolve at definition initialization to a compatible data-defined part type. Runtime matching iterates active `BodyPartInstanceId` values in definition order and supports first, every, or one specifically resolved instance with an explicit required/optional flag and maximum match count.
+
+The nonstandard preset now contains `extra_arm` and `extra_arm_second`, two instances of the same `extra_arm_part` definition and two independent optional articulation modules. Together with the canonical left and right upper-arm instances, this produces four active `upper_arm` matches. Canonical locomotion, interaction, hand IK, and foot planting still use only the unchanged 16-bone semantic rig; the additional arms remain optional visual modules.
+
+Equipment recipes store instance IDs, never pointers or cached world transforms. A topology change requires the owning character loadout to rebind and revalidate. Required garments reject a topology without the required part, optional recipes produce no visual, and expansion beyond the recipe maximum rejects the complete loadout candidate.
 
 ## Evidence route and current limitations
 

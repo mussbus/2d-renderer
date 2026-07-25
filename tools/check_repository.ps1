@@ -111,6 +111,10 @@ $appearanceTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoo
 $anatomySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy.zig')
 $modularBodySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/modular_body_demo.zig')
 $anatomyTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/anatomy_tests.zig')
+$equipmentSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment.zig')
+$equipmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment_demo.zig')
+$equipmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/equipment_tests.zig')
+$buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $mathSource = @(
     Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/math/vec2.zig')
@@ -1085,6 +1089,122 @@ foreach ($phrase in $requiredAnatomyTestPhrases) {
     }
 }
 
+$requiredEquipmentTypes = @(
+    'pub const EquipmentSlotId = enum(u16)',
+    'pub const AnatomyRoleId = enum(u16)',
+    'pub const VisualLayerId = enum(u16)',
+    'pub const VisualComponentId = enum(u16)',
+    'pub const EquipmentItemId = enum(u16)',
+    'pub const AttributeId = enum(u16)',
+    'pub const CapabilityId = enum(u16)',
+    'pub const ResolvedVisualInstance = struct',
+    'pub const ActiveCoverage = struct',
+    'pub const ActiveModifier = struct',
+    'pub const ActiveCapability = struct'
+)
+foreach ($phrase in $requiredEquipmentTypes) {
+    if (-not $equipmentSource.Contains($phrase)) {
+        Write-Error "Prompt 17 typed equipment boundary is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$loadoutStart = $equipmentSource.IndexOf('pub const Loadout = struct')
+if ($loadoutStart -lt 0) {
+    Write-Error 'Prompt 17 bounded per-character loadout implementation is missing.' -ErrorAction Continue
+    $failed = $true
+} else {
+    $loadoutSource = $equipmentSource.Substring($loadoutStart)
+    foreach ($phrase in @(
+        'var candidate = loadout.*',
+        'maximum_equipped_items',
+        'maximum_resolved_visuals',
+        'maximum_active_modifiers',
+        'maximum_active_capabilities',
+        'maximum_active_coverage',
+        'pub fn equip(',
+        'pub fn replace(',
+        'pub fn unequip(',
+        'pub fn resetToDefault(',
+        'fn rebuildDerived('
+    )) {
+        if (-not $loadoutSource.Contains($phrase)) {
+            Write-Error "Prompt 17 transactional bounded loadout evidence is missing: '$phrase'." -ErrorAction Continue
+            $failed = $true
+        }
+    }
+    if ($loadoutSource.Contains('allocator.alloc') -or $loadoutSource.Contains('std.ArrayList') -or $loadoutSource.Contains('StringHashMap')) {
+        Write-Error 'Prompt 17 loadout mutation and query paths must remain allocation-free and compact-ID based.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+foreach ($phrase in @(
+    '.first_compatible',
+    '.every_compatible',
+    '.specific_instance',
+    'MissingRequiredAnatomy',
+    'CompatiblePartExpansionExceeded',
+    'EquipmentSlotOccupied'
+)) {
+    if (-not $equipmentSource.Contains($phrase)) {
+        Write-Error "Prompt 17 topology or transaction behavior is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+if ($equipmentSource.Contains('@import("sprite_batch")') -or
+    $equipmentSource.Contains('SDL_') -or
+    $equipmentSource.Contains('CharacterIntent') -or
+    $equipmentSource.Contains('CharacterController'))
+{
+    Write-Error 'Equipment definitions/loadouts must not own rendering, SDL input, or controller behavior.' -ErrorAction Continue
+    $failed = $true
+}
+
+foreach ($phrase in @(
+    'same_sweatshirt=true',
+    'two_arm_sleeves',
+    'four_arm_sleeves',
+    'conflict_rejected_transactionally',
+    'multi_slot_replacement_proved',
+    'unequip_restoration_proved',
+    'long_sleeve_sweatshirt',
+    'full_plate_armor',
+    'speed_boots',
+    'winged_boots'
+)) {
+    if (-not $equipmentDemoSource.Contains($phrase) -and -not $gpuSource.Contains($phrase)) {
+        Write-Error "Prompt 17 demonstration evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+foreach ($phrase in @(
+    'character_module.addImport("equipment", equipment_module)',
+    'app_module.addImport("equipment_demo", equipment_demo_module)',
+    'test_module.addImport("equipment_demo", equipment_demo_module)'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 17 build wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$requiredEquipmentTestPhrases = @(
+    'equipment definition registration validates duplicates missing references and future identifiers',
+    'one garment expands deterministically to two and four arms with bounded required matching',
+    'transactional loadout layering replacement coverage reset effects and character isolation',
+    'definition-sorted visual and effect views do not depend on equip request order',
+    'equipment is allocation-free after initialization and preserves canonical sockets and facing reflection'
+)
+foreach ($phrase in $requiredEquipmentTestPhrases) {
+    if (-not $equipmentTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 17 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -1125,4 +1245,5 @@ Write-Host 'Prompt 13 input audit passed: one polled keyboard mapping, focus res
 Write-Host 'Prompt 14 camera audit passed: world-metre submissions, pure camera math, same-zoom resizing, high-DPI drawable tracking, safe zero surfaces, deterministic follow, three-layer parallax, extended collision world, fixed smoke target, and one global draw path.'
 Write-Host 'Prompt 15 appearance audit passed: stable runtime IDs, variable visuals, bounded attachment hierarchies, optional module-local joints, character-owned mutable state, canonical-rig isolation, and allocation-free hot paths.'
 Write-Host 'Prompt 16 modular-anatomy audit passed: compositional repeated parts, bounded hierarchies, data morphs and presets, face/hair groups, presentation isolation, canonical-authority isolation, and allocation-free hot paths.'
+Write-Host 'Prompt 17 equipment audit passed: extensible typed definitions, anatomy-aware bounded expansion, transactional loadouts, independent coverage/effects, character-owned state, and the global sprite path.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

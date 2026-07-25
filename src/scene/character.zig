@@ -3,6 +3,7 @@ const math = @import("math");
 const humanoid = @import("humanoid");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
+const equipment = @import("equipment");
 const skeleton = @import("skeleton");
 const authored = @import("authored_clips");
 const clip = @import("clip");
@@ -349,6 +350,7 @@ pub const CharacterInstance = struct {
     actor_layer: u16,
     default_actor_layer: u16,
     overrides: LayerOverrideTable = .{},
+    equipment_loadout: ?equipment.Loadout = null,
     interaction_owner_id: u32 = 0,
     passive_grounded: bool = true,
     simulation_tick: u64 = 0,
@@ -806,6 +808,7 @@ pub const CharacterInstance = struct {
             const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
             try runtime.reset(anatomy_definition);
         }
+        if (instance.equipment_loadout) |*loadout| try loadout.resetToDefault(try instance.equipmentContext());
         try instance.evaluateWorldPose();
     }
 
@@ -814,6 +817,7 @@ pub const CharacterInstance = struct {
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try runtime.selectBodyPreset(definition, preset_id);
         try instance.evaluateAppearance();
+        if (instance.equipment_loadout) |*loadout| try loadout.rebind(try instance.equipmentContext());
     }
 
     pub fn selectMorphologyPreset(instance: *CharacterInstance, preset_id: anatomy.MorphologyPresetId) !void {
@@ -965,7 +969,86 @@ pub const CharacterInstance = struct {
             }
             submitted += 1;
         }
+        submitted += try instance.submitEquipmentVisuals(batch);
         return submitted;
+    }
+
+    pub fn initializeEquipment(instance: *CharacterInstance, definition: equipment.DefinitionView) !void {
+        if (instance.equipment_loadout != null) return error.CharacterEquipmentAlreadyInitialized;
+        instance.equipment_loadout = try equipment.Loadout.init(definition, try instance.equipmentContext());
+    }
+
+    pub fn equipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+        const context = try instance.equipmentContext();
+        const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+        try loadout.equip(context, item_id);
+    }
+
+    pub fn replaceItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+        const context = try instance.equipmentContext();
+        const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+        try loadout.replace(context, item_id);
+    }
+
+    pub fn unequipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+        const context = try instance.equipmentContext();
+        const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+        try loadout.unequip(context, item_id);
+    }
+
+    fn submitEquipmentVisuals(instance: *CharacterInstance, batch: *sprite.SpriteBatch) !u32 {
+        const loadout = if (instance.equipment_loadout) |*value| value else return 0;
+        const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        try loadout.validateCompatibility(.{ .definition = anatomy_definition, .runtime = anatomy_runtime });
+        if (loadout.definition.appearance_token != instance.definition.visual_definition.owner_token) {
+            return error.EquipmentAppearanceDefinitionMismatch;
+        }
+
+        var submitted: u32 = 0;
+        for (loadout.visuals()) |visual| {
+            const recipe = try loadout.definition.recipe(visual.recipe);
+            if (recipe.component.index() >= loadout.definition.visual_components.len or
+                recipe.visual_layer.index() >= loadout.definition.visual_layers.len)
+            {
+                return error.InvalidEquipmentVisualReference;
+            }
+            const component = loadout.definition.visual_components[recipe.component.index()];
+            const layer = loadout.definition.visual_layers[recipe.visual_layer.index()];
+            const source_world = switch (visual.source) {
+                .anatomy_part => |part_id| try anatomy_runtime.partWorld(anatomy_definition, part_id),
+                .attachment_point => |point_id| try instance.character.appearance_runtime.attachmentPointWorld(
+                    instance.definition.visual_definition,
+                    point_id,
+                ),
+            };
+            const world = source_world.mul(try recipe.local_to_binding.localToParent());
+            const sprite_transform = try humanoid.spriteTransform(world);
+            const world_size = sprite_transform.signed_scale.componentMul(component.sprite_size);
+            _ = try batch.submitWithKey(.{
+                .world_position = sprite_transform.world_position.toArray(),
+                .rotation = sprite_transform.rotation_radians,
+                .scale = world_size.toArray(),
+                .pivot = component.pivot,
+                .uv_rect = component.uv_rect,
+                .tint = component.tint,
+                .texture_page = component.texture_page,
+                .order = .{
+                    .scene_layer = characters_scene_layer,
+                    .interaction_layer = neutral_interaction_layer,
+                    .actor_layer = instance.actor_layer,
+                    .body_part_layer = layer.render_layer,
+                },
+            });
+            submitted += 1;
+        }
+        return submitted;
+    }
+
+    fn equipmentContext(instance: *CharacterInstance) !equipment.AnatomyContext {
+        const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+        const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        return .{ .definition = definition, .runtime = runtime };
     }
 
     fn applyValidatedOverride(instance: *CharacterInstance, attachment_id: u16, validated: ValidatedOverrideRequest) !OverrideHandle {

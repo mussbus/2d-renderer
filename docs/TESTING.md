@@ -172,7 +172,17 @@ The dedicated non-sexual GPU evidence route is:
 zig build run -- --frames 240 --demo modular-body
 ```
 
-It renders conventional male, conventional female, and extra-arm/tail/horn presets through one shared skeleton, animation library, global sprite batch, texture page, and indexed-instanced draw. The first two characters render the visibly distinct `conventional_face` and `angular_face` definitions side by side through the same bounded anatomy-to-appearance path. It switches profiles and hair deterministically and requires zero fixed-buffer movement or GPU-resource creation after initialization.
+It renders conventional male, conventional female, and extra-arms/tail/horn presets through one shared skeleton, animation library, global sprite batch, texture page, and indexed-instanced draw. The first two characters render the visibly distinct `conventional_face` and `angular_face` definitions side by side through the same bounded anatomy-to-appearance path. It switches profiles and hair deterministically and requires zero fixed-buffer movement or GPU-resource creation after initialization.
+
+Prompt 17 adds five grouped deterministic tests, bringing the aggregate Zig count from 223 to 228. They cover duplicate identifiers, missing slot and attribute references, and creation of future slot/attribute/capability IDs; the same garment resolving exactly two and four upper-arm instances; required, optional, specific, and maximum-bounded matching; transactional conflict rejection; layering, coverage, multi-slot replacement, unequip, and default reset; grant removal; independent character loadouts; definition-sorted visuals and effects under different equip request orders; fixed-buffer zero-allocation equip/unequip/rebind; unchanged canonical hand sockets; and inherited facing reflection. The complete pre-existing handshake and analytical IK suites remain in `test_all.zig` and regression-protect interaction timing, socket measurement, target freezing, limb overrides, and visual-pose-only authority.
+
+The dedicated Prompt 17 GPU evidence route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo equipment
+```
+
+It must report the same sweatshirt definition, exactly two conventional sleeves and four nonstandard sleeves, transactional conflict rejection, multi-slot replacement, unequip/restoration, independent loadouts, deterministic modifier/capability listings, two characters, one texture page/range/actual indexed-instanced draw, unchanged fixed-buffer usage, zero post-stabilization batch allocation, and zero equipment-created GPU resources. Missing evidence returns nonzero.
 
 Prompt 11's GPU-backed evidence run is:
 

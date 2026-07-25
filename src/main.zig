@@ -84,12 +84,14 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .playground;
             } else if (std.mem.eql(u8, arguments[index], "modular-body")) {
                 options.demo = .modular_body;
+            } else if (std.mem.eql(u8, arguments[index], "equipment")) {
+                options.demo = .equipment;
             } else if (std.mem.eql(u8, arguments[index], "side-scroller")) {
                 options.demo = .side_scroller;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, modular-body, side-scroller", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, modular-body, equipment, side-scroller", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
@@ -99,7 +101,7 @@ fn parseOptions(arguments: []const []const u8) !Options {
         } else if (std.mem.eql(u8, argument, "--interactive")) {
             options.interactive = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|side-scroller>, --scripted-input, --debug-visualization, --interactive", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|side-scroller>, --scripted-input, --debug-visualization, --interactive", .{argument});
             return error.UnknownArgument;
         }
     }

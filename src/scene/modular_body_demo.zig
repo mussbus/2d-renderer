@@ -81,6 +81,7 @@ const Part = enum(usize) {
     penis_b,
     vulva,
     extra_arm,
+    extra_arm_second,
     tail,
     left_horn,
     right_horn,
@@ -111,7 +112,7 @@ const feminine_penis_parts = conventional_core_parts ++ [_][]const u8{ "left_bre
 const dual_anatomy_parts = conventional_core_parts ++ [_][]const u8{ "left_breast", "right_breast", "penis_a", "vulva" };
 const dual_penis_parts = conventional_core_parts ++ [_][]const u8{ "pectoral", "penis_a", "penis_b" };
 const triple_breast_parts = conventional_core_parts ++ [_][]const u8{ "left_breast", "right_breast", "center_breast", "vulva" };
-const nonstandard_parts = conventional_core_parts ++ [_][]const u8{ "extra_arm", "tail", "left_horn", "right_horn" };
+const nonstandard_parts = conventional_core_parts ++ [_][]const u8{ "extra_arm", "extra_arm_second", "tail", "left_horn", "right_horn" };
 
 pub const Scene = struct {
     definition: humanoid.HumanoidDefinition,
@@ -303,7 +304,7 @@ pub const Scene = struct {
             return error.DistinctFaceVisualDataMissing;
         }
         const unusual_runtime = scene.nonstandard.character.anatomy_runtime.?;
-        for ([_][]const u8{ "extra_arm", "tail", "left_horn", "right_horn" }) |name| {
+        for ([_][]const u8{ "extra_arm", "extra_arm_second", "tail", "left_horn", "right_horn" }) |name| {
             if (!try unusual_runtime.isPartActive(anatomy_definition, try anatomy_definition.partInstanceId(name))) {
                 return error.NonstandardAnatomyMissing;
             }
@@ -347,6 +348,13 @@ fn initDefinitionWithInjector(
             .sockets = &extra_arm_sockets,
         },
         .{
+            .debug_name = "extra_arm_module_second",
+            .parent_attachment_point = "chest",
+            .local_to_attachment_point = math.Transform2D.init(.{ .x = -0.08, .y = 0.05 }, 2.79, math.Vec2.one),
+            .joints = &extra_arm_joints,
+            .sockets = &extra_arm_sockets,
+        },
+        .{
             .debug_name = "tail_module",
             .parent_attachment_point = "waist_pelvis",
             .local_to_attachment_point = math.Transform2D.identity(),
@@ -356,7 +364,7 @@ fn initDefinitionWithInjector(
     };
 
     const canonical_visuals = humanoid.attachmentInputs();
-    var visuals: [42]appearance.VisualAttachmentInput = undefined;
+    var visuals: [45]appearance.VisualAttachmentInput = undefined;
     @memcpy(visuals[0..canonical_visuals.len], &canonical_visuals);
     var visual_cursor: usize = canonical_visuals.len;
     visuals[visual_cursor] = extraVisual("torso_modest", .{ .canonical_bone = 2 }, math.Transform2D.init(.{ .x = 0, .y = 0.56 }, 0, math.Vec2.one), .{ .x = 0.90, .y = 1.20 }, .{ 0.5, 0.5 }, .{ 0.25, 0.55, 0.95, 1 }, 31, "torso");
@@ -430,6 +438,23 @@ fn initDefinitionWithInjector(
             .{ 0.55, 0.22, 0.75, 1 },
             entry[3],
             "right_arm",
+        );
+        visual_cursor += 1;
+    }
+    for ([_]struct { []const u8, []const u8, math.Vec2, u16 }{
+        .{ "extra_second_upper_arm", "shoulder", .{ .x = 0.58, .y = 0.14 }, 57 },
+        .{ "extra_second_forearm", "elbow", .{ .x = 0.48, .y = 0.12 }, 56 },
+        .{ "extra_second_hand", "wrist", .{ .x = 0.24, .y = 0.17 }, 55 },
+    }) |entry| {
+        visuals[visual_cursor] = extraVisual(
+            entry[0],
+            .{ .module_joint = .{ .module_name = "extra_arm_module_second", .member_name = entry[1] } },
+            math.Transform2D.identity(),
+            entry[2],
+            .{ 0, 0.5 },
+            .{ 0.35, 0.28, 0.82, 1 },
+            entry[3],
+            "left_arm",
         );
         visual_cursor += 1;
     }
@@ -549,7 +574,7 @@ fn initDefinitionWithInjector(
         partDefinition("pectoral_part", "adult_chest", "pectoral", &.{ "adult_anatomy", "chest_anatomy" }, &.{}, &.{}),
         partDefinition("penis_part", "adult_genital", "penis", &.{"adult_anatomy"}, &.{}, &genital_morph),
         partDefinition("vulva_part", "adult_genital", "vulva_region", &.{"adult_anatomy"}, &.{}, &genital_morph),
-        partDefinition("extra_arm_part", "optional_limb", "arm", &.{ "arm", "articulated_module" }, &.{}, &upper_arm_morph),
+        partDefinition("extra_arm_part", "optional_limb", "upper_arm", &.{ "arm", "articulated_module" }, &.{}, &upper_arm_morph),
         partDefinition("tail_part", "optional_appendage", "tail", &.{ "tail", "articulated_module" }, &.{}, &tail_morph),
         partDefinition("horn_part", "optional_head", "horn", &.{"horn"}, &.{}, &horn_morph),
     };
@@ -603,6 +628,9 @@ fn initDefinitionWithInjector(
     setInstance(&part_instances, &variants, &variant_visual_storage, .penis_b, "penis_b", "penis_part", .{ .body_part_socket = .{ .part_instance = "pelvis", .socket = "genital_b" } }, "pelvis", 33, null, &.{});
     setInstance(&part_instances, &variants, &variant_visual_storage, .vulva, "vulva", "vulva_part", .{ .body_part_socket = .{ .part_instance = "pelvis", .socket = "vulva_region" } }, "pelvis", 33, null, &.{});
     setInstance(&part_instances, &variants, &variant_visual_storage, .extra_arm, "extra_arm", "extra_arm_part", .{ .attachment_point = "chest" }, "right_arm", 23, "extra_arm_module", &.{ "extra_upper_arm", "extra_forearm", "extra_hand" });
+    part_instances[@intFromEnum(Part.extra_arm)].local_to_parent = math.Transform2D.init(.{ .x = 0.08, .y = 0.05 }, 0.35, math.Vec2.one);
+    setInstance(&part_instances, &variants, &variant_visual_storage, .extra_arm_second, "extra_arm_second", "extra_arm_part", .{ .attachment_point = "chest" }, "left_arm", 57, "extra_arm_module_second", &.{ "extra_second_upper_arm", "extra_second_forearm", "extra_second_hand" });
+    part_instances[@intFromEnum(Part.extra_arm_second)].local_to_parent = math.Transform2D.init(.{ .x = -0.08, .y = 0.05 }, 2.79, math.Vec2.one);
     setInstance(&part_instances, &variants, &variant_visual_storage, .tail, "tail", "tail_part", .{ .attachment_point = "waist_pelvis" }, "pelvis", 18, "tail_module", &.{ "tail_root_visual", "tail_mid_visual", "tail_tip_visual" });
     setInstance(&part_instances, &variants, &variant_visual_storage, .left_horn, "left_horn", "horn_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "horn_left" } }, "head", 43, null, &.{"left_horn_visual"});
     setInstance(&part_instances, &variants, &variant_visual_storage, .right_horn, "right_horn", "horn_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "horn_right" } }, "head", 43, null, &.{"right_horn_visual"});
