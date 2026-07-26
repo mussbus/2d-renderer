@@ -205,6 +205,44 @@ The bounded Prompt 19 GPU-backed mixed-primitive evidence route is:
 
 It requires two segmented characters, body sprites, fitted garments, six topology-expanded sleeve meshes, two cape meshes, rigid clasps, separately measured build and breathing deformation, mirrored facing, cape unequip/re-equip, real mesh shader/indexed-instanced execution, separate honest sprite/mesh range/draw/upload metrics, persistent topology resources, three bounded dynamic frame slots, and zero CPU/GPU resource growth after stabilization. A linked-build or GPU failure remains a failure; pure tests and shader compilation do not substitute for that evidence.
 
+Prompt 20 adds six grouped deterministic tests in `tests/attachment_secondary_motion_tests.zig`; the repository contains 249 top-level Zig test declarations after this change. Coverage includes definition/finite/stability validation; exact rest; acceleration, sustained motion, reversal, sudden stop, jump, fall, and landing direction; facing reset and reset replay; extreme valid parameters; 24,000-tick convergence; deterministic repeated runs; independent states sharing one immutable definition; long-hair/ponytail and cape ownership across two characters; flexible topology-expanded repeated instances; equip/unequip/re-equip cleanup; grouped unified rendering; controller/physics and interaction invariance; the complete 240-frame headless evidence script; and fixed-buffer/resource stability.
+
+The bounded Prompt 20 GPU-backed route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo attachment-secondary
+```
+
+It reuses the Prompt 19 topology catalog, unified queue, mesh shader, and persistent buffers. Success additionally requires cape acceleration/sustained/reversal/stop/jump/fall/landing evidence, moved long hair and ponytail, independent repeated flexible-sleeve state, cleared unequip state, exact re-equip rest, exact facing-change rest, zero steady-state fixed-buffer or queue allocation growth, and zero spring-caused GPU-resource creation.
+
+Prompt 21 adds seven grouped deterministic tests in `tests/character_properties_tests.zig` and extends the existing input tests; the repository contains 257 top-level Zig test declarations after this change. Coverage includes attribute definition/range/base validation; additive and multiplicative modifier validation and combinations; deterministic source-key sorting; clamping; base overrides; capability defaults and independent source counts; duplicate-source rejection; removing one of two grants; character isolation; equipment gain/loss/replace/reset; two-item attribute stacking; carrying capacity, armor, and damage-reduction queries; appearance independence; movement-speed and jump-strength controller consumption; denied/allowed/exhausted double jump; airborne removal; denied/allowed dash; facing and active-removal behavior; wall collision; exact default-controller regression; and zero property-resolution allocation.
+
+The bounded Prompt 21 GPU-backed route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo properties
+```
+
+It executes real controller behavior for default and modified movement, default and stronger jump, double-jump denial/grant, dash denial/grant, and dash wall collision. It directly verifies carry, armor, damage reduction, duplicate-grant removal, restoration, and independent characters, then renders both characters through one range and one indexed-instanced draw. Missing evidence, allocation growth, or GPU-resource growth returns nonzero.
+
+Prompt 22 adds four grouped deterministic tests in `tests/foundation_playground_tests.zig`, bringing the repository to 261 top-level Zig test declarations. The focused command is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-foundation
+```
+
+Coverage includes the complete 1,800-frame raw-input route; left/right traversal, camera follow, three-layer parallax, short and stronger held jumps, body/build/hair changes, topology rebind, speed/jump loadouts, double jump, dash, landing, breathing, cape/sleeve response, approach, one handshake contact/release/completion, two synthetic viewport changes, exact loadout restoration, reset, and stable final state. Separate cases compare gameplay/loadout/pending edges across viewport changes, mutate then verify the complete reset baseline, and exercise deterministic bounded unified sprite/mesh ordering with debug primitives.
+
+The GPU-backed acceptance route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo foundation --scripted-input
+```
+
+It requires Direct3D 12/DXIL, three persistent mesh definitions, three modular characters, eight static colliders, conventional two-sleeve and nonstandard four-sleeve expansion, actual controller property consumption, canonical handshake IK/foot planting, exact reset, zero fixed-buffer update/submission growth, zero unified-queue allocation after stabilization, and zero GPU-resource creation after scene/topology initialization. It reports actual sprite/mesh instance, range, draw, and upload counts and rejects more than 32 total mixed draw commands. The interactive companion is `zig build run -- --demo foundation --interactive`.
+
+Resize verification is split deliberately: pure tests use synthetic nonzero viewports and compare authoritative state plus pending edge counts exactly; the SDL route feeds real resize/pixel-size/restore events through drawable-size refresh and the same camera setter. Neither form claims physical manual resizing unless it was actually performed.
+
 Prompt 11's GPU-backed evidence run is:
 
 ```text

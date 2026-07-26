@@ -62,27 +62,43 @@ test "input snapshots merge keyboard and gamepad and expose deterministic edges"
     snapshot = try builder.update(.{ .gamepad_move_axis = input.gamepad_dead_zone });
     try std.testing.expectEqual(@as(f32, 0), snapshot.move_axis);
 
-    snapshot = try builder.update(.{ .keyboard = .{ .space = true, .e = true } });
+    snapshot = try builder.update(.{ .keyboard = .{ .space = true, .left_shift = true, .e = true } });
     try std.testing.expect(snapshot.jump.pressed and snapshot.jump.held and !snapshot.jump.released);
+    try std.testing.expect(snapshot.dash.pressed and snapshot.dash.held and !snapshot.dash.released);
     try std.testing.expect(snapshot.interact.pressed);
     snapshot = try builder.update(.{ .keyboard = .{ .space = true } });
     try std.testing.expect(!snapshot.jump.pressed and snapshot.jump.held and !snapshot.jump.released);
+    try std.testing.expect(snapshot.dash.released);
     try std.testing.expect(snapshot.interact.released);
     snapshot = try builder.update(.{});
     try std.testing.expect(!snapshot.jump.pressed and !snapshot.jump.held and snapshot.jump.released);
+    builder.reset();
+    snapshot = try builder.update(.{ .gamepad_dash = true });
+    try std.testing.expect(snapshot.dash.pressed and snapshot.dash.held);
+    builder.reset();
+    snapshot = try builder.update(.{ .keyboard = .{ .c = true, .v = true, .h = true, .l = true } });
+    try std.testing.expect(snapshot.body_preset_cycle.pressed and snapshot.body_preset_cycle.held);
+    try std.testing.expect(snapshot.build_cycle.pressed and snapshot.build_cycle.held);
+    try std.testing.expect(snapshot.hair_cycle.pressed and snapshot.hair_cycle.held);
+    try std.testing.expect(snapshot.loadout_cycle.pressed and snapshot.loadout_cycle.held);
+    snapshot = try builder.update(.{});
+    try std.testing.expect(snapshot.body_preset_cycle.released);
+    try std.testing.expect(snapshot.build_cycle.released);
+    try std.testing.expect(snapshot.hair_cycle.released);
+    try std.testing.expect(snapshot.loadout_cycle.released);
     try std.testing.expectError(error.NonFiniteGamepadAxis, builder.update(.{ .gamepad_move_axis = std.math.nan(f32) }));
 }
 
 test "pending input preserves zero-tick edges and consumes each edge once" {
     var builder = input.SnapshotBuilder{};
     var pending = input.PendingInput{};
-    try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .space = true, .e = true } }));
+    try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .space = true, .left_shift = true, .e = true } }));
     try pending.acceptFrame(try builder.update(.{}));
     const first = pending.consumeTick();
-    try std.testing.expect(first.jump_pressed and first.jump_released and first.interact_pressed);
+    try std.testing.expect(first.jump_pressed and first.jump_released and first.dash_pressed and first.interact_pressed);
     try std.testing.expect(!first.jump_held);
     const second = pending.consumeTick();
-    try std.testing.expect(!second.jump_pressed and !second.jump_released and !second.interact_pressed);
+    try std.testing.expect(!second.jump_pressed and !second.jump_released and !second.dash_pressed and !second.interact_pressed);
 
     try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .space = true, .d = true } }));
     const rapid = pending.consumeTick();

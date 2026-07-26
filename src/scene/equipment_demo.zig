@@ -228,11 +228,11 @@ pub fn initDefinition(
         .{ .stable_id = "accessory", .render_layer = 78 },
     };
     const attributes = [_]equipment.AttributeDefinitionInput{
-        .{ .stable_id = "armor" },
-        .{ .stable_id = "physical_damage_reduction" },
-        .{ .stable_id = "movement_speed" },
-        .{ .stable_id = "jump_strength" },
-        .{ .stable_id = "carrying_capacity" },
+        .{ .stable_id = "armor", .base_value = 0, .minimum = 0, .maximum = 10_000 },
+        .{ .stable_id = "physical_damage_reduction", .base_value = 0, .minimum = 0, .maximum = 0.95 },
+        .{ .stable_id = "movement_speed", .base_value = 4.5, .minimum = 0.1, .maximum = 20 },
+        .{ .stable_id = "jump_strength", .base_value = 9, .minimum = 3.51, .maximum = 30 },
+        .{ .stable_id = "carrying_capacity", .base_value = 50, .minimum = 0, .maximum = 10_000 },
     };
     const capabilities = [_]equipment.CapabilityDefinitionInput{
         .{ .stable_id = "double_jump" },
@@ -367,6 +367,14 @@ pub fn initDefinition(
             .capability_grants = &.{"dash"},
         },
         .{
+            .stable_id = "feather_amulet",
+            .occupied_slots = &.{"neck_accessory"},
+            .visual_recipes = &.{attachmentRecipe("amulet_visual", "neck", "torso", "accessory", math.Transform2D.init(.{ .x = 0, .y = -0.08 }, 0, math.Vec2.one))},
+            .covered_body_regions = &.{},
+            .attribute_modifiers = &.{},
+            .capability_grants = &.{"double_jump"},
+        },
+        .{
             .stable_id = "backpack",
             .occupied_slots = &.{"back"},
             .visual_recipes = &.{attachmentRecipe("backpack_visual", "upper_back", "torso", "accessory", math.Transform2D.init(.{ .x = -0.12, .y = -0.20 }, 0, math.Vec2.one))},
@@ -380,6 +388,14 @@ pub fn initDefinition(
             .visual_recipes = &.{everyRecipe("boot", "foot_role", 2, "left_foot", "accessory", math.Transform2D.identity())},
             .covered_body_regions = &.{ "left_foot", "right_foot" },
             .attribute_modifiers = &.{.{ .attribute = "movement_speed", .operation = .multiply, .amount = 1.15 }},
+            .capability_grants = &.{},
+        },
+        .{
+            .stable_id = "spring_boots",
+            .occupied_slots = &.{"shoes"},
+            .visual_recipes = &.{everyRecipe("boot", "foot_role", 2, "left_foot", "accessory", math.Transform2D.identity())},
+            .covered_body_regions = &.{ "left_foot", "right_foot" },
+            .attribute_modifiers = &.{.{ .attribute = "jump_strength", .operation = .multiply, .amount = 1.20 }},
             .capability_grants = &.{},
         },
         .{

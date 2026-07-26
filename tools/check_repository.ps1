@@ -114,6 +114,9 @@ $anatomyTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '
 $equipmentSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment.zig')
 $equipmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment_demo.zig')
 $equipmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/equipment_tests.zig')
+$characterPropertiesSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_properties.zig')
+$characterPropertiesDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_properties_demo.zig')
+$characterPropertiesTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/character_properties_tests.zig')
 $deformationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/deformation.zig')
 $breathingDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/breathing_demo.zig')
 $deformationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/deformation_tests.zig')
@@ -122,6 +125,8 @@ $renderQueueSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 's
 $meshCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/mesh_gpu_catalog.zig')
 $meshAttachmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/mesh_attachment_demo.zig')
 $meshAttachmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/mesh_attachment_tests.zig')
+$foundationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_playground.zig')
+$foundationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/foundation_playground_tests.zig')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
@@ -1104,8 +1109,8 @@ $requiredEquipmentTypes = @(
     'pub const VisualLayerId = enum(u16)',
     'pub const VisualComponentId = enum(u16)',
     'pub const EquipmentItemId = enum(u16)',
-    'pub const AttributeId = enum(u16)',
-    'pub const CapabilityId = enum(u16)',
+    'pub const AttributeId = properties.AttributeId',
+    'pub const CapabilityId = properties.CapabilityId',
     'pub const ResolvedVisualInstance = struct',
     'pub const ActiveCoverage = struct',
     'pub const ActiveModifier = struct',
@@ -1443,6 +1448,154 @@ foreach ($phrase in $requiredMeshAttachmentTestPhrases) {
     }
 }
 
+foreach ($forbiddenDependency in @(
+    '@import("equipment")',
+    '@import("character_controller")',
+    '@import("sprite_batch")',
+    '@import("camera2d")',
+    'SDL_',
+    'Allocator',
+    '.alloc('
+)) {
+    if ($characterPropertiesSource.Contains($forbiddenDependency)) {
+        Write-Error "Prompt 21 generic property resolver has a forbidden dependency or allocation path: '$forbiddenDependency'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'pub const AttributeId = enum(u16)',
+    'pub const CapabilityId = enum(u16)',
+    'pub const SourceId = struct',
+    'pub const BaseAttributeOverride = struct',
+    'pub const Builder = struct',
+    'insertionSortModifiers',
+    'additive_totals',
+    'multiplier_products',
+    'capability_source_counts'
+)) {
+    if (-not $characterPropertiesSource.Contains($phrase)) {
+        Write-Error "Prompt 21 bounded property-resolution contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'stepWithProperties',
+    'additional_air_jumps_with_double_jump',
+    'dash_ticks_remaining',
+    'dash_cooldown_ticks_remaining',
+    'properties.double_jump',
+    'properties.dash'
+)) {
+    if (-not $controllerSource.Contains($phrase)) {
+        Write-Error "Prompt 21 controller consumer contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($itemName in @('winged_boots', 'spring_boots', 'speed_boots', 'amulet')) {
+    if ($controllerSource.Contains($itemName)) {
+        Write-Error "Prompt 21 controller inspects an equipment item name: '$itemName'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'dash_pressed_pending',
+    '.dash_pressed = pending.dash_pressed_pending',
+    'SDL_SCANCODE_LSHIFT',
+    'SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER'
+)) {
+    if (-not ($inputSource + $sdlInputSource).Contains($phrase)) {
+        Write-Error "Prompt 21 platform-neutral dash input contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'default_movement_observed',
+    'modified_movement_observed',
+    'stronger_jump_observed',
+    'double_jump_denied',
+    'double_jump_allowed',
+    'dash_collision_observed',
+    'duplicate_grants_preserved',
+    'character_isolation_observed'
+)) {
+    if (-not $characterPropertiesDemoSource.Contains($phrase)) {
+        Write-Error "Prompt 21 deterministic evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'attribute definitions modifiers and base overrides reject invalid data',
+    'resolution uses deterministic additive then multiplicative stacking and clamps bounds',
+    'capabilities count independent sources and removal preserves remaining grants',
+    'equipment lifecycle resolves modifiers grants replacement reset and appearance-independent state',
+    'resolved equipment properties drive movement jump double jump and dash through the controller',
+    'dash collides with walls and default resolved controller path is regression-equivalent',
+    'property resolution performs no allocation growth'
+)) {
+    if (-not $characterPropertiesTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 21 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'app_module.addImport("character_properties", character_properties_module)',
+    'test_module.addImport("character_properties", character_properties_module)',
+    'app_module.addImport("character_properties_demo", character_properties_demo_module)'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 21 build wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'try scene.player.stepController(&scene.world, intent_value)',
+    'try player.initializeEquipment(equipment_definition.view())',
+    'try scene.player.submitUnified(queue)',
+    'pub fn applyViewport(scene: *Scene, width: u32, height: u32)',
+    'pub fn resetWorld(scene: *Scene)',
+    'try scene.manager.updateTick(scene.simulation_tick, &participants_value)',
+    'scene.evidence.conventional_sleeves != 2',
+    'scene.evidence.nonstandard_sleeves != 4',
+    'runtime_allocation_delta != 0',
+    'gpu_resource_delta != 0'
+)) {
+    if (-not ($foundationSource + [Environment]::NewLine + $gpuSource).Contains($phrase)) {
+        Write-Error "Prompt 22 integrated foundation contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($foundationSource, 'SDL_|CreateGPU|ReleaseGPU|DrawGPU|controller\.state\.(position|velocity|grounded|supporting_collider)\s*=|player\.world_position\s*=')) {
+    Write-Error 'Prompt 22 scene must not poll SDL, own GPU APIs, or directly mutate authoritative controller/root state.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'bounded foundation script verifies world customization properties abilities interaction resize and reset',
+    'synthetic viewport changes preserve gameplay loadout capabilities and pending input edges',
+    'foundation reset restores the complete configured baseline without stale mesh or secondary state',
+    'foundation unified ordering stays deterministic and bounded across topology and loadout changes'
+)) {
+    if (-not $foundationTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 22 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'app_module.addImport("foundation_playground", foundation_playground_module)',
+    'test_module.addImport("foundation_playground", foundation_playground_module)',
+    'b.step("test-foundation"'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 22 build wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @('SDL_SCANCODE_C', 'SDL_SCANCODE_V', 'SDL_SCANCODE_H', 'SDL_SCANCODE_L')) {
+    if (-not $sdlInputSource.Contains($phrase)) {
+        Write-Error "Prompt 22 platform-neutral customization mapping is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -1486,4 +1639,6 @@ Write-Host 'Prompt 16 modular-anatomy audit passed: compositional repeated parts
 Write-Host 'Prompt 17 equipment audit passed: extensible typed definitions, anatomy-aware bounded expansion, transactional loadouts, independent coverage/effects, character-owned state, and the global sprite path.'
 Write-Host 'Prompt 18 deformation audit passed: fixed-tick breathing, shared instance-bound resolution, declarative visual response, gameplay isolation, bounded evidence, and allocation-free hot paths.'
 Write-Host 'Prompt 19 mesh-attachment audit passed: validated immutable topology, per-binding mutable ownership, one semantic sprite/mesh queue, persistent SDL GPU topology, bounded frame slots, shared deformation, honest metrics, and deterministic evidence.'
+Write-Host 'Prompt 21 character-property audit passed: typed finite definitions, stable-source stacking, counted capabilities, transactional character recomputation, generic controller consumption, platform-neutral dash, bounded evidence, and no renderer/allocation dependency.'
+Write-Host 'Prompt 22 foundation audit passed: one production world/controller path, modular topology and loadouts, separated visual/property branches, unified mixed rendering, resize/reset invariance, bounded evidence, and no scene-owned SDL/GPU authority.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = @import("math");
 const deformation = @import("deformation");
+const attachment_secondary_motion = @import("attachment_secondary_motion");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
 const humanoid = @import("humanoid");
@@ -11,6 +12,52 @@ const fault_injection = @import("fault_injection");
 
 pub const required_frames: u32 = 240;
 pub const character_count: usize = 3;
+
+pub const long_hair_secondary_motion = attachment_secondary_motion.Definition{
+    .dynamic_point_count = 3,
+    .rest_offsets = .{
+        .{ .x = 0, .y = -0.34 },
+        .{ .x = 0, .y = -0.70 },
+        .{ .x = 0, .y = -1.04 },
+        math.Vec2.zero,
+    },
+    .spring_configuration = .{
+        .stiffness = 105,
+        .damping = 18,
+        .maximum_displacement = 0.28,
+        .maximum_velocity = 4.0,
+    },
+    .gravity_displacement = .{ .x = 0, .y = -0.045 },
+    .acceleration_response = .{ .x = 0.006, .y = 0.005 },
+    .velocity_response = .{ .x = 0.020, .y = 0.012 },
+    .chain_follow = 0.34,
+    .landing_impulse_scale = 0.035,
+    .output_translation_scale = 0.30,
+    .maximum_rotation_radians = 0.42,
+};
+
+pub const ponytail_secondary_motion = attachment_secondary_motion.Definition{
+    .dynamic_point_count = 3,
+    .rest_offsets = .{
+        .{ .x = -0.04, .y = -0.34 },
+        .{ .x = -0.08, .y = -0.70 },
+        .{ .x = -0.12, .y = -1.04 },
+        math.Vec2.zero,
+    },
+    .spring_configuration = .{
+        .stiffness = 82,
+        .damping = 15,
+        .maximum_displacement = 0.34,
+        .maximum_velocity = 4.8,
+    },
+    .gravity_displacement = .{ .x = 0, .y = -0.055 },
+    .acceleration_response = .{ .x = 0.008, .y = 0.006 },
+    .velocity_response = .{ .x = 0.026, .y = 0.014 },
+    .chain_follow = 0.42,
+    .landing_impulse_scale = 0.045,
+    .output_translation_scale = 0.34,
+    .maximum_rotation_radians = 0.52,
+};
 
 const profile_names = [_][]const u8{ "simplified", "modest", "adult_detailed" };
 const morphology_channel_names = [_][]const u8{
@@ -416,13 +463,14 @@ fn initDefinitionWithInjector(
         );
         visual_cursor += 1;
     }
-    const hair_visuals = [_]struct { []const u8, math.Transform2D, math.Vec2, [4]f32 }{
-        .{ "short_hair", math.Transform2D.init(.{ .x = 0, .y = 0.20 }, 0, math.Vec2.one), .{ .x = 0.72, .y = 0.34 }, .{ 0.20, 0.08, 0.03, 1 } },
-        .{ "long_hair", math.Transform2D.init(.{ .x = 0, .y = -0.08 }, 0, math.Vec2.one), .{ .x = 0.78, .y = 1.10 }, .{ 0.08, 0.05, 0.02, 1 } },
-        .{ "ponytail_hair", math.Transform2D.init(.{ .x = -0.30, .y = -0.22 }, -0.18, math.Vec2.one), .{ .x = 0.22, .y = 1.08 }, .{ 0.65, 0.18, 0.06, 1 } },
+    const hair_visuals = [_]struct { []const u8, math.Transform2D, math.Vec2, [4]f32, ?attachment_secondary_motion.Definition }{
+        .{ "short_hair", math.Transform2D.init(.{ .x = 0, .y = 0.20 }, 0, math.Vec2.one), .{ .x = 0.72, .y = 0.34 }, .{ 0.20, 0.08, 0.03, 1 }, null },
+        .{ "long_hair", math.Transform2D.init(.{ .x = 0, .y = -0.08 }, 0, math.Vec2.one), .{ .x = 0.78, .y = 1.10 }, .{ 0.08, 0.05, 0.02, 1 }, long_hair_secondary_motion },
+        .{ "ponytail_hair", math.Transform2D.init(.{ .x = -0.30, .y = -0.22 }, -0.18, math.Vec2.one), .{ .x = 0.22, .y = 1.08 }, .{ 0.65, 0.18, 0.06, 1 }, ponytail_secondary_motion },
     };
     for (hair_visuals) |entry| {
         visuals[visual_cursor] = extraVisual(entry[0], .{ .attachment_point = "head_scalp" }, entry[1], entry[2], .{ 0.5, 0.25 }, entry[3], 41, "head");
+        visuals[visual_cursor].secondary_motion = entry[4];
         visual_cursor += 1;
     }
     for ([_]struct { []const u8, []const u8, math.Vec2, u16 }{

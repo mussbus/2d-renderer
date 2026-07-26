@@ -41,6 +41,12 @@ resolved_channel = low + (high - low) * t
 
 Precedence for a part is per-instance override, then per-channel override, then global build. Reset selects the body preset's morphology preset and build, clears both override layers, and recomputes all resolved values.
 
+## Integrated foundation evidence
+
+Prompt 22 creates three adult configurations from the same immutable modular definition and canonical animation library: a controlled conventional preset, a distinct-face handshake partner, and a nonstandard extra-arm/tail/horn showcase. Their authored build values differ, the controlled character applies a left-upper-arm instance override, and the three select distinct face/hair combinations. The nonstandard character expands the same long-sleeve recipe to four compatible upper-arm bindings while conventional characters expand it to two.
+
+The controlled character may cycle between canonical adult presets, global build values, and hair definitions while moving. Each selection reevaluates the existing anatomy/appearance runtime and transactionally rebinds the current loadout. It does not allocate a new skeleton, animation library, renderer, mesh topology, or GPU resource. The dedicated Prompt 17 tests remain authoritative for arbitrary topology/cardinality; Prompt 22 provides live integrated evidence without making noncanonical limbs participants in canonical handshake IK.
+
 Bindings use neutral generalized transform coefficients. A resolved scalar contributes translation, rotation, and component scale relative to the binding's neutral value. Definition initialization validates the low and high endpoints so no supported preset can produce a non-positive visual scale. There is no renderer-side per-anatomy interpolation switch.
 
 Canonical bone lengths do not change. Ordinary limb thickness and hand/foot/head proportions are visual deformations applied to existing appearance records. Consequently morphology cannot change controller roots, collider relationships, handshake reach, foot-placement geometry, animation sampling, or canonical IK segment lengths. Module-local articulation may own different geometry because it is not implicitly part of those canonical systems.

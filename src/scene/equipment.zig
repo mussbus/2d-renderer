@@ -1,6 +1,8 @@
 const std = @import("std");
 const math = @import("math");
 const deformation = @import("deformation");
+const secondary_motion = @import("attachment_secondary_motion");
+const properties = @import("character_properties");
 const skeleton = @import("skeleton");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
@@ -11,8 +13,8 @@ pub const maximum_anatomy_roles: usize = 32;
 pub const maximum_visual_layers: usize = 32;
 pub const maximum_visual_components: usize = 96;
 pub const maximum_item_definitions: usize = 96;
-pub const maximum_attribute_definitions: usize = 64;
-pub const maximum_capability_definitions: usize = 64;
+pub const maximum_attribute_definitions: usize = properties.maximum_attribute_definitions;
+pub const maximum_capability_definitions: usize = properties.maximum_capability_definitions;
 pub const maximum_item_references: usize = 512;
 pub const maximum_visual_recipes: usize = 256;
 pub const maximum_equipped_items: usize = 24;
@@ -61,21 +63,8 @@ pub const EquipmentItemId = enum(u16) {
     }
 };
 
-pub const AttributeId = enum(u16) {
-    _,
-
-    pub fn index(id: AttributeId) usize {
-        return @intFromEnum(id);
-    }
-};
-
-pub const CapabilityId = enum(u16) {
-    _,
-
-    pub fn index(id: CapabilityId) usize {
-        return @intFromEnum(id);
-    }
-};
+pub const AttributeId = properties.AttributeId;
+pub const CapabilityId = properties.CapabilityId;
 
 pub const ItemVisualRecipeId = enum(u16) {
     _,
@@ -99,13 +88,8 @@ pub const VisualLayerInput = struct {
     render_layer: u16,
 };
 
-pub const AttributeDefinitionInput = struct {
-    stable_id: []const u8,
-};
-
-pub const CapabilityDefinitionInput = struct {
-    stable_id: []const u8,
-};
+pub const AttributeDefinitionInput = properties.AttributeDefinitionInput;
+pub const CapabilityDefinitionInput = properties.CapabilityDefinitionInput;
 
 pub const VisualComponentInput = struct {
     stable_id: []const u8,
@@ -115,6 +99,7 @@ pub const VisualComponentInput = struct {
     tint: [4]f32,
     texture_page: u32 = 0,
     deformation_response: deformation.Response = .{},
+    secondary_motion: ?secondary_motion.Definition = null,
     primitive: VisualPrimitiveInput = .rigid_sprite,
 };
 
@@ -150,10 +135,7 @@ pub const ItemVisualRecipeInput = struct {
     visual_layer: []const u8,
 };
 
-pub const AttributeOperation = enum(u8) {
-    add,
-    multiply,
-};
+pub const AttributeOperation = properties.AttributeOperation;
 
 pub const AttributeModifierInput = struct {
     attribute: []const u8,
@@ -198,15 +180,8 @@ pub const VisualLayer = struct {
     render_layer: u16,
 };
 
-pub const AttributeDefinition = struct {
-    id: AttributeId,
-    stable_id: skeleton.DebugName,
-};
-
-pub const CapabilityDefinition = struct {
-    id: CapabilityId,
-    stable_id: skeleton.DebugName,
-};
+pub const AttributeDefinition = properties.AttributeDefinition;
+pub const CapabilityDefinition = properties.CapabilityDefinition;
 
 pub const VisualComponent = struct {
     id: VisualComponentId,
@@ -217,6 +192,7 @@ pub const VisualComponent = struct {
     tint: [4]f32,
     texture_page: u32,
     deformation_response: deformation.Response,
+    secondary_motion: ?secondary_motion.Definition,
     primitive: VisualPrimitive,
 };
 
@@ -404,6 +380,7 @@ pub const Definition = struct {
             };
             if (!finiteArray(4, input.tint) or !normalizedArray(4, input.tint)) return error.InvalidVisualComponent;
             try input.deformation_response.validate();
+            if (input.secondary_motion) |definition| try definition.validate();
             const stable_id = try skeleton.DebugName.init(input.stable_id);
             try ensureUniqueName(VisualComponent, visual_components[0..index], stable_id);
             visual_components[index] = .{
@@ -415,6 +392,7 @@ pub const Definition = struct {
                 .tint = input.tint,
                 .texture_page = input.texture_page,
                 .deformation_response = input.deformation_response,
+                .secondary_motion = input.secondary_motion,
                 .primitive = primitive,
             };
         }
@@ -422,9 +400,16 @@ pub const Definition = struct {
         const attributes = allocator.alloc(AttributeDefinition, inputs.attributes.len) catch return error.AllocationFailure;
         errdefer allocator.free(attributes);
         for (inputs.attributes, 0..) |input, index| {
+            try input.validate();
             const stable_id = try skeleton.DebugName.init(input.stable_id);
             try ensureUniqueName(AttributeDefinition, attributes[0..index], stable_id);
-            attributes[index] = .{ .id = @enumFromInt(index), .stable_id = stable_id };
+            attributes[index] = .{
+                .id = @enumFromInt(index),
+                .stable_id = stable_id,
+                .base_value = input.base_value,
+                .minimum = input.minimum,
+                .maximum = input.maximum,
+            };
         }
 
         const capabilities = allocator.alloc(CapabilityDefinition, inputs.capabilities.len) catch return error.AllocationFailure;
@@ -432,7 +417,11 @@ pub const Definition = struct {
         for (inputs.capabilities, 0..) |input, index| {
             const stable_id = try skeleton.DebugName.init(input.stable_id);
             try ensureUniqueName(CapabilityDefinition, capabilities[0..index], stable_id);
-            capabilities[index] = .{ .id = @enumFromInt(index), .stable_id = stable_id };
+            capabilities[index] = .{
+                .id = @enumFromInt(index),
+                .stable_id = stable_id,
+                .granted_by_default = input.granted_by_default,
+            };
         }
 
         var occupied_slot_count: usize = 0;
@@ -552,7 +541,7 @@ pub const Definition = struct {
 
             const modifier_start = modifier_cursor;
             for (input.attribute_modifiers) |modifier_input| {
-                if (!std.math.isFinite(modifier_input.amount)) return error.NonFiniteAttributeModifier;
+                try properties.validateModifierAmount(modifier_input.operation, modifier_input.amount);
                 const attribute_id = try findAttribute(attributes, modifier_input.attribute);
                 for (attribute_modifiers[modifier_start..modifier_cursor]) |existing| {
                     if (existing.attribute == attribute_id and existing.operation == modifier_input.operation) {
@@ -704,10 +693,12 @@ pub const ResolvedVisualInstance = struct {
     body_region: appearance.BodyRegionId,
     owning_character: u32,
     mesh_state: mesh.InstanceState = .{},
+    secondary: secondary_motion.RuntimeState = .{},
 };
 
 pub const ActiveModifier = struct {
     item: EquipmentItemId,
+    source_ordinal: u16,
     attribute: AttributeId,
     operation: AttributeOperation,
     amount: f32,
@@ -889,6 +880,10 @@ pub const Loadout = struct {
     fn rebuildDerived(loadout: *Loadout, context: AnatomyContext) !void {
         try loadout.validateCompatibility(context);
         loadout.slot_occupants = [_]?EquipmentItemId{null} ** maximum_equipment_slots;
+        for (loadout.resolved_visuals[0..loadout.resolved_visual_count]) |*visual| {
+            visual.secondary.clear();
+            visual.mesh_state = .{};
+        }
         loadout.resolved_visual_count = 0;
         loadout.active_modifier_count = 0;
         loadout.active_capability_count = 0;
@@ -917,10 +912,14 @@ pub const Loadout = struct {
                 loadout.active_coverage_count += 1;
             }
 
-            for (loadout.definition.attribute_modifiers[item.modifier_start .. item.modifier_start + item.modifier_count]) |modifier| {
+            for (
+                loadout.definition.attribute_modifiers[item.modifier_start .. item.modifier_start + item.modifier_count],
+                0..,
+            ) |modifier, source_ordinal| {
                 if (loadout.active_modifier_count >= maximum_active_modifiers) return error.ActiveModifierCapacityExceeded;
                 loadout.active_modifiers[loadout.active_modifier_count] = .{
                     .item = item_id,
+                    .source_ordinal = @intCast(source_ordinal),
                     .attribute = modifier.attribute,
                     .operation = modifier.operation,
                     .amount = modifier.amount,

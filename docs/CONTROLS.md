@@ -6,6 +6,14 @@ Run the open-ended interactive playground with:
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --demo playground --interactive
 ```
 
+The primary integrated foundation playground is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo foundation --interactive
+```
+
+It retains every production movement, interaction, timing, debug, resize, and exit control. The focused `playground` route remains available unchanged.
+
 It runs until Escape, an SDL window-close request, or an optional `--frames` limit. Walk right toward the passive character. A handshake can begin only when both characters are grounded, the player faces right, the passive character faces left, and their fixed roots are within the authored `3.72 m ± 0.02 m` envelope. There is no root snap, facing correction, or motion warping. Hold Space for the higher jump; releasing it while rising produces the existing shorter jump.
 
 The bounded production-path verification is:
@@ -23,6 +31,14 @@ The bounded Prompt 14 camera and parallax route is:
 ```
 
 It holds the mapped left control until the character crosses the extended cave, then releases to demonstrate normal controller deceleration. The deterministic camera uses a `3.25 m` horizontal dead zone; cave background, midground, and gameplay layers respond at `0.125`, `0.45`, and `1.0` respectively. This route does not write controller position or bypass collision.
+
+The bounded Prompt 20 modular attachment-secondary route is timeline-driven and needs no physical input:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo attachment-secondary
+```
+
+It uses copied authoritative velocity/landing/facing samples to demonstrate cape, long-hair, ponytail, and loose-sleeve response plus cape unequip/re-equip. It never creates `CharacterIntent`, moves a controller root, or assigns spring nodes from the script.
 
 The visible playground window is resizable. Larger drawable pixel dimensions reveal more world at the same 82 pixels per metre. Minimize can temporarily produce no drawable and safely skips presentation; restore or repeated resize events refresh the high-DPI pixel dimensions without recreating unrelated GPU resources.
 
@@ -89,11 +105,16 @@ The feedback-driven script idles, walks with alternating contacts, jumps from a 
 | `A` or Left Arrow | Move left |
 | `D` or Right Arrow | Move right |
 | Space | Jump; release while rising for a shorter jump |
+| Left Shift | Dash when the resolved character capabilities grant it |
 | `E` | Produce an interaction intent; the fixed-position handshake route consumes its press edge |
 | `R` | Reset controller, pending input, animation playback, procedural springs, previous-motion sampling, and interpolation state |
 | `F1` | Toggle authoritative static-collider visualization |
 | `F2` | Cycle normal speed, quarter speed, and paused |
 | `F3` | Advance exactly one 240 Hz simulation/animation tick while paused |
+| `C` | Cycle the controlled body preset in the foundation playground |
+| `V` | Cycle global build in the foundation playground |
+| `H` | Cycle short, long, and ponytail hair in the foundation playground |
+| `L` | Cycle speed, stronger-jump/full-plate, and double-jump loadouts in the foundation playground |
 | Escape | Exit the interactive playground |
 
 Opposing keyboard directions cancel to zero. A keyboard direction has magnitude one and therefore wins an equal-magnitude gamepad tie. Zero input preserves the last meaningful facing direction.
@@ -106,17 +127,30 @@ The deterministic integrated route is selected with `--demo integrated --scripte
 | --- | --- |
 | Left stick horizontal | Move |
 | South button | Jump |
+| Right shoulder | Dash when the resolved character capabilities grant it |
 | West button | Produce interaction intent |
 
 The left-stick dead zone is `0.20`; magnitude outside it is rescaled continuously to `[0, 1]`. Keyboard and gamepad movement are merged by selecting the value with greater absolute magnitude. The lowest SDL joystick instance ID is selected deterministically. Add/remove events reopen the lowest available device, every opened handle is closed explicitly, and keyboard control remains available with no gamepad.
 
 ## Input timing
 
-SDL state is sampled once per rendered frame. `FrameInputSnapshot` records pressed, held, and released state. `PendingInput` preserves jump press, jump release, and interaction press edges through a frame that executes no fixed tick. The first following tick consumes each edge once; later ticks in the same rendered frame receive held state without replaying the edge. Reset and pause transitions clear pending edges.
+SDL state is sampled once per rendered frame. `FrameInputSnapshot` records pressed, held, and released state. `PendingInput` preserves jump press, jump release, dash press, and interaction press edges through a frame that executes no fixed tick. The first following tick consumes each edge once; later ticks in the same rendered frame receive held state without replaying the edge. Reset and pause transitions clear pending edges.
 
 Keyboard gameplay edges come from previous/current polled physical state, never SDL keydown repeat or text input. `A` and Left Arrow are one logical left direction; `D` and Right Arrow are one logical right direction. Holding both logical directions resolves to zero independently of press order. Keyboard/gamepad action buttons merge by logical OR, so simultaneous sources produce one edge. Horizontal values use greatest absolute magnitude, with keyboard winning equal-magnitude ties.
 
-On keyboard-focus loss, the current keyboard hold state is cleared, pending jump/interaction presses are discarded, and a required jump release is retained for the next fixed tick. Reset, debug, and interaction presses are not synthesized. Keys physically held across focus regain remain suppressed until released, so regain cannot create a phantom press. Gamepad polling remains independent; its live state continues to participate in the merged snapshot. Existing pending edges are cleared before new state from the focus-loss frame is accepted.
+On keyboard-focus loss, the current keyboard hold state is cleared, pending jump/dash/interaction presses are discarded, and a required jump release is retained for the next fixed tick. Reset, debug, and interaction presses are not synthesized. Keys physically held across focus regain remain suppressed until released, so regain cannot create a phantom press. Gamepad polling remains independent; its live state continues to participate in the merged snapshot. Existing pending edges are cleared before new state from the focus-loss frame is accepted.
+
+The bounded Prompt 21 route is `zig build run -- --frames 240 --demo properties`. It synthesizes controller intents only after resolving real equipment declarations, proves denied and allowed dash behavior, and checks wall collision, facing, cooldown state, and restoration without adding a second input path.
+
+The bounded Prompt 22 route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo foundation --scripted-input
+```
+
+Its `C`, `V`, `H`, and `L` changes originate as `RawInputState.KeyboardState`, become pressed/held/released fields in `FrameInputSnapshot`, and are consumed as frame-level customization commands. Movement, jump, dash, and interaction continue through `PendingInput -> CharacterIntent`; no gameplay or character code polls SDL. The scripted viewport changes call the same platform-neutral camera method as real resize events and assert that pending edge count and authoritative gameplay state are unchanged.
+
+Foundation reset restores the player spawn, velocity, grounded/support state, air-jump and dash counters, interaction/IK/override ownership, foot locks, animator/procedural/breathing state, body/build/hair selection, per-part override, default loadout, resolved attributes/capabilities, mesh/secondary runtime state, fixed-step clock, pending edges, and camera center. It preserves the current nonzero viewport extent and creates no GPU resource.
 
 The latest playground input diagnostic is fixed-size and read-only. It exposes `keyboard_left_held`, `keyboard_right_held`, `jump_pressed`, `jump_held`, `jump_released`, `interact_pressed`, `reset_pressed`, `debug_toggle_pressed`, `merged_move_axis`, `substeps_this_frame`, and `pending_edge_count`. Interactive console output is transition-only and bounded by actual control transitions; held state is not printed each frame.
 

@@ -56,11 +56,14 @@ The fixed-tick execution order is:
 8. resolve attachment points and module joints/sockets from the final canonical pose;
 9. resolve base body morphology and procedural breathing per anatomy instance;
 10. resolve each skin/clothing/equipment response from the same instance deformation;
-11. submit all visible records through the sprite batch or unified mixed queue.
+11. advance and compose any Prompt 20 per-visual bounded attachment secondary transform;
+
+Prompt 22 exercises that exact order on one moving controlled character with global/part morphology, fixed-tick breathing, a topology-generated long-sleeve mesh, fitted torso mesh, rigid armor, cape motion, and selectable long hair. There is no demo-local deformation calculation. Rigid armor opts down or out through its existing declarative response, while body, fitted mesh, and sleeves sample the same anatomy runtime and breathing phase. The bounded route records a full breathing range and nonzero secondary displacement while controller roots, collision, handshake geometry, attributes, and capabilities remain independent.
+12. submit all visible records through the sprite batch or unified mixed queue.
 
 IK remains canonical-pose authority; breathing does not alter its inputs or segment lengths. Facing is one character-root reflection and therefore reflects the already-resolved visual result without swapping anatomy identities.
 
-The matrix order for an anatomy visual is `source_world * attachment_local * resolved_deformation`. For anatomy-bound equipment it is `part_binding_world * recipe_local * resolved_deformation`. The sprite path composes that matrix on the CPU into the existing sprite record. The mesh path preserves the same mathematical order but sends the final two stages separately: the GPU applies weighted local deformation first and the binding matrix second. Because column vectors are used, the authored attachment-local transform and final animated/IK/facing source hierarchy follow the deformation. Body morphology is composed first in the resolved transform's components and breathing second; breathing is always regenerated from base state.
+The matrix order for an anatomy visual is `source_world * attachment_local * resolved_deformation * attachment_secondary`. For anatomy-bound equipment it is `part_binding_world * recipe_local * resolved_deformation * attachment_secondary`. The sprite path composes that matrix on the CPU into the existing sprite record. The mesh path combines the two finite local deformation component sets and sends that weighted local result separately from the binding matrix: the GPU applies weighted local deformation first and the binding matrix second. Because column vectors are used, the authored attachment-local transform and final animated/IK/facing source hierarchy follow the deformation. Body morphology is composed first, breathing second, and attachment secondary motion last; breathing and motion are always regenerated from their respective base/runtime state.
 
 ## Runtime changes and future material state
 

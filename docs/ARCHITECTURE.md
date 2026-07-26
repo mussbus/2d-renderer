@@ -59,19 +59,20 @@ Real frame delta is rejected when non-finite, sanitized to zero when negative, a
 Simulation order within one tick is fixed:
 
 1. Convert the current platform snapshot through pending edges and produce `CharacterIntent`.
-2. Advance controller velocity, gravity, jump policy, horizontal/vertical static collision, and grounded/support classification; emit physical jump/landing results.
+2. Resolve the character's bounded gameplay properties from current stable sources, then advance controller velocity, gravity, jump/double-jump/dash policy, horizontal/vertical static collision, and grounded/support classification; emit physical action and landing results.
 3. When not interaction-locked, select animation from authoritative physics and advance the animator exactly once by `1 / 240` second.
 4. Update walk weight transfer, consume a physical landing event once, advance procedural springs, compose local visual offsets, and evaluate the pre-leg hierarchy.
 5. Freeze both feet's pre-IK sole/hip inputs, query the authoritative collision world, update plant state, apply both analytical leg constraints, and leave the hierarchy evaluated.
 6. Process an interaction edge after the ordinary locomotion state is current.
 7. For each active interaction, advance its one shared tick counter, sample both role poses, compose procedural motion, and evaluate both pre-arm hierarchies.
 8. Freeze both pre-IK hands, compute one shared midpoint, apply both analytical arm constraints, then reapply only already-owned foot constraints. Arm and leg chains are disjoint; no new foot lock is acquired in this interaction branch.
-9. Observe lifecycle milestones and copy optional diagnostics after authoritative updates.
-10. Preserve previous/current physics transforms for render interpolation. On the render frame, globally submit all attachments and optional debug primitives, sort/build ranges, and issue the SDL GPU draw.
+9. Resolve final visual anchors, advance bounded per-visual attachment secondary state, and compose it after morphology/breathing without feeding any result back into authority.
+10. Observe lifecycle milestones and copy optional diagnostics after authoritative updates.
+11. Preserve previous/current physics transforms for render interpolation. On the render frame, globally submit all attachments and optional debug primitives, sort/build ranges, and issue the SDL GPU draw.
 
 ## Input and character intent
 
-SDL keyboard and gamepad code owns device discovery, hot-plugging, dead zones, and raw button state. It produces one renderer-independent frame snapshot whose buttons distinguish pressed, held, and released state. A pending-edge layer retains jump press/release and interaction press through zero-tick rendered frames, consumes each edge on the first following simulation tick, and preserves held state for every applicable tick. It then produces `CharacterIntent` containing normalized horizontal movement and jump/interaction semantics; reset and debug/time controls remain frame controls. Character, animation, physics, and interaction systems never query SDL directly. Tests construct snapshots and intents without platform input. `docs/CONTROLS.md` binds the exact key, gamepad, merge, and dead-zone policies.
+SDL keyboard and gamepad code owns device discovery, hot-plugging, dead zones, and raw button state. It produces one renderer-independent frame snapshot whose buttons distinguish pressed, held, and released state. A pending-edge layer retains jump press/release, dash press, and interaction press through zero-tick rendered frames, consumes each edge on the first following simulation tick, and preserves held state for every applicable tick. It then produces `CharacterIntent` containing normalized horizontal movement and jump/dash/interaction semantics; reset and debug/time controls remain frame controls. Character, animation, physics, and interaction systems never query SDL directly. Tests construct snapshots and intents without platform input. `docs/CONTROLS.md` binds the exact key, gamepad, merge, and dead-zone policies.
 
 ## Skeleton and pose ownership
 
@@ -79,7 +80,7 @@ A canonical humanoid `Skeleton` is immutable after initialization. It owns the b
 
 Prompt 3 implements this as `SkeletonDefinition`: one contiguous bone array, one contiguous socket array, one parent-before-child evaluation-order array, and fixed semantic-to-index tables. Bone and socket names use inline bounded storage, so no record owns an individual heap allocation. Authored input order is unrestricted. Validation uses a bounded iterative resolved-state pass; a pass with no progress identifies a cycle without recursion. Exactly one root, all 16 humanoid bone semantics, and all four hand/foot socket semantics are required.
 
-Each `Character` owns its controller state, animator state, current local pose, previous pose snapshot, secondary springs, arm IK workspace, immutable-index leg bindings, independent left/right plant state, and appearance/module runtime. The demo characters may share immutable skeleton, clip, attachment-point, visual, region, group, and rig-module definitions, but never share mutable pose arrays, foot locks, module-local pose, visibility, deformation, overrides, or derived visual matrices. All arrays are allocated or fixed-capacity during initialization. The steady-state loop performs no heap allocation.
+Each `Character` owns its controller state, resolved gameplay-property set, animator state, current local pose, previous pose snapshot, secondary springs, arm IK workspace, immutable-index leg bindings, independent left/right plant state, and appearance/module runtime. The demo characters may share immutable skeleton, clip, property, attachment-point, visual, region, group, and rig-module definitions, but never share mutable resolved properties, pose arrays, foot locks, module-local pose, visibility, deformation, overrides, or derived visual matrices. All arrays are allocated or fixed-capacity during initialization. The steady-state loop performs no heap allocation.
 
 The current canonical `Pose` owns separate contiguous local `Transform2D` and world `Mat3` arrays. It is compatible only with the definition allocation token and bone count captured at initialization; every evaluation receives the still-live definition explicitly. Definitions never cache current local or world pose. Visual attachments are immutable local metadata and never store authoritative world transforms. `docs/HUMANOID.md` records the concrete hierarchy, proportions, layer values, appearance model, and runtime allocation proof.
 
@@ -105,15 +106,55 @@ An immutable `equipment.Definition` is initialized against the immutable anatomy
 
 Prompt 19 generalizes `VisualComponent` without adding another character or item architecture. A component is either the established rigid sprite or a validated immutable deformable mesh. Both retain owning character, resolved anatomy/attachment binding, semantic visual layer, material/texture reference, and deterministic definition identity. Repeated mesh recipes share immutable topology but each resolved record owns its mutable binding/deformation state. `docs/MESH_ATTACHMENTS.md` binds the mesh validation, queue, GPU ownership, capacity, and evidence contracts.
 
+Prompt 20 lets an immutable appearance visual or equipment component opt into one bounded attachment-secondary definition. Mutable point springs are embedded in each character-owned `VisualRuntimeState` or `ResolvedVisualInstance`; neither a visual/component ID nor any hair, equipment, anatomy, or mesh definition owns mutable nodes. The fixed resolved anchor follows final animation/procedural/IK/anatomy motion, while the output is local visual deformation only. Unequip clears removed state, re-equip starts at rest, and a facing change clears the affected state before the existing single root reflection is applied. `docs/ATTACHMENT_SECONDARY_MOTION.md` binds the equations, capacity, lifecycle, composition, and evidence contracts.
+
 The mutation flow is copy candidate, validate all occupied slots and required anatomy, expand every recipe within authored and global bounds, rebuild deterministic coverage/effect views, then commit the entire bounded value. Failure changes nothing. No loadout mutation or query allocates or performs string lookup.
 
 Equipment rendering is a consumer in generalized character visual submission. A resolved record selects the current character-owned anatomy-part or attachment-point matrix and applies immutable recipe-local data. Sprite-only scenes enter the existing `SpriteBatch`; mixed scenes enter `UnifiedRenderQueue`, which uses the same scene/interaction/actor/visual key for both primitive kinds. The equipment system imports no renderer, SDL, controller, physics, animation, IK, or interaction module. The renderer receives primitive, material, transform/deformation, and order data only and never sees armor values or capabilities.
+
+Prompt 21 resolves equipment gameplay declarations through the generic bounded `character_properties` layer. Typed definitions provide explicit finite base/range metadata. Stable source-keyed additive and multiplicative records resolve as `clamp((base + additions) * multiplier_product)` after a deterministic sort. Capabilities are source counts, not equip-time Boolean toggles. Each character owns its resolved set and recomputes it transactionally with loadout changes. The controller receives only resolved movement speed, jump strength, double-jump availability, and dash availability; it never sees item names or visual definitions. Carrying capacity, armor, and physical damage reduction remain resolved/queryable for future consumers. Appearance, morphology, camera, renderer, and GPU state are absent from resolution. `docs/CHARACTER_PROPERTIES.md` binds the full stacking, source, controller, reset, and evidence contracts.
+
+## Prompt 22 integrated foundation boundary
+
+`foundation_playground.Scene` is an acceptance composition root, not a new engine subsystem. It instantiates the existing modular humanoid definition, authored animation library, static collision world, controlled `CharacterInstance`, passive characters, interaction manager, camera/follower, equipment resolver, deformable-mesh definitions, and unified render queue. Fixed ticks still execute the established order: consume `CharacterIntent`, resolve equipment-backed gameplay properties, advance the controller/collision state, select canonical animation, apply procedural motion and foot planting, advance breathing and resolved-instance secondary motion, update interaction/arm IK, and finally derive visual submissions. Camera and rendering remain downstream observers.
+
+The final definition flow is:
+
+```text
+Character/Anatomy Definitions + Equipment Definitions
+                         |
+              Loadout + Topology Resolution
+                         |
+          +--------------+----------------+
+          |                               |
+Resolved Visual Instances       Resolved Gameplay Effects
+          |                               |
+Appearance Deformation          Attributes / Capabilities
+          |                               |
+Sprite + Mesh Rendering         Gameplay Consumers
+```
+
+The branches share stable item definitions and loadout identity only. The visual branch owns anatomy bindings, coverage, layers, mesh instance state, and bounded secondary nodes. The gameplay branch owns numeric values and capability source counts. The renderer cannot grant a capability, and controller consumers cannot select a sprite, mesh, layer, topology match, or deformation response.
+
+The integrated route uses canonical roots and the existing right-arm/hand socket for handshake IK. Morphology, clothing, equipment properties, and secondary motion do not rewrite participant roots or the authored `3.72 m` eligibility geometry. The nonstandard showcase retains the canonical skeleton but is not inserted into the two-participant interaction candidate set; arbitrary noncanonical interaction binding remains outside this milestone rather than being approximated.
+
+Viewport changes update only the camera viewport scalars. The scene compares controller, interaction, appearance selection, loadout fingerprint, capability state, and pending-edge count before and after every synthetic resize. A real SDL resize reaches the same camera method after drawable-pixel refresh. Neither route reinitializes characters or GPU resources.
+
+Reset has one owner, `Scene.resetWorld`. It clears the manager, controller velocity/jump/dash state, animation and procedural state, foot locks, IK/overrides, breathing phase, appearance selection and overrides, resolved-instance secondary/mesh state, pending edges, fixed-step clock, and camera center. It then reapplies the authored initial body/build/hair configuration and atomically restores the equipment definition's default loadout and resolved properties. Viewport dimensions remain the current window dimensions; camera tracking restarts from the authored center.
+
+Future tools may author current validated definition inputs without changing runtime ownership:
+
+- A character/body editor could author anatomy modules, attachments, faces, hair, equipment, visual recipes, layers, and property grants.
+- A level editor could author static world geometry and object definitions.
+- A mission editor could author trigger regions and objective/event relationships.
+
+No editor runtime, serialization dependency, mission/objective system, trigger scripting, combat, inventory economy, or level mutation is introduced by Prompt 22.
 
 Prompt 18 inserts a shared resolved deformation stage between instance binding and visual submission. Each anatomy runtime retains both an undeformed binding matrix and a fully deformed descendant matrix. Skin and anatomy-bound equipment call the same resolver with immutable morphology/breathing bindings, character-local base morph and tick-derived breathing state, exact anatomy-instance identity, and per-visual response strengths. Rigid visuals can attenuate or opt out. `docs/DEFORMATION.md` binds the clock, composition order, invariants, and evidence.
 
 An optional rig module attaches to a validated attachment point and contributes at most 16 local joints plus 16 local sockets. Module joint parents and sockets are resolved and cycle-checked during initialization, then flattened into bounded contiguous arrays. Module joints are not automatically sampled by canonical clips or consumed by locomotion, standard arm IK, foot planting, controllers, or interactions. Integration with any future anatomy-specific driver must be explicit.
 
-`appearance.Runtime` is character-owned mutable state: attachment-point world matrices, module local pose and derived joint/socket matrices, visual visibility, local deformation, and derived visual matrices. Reset copies immutable module rest transforms and clears character-local appearance changes. Evaluation order is canonical pose, attachment points, module joints/sockets, then visuals. Facing remains one canonical character-root reflection inherited by every downstream transform.
+`appearance.Runtime` is character-owned mutable state: attachment-point world matrices, module local pose and derived joint/socket matrices, visual visibility, local deformation, optional per-visual attachment-secondary state, resolved secondary anchors, and derived visual matrices. Reset copies immutable module rest transforms and clears character-local appearance changes and motion nodes. Evaluation order is canonical pose, attachment points, module joints/sockets, base visuals, then bounded secondary composition. Facing remains one canonical character-root reflection inherited by every downstream transform.
 
 ## Animation sampling
 
@@ -204,7 +245,7 @@ Given identical configuration, initial state, and per-tick intents on the Window
 - Fixed-step accumulation policy when driven with explicit elapsed values.
 - Clip sampling, pose blending, state transitions, and event emission.
 - Character gravity, jumping, static-platform collision, and grounded state.
-- Secondary springs.
+- Pose-level and per-visual bounded secondary springs/control points.
 - Two-bone IK and socket error measurement.
 - Handshake phase coordination and draw-key overrides.
 

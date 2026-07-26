@@ -67,6 +67,11 @@ pub const CommandBuffer = struct {
         return @intCast(buffer.count);
     }
 
+    pub fn submitUnified(buffer: *const CommandBuffer, queue: anytype) !u32 {
+        for (buffer.commands[0..buffer.count]) |command| _ = try queue.submitSprite(command);
+        return @intCast(buffer.count);
+    }
+
     fn append(buffer: *CommandBuffer, command: sprite.SpriteRequest) !void {
         if (buffer.count == buffer.commands.len) {
             buffer.overflow_count += 1;

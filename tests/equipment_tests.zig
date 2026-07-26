@@ -24,7 +24,7 @@ const minimal_components = [_]equipment.VisualComponentInput{
     },
 };
 const minimal_attributes = [_]equipment.AttributeDefinitionInput{
-    .{ .stable_id = "fire_resistance" },
+    .{ .stable_id = "fire_resistance", .base_value = 0, .minimum = 0, .maximum = 1 },
 };
 const minimal_capabilities = [_]equipment.CapabilityDefinitionInput{
     .{ .stable_id = "wall_climb" },

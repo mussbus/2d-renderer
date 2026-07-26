@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = @import("math");
 const deformation = @import("deformation");
+const secondary_motion = @import("attachment_secondary_motion");
 const skeleton = @import("skeleton");
 const pose = @import("pose");
 const fault_injection = @import("fault_injection");
@@ -152,6 +153,7 @@ pub const VisualAttachmentInput = struct {
     texture_page: u32,
     body_part_layer: u16,
     deformation_response: deformation.Response = .{},
+    secondary_motion: ?secondary_motion.Definition = null,
 };
 
 pub const DefinitionInputs = struct {
@@ -223,6 +225,7 @@ pub const VisualAttachment = struct {
     texture_page: u32,
     body_part_layer: u16,
     deformation_response: deformation.Response,
+    secondary_motion: ?secondary_motion.Definition,
 };
 
 pub const DefinitionView = struct {
@@ -425,6 +428,7 @@ pub const Definition = struct {
                 return error.NonFiniteTransform;
             }
             try input.deformation_response.validate();
+            if (input.secondary_motion) |definition| try definition.validate();
             const name = try skeleton.DebugName.init(input.debug_name);
             for (visuals[0..index]) |*existing| {
                 if (name.eql(&existing.debug_name)) return error.DuplicateVisualAttachmentId;
@@ -450,6 +454,7 @@ pub const Definition = struct {
                 .texture_page = input.texture_page,
                 .body_part_layer = input.body_part_layer,
                 .deformation_response = input.deformation_response,
+                .secondary_motion = input.secondary_motion,
             };
         }
         for (inputs.visuals, 0..) |input, index| {
@@ -548,6 +553,8 @@ pub const Definition = struct {
 pub const VisualRuntimeState = struct {
     visible: bool = true,
     local_deformation: math.Transform2D = math.Transform2D.identity(),
+    secondary: secondary_motion.RuntimeState = .{},
+    secondary_anchor_world: math.Vec2 = math.Vec2.zero,
 };
 
 pub const Runtime = struct {
@@ -670,10 +677,57 @@ pub const Runtime = struct {
                 .module_socket => |global_index| runtime.module_socket_world[global_index],
                 .visual_attachment => |parent_id| runtime.visual_world[parent_id.index()],
             };
-            runtime.visual_world[visual.id.index()] = source_world
+            const base_world = source_world
                 .mul(try visual.local_to_source.localToParent())
                 .mul(try runtime.visual_states[visual.id.index()].local_deformation.localToParent());
+            var state = &runtime.visual_states[visual.id.index()];
+            state.secondary_anchor_world = base_world.translationPart();
+            if (!state.visible) state.secondary.clear();
+            runtime.visual_world[visual.id.index()] = if (visual.secondary_motion) |definition_value|
+                base_world.mul(try (try state.secondary.resolvedTransform(definition_value)).localToParent())
+            else
+                base_world;
         }
+    }
+
+    pub fn advanceSecondaryMotion(
+        runtime: *Runtime,
+        definition: DefinitionView,
+        shared_input: secondary_motion.TickInput,
+    ) !bool {
+        try runtime.validateCompatibility(definition);
+        var advanced = false;
+        for (definition.visuals) |visual| {
+            var state = &runtime.visual_states[visual.id.index()];
+            const motion_definition = visual.secondary_motion orelse {
+                state.secondary.clear();
+                continue;
+            };
+            if (!state.visible) {
+                state.secondary.clear();
+                continue;
+            }
+            var input = shared_input;
+            input.anchor_world = state.secondary_anchor_world;
+            try state.secondary.step(motion_definition, input);
+            advanced = true;
+        }
+        return advanced;
+    }
+
+    pub fn clearSecondaryMotion(runtime: *Runtime, definition: DefinitionView) !void {
+        try runtime.validateCompatibility(definition);
+        for (runtime.visual_states) |*state| state.secondary.clear();
+    }
+
+    pub fn visualSecondaryState(
+        runtime: *const Runtime,
+        definition: DefinitionView,
+        id: VisualAttachmentId,
+    ) !*const secondary_motion.RuntimeState {
+        try runtime.validateCompatibility(definition);
+        if (id.index() >= runtime.visual_states.len) return error.InvalidVisualAttachmentId;
+        return &runtime.visual_states[id.index()].secondary;
     }
 
     pub fn setVisible(runtime: *Runtime, definition: DefinitionView, id: VisualAttachmentId, visible: bool) !void {

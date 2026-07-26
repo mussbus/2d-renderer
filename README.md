@@ -25,6 +25,22 @@ Prompt 18 adds drift-resistant per-character breathing and one resolved appearan
 
 Prompt 19 generalizes an equipment visual to either the established rigid sprite or a validated immutable deformable mesh without adding a second character/item architecture. Its unified semantic queue interleaves both primitive kinds, while persistent topology buffers and three bounded dynamic instance slots support fitted garments, topology-expanded sleeves, and capes. Its honest mixed-render evidence route is `zig build run -- --frames 240 --demo mesh-attachments`.
 
+Prompt 20 adds one reusable fixed-capacity attachment secondary-motion primitive shared by equipment and anatomy visuals. Mutable nodes live in resolved character visual instances, never shared cape/hair/mesh definitions. The equipment cape, topology-expanded loose sleeves, long hair, and ponytail use the same bounded fixed-step path; short hair remains rigid. Equip/unequip/re-equip and facing changes reset deterministically, and controller/physics/interaction state remains invariant. Its GPU-backed evidence route is `zig build run -- --frames 240 --demo attachment-secondary`.
+
+Prompt 21 adds data-defined finite numeric attributes, source-counted capabilities, stable-source additive/multiplicative resolution, and character-owned recomputation after loadout changes. Movement speed and jump strength feed the existing controller, double jump grants exactly one air jump, and Left Shift/gamepad right shoulder produces a bounded collision-aware dash only when granted. Carrying capacity, armor, and physical damage reduction remain queryable for future inventory/combat consumers. Appearance never implies gameplay properties. Its GPU-backed evidence route is `zig build run -- --frames 240 --demo properties`.
+
+Prompt 22 adds the primary Character + World Foundation Playground without replacing any focused route. One modular controlled character, a canonical handshake partner, and a nonstandard-topology showcase share the established skeleton, animation, controller, collision, interaction, IK, foot-planting, deformation, secondary-motion, equipment, and unified sprite/mesh rendering paths in a traversable cave. The bounded route changes appearance and topology-aware loadouts, proves resolved movement/jump/double-jump/dash behavior, exercises camera/parallax and synthetic viewport changes, completes one measured handshake, performs the exact reset contract, and rejects allocation, resource, or draw-count growth:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo foundation --scripted-input
+```
+
+The open-ended primary foundation route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo foundation --interactive
+```
+
 ## Interactive playground
 
 ```powershell
@@ -36,11 +52,16 @@ Prompt 19 generalizes an equipment visual to either the established rigid sprite
 | `A` / Left Arrow | Move left |
 | `D` / Right Arrow | Move right |
 | Space | Jump; hold for a higher jump or release early for a shorter jump |
+| Left Shift | Dash when granted by resolved character capabilities |
 | `E` | Interact |
 | `R` | Reset the playground |
 | `F1` | Toggle debug visualization |
 | `F2` | Cycle normal, quarter-speed, and paused controller time modes where exposed |
 | `F3` | Single-step a paused controller route where exposed |
+| `C` | Cycle the controlled character body preset in the foundation playground |
+| `V` | Cycle the controlled character global build value in the foundation playground |
+| `H` | Cycle hair in the foundation playground |
+| `L` | Cycle the representative speed, jump/armor, and double-jump loadouts |
 | Escape | Exit |
 
 Walk right toward the passive character and stop near the authored handshake position. Both characters must be grounded and facing one another; spacing remains deliberately strict, and pressing `E` never snaps or warps either root. The raised platforms, short/held jump behavior, foot planting, arm IK, reset, and debug overlay all use the production runtime paths.
@@ -53,6 +74,8 @@ The bounded automated route uses synthetic raw key state through the identical k
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo playground --scripted-input
 ```
 
+`playground`, `side-scroller`, `equipment`, `properties`, `breathing`, `mesh-attachments`, and `attachment-secondary` remain focused regression/evidence routes. `foundation` composes their production implementations; it does not replace them.
+
 Start with:
 
 - [`AGENTS.md`](AGENTS.md) for binding requirements and prohibitions.
@@ -64,8 +87,10 @@ Start with:
 - [`docs/HUMANOID.md`](docs/HUMANOID.md) for transform, hierarchy, attachment, body-proportion, and deterministic-demo contracts.
 - [`docs/ANATOMY.md`](docs/ANATOMY.md) for compositional adult anatomy, multiplicity, morphology, presentation, face/hair, ownership, and alternative-rig boundaries.
 - [`docs/EQUIPMENT.md`](docs/EQUIPMENT.md) for typed equipment definitions, topology-aware visual recipes, transactional loadouts, layered coverage, effect declarations, rendering integration, and evidence.
+- [`docs/CHARACTER_PROPERTIES.md`](docs/CHARACTER_PROPERTIES.md) for attribute metadata, deterministic stacking, capability sources, controller consumers, dash/double-jump state, and evidence.
 - [`docs/DEFORMATION.md`](docs/DEFORMATION.md) for fixed-tick breathing, shared instance-resolved deformation, clothing response, composition order, gameplay invariants, and evidence.
 - [`docs/MESH_ATTACHMENTS.md`](docs/MESH_ATTACHMENTS.md) for mesh validation, topology-aware runtime ownership, unified ordering, GPU resources, batching, metrics, and evidence.
+- [`docs/ATTACHMENT_SECONDARY_MOTION.md`](docs/ATTACHMENT_SECONDARY_MOTION.md) for bounded visual control points, per-instance ownership, lifecycle/facing reset, composition, and evidence.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.
 - [`docs/SECONDARY_MOTION.md`](docs/SECONDARY_MOTION.md) for procedural walk, landing, spring, composition, reset, and evidence contracts.

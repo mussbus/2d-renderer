@@ -21,8 +21,10 @@ const integrated_demo = @import("integrated_demo");
 const playground_demo = @import("playground_demo");
 const modular_body_demo = @import("modular_body_demo");
 const equipment_demo = @import("equipment_demo");
+const character_properties_demo = @import("character_properties_demo");
 const breathing_demo = @import("breathing_demo");
 const mesh_attachment_demo = @import("mesh_attachment_demo");
+const foundation_playground = @import("foundation_playground");
 const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
@@ -39,10 +41,17 @@ pub const DemoMode = enum {
     playground,
     modular_body,
     equipment,
+    properties,
     breathing,
     mesh_attachments,
+    attachment_secondary,
     side_scroller,
+    foundation,
 };
+
+fn usesUnifiedRendering(mode: DemoMode) bool {
+    return mode == .mesh_attachments or mode == .attachment_secondary or mode == .foundation;
+}
 
 const TimeMode = enum { normal, quarter_speed, paused };
 
@@ -482,17 +491,23 @@ pub const GpuDemo = struct {
         defer if (modular_body_scene) |*scene| scene.deinit();
         var equipment_scene: ?equipment_demo.Scene = null;
         defer if (equipment_scene) |*scene| scene.deinit();
+        var character_properties_scene: ?character_properties_demo.Scene = null;
+        defer if (character_properties_scene) |*scene| scene.deinit();
         var breathing_scene: ?breathing_demo.Scene = null;
         defer if (breathing_scene) |*scene| scene.deinit();
         var mesh_attachment_scene: ?mesh_attachment_demo.Scene = null;
         defer if (mesh_attachment_scene) |*scene| scene.deinit();
+        var foundation_scene: ?foundation_playground.Scene = null;
+        defer if (foundation_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
         var secondary_sequence = controller_demo.SecondaryMotionScriptedInput{};
         var playground_sequence = playground_demo.ScriptedInput{};
         var side_scroller_sequence = playground_demo.SideScrollerScriptedInput{};
+        var foundation_sequence = foundation_playground.ScriptedInput{};
         var playground_snapshot_builder = input.SnapshotBuilder{};
+        var foundation_snapshot_builder = input.SnapshotBuilder{};
         var previous_playground_snapshot: ?input.FrameInputSnapshot = null;
         var animation_clock = try fixed_step.Clock.init(.{});
         var time_mode: TimeMode = .normal;
@@ -581,18 +596,34 @@ pub const GpuDemo = struct {
                 return error.EquipmentInitializationCreatedGpuResources;
             }
         }
+        if (mode == .properties) {
+            character_properties_scene = try character_properties_demo.Scene.init(humanoid_allocator.allocator());
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.CharacterPropertiesInitializationCreatedGpuResources;
+            }
+        }
         if (mode == .breathing) {
             breathing_scene = try breathing_demo.Scene.init(humanoid_allocator.allocator());
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.BreathingInitializationCreatedGpuResources;
             }
         }
-        if (mode == .mesh_attachments) {
+        if (mode == .mesh_attachments or mode == .attachment_secondary) {
             mesh_attachment_scene = try mesh_attachment_demo.Scene.init(humanoid_allocator.allocator());
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.MeshAttachmentSceneInitializationCreatedGpuResources;
             }
             const definitions = mesh_attachment_scene.?.meshDefinitions();
+            try self.initializeMeshRendering(&definitions);
+        }
+        if (mode == .foundation) {
+            if (scripted_input_enabled == interactive_enabled) return error.FoundationRequiresExactlyOneInputMode;
+            foundation_scene = try foundation_playground.Scene.init(humanoid_allocator.allocator(), integrated_debug_enabled);
+            if (!scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
+            if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
+                return error.FoundationInitializationCreatedGpuResources;
+            }
+            const definitions = foundation_scene.?.meshDefinitions();
             try self.initializeMeshRendering(&definitions);
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
@@ -633,6 +664,13 @@ pub const GpuDemo = struct {
             while (c.SDL_PollEvent(&event)) {
                 if (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED) running = false;
                 try self.handleWindowEvent(&event);
+                if (mode == .foundation and self.drawable_available and
+                    (event.type == c.SDL_EVENT_WINDOW_RESIZED or
+                        event.type == c.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED or
+                        event.type == c.SDL_EVENT_WINDOW_RESTORED))
+                {
+                    try foundation_scene.?.applyViewport(self.drawable_width, self.drawable_height);
+                }
                 if (platform_input) |*platform| platform.handleEvent(&event);
             }
             if (!running) break;
@@ -1015,6 +1053,16 @@ pub const GpuDemo = struct {
                     humanoid_instances = try scene.submit(&self.batch.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
+                .properties => {
+                    const scene = &character_properties_scene.?;
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame();
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.batch.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.batch.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
                 .breathing => {
                     const scene = &breathing_scene.?;
                     const allocation_checkpoint = humanoid_allocator.end_index;
@@ -1025,7 +1073,7 @@ pub const GpuDemo = struct {
                     humanoid_instances = try scene.submit(&self.batch.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
-                .mesh_attachments => {
+                .mesh_attachments, .attachment_secondary => {
                     const scene = &mesh_attachment_scene.?;
                     const allocation_checkpoint = humanoid_allocator.end_index;
                     try scene.updateFrame(frame);
@@ -1050,8 +1098,34 @@ pub const GpuDemo = struct {
                     humanoid_instances = try scene.submit(&self.batch.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
+                .foundation => {
+                    const scene = &foundation_scene.?;
+                    const now_ticks_ns = c.SDL_GetTicksNS();
+                    const measured_delta = @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;
+                    last_ticks_ns = now_ticks_ns;
+                    const snapshot = if (scripted_input_enabled)
+                        try foundation_snapshot_builder.update(foundation_sequence.nextRaw(scene))
+                    else
+                        try platform_input.?.pollFrame();
+                    if (snapshot.exit.pressed) {
+                        std.log.info("exit requested", .{});
+                        running = false;
+                        break;
+                    }
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(if (scripted_input_enabled) 1.0 / 60.0 else measured_delta, snapshot);
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    if (scripted_input_enabled) try foundation_sequence.observe(scene);
+                    self.visible_camera = scene.camera;
+                    minimum_camera_x = @min(minimum_camera_x, scene.camera.center.x);
+                    maximum_camera_x = @max(maximum_camera_x, scene.camera.center.x);
+                    self.unified_queue.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.unified_queue.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
             }
-            const rendered = if (mode == .mesh_attachments)
+            const rendered = if (usesUnifiedRendering(mode))
                 try self.renderUnifiedToWindow(self.unified_queue.?.prepare())
             else
                 try self.renderPreparedToWindow(self.batch.?.prepare(), null);
@@ -1072,7 +1146,7 @@ pub const GpuDemo = struct {
                     .total_actual_draw_calls = self.batch.?.frame_metrics.draw_calls,
                 });
             }
-            if (mode == .mesh_attachments) {
+            if (usesUnifiedRendering(mode)) {
                 try self.updateUnifiedWindowTitle();
             } else {
                 try self.updateWindowTitle();
@@ -1081,7 +1155,7 @@ pub const GpuDemo = struct {
         }
 
         const metrics = self.batch.?.frame_metrics;
-        if (mode != .mesh_attachments) {
+        if (!usesUnifiedRendering(mode)) {
             std.log.info("sprite-batch final metrics: frames={d} submitted={d} visible={d} culled={d} sorted={d} ranges={d} actual_draw_calls={d} upload_bytes={d}", .{
                 self.resource_metrics.frames_rendered,
                 metrics.submitted_sprites,
@@ -1976,6 +2050,59 @@ pub const GpuDemo = struct {
             {
                 return error.EquipmentRenderingEvidenceIncomplete;
             }
+        } else if (mode == .properties) {
+            const scene = &character_properties_scene.?;
+            try scene.validateComplete();
+            if (self.resource_metrics.frames_rendered != character_properties_demo.required_frames) {
+                return error.CharacterPropertiesFrameCountMismatch;
+            }
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            const evidence = scene.evidence;
+            std.log.info("CHARACTER PROPERTY EVIDENCE", .{});
+            std.log.info("Movement: default={d:.3} modified={d:.3} default_observed={} modified_observed={}", .{
+                evidence.default_movement_speed,
+                evidence.modified_movement_speed,
+                evidence.default_movement_observed,
+                evidence.modified_movement_observed,
+            });
+            std.log.info("Jump and capabilities: default_jump={d:.3} modified_jump={d:.3} stronger={} double_denied={} double_allowed={} dash_denied={} dash_allowed={} dash_collision={}", .{
+                evidence.default_jump_strength,
+                evidence.modified_jump_strength,
+                evidence.stronger_jump_observed,
+                evidence.double_jump_denied,
+                evidence.double_jump_allowed,
+                evidence.dash_denied,
+                evidence.dash_allowed,
+                evidence.dash_collision_observed,
+            });
+            std.log.info("Queryable properties: carrying_capacity={d:.3} armor={d:.3} physical_damage_reduction={d:.3} duplicate_grants_preserved={} restoration={} character_isolation={}", .{
+                evidence.carrying_capacity,
+                evidence.armor,
+                evidence.damage_reduction,
+                evidence.duplicate_grants_preserved,
+                evidence.restoration_observed,
+                evidence.character_isolation_observed,
+            });
+            std.log.info("Rendering and steady state: characters={d} submitted_sprites={d} ranges={d} actual_draw_calls={d} initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} batch_allocations={d} gpu_resource_delta={d}", .{
+                character_properties_demo.character_count,
+                humanoid_instances,
+                metrics.draw_ranges,
+                metrics.draw_calls,
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (humanoid_instances == 0 or metrics.visible_sprites != humanoid_instances or
+                metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
+                runtime_allocation_delta != 0 or pose_evaluation_allocations != 0 or humanoid_submission_allocations != 0 or
+                self.batch.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
+            {
+                return error.CharacterPropertiesRenderingEvidenceIncomplete;
+            }
         } else if (mode == .breathing) {
             const scene = &breathing_scene.?;
             try scene.validateComplete();
@@ -2019,7 +2146,103 @@ pub const GpuDemo = struct {
             {
                 return error.BreathingRenderingEvidenceIncomplete;
             }
-        } else if (mode == .mesh_attachments) {
+        } else if (mode == .foundation) {
+            const scene = &foundation_scene.?;
+            if (scripted_input_enabled) {
+                if (self.resource_metrics.frames_rendered != foundation_playground.required_frames) {
+                    return error.FoundationFrameCountMismatch;
+                }
+                try scene.validateComplete(&foundation_sequence);
+            }
+            const unified_metrics = self.unified_queue.?.frame_metrics;
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            const total_draws = unified_metrics.sprite_draws + unified_metrics.mesh_draws;
+            std.log.info("CHARACTER + WORLD FOUNDATION PLAYGROUND EVIDENCE", .{});
+            std.log.info("World: characters={d} colliders={d} camera_min_x={d:.5} camera_max_x={d:.5} camera_follow={} parallax={} resize_events={} resize_invariant={}", .{
+                foundation_playground.character_count,
+                scene.world.colliders.len,
+                scene.evidence.camera_min_x,
+                scene.evidence.camera_max_x,
+                scene.evidence.camera_follow_observed,
+                scene.evidence.parallax_observed,
+                scene.evidence.resize_events,
+                scene.evidence.resize_invariance_observed,
+            });
+            std.log.info("Customization: body_changes={d} build_changes={d} hair_changes={d} loadout_changes={d} topology_rebinds={d} conventional_sleeves={d} nonstandard_sleeves={d} restoration={}", .{
+                scene.evidence.body_changes,
+                scene.evidence.build_changes,
+                scene.evidence.hair_changes,
+                scene.evidence.loadout_changes,
+                scene.evidence.topology_rebinds,
+                scene.evidence.conventional_sleeves,
+                scene.evidence.nonstandard_sleeves,
+                scene.evidence.loadout_restoration_observed,
+            });
+            std.log.info("Properties: speed={d:.4} observed_ground_speed={d:.4} baseline_jump={d:.4} modified_jump={d:.4} double_jump={} dash={} dash_distance={d:.4} capacity={d:.2} armor={d:.2} reduction={d:.3}", .{
+                scene.evidence.speed_attribute,
+                scene.evidence.maximum_observed_ground_speed,
+                scene.evidence.baseline_jump_velocity,
+                scene.evidence.modified_jump_velocity,
+                scene.evidence.double_jump_observed,
+                scene.evidence.dash_observed,
+                scene.evidence.dash_distance,
+                scene.evidence.carrying_capacity,
+                scene.evidence.armor,
+                scene.evidence.damage_reduction,
+            });
+            std.log.info("Composition: breathing_min={d:.4} breathing_max={d:.4} secondary_peak={d:.6} resolved_visual_peak={d} sprite_instances={d} mesh_instances={d}", .{
+                scene.evidence.breathing_minimum,
+                scene.evidence.breathing_maximum,
+                scene.evidence.maximum_secondary_displacement,
+                scene.evidence.maximum_resolved_visuals,
+                unified_metrics.submitted_sprites,
+                unified_metrics.submitted_meshes,
+            });
+            std.log.info("Interaction/reset: requests={d} successful={d} contact={d} release={d} complete={d} roots_invariant={} reset={} mesh_state_cleared={} appearance_restored={} final_stable={}", .{
+                scene.evidence.interaction_requests,
+                scene.evidence.successful_interactions,
+                scene.evidence.contact_events,
+                scene.evidence.release_events,
+                scene.evidence.completion_events,
+                scene.evidence.handshake_root_invariance,
+                scene.evidence.reset_observed,
+                scene.evidence.reset_cleared_mesh_state,
+                scene.evidence.reset_restored_appearance,
+                scene.evidence.stable_final_state,
+            });
+            std.log.info("Rendering: sprite_ranges={d} mesh_ranges={d} sprite_draws={d} mesh_draws={d} total_draws={d} sprite_upload={d}B mesh_upload={d}B", .{
+                unified_metrics.sprite_ranges,
+                unified_metrics.mesh_ranges,
+                unified_metrics.sprite_draws,
+                unified_metrics.mesh_draws,
+                total_draws,
+                unified_metrics.sprite_upload_bytes,
+                unified_metrics.mesh_upload_bytes,
+            });
+            std.log.info("Steady-state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (humanoid_instances == 0 or
+                unified_metrics.submitted_sprites == 0 or
+                unified_metrics.submitted_meshes == 0 or
+                unified_metrics.sprite_ranges == 0 or
+                unified_metrics.mesh_ranges == 0 or
+                total_draws == 0 or total_draws > 32 or
+                runtime_allocation_delta != 0 or
+                pose_evaluation_allocations != 0 or
+                humanoid_submission_allocations != 0 or
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
+                gpu_resource_delta != 0)
+            {
+                return error.FoundationRenderingEvidenceIncomplete;
+            }
+        } else if (mode == .mesh_attachments or mode == .attachment_secondary) {
             const scene = &mesh_attachment_scene.?;
             try scene.validateComplete();
             if (self.resource_metrics.frames_rendered != mesh_attachment_demo.required_frames) {
@@ -2029,7 +2252,11 @@ pub const GpuDemo = struct {
             const catalog = &self.mesh_catalog.?;
             const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
             const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
-            std.log.info("TOPOLOGY-AWARE DEFORMABLE MESH EVIDENCE", .{});
+            if (mode == .attachment_secondary) {
+                std.log.info("MODULAR ATTACHMENT SECONDARY-MOTION EVIDENCE", .{});
+            } else {
+                std.log.info("TOPOLOGY-AWARE DEFORMABLE MESH EVIDENCE", .{});
+            }
             std.log.info("Content: mesh_definitions={d} fitted_garments=2 conventional_sleeves={d} nonstandard_sleeves={d} capes=2 mixed_sprite_mesh=true", .{
                 catalog.entries.len,
                 scene.evidence.conventional_sleeves,
@@ -2043,6 +2270,21 @@ pub const GpuDemo = struct {
                 scene.evidence.build_deformation_changed,
                 scene.evidence.cape_unequipped,
                 scene.evidence.cape_reequipped,
+            });
+            std.log.info("Secondary: cape_acceleration={} sustained={} reversal={} sudden_stop={} jump={} fall={} landing={} facing_reset={} long_hair={} ponytail={} removed={} reequipped_reset={} repeated_instances={}", .{
+                scene.evidence.cape_acceleration_trails,
+                scene.evidence.cape_sustained_motion_trails,
+                scene.evidence.cape_reversal_changes_target,
+                scene.evidence.cape_sudden_stop_changes_target,
+                scene.evidence.cape_jump_trails_down,
+                scene.evidence.cape_fall_trails_up,
+                scene.evidence.cape_landing_impulse_consumed,
+                scene.evidence.facing_change_reset,
+                scene.evidence.long_hair_moved,
+                scene.evidence.ponytail_moved,
+                scene.evidence.cape_runtime_removed,
+                scene.evidence.cape_reequip_reset,
+                scene.evidence.repeated_secondary_state_independent,
             });
             std.log.info("Unified ordering: sprite_ranges={d} mesh_ranges={d} sprite_draws={d} mesh_draws={d} total_draws={d}", .{
                 unified_metrics.sprite_ranges,

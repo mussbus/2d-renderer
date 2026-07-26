@@ -832,6 +832,7 @@ fn visualInput(instance: *const character.CharacterInstance, physics: character_
     const controller = instance.controller.?;
     return .{
         .horizontal_velocity = controller.state.velocity.x,
+        .vertical_velocity = controller.state.velocity.y,
         .physically_grounded = controller.state.grounded,
         .landing_event = if (physics.landed) .{
             .simulation_tick = physics.simulation_tick,

@@ -8,11 +8,16 @@ pub const KeyboardState = struct {
     d: bool = false,
     right_arrow: bool = false,
     space: bool = false,
+    left_shift: bool = false,
     e: bool = false,
     r: bool = false,
     f1: bool = false,
     f2: bool = false,
     f3: bool = false,
+    c: bool = false,
+    v: bool = false,
+    h: bool = false,
+    l: bool = false,
     escape: bool = false,
 
     pub fn leftHeld(state: KeyboardState) bool {
@@ -31,6 +36,7 @@ pub const RawInputState = struct {
     window_close_requested: bool = false,
     gamepad_move_axis: f32 = 0,
     gamepad_jump: bool = false,
+    gamepad_dash: bool = false,
     gamepad_interact: bool = false,
 };
 
@@ -45,11 +51,16 @@ pub const FrameInputSnapshot = struct {
     keyboard_right_held: bool,
     move_axis: f32,
     jump: ButtonSnapshot,
+    dash: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     interact: ButtonSnapshot,
     reset: ButtonSnapshot,
     debug_toggle: ButtonSnapshot,
     time_mode_cycle: ButtonSnapshot,
     single_step: ButtonSnapshot,
+    body_preset_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
+    build_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
+    hair_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
+    loadout_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     exit: ButtonSnapshot,
     focus_lost: bool,
 };
@@ -59,6 +70,7 @@ pub const CharacterIntent = extern struct {
     jump_pressed: bool,
     jump_held: bool,
     jump_released: bool,
+    dash_pressed: bool = false,
     interact_pressed: bool,
 
     pub fn validate(intent: CharacterIntent) !void {
@@ -69,11 +81,16 @@ pub const CharacterIntent = extern struct {
 
 pub const SnapshotBuilder = struct {
     previous_jump: bool = false,
+    previous_dash: bool = false,
     previous_interact: bool = false,
     previous_reset: bool = false,
     previous_debug_toggle: bool = false,
     previous_time_mode_cycle: bool = false,
     previous_single_step: bool = false,
+    previous_body_preset_cycle: bool = false,
+    previous_build_cycle: bool = false,
+    previous_hair_cycle: bool = false,
+    previous_loadout_cycle: bool = false,
     previous_exit: bool = false,
     keyboard_focused: bool = true,
     blocked_until_release: KeyboardState = .{},
@@ -107,6 +124,7 @@ pub const SnapshotBuilder = struct {
             1;
         const move_axis = mergeMoveAxes(keyboard_axis, gamepad_axis);
         const jump_held = effective_keyboard.space or raw.gamepad_jump;
+        const dash_held = effective_keyboard.left_shift or raw.gamepad_dash;
         const interact_held = effective_keyboard.e or raw.gamepad_interact;
         const exit_held = effective_keyboard.escape or raw.window_close_requested;
 
@@ -115,20 +133,30 @@ pub const SnapshotBuilder = struct {
             .keyboard_right_held = keyboard_right,
             .move_axis = move_axis,
             .jump = button(builder.previous_jump, jump_held),
+            .dash = button(builder.previous_dash, dash_held),
             .interact = button(builder.previous_interact, interact_held),
             .reset = button(builder.previous_reset, effective_keyboard.r),
             .debug_toggle = button(builder.previous_debug_toggle, effective_keyboard.f1),
             .time_mode_cycle = button(builder.previous_time_mode_cycle, effective_keyboard.f2),
             .single_step = button(builder.previous_single_step, effective_keyboard.f3),
+            .body_preset_cycle = button(builder.previous_body_preset_cycle, effective_keyboard.c),
+            .build_cycle = button(builder.previous_build_cycle, effective_keyboard.v),
+            .hair_cycle = button(builder.previous_hair_cycle, effective_keyboard.h),
+            .loadout_cycle = button(builder.previous_loadout_cycle, effective_keyboard.l),
             .exit = button(builder.previous_exit, exit_held),
             .focus_lost = raw.focus_lost,
         };
         builder.previous_jump = jump_held;
+        builder.previous_dash = dash_held;
         builder.previous_interact = interact_held;
         builder.previous_reset = effective_keyboard.r;
         builder.previous_debug_toggle = effective_keyboard.f1;
         builder.previous_time_mode_cycle = effective_keyboard.f2;
         builder.previous_single_step = effective_keyboard.f3;
+        builder.previous_body_preset_cycle = effective_keyboard.c;
+        builder.previous_build_cycle = effective_keyboard.v;
+        builder.previous_hair_cycle = effective_keyboard.h;
+        builder.previous_loadout_cycle = effective_keyboard.l;
         builder.previous_exit = exit_held;
         return snapshot;
     }
@@ -143,6 +171,7 @@ pub const PendingInput = struct {
     jump_held: bool = false,
     jump_pressed_pending: bool = false,
     jump_released_pending: bool = false,
+    dash_pressed_pending: bool = false,
     interact_pressed_pending: bool = false,
 
     pub fn acceptFrame(pending: *PendingInput, snapshot: FrameInputSnapshot) !void {
@@ -153,12 +182,14 @@ pub const PendingInput = struct {
             pending.jump_held = false;
             pending.jump_pressed_pending = false;
             pending.jump_released_pending = false;
+            pending.dash_pressed_pending = false;
             pending.interact_pressed_pending = false;
         }
         pending.move_axis = snapshot.move_axis;
         pending.jump_held = snapshot.jump.held;
         pending.jump_pressed_pending = pending.jump_pressed_pending or snapshot.jump.pressed;
         pending.jump_released_pending = pending.jump_released_pending or snapshot.jump.released;
+        pending.dash_pressed_pending = pending.dash_pressed_pending or snapshot.dash.pressed;
         pending.interact_pressed_pending = pending.interact_pressed_pending or snapshot.interact.pressed;
     }
 
@@ -168,10 +199,12 @@ pub const PendingInput = struct {
             .jump_pressed = pending.jump_pressed_pending,
             .jump_held = pending.jump_held,
             .jump_released = pending.jump_released_pending,
+            .dash_pressed = pending.dash_pressed_pending,
             .interact_pressed = pending.interact_pressed_pending,
         };
         pending.jump_pressed_pending = false;
         pending.jump_released_pending = false;
+        pending.dash_pressed_pending = false;
         pending.interact_pressed_pending = false;
         return result;
     }
@@ -179,6 +212,7 @@ pub const PendingInput = struct {
     pub fn pendingEdgeCount(pending: PendingInput) u8 {
         return @as(u8, @intFromBool(pending.jump_pressed_pending)) +
             @as(u8, @intFromBool(pending.jump_released_pending)) +
+            @as(u8, @intFromBool(pending.dash_pressed_pending)) +
             @as(u8, @intFromBool(pending.interact_pressed_pending));
     }
 
@@ -208,11 +242,16 @@ fn keyboardWithout(state: KeyboardState, blocked: KeyboardState) KeyboardState {
         .d = state.d and !blocked.d,
         .right_arrow = state.right_arrow and !blocked.right_arrow,
         .space = state.space and !blocked.space,
+        .left_shift = state.left_shift and !blocked.left_shift,
         .e = state.e and !blocked.e,
         .r = state.r and !blocked.r,
         .f1 = state.f1 and !blocked.f1,
         .f2 = state.f2 and !blocked.f2,
         .f3 = state.f3 and !blocked.f3,
+        .c = state.c and !blocked.c,
+        .v = state.v and !blocked.v,
+        .h = state.h and !blocked.h,
+        .l = state.l and !blocked.l,
         .escape = state.escape and !blocked.escape,
     };
 }
@@ -224,11 +263,16 @@ fn keyboardUnion(left: KeyboardState, right: KeyboardState) KeyboardState {
         .d = left.d or right.d,
         .right_arrow = left.right_arrow or right.right_arrow,
         .space = left.space or right.space,
+        .left_shift = left.left_shift or right.left_shift,
         .e = left.e or right.e,
         .r = left.r or right.r,
         .f1 = left.f1 or right.f1,
         .f2 = left.f2 or right.f2,
         .f3 = left.f3 or right.f3,
+        .c = left.c or right.c,
+        .v = left.v or right.v,
+        .h = left.h or right.h,
+        .l = left.l or right.l,
         .escape = left.escape or right.escape,
     };
 }
@@ -240,11 +284,16 @@ fn keyboardIntersection(left: KeyboardState, right: KeyboardState) KeyboardState
         .d = left.d and right.d,
         .right_arrow = left.right_arrow and right.right_arrow,
         .space = left.space and right.space,
+        .left_shift = left.left_shift and right.left_shift,
         .e = left.e and right.e,
         .r = left.r and right.r,
         .f1 = left.f1 and right.f1,
         .f2 = left.f2 and right.f2,
         .f3 = left.f3 and right.f3,
+        .c = left.c and right.c,
+        .v = left.v and right.v,
+        .h = left.h and right.h,
+        .l = left.l and right.l,
         .escape = left.escape and right.escape,
     };
 }

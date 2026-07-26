@@ -121,7 +121,7 @@ pub fn build(b: *std.Build) void {
     run_command.setName("run installed skeletal_gpu_demo");
     run_command.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed sprite-batch, character, interaction, playground, or side-scroller demonstration");
+    const run_step = b.step("run", "Run the installed sprite-batch, character, interaction, playground, foundation, or side-scroller demonstration");
     run_step.dependOn(&run_command.step);
 
     const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
@@ -181,6 +181,14 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const attachment_secondary_motion_module = b.createModule(.{
+        .root_source_file = b.path("src/animation/attachment_secondary_motion.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    attachment_secondary_motion_module.addImport("math", math_module);
+    attachment_secondary_motion_module.addImport("fixed_step", fixed_step_module);
+    attachment_secondary_motion_module.addImport("spring", spring_module);
     const deformation_module = b.createModule(.{
         .root_source_file = b.path("src/scene/deformation.zig"),
         .target = target,
@@ -262,6 +270,7 @@ pub fn build(b: *std.Build) void {
     });
     appearance_module.addImport("math", math_module);
     appearance_module.addImport("deformation", deformation_module);
+    appearance_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
     appearance_module.addImport("skeleton", skeleton_module);
     appearance_module.addImport("pose", pose_module);
     appearance_module.addImport("fault_injection", fault_injection_module);
@@ -275,6 +284,12 @@ pub fn build(b: *std.Build) void {
     anatomy_module.addImport("skeleton", skeleton_module);
     anatomy_module.addImport("appearance", appearance_module);
     anatomy_module.addImport("fault_injection", fault_injection_module);
+    const character_properties_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/character_properties.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    character_properties_module.addImport("skeleton", skeleton_module);
     const equipment_module = b.createModule(.{
         .root_source_file = b.path("src/scene/equipment.zig"),
         .target = target,
@@ -282,10 +297,12 @@ pub fn build(b: *std.Build) void {
     });
     equipment_module.addImport("math", math_module);
     equipment_module.addImport("deformation", deformation_module);
+    equipment_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
     equipment_module.addImport("skeleton", skeleton_module);
     equipment_module.addImport("appearance", appearance_module);
     equipment_module.addImport("anatomy", anatomy_module);
     equipment_module.addImport("deformable_mesh", deformable_mesh_module);
+    equipment_module.addImport("character_properties", character_properties_module);
     const two_bone_ik_module = b.createModule(.{
         .root_source_file = b.path("src/animation/two_bone_ik.zig"),
         .target = target,
@@ -405,10 +422,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     character_module.addImport("math", math_module);
+    character_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
     character_module.addImport("humanoid", humanoid_module);
     character_module.addImport("appearance", appearance_module);
     character_module.addImport("anatomy", anatomy_module);
     character_module.addImport("equipment", equipment_module);
+    character_module.addImport("character_properties", character_properties_module);
     character_module.addImport("deformation", deformation_module);
     character_module.addImport("skeleton", skeleton_module);
     character_module.addImport("authored_clips", authored_clips_module);
@@ -595,6 +614,7 @@ pub fn build(b: *std.Build) void {
     });
     modular_body_demo_module.addImport("math", math_module);
     modular_body_demo_module.addImport("deformation", deformation_module);
+    modular_body_demo_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
     modular_body_demo_module.addImport("appearance", appearance_module);
     modular_body_demo_module.addImport("anatomy", anatomy_module);
     modular_body_demo_module.addImport("humanoid", humanoid_module);
@@ -615,6 +635,18 @@ pub fn build(b: *std.Build) void {
     equipment_demo_module.addImport("equipment", equipment_module);
     equipment_demo_module.addImport("modular_body_demo", modular_body_demo_module);
     equipment_demo_module.addImport("sprite_batch", sprite_batch_module);
+    const character_properties_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/character_properties_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    character_properties_demo_module.addImport("input", input_module);
+    character_properties_demo_module.addImport("collider", collider_module);
+    character_properties_demo_module.addImport("collision_world", collision_world_module);
+    character_properties_demo_module.addImport("character_controller", character_controller_module);
+    character_properties_demo_module.addImport("character", character_module);
+    character_properties_demo_module.addImport("equipment_demo", equipment_demo_module);
+    character_properties_demo_module.addImport("sprite_batch", sprite_batch_module);
     const breathing_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/breathing_demo.zig"),
         .target = target,
@@ -634,6 +666,7 @@ pub fn build(b: *std.Build) void {
     });
     mesh_attachment_demo_module.addImport("math", math_module);
     mesh_attachment_demo_module.addImport("deformation", deformation_module);
+    mesh_attachment_demo_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
     mesh_attachment_demo_module.addImport("deformable_mesh", deformable_mesh_module);
     mesh_attachment_demo_module.addImport("render_queue", render_queue_module);
     mesh_attachment_demo_module.addImport("humanoid", humanoid_module);
@@ -641,6 +674,34 @@ pub fn build(b: *std.Build) void {
     mesh_attachment_demo_module.addImport("character", character_module);
     mesh_attachment_demo_module.addImport("equipment", equipment_module);
     mesh_attachment_demo_module.addImport("modular_body_demo", modular_body_demo_module);
+    const foundation_playground_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/foundation_playground.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    foundation_playground_module.addImport("math", math_module);
+    foundation_playground_module.addImport("input", input_module);
+    foundation_playground_module.addImport("fixed_step", fixed_step_module);
+    foundation_playground_module.addImport("collider", collider_module);
+    foundation_playground_module.addImport("collision_world", collision_world_module);
+    foundation_playground_module.addImport("character_controller", character_controller_module);
+    foundation_playground_module.addImport("deformation", deformation_module);
+    foundation_playground_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
+    foundation_playground_module.addImport("anatomy", anatomy_module);
+    foundation_playground_module.addImport("equipment", equipment_module);
+    foundation_playground_module.addImport("deformable_mesh", deformable_mesh_module);
+    foundation_playground_module.addImport("humanoid", humanoid_module);
+    foundation_playground_module.addImport("authored_clips", authored_clips_module);
+    foundation_playground_module.addImport("character", character_module);
+    foundation_playground_module.addImport("interaction", interaction_module);
+    foundation_playground_module.addImport("interaction_system", interaction_system_module);
+    foundation_playground_module.addImport("handshake", handshake_module);
+    foundation_playground_module.addImport("foot_planting", foot_planting_module);
+    foundation_playground_module.addImport("render_queue", render_queue_module);
+    foundation_playground_module.addImport("camera2d", camera2d_module);
+    foundation_playground_module.addImport("debug_draw", debug_draw_module);
+    foundation_playground_module.addImport("modular_body_demo", modular_body_demo_module);
+    foundation_playground_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -661,6 +722,7 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("appearance", appearance_module);
     app_module.addImport("anatomy", anatomy_module);
     app_module.addImport("equipment", equipment_module);
+    app_module.addImport("character_properties", character_properties_module);
     app_module.addImport("deformation", deformation_module);
     app_module.addImport("math", math_module);
     app_module.addImport("camera2d", camera2d_module);
@@ -694,8 +756,10 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("playground_demo", playground_demo_module);
     app_module.addImport("modular_body_demo", modular_body_demo_module);
     app_module.addImport("equipment_demo", equipment_demo_module);
+    app_module.addImport("character_properties_demo", character_properties_demo_module);
     app_module.addImport("breathing_demo", breathing_demo_module);
     app_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
+    app_module.addImport("foundation_playground", foundation_playground_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("deformable_mesh", deformable_mesh_module);
@@ -708,6 +772,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("appearance", appearance_module);
     test_module.addImport("anatomy", anatomy_module);
     test_module.addImport("equipment", equipment_module);
+    test_module.addImport("character_properties", character_properties_module);
     test_module.addImport("deformation", deformation_module);
     test_module.addImport("two_bone_ik", two_bone_ik_module);
     test_module.addImport("arm_ik", arm_ik_module);
@@ -723,6 +788,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("input", input_module);
     test_module.addImport("fixed_step", fixed_step_module);
     test_module.addImport("spring", spring_module);
+    test_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
     test_module.addImport("collider", collider_module);
     test_module.addImport("collision_world", collision_world_module);
     test_module.addImport("character_controller", character_controller_module);
@@ -743,6 +809,22 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("equipment_demo", equipment_demo_module);
     test_module.addImport("breathing_demo", breathing_demo_module);
     test_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
+    test_module.addImport("foundation_playground", foundation_playground_module);
+    const foundation_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/foundation_playground_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    foundation_test_module.addImport("math", math_module);
+    foundation_test_module.addImport("input", input_module);
+    foundation_test_module.addImport("equipment", equipment_module);
+    foundation_test_module.addImport("render_queue", render_queue_module);
+    foundation_test_module.addImport("camera2d", camera2d_module);
+    foundation_test_module.addImport("foundation_playground", foundation_playground_module);
+    const foundation_tests = b.addTest(.{ .name = "foundation-playground-tests", .root_module = foundation_test_module });
+    const run_foundation_tests = b.addRunArtifact(foundation_tests);
+    const foundation_test_step = b.step("test-foundation", "Run the Prompt 22 deterministic foundation-playground tests");
+    foundation_test_step.dependOn(&run_foundation_tests.step);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");

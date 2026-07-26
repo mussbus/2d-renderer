@@ -56,11 +56,16 @@ pub const PlatformInput = struct {
                 .d = keyHeld(keyboard, key_count, c.SDL_SCANCODE_D),
                 .right_arrow = keyHeld(keyboard, key_count, c.SDL_SCANCODE_RIGHT),
                 .space = keyHeld(keyboard, key_count, c.SDL_SCANCODE_SPACE),
+                .left_shift = keyHeld(keyboard, key_count, c.SDL_SCANCODE_LSHIFT),
                 .e = keyHeld(keyboard, key_count, c.SDL_SCANCODE_E),
                 .r = keyHeld(keyboard, key_count, c.SDL_SCANCODE_R),
                 .f1 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F1),
                 .f2 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F2),
                 .f3 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F3),
+                .c = keyHeld(keyboard, key_count, c.SDL_SCANCODE_C),
+                .v = keyHeld(keyboard, key_count, c.SDL_SCANCODE_V),
+                .h = keyHeld(keyboard, key_count, c.SDL_SCANCODE_H),
+                .l = keyHeld(keyboard, key_count, c.SDL_SCANCODE_L),
                 .escape = keyHeld(keyboard, key_count, c.SDL_SCANCODE_ESCAPE),
             },
             .keyboard_focused = platform.keyboard_focused,
@@ -70,6 +75,7 @@ pub const PlatformInput = struct {
         if (platform.active_gamepad) |gamepad| {
             raw.gamepad_move_axis = normalizeAxis(c.SDL_GetGamepadAxis(gamepad, c.SDL_GAMEPAD_AXIS_LEFTX));
             raw.gamepad_jump = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_SOUTH);
+            raw.gamepad_dash = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
             raw.gamepad_interact = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_WEST);
         }
         const snapshot = try platform.snapshot_builder.update(raw);

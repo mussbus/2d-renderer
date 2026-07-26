@@ -1,5 +1,7 @@
 # Secondary Motion
 
+This document describes Prompt 6 pose-level walk, landing, and head follow-through. Prompt 20's modular per-visual cape/hair/garment system reuses the scalar spring implementation but has separate resolved-instance ownership and is documented in `docs/ATTACHMENT_SECONDARY_MOTION.md`.
+
 ## Ownership and composition
 
 `procedural_motion.State` is embedded per character. It owns only visual walk state, two scalar spring channels, previous horizontal velocity for acceleration sampling, event-consumption identity, bounded metrics, and the last pose-composition tick. It does not own or duplicate physics position, physics velocity, grounding, support ID, collider data, static geometry, renderer state, GPU handles, clip keys, or skeleton rest data.
@@ -81,6 +83,8 @@ target_head_rotation = clamp(-horizontal_acceleration * 0.0025, -0.120, +0.120) 
 The head spring uses stiffness `96 s^-2`, damping `17 s^-1`, maximum displacement `0.120 rad`, and maximum velocity `2.50 rad/s`. It responds to a measurable controller velocity change rather than arbitrary oscillation and does not interfere with future arm IK.
 
 Reset clears both springs, walk amplitude and offset, consumed landing identity, peaks, and composition identity. It synchronizes previous horizontal velocity to the reset controller velocity, preventing a false acceleration spike. Disabling procedural motion performs the same synchronization and leaves the animator-authored pose unchanged on composition.
+
+Prompt 22 composes this character-level landing/walk/head follow-through with Prompt 20 resolved-visual cape, long-hair, and topology-expanded sleeve motion. The controller produces the shared velocity, acceleration, facing, and landing observations; each visual instance owns its bounded response. Walking, jumping, double jumping, dashing, reversing, handshake locking, and loadout replacement cannot feed a visual offset back into controller position, velocity, collision, attributes, capabilities, or interaction geometry. The authoritative reset clears both procedural layers before visual evaluation resumes.
 
 ## Allocation, determinism, and demonstration
 

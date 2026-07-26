@@ -27,6 +27,9 @@ The controller captures landing impact as the positive magnitude of downward vel
 | Maximum run speed | `4.5` | m/s |
 | Jump speed | `9.0` | m/s |
 | Jump-release speed | `3.5` | m/s |
+| Dash speed | `12.0` | m/s |
+| Dash duration | `0.12` (`29` ticks) | s |
+| Dash reuse delay | `0.20` (77 ticks from start including duration) | s |
 | Coyote duration | `0.10` (`24` ticks) | s |
 | Jump-buffer duration | `0.125` (`30` ticks) | s |
 | Maximum fall speed | `18.0` | m/s |
@@ -36,6 +39,12 @@ The controller captures landing impact as the positive magnitude of downward vel
 | Facing threshold | `0.20` | normalized intent |
 
 Jump release clamps positive rising velocity to `3.5 m/s`; it has no effect after the apex. Landing impact is stored as the positive magnitude of downward velocity captured before vertical collision clears it. A landing event requires an airborne-to-ground transition and impact strictly above `0.25 m/s`.
+
+Prompt 21 adds `stepWithProperties` without replacing `step`. The original entry point constructs default gameplay properties from the immutable configuration, and a 240-tick regression requires identical results and state. A character-owned resolved set may supply per-character maximum run speed and jump launch speed without mutating the configuration. The same grounded, coyote, buffered, release, gravity, sweep, and landing code handles those values.
+
+`double_jump` permits exactly one air jump. A valid ground contact and controller reset clear the air-jump counter. Capability removal in air never rewrites velocity or prior usage; it blocks a new air jump while absent. `dash` is a 29-tick horizontal state with a 77-tick start-to-reuse gate. It is allowed on ground or in air, uses intent/facing direction, retains gravity and vertical collision, and ends early on a horizontal collision. Removing the capability does not cancel an active dash, while reset clears all dash and air-jump state. Full semantics are in `docs/CHARACTER_PROPERTIES.md`.
+
+Prompt 22 does not add a world or controller variant. Its cave uses the same immutable `CollisionWorld`, swept character AABB, 240 Hz clock, and `CharacterInstance.stepController` consumer path. Equipment-backed speed, jump, double jump, and dash are demonstrated through resulting controller state rather than visual timing or prerecorded animation. Camera following, parallax, breathing, mesh deformation, cape/hair motion, and viewport resizing are downstream and cannot write position, velocity, support, air-jump usage, or dash timers.
 
 Animation priority is physical jump, physical landing, protected one-shot playback/fallback, airborne rising/falling, then grounded idle/walk. A buffered jump accepted on its landing tick selects jump-start so the newly accepted physical jump is not visually overwritten by landing. Animation foot-contact events never affect collision, grounding, root position, or landing events.
 

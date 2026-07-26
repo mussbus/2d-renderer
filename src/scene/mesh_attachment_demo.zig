@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = @import("math");
 const deformation = @import("deformation");
+const attachment_secondary_motion = @import("attachment_secondary_motion");
 const mesh = @import("deformable_mesh");
 const queue_module = @import("render_queue");
 const humanoid = @import("humanoid");
@@ -15,6 +16,52 @@ pub const mesh_definition_count: usize = 3;
 pub const expected_conventional_sleeves: u16 = 2;
 pub const expected_nonstandard_sleeves: u16 = 4;
 
+pub const cape_secondary_motion = attachment_secondary_motion.Definition{
+    .dynamic_point_count = 3,
+    .rest_offsets = .{
+        .{ .x = 0, .y = -0.36 },
+        .{ .x = 0, .y = -0.74 },
+        .{ .x = 0, .y = -1.10 },
+        math.Vec2.zero,
+    },
+    .spring_configuration = .{
+        .stiffness = 72,
+        .damping = 15,
+        .maximum_displacement = 0.42,
+        .maximum_velocity = 5.5,
+    },
+    .gravity_displacement = .{ .x = 0, .y = -0.10 },
+    .acceleration_response = .{ .x = 0.010, .y = 0.008 },
+    .velocity_response = .{ .x = 0.035, .y = 0.018 },
+    .chain_follow = 0.40,
+    .landing_impulse_scale = 0.08,
+    .output_translation_scale = 0.38,
+    .maximum_rotation_radians = 0.62,
+};
+
+pub const loose_sleeve_secondary_motion = attachment_secondary_motion.Definition{
+    .dynamic_point_count = 2,
+    .rest_offsets = .{
+        .{ .x = 0.34, .y = 0 },
+        .{ .x = 0.70, .y = 0 },
+        math.Vec2.zero,
+        math.Vec2.zero,
+    },
+    .spring_configuration = .{
+        .stiffness = 128,
+        .damping = 21,
+        .maximum_displacement = 0.12,
+        .maximum_velocity = 2.8,
+    },
+    .gravity_displacement = .{ .x = 0, .y = -0.018 },
+    .acceleration_response = .{ .x = 0.0025, .y = 0.002 },
+    .velocity_response = .{ .x = 0.006, .y = 0.004 },
+    .chain_follow = 0.28,
+    .landing_impulse_scale = 0.012,
+    .output_translation_scale = 0.18,
+    .maximum_rotation_radians = 0.18,
+};
+
 pub const Evidence = struct {
     conventional_sleeves: u16 = 0,
     nonstandard_sleeves: u16 = 0,
@@ -26,6 +73,19 @@ pub const Evidence = struct {
     breathing_deformation_changed: bool = false,
     build_deformation_changed: bool = false,
     mirrored_facing: bool = false,
+    cape_acceleration_trails: bool = false,
+    cape_sustained_motion_trails: bool = false,
+    cape_reversal_changes_target: bool = false,
+    cape_sudden_stop_changes_target: bool = false,
+    cape_jump_trails_down: bool = false,
+    cape_fall_trails_up: bool = false,
+    cape_landing_impulse_consumed: bool = false,
+    cape_runtime_removed: bool = false,
+    cape_reequip_reset: bool = false,
+    facing_change_reset: bool = false,
+    long_hair_moved: bool = false,
+    ponytail_moved: bool = false,
+    repeated_secondary_state_independent: bool = false,
 };
 
 pub const Scene = struct {
@@ -150,18 +210,45 @@ pub const Scene = struct {
     pub fn updateFrame(scene: *Scene, frame: u32) !void {
         const cape_item = try scene.equipment_definition.itemId("upper_back_cape");
         if (frame == 40) {
+            const cape_index = try scene.findEquipmentVisualIndex(&scene.conventional, "cape_mesh");
+            if (!scene.conventional.equipment_loadout.?.resolved_visuals[cape_index].secondary.initialized) {
+                return error.CapeMotionWasNotInitializedBeforeUnequip;
+            }
             try scene.conventional.unequipItem(cape_item);
             scene.evidence.cape_unequipped = true;
+            const cape_missing = missing: {
+                _ = scene.findEquipmentVisualIndex(&scene.conventional, "cape_mesh") catch |err| {
+                    if (err == error.MissingEquipmentVisual) break :missing true;
+                    return err;
+                };
+                break :missing false;
+            };
+            scene.evidence.cape_runtime_removed =
+                !scene.conventional.equipment_loadout.?.resolved_visuals[cape_index].secondary.initialized and
+                cape_missing;
         } else if (frame == 80) {
             try scene.conventional.equipItem(cape_item);
             scene.evidence.cape_reequipped = true;
         } else if (frame == 120) {
             scene.pre_build_fitted_scale_x = try scene.currentFittedScaleX();
             try scene.conventional.setGlobalBuild(100);
+        } else if (frame == 206) {
+            try scene.conventional.setFacing(.left);
+            try scene.nonstandard.setFacing(.right);
         }
-        try scene.conventional.advanceVisualTick(.{});
-        try scene.nonstandard.advanceVisualTick(.{});
+        const conventional_input = scriptedMotionInput(frame);
+        var nonstandard_input = conventional_input;
+        nonstandard_input.horizontal_velocity *= -0.45;
+        nonstandard_input.vertical_velocity *= 0.65;
+        try scene.conventional.advanceVisualTick(conventional_input);
+        try scene.nonstandard.advanceVisualTick(nonstandard_input);
         scene.visual_ticks += character_count;
+        if (frame == 80) {
+            const state = try scene.equipmentSecondaryState(&scene.conventional, "cape_mesh");
+            const displacement_value = try state.displacement(cape_secondary_motion, 2);
+            scene.evidence.cape_reequip_reset =
+                state.initialized and state.reset_count == 1 and displacement_value.approxEqAbs(math.Vec2.zero, 0);
+        }
     }
 
     pub fn submit(scene: *Scene, queue: *queue_module.UnifiedRenderQueue) !u32 {
@@ -181,7 +268,20 @@ pub const Scene = struct {
             !scene.evidence.deformation_changed or
             !scene.evidence.breathing_deformation_changed or
             !scene.evidence.build_deformation_changed or
-            !scene.evidence.mirrored_facing)
+            !scene.evidence.mirrored_facing or
+            !scene.evidence.cape_acceleration_trails or
+            !scene.evidence.cape_sustained_motion_trails or
+            !scene.evidence.cape_reversal_changes_target or
+            !scene.evidence.cape_sudden_stop_changes_target or
+            !scene.evidence.cape_jump_trails_down or
+            !scene.evidence.cape_fall_trails_up or
+            !scene.evidence.cape_landing_impulse_consumed or
+            !scene.evidence.cape_runtime_removed or
+            !scene.evidence.cape_reequip_reset or
+            !scene.evidence.facing_change_reset or
+            !scene.evidence.long_hair_moved or
+            !scene.evidence.ponytail_moved or
+            !scene.evidence.repeated_secondary_state_independent)
         {
             return error.MeshAttachmentDemonstrationIncomplete;
         }
@@ -222,6 +322,10 @@ pub const Scene = struct {
             second.mesh_state.owning_character == scene.conventional.id.raw() and
             first.mesh_state.bound_identity.encoded() != second.mesh_state.bound_identity.encoded() and
             first.mesh_state.update_serial > 0 and second.mesh_state.update_serial > 0;
+        scene.evidence.repeated_secondary_state_independent =
+            first.secondary.initialized and second.secondary.initialized and
+            &first.secondary != &second.secondary and
+            first.mesh_state.bound_identity.encoded() != second.mesh_state.bound_identity.encoded();
         scene.evidence.independent_character_state =
             other_character.mesh_state.owning_character == scene.nonstandard.id.raw() and
             other_character.mesh_state.owning_character != first.mesh_state.owning_character;
@@ -241,6 +345,55 @@ pub const Scene = struct {
         }
         scene.evidence.deformation_changed =
             scene.evidence.breathing_deformation_changed and scene.evidence.build_deformation_changed;
+
+        const conventional_tick = scene.conventional.simulation_tick;
+        if (scene.findEquipmentSecondaryState(&scene.conventional, "cape_mesh")) |cape_state| {
+            const displacement_value = try cape_state.displacement(cape_secondary_motion, 2);
+            const target_x = cape_state.points[2].horizontal.target_offset;
+            if (conventional_tick >= 25 and conventional_tick < 40 and displacement_value.x < 0) {
+                scene.evidence.cape_acceleration_trails = true;
+            }
+            if (conventional_tick >= 100 and conventional_tick < 111 and displacement_value.x < 0) {
+                scene.evidence.cape_sustained_motion_trails = true;
+            }
+            if (conventional_tick >= 112 and conventional_tick < 146 and target_x > 0) {
+                scene.evidence.cape_reversal_changes_target = true;
+            }
+            if (conventional_tick >= 147 and conventional_tick < 154 and target_x < 0) {
+                scene.evidence.cape_sudden_stop_changes_target = true;
+            }
+            if (conventional_tick >= 155 and conventional_tick < 166 and cape_state.points[2].vertical.target_offset < 0) {
+                scene.evidence.cape_jump_trails_down = true;
+            }
+            if (conventional_tick >= 167 and conventional_tick < 186 and cape_state.points[2].vertical.target_offset > 0) {
+                scene.evidence.cape_fall_trails_up = true;
+            }
+            if (conventional_tick == 187 and cape_state.points[2].vertical.velocity < 0) {
+                scene.evidence.cape_landing_impulse_consumed = true;
+            }
+            if (conventional_tick == 207) {
+                scene.evidence.facing_change_reset =
+                    cape_state.reset_count == 1 and displacement_value.approxEqAbs(math.Vec2.zero, 0);
+            }
+        } else |_| {}
+
+        const appearance_definition = scene.definition.visual_definition.view();
+        const long_hair_id = try scene.definition.visual_definition.visualId("long_hair");
+        const ponytail_id = try scene.definition.visual_definition.visualId("ponytail_hair");
+        const long_hair_state = try scene.conventional.character.appearance_runtime.visualSecondaryState(
+            appearance_definition,
+            long_hair_id,
+        );
+        const ponytail_state = try scene.nonstandard.character.appearance_runtime.visualSecondaryState(
+            appearance_definition,
+            ponytail_id,
+        );
+        scene.evidence.long_hair_moved = scene.evidence.long_hair_moved or
+            (long_hair_state.initialized and
+                !(try long_hair_state.displacement(modular_body.long_hair_secondary_motion, 2)).approxEqAbs(math.Vec2.zero, 0.00001));
+        scene.evidence.ponytail_moved = scene.evidence.ponytail_moved or
+            (ponytail_state.initialized and
+                !(try ponytail_state.displacement(modular_body.ponytail_secondary_motion, 2)).approxEqAbs(math.Vec2.zero, 0.00001));
     }
 
     fn currentFittedScaleX(scene: *const Scene) !f32 {
@@ -252,7 +405,58 @@ pub const Scene = struct {
         }
         return error.MissingFittedMeshState;
     }
+
+    fn findEquipmentVisualIndex(
+        scene: *const Scene,
+        instance: *const character.CharacterInstance,
+        component_name: []const u8,
+    ) !usize {
+        const component_id = try scene.equipment_definition.visualComponentId(component_name);
+        const loadout = &instance.equipment_loadout.?;
+        for (loadout.visuals(), 0..) |visual, index| {
+            const recipe = try loadout.definition.recipe(visual.recipe);
+            if (recipe.component == component_id) return index;
+        }
+        return error.MissingEquipmentVisual;
+    }
+
+    fn findEquipmentSecondaryState(
+        scene: *const Scene,
+        instance: *const character.CharacterInstance,
+        component_name: []const u8,
+    ) !*const attachment_secondary_motion.RuntimeState {
+        const index = try scene.findEquipmentVisualIndex(instance, component_name);
+        return &instance.equipment_loadout.?.resolved_visuals[index].secondary;
+    }
+
+    pub fn equipmentSecondaryState(
+        scene: *const Scene,
+        instance: *const character.CharacterInstance,
+        component_name: []const u8,
+    ) !*const attachment_secondary_motion.RuntimeState {
+        return scene.findEquipmentSecondaryState(instance, component_name);
+    }
 };
+
+fn scriptedMotionInput(frame: u32) character.VisualTickInput {
+    if (frame < 20) return .{};
+    if (frame < 111) return .{ .horizontal_velocity = 4.0 };
+    if (frame < 146) return .{ .horizontal_velocity = -4.0 };
+    if (frame < 154) return .{};
+    if (frame < 166) return .{
+        .vertical_velocity = 4.0,
+        .physically_grounded = false,
+    };
+    if (frame < 186) return .{
+        .vertical_velocity = -5.0,
+        .physically_grounded = false,
+    };
+    if (frame == 186) return .{
+        .landing_event = .{ .simulation_tick = frame + 1, .impact_speed = 6.0 },
+    };
+    if (frame >= 206 and frame < 224) return .{ .horizontal_velocity = -3.0 };
+    return .{};
+}
 
 pub fn initFittedGarmentMesh(allocator: std.mem.Allocator) !mesh.Definition {
     const vertices = [_]mesh.VertexInput{
@@ -300,13 +504,13 @@ pub fn initSleeveMesh(allocator: std.mem.Allocator) !mesh.Definition {
 
 pub fn initCapeMesh(allocator: std.mem.Allocator) !mesh.Definition {
     const vertices = [_]mesh.VertexInput{
-        vertex(-0.40, 0.48, 0.00, 0.00, 1.00),
-        vertex(0.40, 0.48, 1.00, 0.00, 1.00),
-        vertex(-0.50, -0.18, 0.00, 0.45, 0.95),
-        vertex(0.48, -0.18, 1.00, 0.45, 0.95),
-        vertex(-0.62, -1.08, 0.00, 1.00, 0.80),
-        vertex(0.00, -0.94, 0.50, 0.88, 0.85),
-        vertex(0.58, -1.08, 1.00, 1.00, 0.80),
+        vertex(-0.40, 0.48, 0.00, 0.00, 0.00),
+        vertex(0.40, 0.48, 1.00, 0.00, 0.00),
+        vertex(-0.50, -0.18, 0.00, 0.45, 0.45),
+        vertex(0.48, -0.18, 1.00, 0.45, 0.45),
+        vertex(-0.62, -1.08, 0.00, 1.00, 1.00),
+        vertex(0.00, -0.94, 0.50, 0.88, 0.90),
+        vertex(0.58, -1.08, 1.00, 1.00, 1.00),
     };
     const indices = [_]u16{ 0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4, 3, 6, 5 };
     return mesh.Definition.init(allocator, .{
@@ -345,9 +549,9 @@ fn initEquipmentDefinition(
         .{ .stable_id = "accessory_over_clothing", .render_layer = 70 },
     };
     const components = [_]equipment.VisualComponentInput{
-        meshComponent("fitted_torso_mesh", fitted, .{ .morphology = 1, .breathing = 1 }),
-        meshComponent("topology_sleeve_mesh", sleeve, .{ .morphology = 0.9, .breathing = 0.8 }),
-        meshComponent("cape_mesh", cape, .{ .morphology = 0.65, .breathing = 0.6 }),
+        meshComponent("fitted_torso_mesh", fitted, .{ .morphology = 1, .breathing = 1 }, null),
+        meshComponent("topology_sleeve_mesh", sleeve, .{ .morphology = 0.9, .breathing = 0.8 }, loose_sleeve_secondary_motion),
+        meshComponent("cape_mesh", cape, .{ .morphology = 0.65, .breathing = 0.6 }, cape_secondary_motion),
         .{
             .stable_id = "rigid_collar_clasp",
             .sprite_size = .{ .x = 0.18, .y = 0.14 },
@@ -397,6 +601,7 @@ fn meshComponent(
     stable_id: []const u8,
     definition: mesh.DefinitionView,
     response: deformation.Response,
+    motion_definition: ?attachment_secondary_motion.Definition,
 ) equipment.VisualComponentInput {
     return .{
         .stable_id = stable_id,
@@ -406,6 +611,7 @@ fn meshComponent(
         .tint = definition.material.tint,
         .texture_page = definition.material.texture_page,
         .deformation_response = response,
+        .secondary_motion = motion_definition,
         .primitive = .{ .deformable_mesh = definition },
     };
 }

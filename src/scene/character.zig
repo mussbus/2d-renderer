@@ -1,10 +1,12 @@
 const std = @import("std");
 const math = @import("math");
 const deformation = @import("deformation");
+const attachment_secondary_motion = @import("attachment_secondary_motion");
 const humanoid = @import("humanoid");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
 const equipment = @import("equipment");
+const properties = @import("character_properties");
 const skeleton = @import("skeleton");
 const authored = @import("authored_clips");
 const clip = @import("clip");
@@ -290,17 +292,42 @@ pub const ArmIkRuntime = struct {
 
 pub const VisualTickInput = struct {
     horizontal_velocity: f32 = 0,
+    vertical_velocity: f32 = 0,
     physically_grounded: bool = true,
     landing_event: ?procedural_motion.LandingEvent = null,
+};
+
+pub const PropertyBindings = struct {
+    movement_speed: ?properties.AttributeId,
+    jump_strength: ?properties.AttributeId,
+    double_jump: ?properties.CapabilityId,
+    dash: ?properties.CapabilityId,
+
+    pub fn init(definition: equipment.DefinitionView) PropertyBindings {
+        return .{
+            .movement_speed = definition.attributeId("movement_speed") catch null,
+            .jump_strength = definition.attributeId("jump_strength") catch null,
+            .double_jump = definition.capabilityId("double_jump") catch null,
+            .dash = definition.capabilityId("dash") catch null,
+        };
+    }
 };
 
 pub const ResolvedEquipmentTransform = struct {
     binding_world: math.Mat3,
     resolved_deformation: math.Transform2D,
+    secondary_deformation: math.Transform2D,
     bound_identity: mesh.BoundIdentity,
 
+    pub fn composedDeformation(transform: ResolvedEquipmentTransform) !math.Transform2D {
+        return attachment_secondary_motion.composeResolvedDeformation(
+            transform.resolved_deformation,
+            transform.secondary_deformation,
+        );
+    }
+
     pub fn world(transform: ResolvedEquipmentTransform) !math.Mat3 {
-        return transform.binding_world.mul(try transform.resolved_deformation.localToParent());
+        return transform.binding_world.mul(try (try transform.composedDeformation()).localToParent());
     }
 };
 
@@ -364,6 +391,8 @@ pub const CharacterInstance = struct {
     default_actor_layer: u16,
     overrides: LayerOverrideTable = .{},
     equipment_loadout: ?equipment.Loadout = null,
+    property_bindings: ?PropertyBindings = null,
+    resolved_properties: ?properties.ResolvedSet = null,
     interaction_owner_id: u32 = 0,
     passive_grounded: bool = true,
     simulation_tick: u64 = 0,
@@ -514,6 +543,7 @@ pub const CharacterInstance = struct {
         }
         instance.simulation_tick = next_tick;
         try instance.evaluateWorldPose();
+        try instance.advanceAttachmentSecondaryMotion(.{});
     }
 
     pub fn reserveInteraction(instance: *CharacterInstance, owner_id: u32) !void {
@@ -572,6 +602,7 @@ pub const CharacterInstance = struct {
 
     pub fn setFacing(instance: *CharacterInstance, facing: humanoid.Facing) !void {
         try instance.restoreFootIkLocals();
+        if (instance.facing != facing) try instance.clearAttachmentSecondaryMotion();
         instance.facing = facing;
         try instance.evaluateWorldPose();
     }
@@ -741,6 +772,68 @@ pub const CharacterInstance = struct {
             });
             try instance.evaluateAppearance();
         }
+        try instance.advanceAttachmentSecondaryMotion(tick_input);
+    }
+
+    fn advanceAttachmentSecondaryMotion(
+        instance: *CharacterInstance,
+        tick_input: VisualTickInput,
+    ) !void {
+        if (!std.math.isFinite(tick_input.horizontal_velocity) or
+            !std.math.isFinite(tick_input.vertical_velocity))
+        {
+            return error.NonFiniteSecondaryMotionInput;
+        }
+        const landing_impulse_y = if (tick_input.landing_event) |event| landing: {
+            if (!std.math.isFinite(event.impact_speed) or event.impact_speed < 0) {
+                return error.NonFiniteSecondaryMotionInput;
+            }
+            break :landing -event.impact_speed;
+        } else 0;
+        const shared_input = attachment_secondary_motion.TickInput{
+            .anchor_world = math.Vec2.zero,
+            .linear_velocity_world = .{
+                .x = tick_input.horizontal_velocity,
+                .y = tick_input.vertical_velocity,
+            },
+            .landing_velocity_impulse_world = .{ .x = 0, .y = landing_impulse_y },
+            .facing = if (instance.facing == .left) .left else .right,
+        };
+        const appearance_advanced = try instance.character.appearance_runtime.advanceSecondaryMotion(
+            instance.definition.visual_definition,
+            shared_input,
+        );
+
+        if (instance.equipment_loadout) |*loadout| {
+            var visual_index: usize = 0;
+            while (visual_index < loadout.resolved_visual_count) : (visual_index += 1) {
+                const recipe = try loadout.definition.recipe(loadout.resolved_visuals[visual_index].recipe);
+                if (recipe.component.index() >= loadout.definition.visual_components.len) {
+                    return error.InvalidEquipmentVisualReference;
+                }
+                const component = loadout.definition.visual_components[recipe.component.index()];
+                const motion_definition = component.secondary_motion orelse {
+                    loadout.resolved_visuals[visual_index].secondary.clear();
+                    continue;
+                };
+                const resolved = try instance.equipmentVisualTransform(visual_index);
+                var input_value = shared_input;
+                input_value.anchor_world = resolved.binding_world.translationPart();
+                try loadout.resolved_visuals[visual_index].secondary.step(motion_definition, input_value);
+            }
+        }
+        if (appearance_advanced) try instance.evaluateAppearance();
+    }
+
+    fn clearAttachmentSecondaryMotion(instance: *CharacterInstance) !void {
+        try instance.character.appearance_runtime.clearSecondaryMotion(
+            instance.definition.visual_definition,
+        );
+        if (instance.equipment_loadout) |*loadout| {
+            for (loadout.resolved_visuals[0..loadout.resolved_visual_count]) |*visual| {
+                visual.secondary.clear();
+            }
+        }
     }
 
     pub fn selectControllerAnimation(instance: *CharacterInstance, physics: character_controller.StepResult) !void {
@@ -781,9 +874,11 @@ pub const CharacterInstance = struct {
         intent: input.CharacterIntent,
     ) !character_controller.StepResult {
         const controller = if (instance.controller) |*value| value else return error.CharacterHasNoController;
-        const result = try controller.step(world, intent);
+        const result = try controller.stepWithProperties(world, intent, try instance.controllerGameplayProperties());
         instance.world_position = controller.state.position;
-        instance.facing = if (controller.state.facing == .left) .left else .right;
+        const resolved_facing: humanoid.Facing = if (controller.state.facing == .left) .left else .right;
+        if (instance.facing != resolved_facing) try instance.clearAttachmentSecondaryMotion();
+        instance.facing = resolved_facing;
         try instance.evaluateWorldPose();
         return result;
     }
@@ -829,7 +924,13 @@ pub const CharacterInstance = struct {
             const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
             try runtime.reset(anatomy_definition);
         }
-        if (instance.equipment_loadout) |*loadout| try loadout.resetToDefault(try instance.equipmentContext());
+        if (instance.equipment_loadout) |*loadout| {
+            var candidate = loadout.*;
+            try candidate.resetToDefault(try instance.equipmentContext());
+            const resolved = try resolveLoadoutProperties(&candidate);
+            loadout.* = candidate;
+            instance.resolved_properties = resolved;
+        }
         try instance.evaluateWorldPose();
     }
 
@@ -1019,25 +1120,57 @@ pub const CharacterInstance = struct {
 
     pub fn initializeEquipment(instance: *CharacterInstance, definition: equipment.DefinitionView) !void {
         if (instance.equipment_loadout != null) return error.CharacterEquipmentAlreadyInitialized;
-        instance.equipment_loadout = try equipment.Loadout.init(definition, try instance.equipmentContext());
+        const loadout = try equipment.Loadout.init(definition, try instance.equipmentContext());
+        const resolved = try resolveLoadoutProperties(&loadout);
+        instance.equipment_loadout = loadout;
+        instance.property_bindings = PropertyBindings.init(definition);
+        instance.resolved_properties = resolved;
     }
 
     pub fn equipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
         const context = try instance.equipmentContext();
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
-        try loadout.equip(context, item_id);
+        var candidate = loadout.*;
+        try candidate.equip(context, item_id);
+        const resolved = try resolveLoadoutProperties(&candidate);
+        loadout.* = candidate;
+        instance.resolved_properties = resolved;
     }
 
     pub fn replaceItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
         const context = try instance.equipmentContext();
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
-        try loadout.replace(context, item_id);
+        var candidate = loadout.*;
+        try candidate.replace(context, item_id);
+        const resolved = try resolveLoadoutProperties(&candidate);
+        loadout.* = candidate;
+        instance.resolved_properties = resolved;
     }
 
     pub fn unequipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
         const context = try instance.equipmentContext();
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
-        try loadout.unequip(context, item_id);
+        var candidate = loadout.*;
+        try candidate.unequip(context, item_id);
+        const resolved = try resolveLoadoutProperties(&candidate);
+        loadout.* = candidate;
+        instance.resolved_properties = resolved;
+    }
+
+    pub fn attributeValue(instance: CharacterInstance, attribute_id: properties.AttributeId) !f32 {
+        const resolved = instance.resolved_properties orelse return error.CharacterPropertiesNotInitialized;
+        return resolved.value(attribute_id);
+    }
+
+    pub fn hasCapability(instance: CharacterInstance, capability_id: properties.CapabilityId) !bool {
+        const resolved = instance.resolved_properties orelse return error.CharacterPropertiesNotInitialized;
+        _ = try resolved.grantCount(capability_id);
+        return resolved.hasCapability(capability_id);
+    }
+
+    pub fn capabilityGrantCount(instance: CharacterInstance, capability_id: properties.CapabilityId) !u16 {
+        const resolved = instance.resolved_properties orelse return error.CharacterPropertiesNotInitialized;
+        return resolved.grantCount(capability_id);
     }
 
     pub fn equipmentVisualWorld(instance: *CharacterInstance, visual_index: usize) !math.Mat3 {
@@ -1063,6 +1196,10 @@ pub const CharacterInstance = struct {
             return error.InvalidEquipmentVisualReference;
         }
         const component = loadout.definition.visual_components[recipe.component.index()];
+        const secondary_deformation = if (component.secondary_motion) |motion_definition|
+            try visual.secondary.resolvedTransform(motion_definition)
+        else
+            math.Transform2D.identity();
         return switch (visual.source) {
             .anatomy_part => |part_id| .{
                 .binding_world = (try anatomy_runtime.partBindingWorld(anatomy_definition, part_id))
@@ -1072,6 +1209,7 @@ pub const CharacterInstance = struct {
                     part_id,
                     component.deformation_response,
                 ),
+                .secondary_deformation = secondary_deformation,
                 .bound_identity = .{ .anatomy_part = @intFromEnum(part_id) },
             },
             .attachment_point => |point_id| .{
@@ -1080,6 +1218,7 @@ pub const CharacterInstance = struct {
                     point_id,
                 )).mul(try recipe.local_to_binding.localToParent()),
                 .resolved_deformation = math.Transform2D.identity(),
+                .secondary_deformation = secondary_deformation,
                 .bound_identity = .{ .attachment_point = @intFromEnum(point_id) },
             },
         };
@@ -1205,16 +1344,17 @@ pub const CharacterInstance = struct {
                     });
                 },
                 .deformable_mesh => |definition| {
+                    const composed_deformation = try resolved.composedDeformation();
                     try loadout.resolved_visuals[visual_index].mesh_state.update(
                         instance.id.raw(),
                         resolved.bound_identity,
                         resolved.binding_world,
-                        resolved.resolved_deformation,
+                        composed_deformation,
                     );
                     _ = try queue.submitMesh(.{
                         .definition = definition,
                         .binding_world = resolved.binding_world,
-                        .resolved_deformation = resolved.resolved_deformation,
+                        .resolved_deformation = composed_deformation,
                         .owning_character = instance.id.raw(),
                         .bound_identity = resolved.bound_identity,
                         .order = order,
@@ -1230,6 +1370,21 @@ pub const CharacterInstance = struct {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         return .{ .definition = definition, .runtime = runtime, .owning_character = instance.id.raw() };
+    }
+
+    fn controllerGameplayProperties(instance: CharacterInstance) !character_controller.GameplayProperties {
+        const controller = instance.controller orelse return error.CharacterHasNoController;
+        var movement = character_controller.GameplayProperties.fromConfiguration(controller.configuration);
+        if (instance.resolved_properties) |resolved| {
+            if (instance.property_bindings) |bindings| {
+                if (bindings.movement_speed) |id| movement.maximum_run_speed = try resolved.value(id);
+                if (bindings.jump_strength) |id| movement.jump_speed = try resolved.value(id);
+                if (bindings.double_jump) |id| movement.double_jump = resolved.hasCapability(id);
+                if (bindings.dash) |id| movement.dash = resolved.hasCapability(id);
+            }
+        }
+        try movement.validate(controller.configuration);
+        return movement;
     }
 
     fn applyValidatedOverride(instance: *CharacterInstance, attachment_id: u16, validated: ValidatedOverrideRequest) !OverrideHandle {
@@ -1292,6 +1447,32 @@ pub const CharacterInstance = struct {
         );
     }
 };
+
+const equipment_property_source_kind: u16 = 1;
+
+fn resolveLoadoutProperties(loadout: *const equipment.Loadout) !properties.ResolvedSet {
+    var builder = try properties.Builder.init(
+        loadout.definition.attributes,
+        loadout.definition.capabilities,
+        &.{},
+    );
+    for (loadout.modifiers()) |modifier| {
+        try builder.addModifier(.{
+            .source = properties.SourceId.init(equipment_property_source_kind, @intFromEnum(modifier.item)),
+            .source_ordinal = modifier.source_ordinal,
+            .attribute = modifier.attribute,
+            .operation = modifier.operation,
+            .amount = modifier.amount,
+        });
+    }
+    for (loadout.capabilities()) |grant| {
+        try builder.addCapabilityGrant(.{
+            .source = properties.SourceId.init(equipment_property_source_kind, @intFromEnum(grant.item)),
+            .capability = grant.capability,
+        });
+    }
+    return builder.finish();
+}
 
 pub fn submitGlobally(instances: []const *CharacterInstance, batch: *sprite.SpriteBatch) !u32 {
     if (instances.len > maximum_characters) return error.CharacterCapacityExceeded;

@@ -1,16 +1,18 @@
 # Equipment, Clothing, and Loadouts
 
-Prompt 17 extends the Prompt 15/16 definition architecture with declarative equipment. The runtime data flow is:
+Prompt 17 extends the Prompt 15/16 definition architecture with declarative equipment, and Prompt 21 connects its gameplay declarations through a separate property resolver. The runtime data flow is:
 
 ```text
 DefinitionInputs
     -> Definition validation and name-to-ID resolution
     -> immutable DefinitionView
     -> character-owned bounded Loadout
-    -> generic character visual submission and gameplay consumers
+    -> generic character visual submission
+    -> character property resolution
+    -> gameplay consumers
 ```
 
-No editor, serialization format, inventory economy, combat, health, status-effect, persistence, or movement-capability behavior is implemented. A future editor or data loader may produce the same `DefinitionInputs`; it must pass through the same validation and runtime.
+No editor, serialization format, inventory economy, combat, health, status-effect, persistence, or attack behavior is implemented. A future editor or data loader may produce the same `DefinitionInputs`; it must pass through the same validation and runtime.
 
 ## Separate concepts
 
@@ -39,7 +41,7 @@ Prompt 19 adds `deformable_mesh` beside `rigid_sprite` in the same `VisualCompon
 - missing slot, role, visual layer, visual component, anatomy instance, attachment point, body region, attribute, capability, item, and default-loadout references;
 - empty items with no occupancy, visual, modifier, or capability declaration;
 - duplicate slots, regions, modifiers, or capabilities inside one item;
-- invalid or non-finite sprite, transform, pivot, tint, UV, or modifier data;
+- invalid or non-finite sprite, transform, pivot, tint, UV, attribute range/base, or modifier data;
 - invalid match cardinality or a specific anatomy instance that does not satisfy its declared role;
 - aggregate counts beyond documented fixed maxima;
 - duplicate or slot-conflicting default items.
@@ -86,9 +88,9 @@ Reset first restores the character's default anatomy preset, then atomically reb
 
 Coverage records are independent of logical slots. Underwear, a shirt, a sweatshirt, armor, and an accessory may coexist while covering the same torso region. Coverage is metadata only; Prompt 17 never hides base anatomy automatically. Actual geometry, visibility, and draw order remain authoritative.
 
-Numeric modifiers record source item, typed attribute, `add` or `multiply`, and a finite amount. Capability records contain source item and typed capability. Queries return deterministic slices or answer `hasCapability`; unequip and reset remove declarations by rebuilding the active view. Prompt 17 does not combine modifiers into final character statistics and does not implement double jump or dash. Those consumers must use IDs rather than item names or sprite types.
+Numeric modifiers record source item, source-local ordinal, typed attribute, `add` or `multiply`, and a validated finite amount. Capability records contain source item and typed capability. Queries return deterministic slices; unequip and reset remove declarations by rebuilding the active view.
 
-Representative definitions cover underwear, a chest undergarment, short-sleeve shirt, long-sleeve sweatshirt, socks, shoes, bilateral shoulder armor and gauntlets, multi-slot full plate, amulet, backpack, speed boots, and double-jump boots. Attribute definitions include armor, physical damage reduction, movement speed, jump strength, and carrying capacity; capability definitions include double jump and dash.
+Prompt 21 resolves those declarations into character-owned attributes and capability source counts. Equipment does not own the final state and the resolver does not inspect item names. Representative definitions cover underwear, a chest undergarment, short-sleeve shirt, long-sleeve sweatshirt, socks, shoes, bilateral shoulder armor and gauntlets, multi-slot full plate, dash amulet, duplicate-grant feather amulet, backpack, speed boots, spring boots, and double-jump boots. Attribute definitions include explicit base/range metadata for armor, physical damage reduction, movement speed, jump strength, and carrying capacity; capability definitions include double jump and dash. Exact stacking and consumer behavior are in `docs/CHARACTER_PROPERTIES.md`.
 
 ## Rendering and authority
 
@@ -120,4 +122,26 @@ It renders conventional and nonstandard characters with fitted garment meshes, e
 - Prompt 19 deformation is affine appearance fitting. Cape/hair/cloth secondary dynamics belong to Prompt 20 and are not started here.
 - Active modifiers are declarations, not a final stacking-resolution policy.
 - Capability grants are declarations; controller consumption belongs to Prompt 21.
+
+## Prompt 22 integrated loadouts
+
+The foundation playground uses one validated equipment definition containing a fitted torso mesh, topology-expanded long sleeves, cape, rigid clasp, independent left shoulder/right gauntlet, a three-slot full-plate item, boots, amulet, and backpack. Its default loadout combines layered sprite and mesh visuals with speed, dash, carry-capacity, and armor declarations. The next loadout replaces boots and independent armor with stronger-jump boots and full plate; the third restores bilateral pieces and grants double jump. Cycling once more reconstructs the exact default fingerprint and visual cardinality.
+
+Every replacement is the existing transactional `Loadout` operation. Rebuild clears removed mesh and secondary state before topology expansion, then character-owned property resolution rebuilds the separate gameplay branch. The integrated route observes two conventional sleeves, four nonstandard sleeves, a bounded maximum resolved-visual count, exact restoration, armor and damage-reduction values, and no stale visual, modifier, or capability source after reset.
+
+```text
+Character/Anatomy Definitions + Equipment Definitions
+                         |
+              Loadout + Topology Resolution
+                         |
+          +--------------+----------------+
+          |                               |
+Resolved Visual Instances       Resolved Gameplay Effects
+          |                               |
+Appearance Deformation          Attributes / Capabilities
+          |                               |
+Sprite + Mesh Rendering         Gameplay Consumers
+```
+
+This is a runtime composition, not an inventory, loot, economy, persistence, combat, or editor model.
 - Changing topology with equipped required items calls bounded rebind validation. Ordinary gameplay should validate a proposed topology/loadout pair before exposing a topology change that may be rejected.
