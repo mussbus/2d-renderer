@@ -93,3 +93,9 @@ zig build run -- --frames 360 --demo animation
 Frames 0-59 show idle. Frame 60 requests the 0.30-second idle-to-walk transition. Walk continues through frame 299, spanning multiple cycles. Frame 300 requests the 0.30-second walk-to-idle transition, which completes at frame 317; the remainder is idle.
 
 The animation definition, animator buffers, pose, skeleton, sockets, and attachments are initialized from one fixed buffer. The loop records the allocator position around animator update, hierarchy evaluation, socket reads, and attachment submission. All remain unchanged after initialization. Clip sampling, blending, event traversal, state transitions, and animator update contain no allocator call. Animation state changes create no GPU resource and all 15 page-zero attachments remain one sprite range and one indexed-instanced draw.
+
+## Side and front pose interpretation
+
+Prompt 24 does not add front/side gameplay state machines. Each character still owns one animator and one authoritative animation state. The presentation policy reads that fixed-tick state together with controller grounding/velocity: grounded idle chooses front, while locomotion, dash, airborne states, landing, and the interaction-owned handshake choose side.
+
+Side art consumes the ordinary reflected appearance transforms. Front art builds a bounded projection from the same local pose, retaining root position, vertical animation, breathing/deformation, and attachment secondary transforms while applying view-authored arm rest offsets. It never advances playback, changes a clip, or writes physics. The 360-frame character-presentation route exercises idle/walk blending, jump/rise/fall/land, both handshake roles and IK, and ordinary idle restoration with one shared animation timeline per character.

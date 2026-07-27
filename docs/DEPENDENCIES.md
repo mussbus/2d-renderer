@@ -98,3 +98,10 @@ Startup and `zig build gpu-smoke` must report enough information to distinguish 
 6. Verify the runtime `SDL3.dll` file version/path and rerun the bootstrap hash check if a symbol or behavior differs from the inspected headers.
 7. Run pinned `dxc.exe --version`, rebuild both shader stages, and run pinned `dxv.exe` on each output. A missing entry point, wrong target profile, or validation failure stops the build.
 8. If device creation still fails, check Windows graphics-driver support for Direct3D 12 Feature Level 11_0 and Resource Binding Tier 2. The design does not silently switch APIs.
+## Prompt 23 image platform capability
+
+PNG decoding uses Windows Imaging Component from Windows 11. It adds no downloaded or redistributed dependency, so there is no new archive, package hash, runtime DLL, or third-party license to pin. `ole32.dll` and WIC codecs are licensed and serviced as Windows components. The implementation dynamically loads the installed `ole32.dll` and fails with `ImageDecoderUnavailable` if the required COM entry points or WIC factory are unavailable.
+
+The COM method order, GUID values, decode options, and RGBA conversion contract were checked against the `objbase.h` and `wincodec.h` headers shipped with the pinned Zig 0.16.0 toolchain. Required input is a one-frame PNG convertible by WIC to 32-bit RGBA. No SDL_image, stb_image, game framework, or custom PNG decoder is used.
+
+The two project atlases are ordinary committed content, not dependencies. `zig build` validates their presence and installs them under `zig-out/bin/art`. Runtime lookup begins at `SDL_GetBasePath()` and does not depend on the repository working directory.

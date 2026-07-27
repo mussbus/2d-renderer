@@ -13,3 +13,5 @@ zig-out/
 # Local bootstrap test data
 .bootstrap-test*/
 
+# references
+reference

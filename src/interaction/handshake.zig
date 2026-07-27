@@ -31,5 +31,6 @@ pub fn definition(definitions: *const authored.Definitions) !interaction.Definit
             .facing_tolerance_radians = 0,
         },
         .completion_behavior = .grounded_motion_fallback,
+        .required_presentation_view = .side,
     }, definitions.library.clips, &definitions.machine);
 }

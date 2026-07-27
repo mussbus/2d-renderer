@@ -332,9 +332,15 @@ pub const Manager = struct {
 
         try participant_a.reserveInteraction(id.raw());
         a_reserved = true;
+        if (manager.definition.required_presentation_view) |view| {
+            try participant_a.claimInteractionPresentation(id.raw(), view);
+        }
         if (fault == .after_reserve_a) return error.InjectedInteractionStartFailure;
         try participant_b.reserveInteraction(id.raw());
         b_reserved = true;
+        if (manager.definition.required_presentation_view) |view| {
+            try participant_b.claimInteractionPresentation(id.raw(), view);
+        }
         if (fault == .after_reserve_b) return error.InjectedInteractionStartFailure;
         if (fault == .animator_a_transition) return error.InjectedInteractionStartFailure;
         try participant_a.enterAnimationState(manager.definition.role(.initiator).state);

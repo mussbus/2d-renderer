@@ -99,3 +99,6 @@ Persistent shaders, the fixed-readback and swapchain-format pipelines, sampler, 
 Per-frame metrics reset in `beginFrame`: submitted, visible, culled, sorted, ranges, actual submitted sprite draws, and uploaded bytes. Lifetime metrics separately track CPU capacity growth, allocation attempts, post-stabilization allocation attempts, GPU slot growth, frame-slot waits, frames, persistent resource creation/release, and fences.
 
 Draw calls are committed only after a command buffer returns a valid submission fence. The window title is formatted into stack storage and displays current actual values. Copies, render-pass boundaries, readback, skipped zero-drawable frames, and debug work do not increment sprite draw calls.
+## Real texture-page ranges
+
+Prompt 23 makes the existing `texture_page` field authoritative for retained image-backed pages. Prepared sprite and unified sprite/mesh ranges preserve semantic order and split at page transitions. Immediately before each range draw, the renderer binds that page's persistent texture and sampler. This remains range batching, not one independent submission per body part or atlas region; honest draw counts rise when sorted content alternates pages. Sprite and deformable-mesh materials share the same page table. Definition, upload, ownership, and failure details are in `docs/ART_PIPELINE.md`.

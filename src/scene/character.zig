@@ -19,6 +19,7 @@ const leg_ik = @import("leg_ik");
 const foot_planting = @import("foot_planting");
 const fixed_step = @import("fixed_step");
 const input = @import("input");
+const presentation_view = @import("presentation_view");
 const collision_world = @import("collision_world");
 const character_controller = @import("character_controller");
 const sprite = @import("sprite_batch");
@@ -394,6 +395,7 @@ pub const CharacterInstance = struct {
     property_bindings: ?PropertyBindings = null,
     resolved_properties: ?properties.ResolvedSet = null,
     interaction_owner_id: u32 = 0,
+    presentation: presentation_view.Runtime = .{},
     passive_grounded: bool = true,
     simulation_tick: u64 = 0,
     last_submitted_keys: [humanoid.canonical_attachment_semantic_count]?sprite.DrawOrderKey = [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count,
@@ -501,6 +503,7 @@ pub const CharacterInstance = struct {
             spawn_position,
             if (facing == .left) .left else .right,
         );
+        try instance.syncPresentationView();
         return instance;
     }
 
@@ -512,6 +515,7 @@ pub const CharacterInstance = struct {
 
     pub fn enterAnimationState(instance: *CharacterInstance, state: state_machine.StateId) !void {
         try instance.animator.enterState(&instance.shared_animations.machine, state);
+        try instance.syncPresentationView();
     }
 
     pub fn canEnterAnimationState(instance: CharacterInstance, state: state_machine.StateId) bool {
@@ -543,6 +547,7 @@ pub const CharacterInstance = struct {
         }
         instance.simulation_tick = next_tick;
         try instance.evaluateWorldPose();
+        try instance.syncPresentationView();
         try instance.advanceAttachmentSecondaryMotion(.{});
     }
 
@@ -552,10 +557,26 @@ pub const CharacterInstance = struct {
         instance.interaction_owner_id = owner_id;
     }
 
+    pub fn claimInteractionPresentation(
+        instance: *CharacterInstance,
+        owner_id: u32,
+        view: presentation_view.View,
+    ) !void {
+        if (instance.interaction_owner_id != owner_id) return error.InteractionOwnershipMismatch;
+        const previous = instance.presentation;
+        errdefer instance.presentation = previous;
+        try instance.presentation.claimInteraction(owner_id, view);
+        try instance.syncPresentationView();
+    }
+
     pub fn releaseInteraction(instance: *CharacterInstance, owner_id: u32) !void {
         if (owner_id == 0) return error.InvalidInteractionOwner;
         if (instance.interaction_owner_id != owner_id) return error.InteractionOwnershipMismatch;
+        if (instance.presentation.interaction_owner != 0) {
+            try instance.presentation.releaseInteraction(owner_id);
+        }
         instance.interaction_owner_id = 0;
+        try instance.syncPresentationView();
     }
 
     pub fn isInteractionLocked(instance: CharacterInstance) bool {
@@ -566,6 +587,34 @@ pub const CharacterInstance = struct {
         return instance.interaction_owner_id;
     }
 
+    pub fn presentationView(instance: CharacterInstance) presentation_view.View {
+        return instance.presentation.current;
+    }
+
+    pub fn presentationOverride(instance: CharacterInstance) presentation_view.DebugOverride {
+        return instance.presentation.debug_override;
+    }
+
+    pub fn setPresentationOverride(
+        instance: *CharacterInstance,
+        value: presentation_view.DebugOverride,
+    ) !void {
+        instance.presentation.setDebugOverride(value);
+        try instance.syncPresentationView();
+    }
+
+    pub fn cyclePresentationOverride(instance: *CharacterInstance) !void {
+        instance.presentation.cycleDebugOverride();
+        try instance.syncPresentationView();
+    }
+
+    pub fn applyPresentationInput(
+        instance: *CharacterInstance,
+        snapshot: input.FrameInputSnapshot,
+    ) !void {
+        if (snapshot.presentation_view_cycle.pressed) try instance.cyclePresentationOverride();
+    }
+
     pub fn interactionGrounded(instance: CharacterInstance) bool {
         if (instance.controller) |controller| return controller.state.grounded;
         return instance.passive_grounded;
@@ -574,6 +623,7 @@ pub const CharacterInstance = struct {
     pub fn setPassiveGrounded(instance: *CharacterInstance, grounded: bool) !void {
         if (instance.controller != null) return error.ControlledCharacterGroundingIsAuthoritative;
         instance.passive_grounded = grounded;
+        try instance.syncPresentationView();
     }
 
     pub fn fallbackAnimationState(instance: CharacterInstance) state_machine.StateId {
@@ -669,6 +719,7 @@ pub const CharacterInstance = struct {
     pub fn clearOverrides(instance: *CharacterInstance) void {
         instance.overrides.clearAll();
         instance.interaction_owner_id = 0;
+        instance.presentation.interaction_owner = 0;
         instance.passive_grounded = true;
     }
 
@@ -772,6 +823,7 @@ pub const CharacterInstance = struct {
             });
             try instance.evaluateAppearance();
         }
+        try instance.syncPresentationView();
         try instance.advanceAttachmentSecondaryMotion(tick_input);
     }
 
@@ -797,7 +849,12 @@ pub const CharacterInstance = struct {
                 .y = tick_input.vertical_velocity,
             },
             .landing_velocity_impulse_world = .{ .x = 0, .y = landing_impulse_y },
-            .facing = if (instance.facing == .left) .left else .right,
+            .facing = if (instance.presentationView() == .front)
+                .right
+            else if (instance.facing == .left)
+                .left
+            else
+                .right,
         };
         const appearance_advanced = try instance.character.appearance_runtime.advanceSecondaryMotion(
             instance.definition.visual_definition,
@@ -880,6 +937,7 @@ pub const CharacterInstance = struct {
         if (instance.facing != resolved_facing) try instance.clearAttachmentSecondaryMotion();
         instance.facing = resolved_facing;
         try instance.evaluateWorldPose();
+        try instance.syncPresentationView();
         return result;
     }
 
@@ -911,6 +969,7 @@ pub const CharacterInstance = struct {
         );
         try instance.procedural.reset(0);
         instance.overrides.clearAll();
+        instance.presentation.reset();
         instance.facing = instance.default_facing;
         instance.actor_layer = instance.default_actor_layer;
         instance.world_position = instance.default_world_position;
@@ -932,6 +991,57 @@ pub const CharacterInstance = struct {
             instance.resolved_properties = resolved;
         }
         try instance.evaluateWorldPose();
+    }
+
+    pub fn syncPresentationView(instance: *CharacterInstance) !void {
+        const change = try instance.presentation.sync(instance.presentationAutomaticInput());
+        if (change.changed()) try instance.clearAttachmentSecondaryMotion();
+    }
+
+    fn presentationAutomaticInput(instance: CharacterInstance) presentation_view.AutomaticInput {
+        const state = instance.animationState();
+        if (instance.controller) |controller| {
+            if (controller.state.dash_ticks_remaining > 0) {
+                return .{ .grounded = controller.state.grounded, .activity = .dashing };
+            }
+            if (!controller.state.grounded) {
+                return .{
+                    .grounded = false,
+                    .activity = switch (state) {
+                        .jump_start => .jumping,
+                        .rising => .rising,
+                        .falling => .falling,
+                        else => if (controller.state.velocity.y > 0) .rising else .falling,
+                    },
+                };
+            }
+            return .{
+                .grounded = true,
+                .activity = switch (state) {
+                    .landing => .landing,
+                    .walk => .walking,
+                    .jump_start => .jumping,
+                    .rising => .rising,
+                    .falling => .falling,
+                    .idle, .handshake_role_a, .handshake_role_b => if (@abs(controller.state.velocity.x) >= 0.10)
+                        .walking
+                    else
+                        .idle,
+                },
+            };
+        }
+        return .{
+            .grounded = instance.passive_grounded,
+            .activity = switch (state) {
+                .idle => .idle,
+                .walk => .walking,
+                .jump_start => .jumping,
+                .rising => .rising,
+                .falling => .falling,
+                .landing => .landing,
+                .handshake_role_a, .handshake_role_b => .idle,
+            },
+        };
     }
 
     pub fn selectBodyPreset(instance: *CharacterInstance, preset_id: anatomy.BodyPresetId) !void {
@@ -1152,6 +1262,19 @@ pub const CharacterInstance = struct {
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
         var candidate = loadout.*;
         try candidate.unequip(context, item_id);
+        const resolved = try resolveLoadoutProperties(&candidate);
+        loadout.* = candidate;
+        instance.resolved_properties = resolved;
+    }
+
+    pub fn selectEquipmentItems(
+        instance: *CharacterInstance,
+        item_ids: []const equipment.EquipmentItemId,
+    ) !void {
+        const context = try instance.equipmentContext();
+        const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+        var candidate = loadout.*;
+        try candidate.replaceAll(context, item_ids);
         const resolved = try resolveLoadoutProperties(&candidate);
         loadout.* = candidate;
         instance.resolved_properties = resolved;

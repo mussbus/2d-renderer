@@ -55,6 +55,10 @@ pub const VisualComponentId = enum(u16) {
     }
 };
 
+pub const PresentationSemanticId = enum(u32) {
+    _,
+};
+
 pub const EquipmentItemId = enum(u16) {
     _,
 
@@ -93,6 +97,7 @@ pub const CapabilityDefinitionInput = properties.CapabilityDefinitionInput;
 
 pub const VisualComponentInput = struct {
     stable_id: []const u8,
+    presentation_semantic: ?PresentationSemanticId = null,
     sprite_size: math.Vec2,
     pivot: [2]f32 = .{ 0.5, 0.5 },
     uv_rect: [4]f32 = .{ 0, 0, 0.5, 0.5 },
@@ -186,6 +191,7 @@ pub const CapabilityDefinition = properties.CapabilityDefinition;
 pub const VisualComponent = struct {
     id: VisualComponentId,
     stable_id: skeleton.DebugName,
+    presentation_semantic: ?PresentationSemanticId,
     sprite_size: math.Vec2,
     pivot: [2]f32,
     uv_rect: [4]f32,
@@ -386,6 +392,7 @@ pub const Definition = struct {
             visual_components[index] = .{
                 .id = @enumFromInt(index),
                 .stable_id = stable_id,
+                .presentation_semantic = input.presentation_semantic,
                 .sprite_size = input.sprite_size,
                 .pivot = input.pivot,
                 .uv_rect = input.uv_rect,
@@ -786,6 +793,22 @@ pub const Loadout = struct {
         var candidate = Loadout{ .definition = loadout.definition, .owning_character = context.owning_character };
         try candidate.validateCompatibility(context);
         for (candidate.definition.default_loadout) |item_id| try candidate.insertItem(item_id, false);
+        try candidate.rebuildDerived(context);
+        loadout.* = candidate;
+    }
+
+    pub fn replaceAll(
+        loadout: *Loadout,
+        context: AnatomyContext,
+        item_ids: []const EquipmentItemId,
+    ) !void {
+        if (item_ids.len > maximum_equipped_items) return error.EquippedItemCapacityExceeded;
+        var candidate = Loadout{
+            .definition = loadout.definition,
+            .owning_character = context.owning_character,
+        };
+        try candidate.validateCompatibility(context);
+        for (item_ids) |item_id| try candidate.insertItem(item_id, false);
         try candidate.rebuildDerived(context);
         loadout.* = candidate;
     }

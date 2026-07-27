@@ -268,3 +268,85 @@ zig build -Doptimize=ReleaseFast
 `zig build check` runs `zig fmt --check` on Zig sources and build files, pure and deterministic tests, and repository audits that need no GPU. Source audits check for prohibited high-level render APIs, forbidden graphics/engine dependencies, unfinished markers, disabled tests, and missing resource-release ownership. Documentation examples are not treated as executable source.
 
 Prompt 1 introduced each listed command with a real target. Later milestones extend the same build interface rather than replacing it.
+## Prompt 23 art-pipeline verification
+
+`zig build test-art` runs ten focused tests split between platform-independent definition/render routing and Windows WIC decode behavior. Coverage includes page definitions and per-page nearest/linear policy; duplicate page and region IDs/names; exact normalized UV derivation; atlas bounds and arithmetic overflow; invalid pivots; missing page and region references; duplicate or conflicting semantic bindings; fixed-buffer allocation failure; synthetic view 37; declaration reorder stability; two-page unified ranges; deformable-mesh material compatibility; alpha-bearing RGBA decode; missing/corrupt/unsupported image errors; image metadata bounds; and zero post-stabilization queue allocation.
+
+The GPU-backed command is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo art-assets --frames 240
+```
+
+It requires D3D12/DXIL and the installed asset layout. Startup runs GPU fault-cleanup cases, then uploads both real pages and renders six PNG-backed sprites plus one mesh. Runtime assertions require both nearest-sampled pages, six sprite ranges/draws plus one mesh range/draw, exact decode counts, no retained CPU images, no steady-state fixed-buffer or queue allocation, and no steady-state GPU-resource creation. A successful bounded run is GPU execution evidence; it is not a claim of subjective manual art review.
+
+## Prompt 24 character-presentation verification
+
+Run the focused platform-independent suite:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-presentation
+```
+
+It covers the complete automatic view policy; override/interaction precedence and cleanup; facing and root invariance; reset; single-root side reflection; non-reflected front projection; both-view region completeness; bald, buzz-cut, and long-hair resolution; explicit front semantic layers; interaction cancellation; deterministic spring reset; allocation-free view changes; two-character isolation; `Q` input; and bounded submission on both views. Prompt 24A additionally resolves every canonical male/female side/front base region with no garment, proves torso and vest semantic/region IDs differ while their real production page is shared, removes and re-resolves the optional garment without changing the base result, and asserts zero fixed-buffer growth across repeated resolution. Aggregate `zig build test` retains the existing deformation, IK, foot-planting, interaction, controller, and reset regression suites.
+
+The GPU-backed acceptance route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --scripted-input --frames 360
+```
+
+The route executes exactly 1,440 fixed ticks. Its runtime evidence must include front idle, left and right side movement, preserved left facing while front, jump/rise/fall/land, bald/buzz switching, female front/side states, breathing, long-hair displacement, both debug overrides, side-view handshake ownership, completion cleanup, and return to front. Prompt 24A startup also validates the anatomy/clothing boundary over the actual page bindings and logs the distinct male/female front torso and vest region IDs. The final two-character frame must retain two real art pages, 68 regions, 96 bindings, 46 submitted sprites, two texture-page ranges/draws, no update/submission/queue allocation after stabilization, and no steady-state GPU-resource delta.
+
+Manual visual acceptance is separate from the automated verdict. Inspect both source atlases at native resolution and run the interactive route to check coherent silhouettes, face readability, hair shape, consistent lighting/scale, shoulder/elbow/wrist/hip/knee/ankle/neck overlaps, front semantic ordering, movement articulation, breathing, hair response, view transitions, and handshake contact. For Prompt 24A, inspect male/female front and side captures from the live D3D12 window and confirm bare neutral limbs/feet, featureless torso/pelvis base-presentation surfaces, and preserved joints/overlaps. Automated success proves routing and invariants but cannot by itself prove subjective joint/art quality.
+
+## Prompt 25 wardrobe verification
+
+Run:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-wardrobe
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo wardrobe --scripted-input --frames 600
+```
+
+The focused suite validates all item/preset/component IDs, complete and distinct paired side/front art, deterministic lookup, duplicate/conflicting slots, independent occupancy/layer/coverage, blouse-plus-cardigan composition, reuse across presets, custom recombination, zero cosmetic effects, two/four-arm sleeve expansion, bilateral semantic-foot binding, invariant foot matrices, hair/headwear coexistence, transaction state preservation and rollback, two-character isolation, long-mesh and secondary-state cleanup, reset, focus-safe O/P edges, both-view queue submission, and fixed-buffer stability after initialization. The `0.000001` matrix/controller tolerances isolate unintended state mutation while allowing normal `f32` representation; selection performs no arithmetic expected to exceed this bound.
+
+The D3D12 route must report:
+
+- `direct3d12` selected and DXIL agreement;
+- five decoded production art pages and two persistent skirt mesh definitions;
+- 15 presets, 30 items, 36 components, 72 wardrobe regions, and 72 bindings;
+- every preset observed in front and side, including both mandatory outfits;
+- custom recombination, headwear/hair, long mesh/secondary motion, legwear, footwear, breathing, locomotion, jump, land, and unchanged male evidence;
+- zero update, submission, queue, and hot-swap GPU-resource growth after initialization.
+
+Manual visual acceptance inspects every preset in both views through the real D3D12 window. Confirm torso pieces are centered on anatomy rather than the head, sleeves bind each visible arm, lower pieces remain independently composed, the split skirt deforms below the pelvis, headwear and long hair coexist, shoes remain on planted feet, the base-only preset reveals intact neutral anatomy, and the custom outfit visibly layers blouse below cardigan. Sequential window captures are acceptable evidence of the real route; they do not count as physical input testing.
+
+## Prompt 25A visual-quality gate
+
+Run the non-interactive hard gate only through its exact route:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
+```
+
+The route writes eleven P6 images from the same prepared 640 by 480 global queue
+used by D3D12, using one persistent pre-checkpoint transfer buffer. It requires
+base male/female front and side; representative male/female wardrobe front and
+side; `wide_brim_crimson`; `ivory_blouse_red_shorts`; the recombined ivory
+blouse plus crimson cardigan in both views; stride; jump rise; and jump fall.
+It rejects an incorrect frame count or non-scripted invocation.
+
+Focused Prompt 25A coverage extends `test-presentation` and `test-wardrobe` with
+exact production page dimensions/paths, nonzero in-bounds regions, audited
+alpha-tight shoe/sleeve extraction, side and front joint geometry, semantic
+shoe pivot/offset, and a 600-frame fixed-buffer acceptance schedule. These tests
+remain necessary but do not replace pixel judgment.
+
+`VISUAL_ACCEPTANCE_25A.md` contains the nineteen-item checklist for every final
+capture, concrete observations, normal and nearest-neighbor 2x review, and the
+before/after evidence. `PROMPT25A_DECISION_RECORD.md` records the root causes,
+rejected iterations, image-generation provenance, architecture decisions, and
+minor remaining visual limitations. This scripted/GPU evidence does not claim
+physical keyboard input or manual window resizing.

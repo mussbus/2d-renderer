@@ -4,6 +4,7 @@ const clip = @import("clip");
 const events = @import("events");
 const state_machine = @import("state_machine");
 const fixed_step = @import("fixed_step");
+const presentation_view = @import("presentation_view");
 
 pub const participant_count: usize = 2;
 pub const event_count: usize = 3;
@@ -107,6 +108,7 @@ pub const DefinitionInput = struct {
     allowed_start_states: [2]state_machine.StateId,
     envelope: SpatialEnvelope,
     completion_behavior: CompletionBehavior,
+    required_presentation_view: ?presentation_view.View = null,
 };
 
 pub const Definition = struct {
@@ -121,6 +123,7 @@ pub const Definition = struct {
     allowed_start_states: [2]state_machine.StateId,
     events: [event_count]EventDefinition,
     completion_behavior: CompletionBehavior,
+    required_presentation_view: ?presentation_view.View,
 
     pub fn init(
         input: DefinitionInput,
@@ -183,6 +186,7 @@ pub const Definition = struct {
             .allowed_start_states = input.allowed_start_states,
             .events = shared_events,
             .completion_behavior = input.completion_behavior,
+            .required_presentation_view = input.required_presentation_view,
         };
     }
 

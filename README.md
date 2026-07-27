@@ -35,6 +35,41 @@ Prompt 22 adds the primary Character + World Foundation Playground without repla
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo foundation --scripted-input
 ```
 
+Prompt 23 adds a production-oriented PNG/atlas presentation boundary without changing gameplay or creating another renderer. Windows Imaging Component decodes alpha-bearing installed PNGs, immutable art-pack definitions resolve numeric semantic/view IDs to validated regions, and bounded persistent texture/sampler pages are shared by sprite and mesh ranges. Two original nearest-sampled technical pixel-art atlases prove eight regions, synthetic view extensibility, alpha, honest page-transition draws, cleanup, and allocation-free steady state; a definition test proves that a future pack may instead select linear filtering:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-art
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo art-assets --frames 240
+```
+
+Prompt 24 adds original segmented male and female side/front pixel-art atlases, separates gameplay left/right facing from presentation view, projects the shared authoritative pose into front art, keeps reflection side-only, gives interactions view authority, and integrates breathing, long-hair secondary motion, IK, foot planting, explicit front layering, bald/buzz selection, and bounded view overrides without another animator or renderer:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-presentation
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --scripted-input --frames 360
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --interactive
+```
+
+Prompt 24A separates the shipped neutral base anatomy from removable clothing. Prompt 25 adds 30 reusable cosmetic wardrobe items, 36 side/front components, 15 typed outfit presets, topology-aware sleeves/gloves/legwear/footwear, layered blouse-plus-cardigan composition, a deformable long skirt with bounded secondary motion, and transactional hot swapping through the existing global queue:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-wardrobe
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo wardrobe --scripted-input --frames 600
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo wardrobe --interactive
+```
+
+Prompt 25A re-authors the separated male/female production atlases, corrects
+view spacing, joint overlap, internal connector layering, padded sleeve/shoe
+extraction, and footwear registration, and adds an exact D3D12 capture gate.
+It preserves the Prompt 24A anatomy boundary and Prompt 25 reusable wardrobe:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\.deps\zig-0.16.0\zig.exe' build test-presentation
+& '.\.deps\zig-0.16.0\zig.exe' build test-wardrobe
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
+```
+
 The open-ended primary foundation route is:
 
 ```powershell
@@ -62,6 +97,9 @@ The open-ended primary foundation route is:
 | `V` | Cycle the controlled character global build value in the foundation playground |
 | `H` | Cycle hair in the foundation playground |
 | `L` | Cycle the representative speed, jump/armor, and double-jump loadouts |
+| `Q` | Cycle automatic, force side, and force front in the character-presentation route |
+| `O` | Cycle complete outfit presets in the wardrobe route |
+| `P` | Pause or resume wardrobe simulation for inspection |
 | Escape | Exit |
 
 Walk right toward the passive character and stop near the authored handshake position. Both characters must be grounded and facing one another; spacing remains deliberately strict, and pressing `E` never snaps or warps either root. The raised platforms, short/held jump behavior, foot planting, arm IK, reset, and debug overlay all use the production runtime paths.
@@ -91,6 +129,10 @@ Start with:
 - [`docs/DEFORMATION.md`](docs/DEFORMATION.md) for fixed-tick breathing, shared instance-resolved deformation, clothing response, composition order, gameplay invariants, and evidence.
 - [`docs/MESH_ATTACHMENTS.md`](docs/MESH_ATTACHMENTS.md) for mesh validation, topology-aware runtime ownership, unified ordering, GPU resources, batching, metrics, and evidence.
 - [`docs/ATTACHMENT_SECONDARY_MOTION.md`](docs/ATTACHMENT_SECONDARY_MOTION.md) for bounded visual control points, per-instance ownership, lifecycle/facing reset, composition, and evidence.
+- [`docs/ART_PIPELINE.md`](docs/ART_PIPELINE.md) for PNG decoding, immutable art packs, stable semantic/view identity, atlas validation, multi-page GPU ownership, installed assets, and the future offline authoring boundary.
+- [`docs/CHARACTER_PRESENTATION.md`](docs/CHARACTER_PRESENTATION.md) for facing/view separation, interaction authority, shared-pose interpretation, original character art, layers, secondary reset, and evidence.
+- [`docs/WARDROBE.md`](docs/WARDROBE.md) for garment semantics, view/topology binding, presets, controls, and the future authoring workflow.
+- [`docs/OUTFIT_REFERENCE_INVENTORY.md`](docs/OUTFIT_REFERENCE_INVENTORY.md) for the required reference-cluster inventory and project-local IDs.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.
 - [`docs/SECONDARY_MOTION.md`](docs/SECONDARY_MOTION.md) for procedural walk, landing, spring, composition, reset, and evidence contracts.

@@ -257,3 +257,34 @@ The following require a real SDL GPU device and therefore are excluded from ordi
 - DXIL shader creation and graphics-pipeline creation.
 - GPU buffers, transfers, texture upload/sampling, blending, instanced draws, fences, and presentation.
 - Visual correctness, draw order, and GPU performance measurements.
+## Prompt 23 presentation-resource boundary
+
+Real art remains presentation data. The immutable art pack maps stable typed semantic/view IDs to stable atlas-region IDs, then derives page indices and normalized UVs during initialization. Gameplay, character, anatomy, equipment, controller, collision, interaction, and animation definitions do not store atlas coordinates. See `docs/ART_PIPELINE.md` for the complete ownership and validation contract.
+
+Windows Imaging Component decodes required installed PNG files to owned RGBA8 CPU slices during initialization only. `GpuDemo` transactionally creates bounded texture/sampler pages, uploads each once, waits its upload fence, releases decoded pixels, and retains GPU resources until renderer destruction. The common texture-page table is consumed by both rigid-sprite and deformable-mesh ranges. The GPU responsibility remains vertex transformation, RGBA sampling, alpha blending, and indexed-instanced drawing; the CPU remains responsible for semantic resolution, ordering, and every gameplay system.
+
+A future 3D authoring tool is strictly offline. It may render or stylize views and emit PNG pages plus stable region/view/pivot metadata, but the runtime boundary does not change and atlas layout never becomes authoritative identity.
+
+## Prompt 24 character-presentation boundary
+
+`Facing` remains authoritative left/right gameplay state. `presentation_view.Runtime` separately resolves side/front from fixed-tick grounding and activity, a bounded debug override, and optional interaction ownership in that precedence order. The handshake definition requires side and releases its claim on every completion, cancellation, or rollback path. View transitions cannot write physics, controller, interaction, property, equipment, animation-clock, or topology state.
+
+Side rendering consumes the existing appearance transforms and one character-root reflection. Front rendering uses a fixed-capacity projection of the same local pose without facing reflection or a second animator. Both consume existing deformation and attachment-secondary transforms, then enter one global semantic render queue with explicit front body-part layers. The complete view/art ownership and evidence route are documented in `docs/CHARACTER_PRESENTATION.md`.
+
+Base anatomy, removable clothing, and equipment/accessories are separate semantic layers:
+
+```text
+base anatomy -> clothing layer(s) -> equipment/accessory layer(s)
+```
+
+Prompt 24A's actual production pages bind canonical body, face, and hair regions as `.character`; the garment-only training-vest regions are `.equipment`. Torso and vest regions intentionally share a physical texture page while retaining distinct semantic IDs and region IDs. A character presentation resolves every canonical body region without a garment. Removing or replacing an equipment binding cannot address, hide, or replace the `.character` definition. The neutral opaque torso/pelvis modesty surface is permanent `base_presentation`, not an equipped item. Texture packing remains a renderer optimization and never confers anatomy, clothing, or equipment ownership.
+
+## Prompt 25 wardrobe boundary
+
+The wardrobe catalog is immutable definition data layered onto the existing equipment core. Typed item, component, semantic, slot, anatomy-role, coverage, visual-layer, and preset IDs remain separate. A preset is only a bounded item-ID list. Complete selection uses copy-validate-commit loadout replacement and character-owned property recomputation; it cannot mutate body/hair, root, facing, controller, physics, canonical pose, animation clock, camera, interaction, or renderer ownership.
+
+`wardrobe_presentation.Presentation` resolves the 36 side/front semantic pairs at initialization into fixed arrays. Each frame consumes the character's existing presentation view and existing resolved equipment instances. Front uses the shared Prompt 24 pose/anatomy projection; side uses existing appearance/anatomy matrices. Both submit ordinary sprite or mesh requests into the one global mixed queue. No per-character renderer, per-item draw submission path, name lookup, allocation, decode, or GPU-resource creation occurs in steady state.
+
+Long garments reuse Prompt 19 deformable meshes and Prompt 20 bounded secondary state. Two tiny immutable skirt topologies represent the paired atlas views and are uploaded at startup. Equipment lifecycle rebuild owns mesh/spring cleanup. This is not a general cloth simulation.
+
+The full content/authoring contract is in `WARDROBE.md`; engineering decisions are in `WARDROBE_DECISION_RECORD.md`.

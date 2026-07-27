@@ -40,6 +40,14 @@ The bounded Prompt 20 modular attachment-secondary route is timeline-driven and 
 
 It uses copied authoritative velocity/landing/facing samples to demonstrate cape, long-hair, ponytail, and loose-sleeve response plus cape unequip/re-equip. It never creates `CharacterIntent`, moves a controller root, or assigns spring nodes from the script.
 
+The Prompt 24 visual-inspection route is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --interactive
+```
+
+`Q` cycles automatic, force side, and force front. `H` toggles bald/buzz hair for the controlled male. These are frame-level presentation commands: neither changes gameplay facing or constructs a gameplay intent. The scripted acceptance route uses exactly 360 frames and requires `--scripted-input` instead of `--interactive`.
+
 The visible playground window is resizable. Larger drawable pixel dimensions reveal more world at the same 82 pixels per metre. Minimize can temporarily produce no drawable and safely skips presentation; restore or repeated resize events refresh the high-DPI pixel dimensions without recreating unrelated GPU resources.
 
 ## Controller demonstration
@@ -115,6 +123,7 @@ The feedback-driven script idles, walks with alternating contacts, jumps from a 
 | `V` | Cycle global build in the foundation playground |
 | `H` | Cycle short, long, and ponytail hair in the foundation playground |
 | `L` | Cycle speed, stronger-jump/full-plate, and double-jump loadouts in the foundation playground |
+| `Q` | Cycle automatic, force side, and force front in the character-presentation route |
 | Escape | Exit the interactive playground |
 
 Opposing keyboard directions cancel to zero. A keyboard direction has magnitude one and therefore wins an equal-magnitude gamepad tie. Zero input preserves the last meaningful facing direction.
@@ -155,3 +164,17 @@ Foundation reset restores the player spawn, velocity, grounded/support state, ai
 The latest playground input diagnostic is fixed-size and read-only. It exposes `keyboard_left_held`, `keyboard_right_held`, `jump_pressed`, `jump_held`, `jump_released`, `interact_pressed`, `reset_pressed`, `debug_toggle_pressed`, `merged_move_axis`, `substeps_this_frame`, and `pending_edge_count`. Interactive console output is transition-only and bounded by actual control transitions; held state is not printed each frame.
 
 Playground reset restores both characters, the controlled physics state, animator/procedural state, interaction ownership and overrides, arm/foot constraints, fixed-step clock, and pending gameplay edges. The current debug-enabled choice and bounded lifetime input counters are retained so a reset neither hides the overlay nor erases verification evidence; the latest diagnostic is replaced by the reset frame with zero pending edges. No GPU resource is recreated.
+
+## Prompt 25 wardrobe inspection
+
+Run `zig build run -- --demo wardrobe --interactive`.
+
+- O cycles the next complete typed outfit preset transactionally.
+- P pauses or resumes simulation while leaving presentation available for inspection.
+- Q cycles automatic, forced-side, and forced-front presentation.
+- R resets the controlled female, clears her loadout state, equips the first preset, restores automatic timing, and unpauses.
+- Movement and jump retain the established A/D, arrows, and Space mappings.
+
+O and P are sampled only by `sdl_input.PlatformInput`, then carried as platform-neutral pressed/held/released fields in `FrameInputSnapshot`. Focus loss clears pending customization edges and suppresses held keys until physical release, so refocus cannot synthesize an outfit change or pause toggle. Preset selection never bypasses `CharacterIntent` for movement and never polls SDL from scene code.
+
+The deterministic route is `zig build run -- --demo wardrobe --scripted-input --frames 600`. It uses programmatic scene selection for repeatable preset/view evidence and synthetic input tests for O/P edge semantics. It is not evidence of physical keyboard or gamepad use.

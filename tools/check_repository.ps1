@@ -127,6 +127,21 @@ $meshAttachmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repository
 $meshAttachmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/mesh_attachment_tests.zig')
 $foundationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_playground.zig')
 $foundationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/foundation_playground_tests.zig')
+$artPackSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/art_pack.zig')
+$imageDecodeSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/image_decode.zig')
+$artAssetDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/art_asset_demo.zig')
+$artPipelineTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/art_pipeline_tests.zig')
+$imageDecodeTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/image_decode_tests.zig')
+$presentationViewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/presentation_view.zig')
+$presentationPoseSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/presentation_pose.zig')
+$characterArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_art.zig')
+$characterPresentationDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_presentation_demo.zig')
+$characterPresentationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/character_presentation_tests.zig')
+$wardrobeCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_catalog.zig')
+$wardrobeArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_art.zig')
+$wardrobePresentationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_presentation.zig')
+$wardrobeDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_demo.zig')
+$wardrobeTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/wardrobe_tests.zig')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
@@ -1595,6 +1610,497 @@ foreach ($phrase in @('SDL_SCANCODE_C', 'SDL_SCANCODE_V', 'SDL_SCANCODE_H', 'SDL
         $failed = $true
     }
 }
+foreach ($phrase in @(
+    'pub const maximum_texture_pages: usize = 8',
+    'pub const TexturePageId = enum(u16)',
+    'pub const AtlasRegionId = enum(u32)',
+    'pub const VisualSemanticId = enum(u32)',
+    'pub const ViewId = enum(u16)',
+    'pub const SamplingPolicy = enum(u8)',
+    'pub fn resolve(',
+    'ReferenceAssetPathForbidden',
+    'DuplicateVisualBinding',
+    'AtlasRectangleOutOfBounds'
+)) {
+    if (-not $artPackSource.Contains($phrase)) {
+        Write-Error "Prompt 23 immutable art-pack contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'LoadLibraryW',
+    'clsid_wic_imaging_factory',
+    'png_container_format',
+    'rgba8_pixel_format',
+    'pub fn decodePngFile',
+    'ImageUploadSizeExceeded',
+    'MissingImageFile',
+    'MalformedImage',
+    'UnsupportedPixelLayout'
+)) {
+    if (-not $imageDecodeSource.Contains($phrase)) {
+        Write-Error "Prompt 23 Windows image-decoding contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($imageDecodeSource, 'std\.compress|IHDR|IDAT|inflate|deflate')) {
+    Write-Error 'Prompt 23 must use Windows Imaging Component rather than a custom PNG codec.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'createArtTexturePage',
+    'runArtTextureFaultChecks',
+    'art texture page-set rollback passed',
+    'textureBinding(range.texture_page)',
+    'SDL_BindGPUFragmentSamplers',
+    'image_decode.decodePngFile',
+    'gpu_resource_delta != 0'
+)) {
+    if (-not $gpuSource.Contains($phrase)) {
+        Write-Error "Prompt 23 multi-page GPU ownership or evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::Matches($gpuSource, 'image_decode\.decodePngFile').Count -ne 1) {
+    Write-Error 'Prompt 23 must have exactly one initialization-only PNG decode call site.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'p23_mechanical_atlas.png',
+    'p23_energy_atlas.png',
+    'addInstallFileWithDir',
+    'app_module.addImport("art_pack", art_pack_module)',
+    'app_module.addImport("image_decode", image_decode_module)',
+    'app_module.addImport("art_asset_demo", art_asset_demo_module)',
+    'b.step("test-art"'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 23 build/install wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'sampling policy accepts a smooth future art page without changing renderer identity',
+    'atlas UV normalization and semantic resolution survive source declaration reordering',
+    'art metadata rejects duplicate ids names bindings and conflicting semantic names',
+    'art metadata rejects malformed paths dimensions regions geometry and references',
+    'focused art scene submits sprites and mesh across pages without steady-state allocation'
+)) {
+    if (-not $artPipelineTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 23 art-definition coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'PNG metadata catches unsupported layouts zero dimensions overflow and upload limits',
+    'WIC decodes production PNG alpha and classifies missing corrupt and unsupported files',
+    'PNG decode allocation failure leaves the fixed allocator unchanged'
+)) {
+    if (-not $imageDecodeTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 23 image-decoder coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    '.sampling = .nearest',
+    'arbitrary_detail_view',
+    '.kind = .character',
+    '.kind = .equipment',
+    '.kind = .environment',
+    'renderer_page_offset'
+)) {
+    if (-not $artAssetDemoSource.Contains($phrase)) {
+        Write-Error "Prompt 23 focused proof content is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+foreach ($phrase in @(
+    'pub const View = enum(u8)',
+    'side,',
+    'front,',
+    'pub const DebugOverride = enum(u8)',
+    'if (runtime.interaction_owner != 0) return runtime.interaction_view',
+    '.automatic => automaticView(automatic_input)',
+    '.idle => .front',
+    '.walking, .dashing, .jumping, .rising, .falling, .landing => .side',
+    'pub fn claimInteraction',
+    'pub fn releaseInteraction'
+)) {
+    if (-not $presentationViewSource.Contains($phrase)) {
+        Write-Error "Prompt 24 presentation-view authority is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($presentationViewSource, 'SDL_|CreateGPU|DrawGPU|CharacterController|CollisionWorld|world_position|velocity\s*=|Facing')) {
+    Write-Error 'Prompt 24 presentation-view policy must remain platform, GPU, physics-root, and gameplay-facing independent.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'presentation: presentation_view.Runtime',
+    'pub fn presentationView',
+    'pub fn setPresentationOverride',
+    'pub fn claimInteractionPresentation',
+    'pub fn releaseInteraction(instance: *CharacterInstance, owner_id: u32)',
+    'pub fn syncPresentationView',
+    'if (change.changed()) try instance.clearAttachmentSecondaryMotion()'
+)) {
+    if (-not $characterSource.Contains($phrase)) {
+        Write-Error "Prompt 24 character integration is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'required_presentation_view: ?presentation_view.View = null',
+    '.required_presentation_view = input.required_presentation_view'
+)) {
+    if (-not $interactionDefinitionSource.Contains($phrase)) {
+        Write-Error "Prompt 24 interaction-view definition contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if (-not $handshakeDefinitionSource.Contains('.required_presentation_view = .side') -or
+    -not $interactionSystemSource.Contains('claimInteractionPresentation') -or
+    -not $characterSource.Contains('presentation.releaseInteraction(owner_id)')) {
+    Write-Error 'Prompt 24 handshake view ownership must claim side for both participants and release through character cleanup.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    '[skeleton.maximum_bones]math.Mat3',
+    '[appearance.maximum_attachment_points]math.Mat3',
+    'pub const FrontProjection = struct',
+    'state.local_deformation.localToParent()',
+    'state.secondary.resolvedTransform'
+)) {
+    if (-not $presentationPoseSource.Contains($phrase)) {
+        Write-Error "Prompt 24 bounded front projection is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($presentationPoseSource, 'allocator|SDL_|CreateGPU|CharacterController|CollisionWorld|Animator')) {
+    Write-Error 'Prompt 24 front projection must remain fixed-capacity presentation math over the shared pose.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'p25a_male_base_anatomy_atlas.png',
+    'p25a_female_base_anatomy_atlas.png',
+    'pub const region_inputs = makeRegionInputs()',
+    'pub const binding_inputs = makeBindingInputs()',
+    'presentation_view.View',
+    'frontBodyPartLayer',
+    'presentationVisualWorld',
+    'projection.visualWorld',
+    'queue.submitSprite'
+)) {
+    if (-not $characterArtSource.Contains($phrase)) {
+        Write-Error "Prompt 24 production character-art routing is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'pub const Garment = enum(u8)',
+    'side_training_vest',
+    'front_training_vest',
+    '.kind = .equipment',
+    'validateAnatomyClothingBoundary',
+    'resolveBaseAnatomy',
+    'resolveGarment',
+    'AnatomyGarmentIdentityCollision',
+    'AnatomyGarmentCoPackingEvidenceMissing'
+)) {
+    if (-not $characterArtSource.Contains($phrase)) {
+        Write-Error "Prompt 24A anatomy/clothing ownership boundary is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($characterArtSource, '(?i)torso_wearing|arm_with_sleeve|leg_with_pants|foot_with_shoe')) {
+    Write-Error 'Prompt 24A canonical anatomy names must not encode removable garments.' -ErrorAction Continue
+    $failed = $true
+}
+if ($characterArtSource.Contains('p24_male_character_atlas.png') -or
+    $characterArtSource.Contains('p24_female_character_atlas.png')) {
+    Write-Error 'Prompt 24A production bindings must not retain the original clothing-baked atlas paths.' -ErrorAction Continue
+    $failed = $true
+}
+if ([regex]::IsMatch($characterArtSource + [Environment]::NewLine + $characterPresentationDemoSource, 'FemaleRenderer|MaleRenderer|SDL_CreateGPU|SDL_DrawGPU|CharacterController\s*=|controller\.state\.(position|velocity|grounded|supporting_collider)\s*=')) {
+    Write-Error 'Prompt 24 must not add sex-specific renderers, scene-owned GPU calls, or presentation-owned gameplay mutation.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'male_front_idle',
+    'front_preserved_left_facing',
+    'long_hair_motion_observed',
+    'handshake_side_view_observed',
+    'returned_to_front_after_interaction',
+    'update_allocations={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}'
+)) {
+    if (-not ($characterPresentationDemoSource + [Environment]::NewLine + $gpuSource).Contains($phrase)) {
+        Write-Error "Prompt 24 bounded evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'p25a_male_base_anatomy_atlas.png',
+    'p25a_female_base_anatomy_atlas.png',
+    'app_module.addImport("presentation_view", presentation_view_module)',
+    'app_module.addImport("character_art", character_art_module)',
+    'app_module.addImport("character_presentation_demo", character_presentation_demo_module)',
+    '"test-presentation",'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 24 build/install wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if (-not $sdlInputSource.Contains('SDL_SCANCODE_Q') -or
+    -not $inputSource.Contains('presentation_view_cycle')) {
+    Write-Error 'Prompt 24 unused Q control must map to the platform-neutral presentation-view command.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'automatic presentation policy is authoritative and complete',
+    'facing is preserved across view changes and reset restores automatic front',
+    'side reflection remains single-root while front projection never reflects facing',
+    'character art definitions cover both views bald buzz cut and long hair',
+    'actual base anatomy resolves without a garment and garment identity cannot replace anatomy',
+    'interaction owns side view and cancellation releases both participants to front',
+    'view transition clears long-hair spring state without allocation or cross-character mutation'
+)) {
+    if (-not $characterPresentationTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 24 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+foreach ($relativePath in @(
+    'assets/art/p25_wardrobe_upper_atlas.png',
+    'assets/art/p25_wardrobe_layers_atlas.png',
+    'assets/art/p25_wardrobe_lower_atlas.png',
+    'docs/OUTFIT_REFERENCE_INVENTORY.md',
+    'docs/WARDROBE.md',
+    'docs/WARDROBE_DECISION_RECORD.md'
+)) {
+    $path = Join-Path $repositoryRoot $relativePath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
+        (Get-Item -LiteralPath $path).Length -eq 0) {
+        Write-Error "Prompt 25 required production asset/document is missing or empty: '$relativePath'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'pub const visual_count: usize = 36',
+    'pub const preset_count: usize = 15',
+    'pub const custom_item_count: usize = 7',
+    'presentation_semantic',
+    '.selection = .every_compatible',
+    '"upper_outer"',
+    '"sleeves_outer"',
+    '"wide_brim_crimson"',
+    '"ivory_blouse_red_shorts"',
+    '"base_only"',
+    'customItems',
+    '"ivory_blouse"',
+    '"crimson_cardigan"',
+    'skirt_secondary_motion',
+    '.attribute_modifiers = &.{}',
+    '.capability_grants = &.{}'
+)) {
+    if (-not $wardrobeCatalogSource.Contains($phrase)) {
+        Write-Error "Prompt 25 typed wardrobe catalog contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'p25_wardrobe_upper_atlas.png',
+    'p25_wardrobe_layers_atlas.png',
+    'p25_wardrobe_lower_atlas.png',
+    'pub const region_count: usize = wardrobe_catalog.visual_count * regions_per_visual',
+    'pub const binding_count: usize = region_count',
+    'validateCatalog',
+    '.side',
+    '.front'
+)) {
+    if (-not $wardrobeArtSource.Contains($phrase)) {
+        Write-Error "Prompt 25 paired wardrobe-art binding is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'art_definition.resolve(presentation_semantic, false)',
+    'art_definition.resolve(presentation_semantic, true)',
+    'FrontAnatomyProjection.init',
+    'projectedEquipmentTransform',
+    'queue.submitSprite',
+    'queue.submitMesh',
+    'front_skirt_mesh',
+    'side_skirt_mesh'
+)) {
+    if (-not $wardrobePresentationSource.Contains($phrase)) {
+        Write-Error "Prompt 25 view-aware unified presentation is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+$wardrobeSubmitStart = $wardrobePresentationSource.IndexOf('    pub fn submit(')
+$wardrobeSubmitEnd = $wardrobePresentationSource.IndexOf('fn semantic(', $wardrobeSubmitStart)
+if ($wardrobeSubmitStart -lt 0 -or $wardrobeSubmitEnd -le $wardrobeSubmitStart) {
+    Write-Error 'Prompt 25 wardrobe submission audit could not isolate the steady-state implementation.' -ErrorAction Continue
+    $failed = $true
+} else {
+    $wardrobeSubmitSource = $wardrobePresentationSource.Substring(
+        $wardrobeSubmitStart,
+        $wardrobeSubmitEnd - $wardrobeSubmitStart
+    )
+    if ([regex]::IsMatch($wardrobeSubmitSource, 'allocator|\.alloc\(|image_decode|SDL_CreateGPU|SDL_UploadToGPU')) {
+        Write-Error 'Prompt 25 steady-state wardrobe submission must not allocate, decode, or create/upload GPU resources.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'pub const required_frames: u32 = 600',
+    'selectPreset',
+    'selectCustom',
+    'preset_front_observed',
+    'preset_side_observed',
+    'long_garment_secondary_motion',
+    'long_hair_with_headwear',
+    'footwear_observed',
+    'male_unchanged',
+    'scene.wardrobe.submit'
+)) {
+    if (-not $wardrobeDemoSource.Contains($phrase)) {
+        Write-Error "Prompt 25 bounded demonstration evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch(
+    $wardrobeCatalogSource + [Environment]::NewLine +
+    $wardrobePresentationSource + [Environment]::NewLine +
+    $wardrobeDemoSource,
+    'SDL_CreateGPU|SDL_UploadToGPU|image_decode|FemaleRenderer|MaleRenderer'
+)) {
+    Write-Error 'Prompt 25 catalog/presentation/demo must not own GPU creation, runtime decoding, or sex-specific renderers.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'occupancy layering coverage and semantic foot binding remain independent',
+    'repeated sleeves follow two and four arm topology while headwear preserves long hair',
+    'preset selection is transactional and preserves non-equipment character state',
+    'long garment mesh and secondary state clear on replacement and reset returns empty default',
+    'front and side preset cycling and submission allocate nothing after initialization',
+    'O and P controls produce focus-safe outfit-cycle and pause edges'
+)) {
+    if (-not $wardrobeTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 25 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'p25_wardrobe_upper_atlas.png',
+    'p25_wardrobe_layers_atlas.png',
+    'p25_wardrobe_lower_atlas.png',
+    'app_module.addImport("wardrobe_demo", wardrobe_demo_module)',
+    'test_module.addImport("wardrobe_demo", wardrobe_demo_module)',
+    '"test-wardrobe",'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 25 build/install/test wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if (-not $sdlInputSource.Contains('SDL_SCANCODE_O') -or
+    -not $sdlInputSource.Contains('SDL_SCANCODE_P') -or
+    -not $inputSource.Contains('outfit_cycle') -or
+    -not $inputSource.Contains('pause_toggle')) {
+    Write-Error 'Prompt 25 O/P controls must map through the platform-neutral focus-safe input snapshot.' -ErrorAction Continue
+    $failed = $true
+}
+
+foreach ($relativePath in @(
+    'assets/art/p25a_male_base_anatomy_atlas.png',
+    'assets/art/p25a_female_base_anatomy_atlas.png',
+    'docs/PROMPT25A_DECISION_RECORD.md',
+    'docs/VISUAL_ACCEPTANCE_25A.md'
+)) {
+    $path = Join-Path $repositoryRoot $relativePath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
+        (Get-Item -LiteralPath $path).Length -eq 0) {
+        Write-Error "Prompt 25A required production asset/document is missing or empty: '$relativePath'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'front_arm_x_compression: f32 = 0.90',
+    'side_arm_x_compression: f32 = 0.68',
+    'compressArmRoots'
+)) {
+    if (-not $presentationPoseSource.Contains($phrase)) {
+        Write-Error "Prompt 25A view composition correction is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'p25a_male_base_anatomy_atlas',
+    'p25a_female_base_anatomy_atlas',
+    'maleConnectorLayer'
+)) {
+    if (-not $characterArtSource.Contains($phrase)) {
+        Write-Error "Prompt 25A production anatomy correction is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'footwear_ankle_offset_metres: f32 = 0',
+    '.pivot = .{ 0.95, 0.55 }'
+)) {
+    if (-not $wardrobeCatalogSource.Contains($phrase)) {
+        Write-Error "Prompt 25A wardrobe registration correction is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    '.{ .x = 1288, .y = 811, .width = 172, .height = 151 }',
+    '.{ .x = 1281, .y = 307, .width = 120, .height = 205 }'
+)) {
+    if (-not $wardrobeArtSource.Contains($phrase)) {
+        Write-Error "Prompt 25A alpha-tight region correction is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'visual_capture_transfer',
+    'initializeVisualCaptureTransfer',
+    'captureUnifiedToPpm',
+    'source=same_prepared_global_queue'
+)) {
+    if (-not $gpuSource.Contains($phrase)) {
+        Write-Error "Prompt 25A bounded D3D capture evidence is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 25A production anatomy pages and regions have exact valid bounds',
+    'Prompt 25A wardrobe regions are nonzero bounded and alpha-tight where required',
+    'Prompt 25A side anatomy submission geometry remains registered at joints',
+    'Prompt 25A front anatomy geometry overlaps every core limb joint',
+    'Prompt 25A acceptance schedule is deterministic and allocation free'
+)) {
+    if (-not ($characterPresentationTestsSource + [Environment]::NewLine + $wardrobeTestsSource).Contains($phrase)) {
+        Write-Error "Required Prompt 25A deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch(
+    $wardrobeCatalogSource + [Environment]::NewLine +
+    $wardrobeArtSource + [Environment]::NewLine +
+    $wardrobePresentationSource + [Environment]::NewLine +
+    $wardrobeDemoSource + [Environment]::NewLine +
+    $wardrobeTestsSource + [Environment]::NewLine +
+    $buildSource,
+    '(?i)prompt[ _-]?26|p26[_-]'
+)) {
+    Write-Error 'Prompt 26 implementation markers must not enter Prompt 25 scope.' -ErrorAction Continue
+    $failed = $true
+}
 
 if ($failed) {
     exit 1
@@ -1641,4 +2147,9 @@ Write-Host 'Prompt 18 deformation audit passed: fixed-tick breathing, shared ins
 Write-Host 'Prompt 19 mesh-attachment audit passed: validated immutable topology, per-binding mutable ownership, one semantic sprite/mesh queue, persistent SDL GPU topology, bounded frame slots, shared deformation, honest metrics, and deterministic evidence.'
 Write-Host 'Prompt 21 character-property audit passed: typed finite definitions, stable-source stacking, counted capabilities, transactional character recomputation, generic controller consumption, platform-neutral dash, bounded evidence, and no renderer/allocation dependency.'
 Write-Host 'Prompt 22 foundation audit passed: one production world/controller path, modular topology and loadouts, separated visual/property branches, unified mixed rendering, resize/reset invariance, bounded evidence, and no scene-owned SDL/GPU authority.'
+Write-Host 'Prompt 23 art-pipeline audit passed: WIC PNG alpha decode, immutable stable semantics, bounded multi-page ownership, per-pack sampling, common sprite/mesh binding, installed original assets, rollback evidence, and allocation-free steady state.'
+Write-Host 'Prompt 24 character-presentation audit passed: distinct facing/view authority, fixed-tick automatic policy, interaction-owned side view, shared-pose front projection, single-root side reflection, original segmented art, explicit front layers, bounded spring reset, one global queue, and allocation/resource-free view changes.'
+Write-Host 'Prompt 24A art-boundary audit passed: production base anatomy resolves without garments, character/equipment identities remain distinct on shared pages, clothing-baked canonical names and legacy production paths are absent, and garment resolution cannot replace anatomy.'
+Write-Host 'Prompt 25 wardrobe audit passed: original paired production art, typed reusable items/presets, independent slots/layers/coverage, topology-aware bindings, transactional cycling, cosmetic effects, long-mesh reuse, focus-safe controls, unified submission, and allocation/resource-free steady state.'
+Write-Host 'Prompt 25A visual-correction audit passed: re-authored separated anatomy, view spacing, joint overlap, connector layers, alpha-tight wardrobe regions, semantic footwear registration, bounded D3D captures, and focused deterministic coverage.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

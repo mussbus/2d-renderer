@@ -84,9 +84,13 @@ A `FaceDefinition` names one head instance and a bounded list of independently a
 
 Both definitions use the same shared `face_feature_part` definition, head-owned `face` socket, bounded face-feature list, anatomy active mask, appearance visibility/deformation state, and global sprite submission path. Definition initialization validates every named head and feature instance. The grouping is per head; neither the catalog nor runtime assumes exactly one head.
 
-A `HairDefinition` owns a bounded list of hair part instances and an extensible style tag. The evidence content includes short rigid hair, long rigid hair, and a ponytail. Selecting hair rebuilds only the preallocated appearance-level active mask and validates that every selected hair part has an active parent. One hair definition can list parts for several heads.
+A `HairDefinition` owns a bounded list of hair part instances and an extensible style tag. The evidence content includes short rigid hair, long hair, and a ponytail. Selecting hair rebuilds only the preallocated appearance-level active mask and validates that every selected hair part has an active parent. One hair definition can list parts for several heads.
 
-Facial expression and secondary hair motion are not implemented. The separate feature and hair instances preserve a path for later animation and physics without flattening them into an inaccessible monolithic face texture.
+Prompt 24 maps these same instances to view-specific original atlas regions. Bald is represented by selecting no hair instance; the male buzz cut resolves `short_hair`, and the female long style resolves `long_hair`. Long hair retains the character-owned bounded attachment-secondary state introduced in Prompt 20. A side/front view change clears that state and the next fixed visual tick initializes it from the new view rest configuration. Facial expressions remain out of scope; independently addressable eyes, brows, nose, mouth, and ears are retained.
+
+Prompt 24A makes the visual ownership boundary concrete in the shipped art. Every canonical torso, pelvis, arm, leg, hand, and foot binding resolves neutral base anatomy before and independently of any loadout. Removable clothing uses equipment-kind visual identities and layers over those regions; it never substitutes a `torso_wearing_*`, `arm_with_*`, `leg_with_*`, or `foot_with_*` anatomy definition. The actual training-vest proof regions are co-packed with body regions, demonstrating that atlas placement does not change anatomy/equipment ownership. Torso and pelvis retain an opaque, featureless permanent modesty surface classified as base presentation rather than a removable garment.
+
+Presentation view does not alter anatomy topology. Front projection keeps anatomical left/right identity and uses explicit semantic layers; side projection uses the existing single-root reflection. Body preset, face, hair, morphology, deformation, and view selection therefore remain independent axes.
 
 ## Ownership and update order
 
@@ -131,8 +135,16 @@ Current limitations are intentional:
 
 - morphology does not alter canonical bone lengths or physics colliders;
 - optional module joints have rest/manual local pose only;
-- long hair is rigid;
+- long hair uses bounded visual secondary motion, while the buzz cut remains rigid;
 - faces do not yet have expressions or a dedicated face rig;
 - adult-detail artwork is not bundled;
 - changing an entire body preset is a preallocated topology selection, not an in-game authoring UI;
 - optional hands, feet, and arms do not automatically enter canonical handshake or foot-placement systems.
+
+## Prompt 25 wardrobe bindings
+
+Wardrobe visuals consume anatomy roles without changing anatomy ownership. One `every_compatible` upper-arm recipe expands to two sleeve instances on the conventional female and four on the existing nonstandard topology. Gloves, lower-leg wear, and shoes use the same role mechanism. The production shoe item resolves exactly one visual for each active semantic foot; selecting or replacing it leaves both canonical foot-binding matrices unchanged.
+
+Front presentation uses the bounded `FrontAnatomyProjection` of the same active anatomy instances. Side presentation uses the existing evaluated anatomy matrices. View switching therefore changes only which paired art region and projected presentation transform is consumed; it cannot change topology, instance identity, body preset, foot socket, or canonical pose.
+
+Long hair remains an independently selected anatomy/presentation group when headwear is equipped. Hat occupancy neither clears the active hair parts nor substitutes a head definition.

@@ -15,15 +15,15 @@ pub fn main(init: std.process.Init) !void {
     const arguments = try init.minimal.args.toSlice(init.arena.allocator());
     const options = try parseOptions(arguments);
     if (options.gpu_smoke) {
-        try runInitializationFaultChecks();
-        var demo = try gpu.GpuDemo.init(std.heap.page_allocator, true, null);
+        try runInitializationFaultChecks(init.io);
+        var demo = try gpu.GpuDemo.init(std.heap.page_allocator, init.io, true, null);
         defer demo.deinit();
         try demo.runRuntimeFaultChecks();
         try demo.runSmoke();
         return;
     }
 
-    var demo = try gpu.GpuDemo.init(std.heap.page_allocator, false, null);
+    var demo = try gpu.GpuDemo.init(std.heap.page_allocator, init.io, false, null);
     defer demo.deinit();
     try demo.runVisible(options.maximum_frames, options.demo, options.scripted_input, options.debug_visualization, options.interactive);
 }
@@ -32,9 +32,9 @@ test "application entry point remains type checked" {
     _ = &main;
 }
 
-fn runInitializationFaultChecks() !void {
+fn runInitializationFaultChecks(io: std.Io) !void {
     for (fault_injection.initialization_stages) |stage| {
-        var attempt = gpu.GpuDemo.init(std.heap.page_allocator, true, .{ .fail_after = stage }) catch |err| {
+        var attempt = gpu.GpuDemo.init(std.heap.page_allocator, io, true, .{ .fail_after = stage }) catch |err| {
             if (err != error.InjectedInitializationFailure) {
                 std.log.err("fault-injection cleanup check for {s} failed before reaching its injection point: {s}", .{ @tagName(stage), @errorName(err) });
                 return err;
@@ -98,10 +98,18 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .side_scroller;
             } else if (std.mem.eql(u8, arguments[index], "foundation")) {
                 options.demo = .foundation;
+            } else if (std.mem.eql(u8, arguments[index], "art-assets")) {
+                options.demo = .art_assets;
+            } else if (std.mem.eql(u8, arguments[index], "character-presentation")) {
+                options.demo = .character_presentation;
+            } else if (std.mem.eql(u8, arguments[index], "wardrobe")) {
+                options.demo = .wardrobe;
+            } else if (std.mem.eql(u8, arguments[index], "visual-quality")) {
+                options.demo = .visual_quality;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, modular-body, equipment, properties, breathing, mesh-attachments, attachment-secondary, side-scroller, foundation", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, modular-body, equipment, properties, breathing, mesh-attachments, attachment-secondary, side-scroller, foundation, art-assets, character-presentation, wardrobe, visual-quality", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
@@ -111,20 +119,30 @@ fn parseOptions(arguments: []const []const u8) !Options {
         } else if (std.mem.eql(u8, argument, "--interactive")) {
             options.interactive = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation>, --scripted-input, --debug-visualization, --interactive", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation|art-assets|character-presentation|wardrobe|visual-quality>, --scripted-input, --debug-visualization, --interactive", .{argument});
             return error.UnknownArgument;
         }
     }
-    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated and options.demo != .playground and options.demo != .side_scroller and options.demo != .foundation) {
+    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated and options.demo != .playground and options.demo != .side_scroller and options.demo != .foundation and options.demo != .character_presentation and options.demo != .wardrobe and options.demo != .visual_quality) {
         return error.ScriptedInputRequiresControllerDemo;
     }
     if (options.debug_visualization and options.demo != .integrated and options.demo != .playground and options.demo != .foundation) return error.DebugVisualizationRequiresIntegratedDemo;
-    if (options.interactive and options.demo != .playground and options.demo != .foundation) return error.InteractiveRequiresPlaygroundDemo;
+    if (options.interactive and options.demo != .playground and options.demo != .foundation and options.demo != .character_presentation and options.demo != .wardrobe) return error.InteractiveRequiresPlaygroundDemo;
     if (options.demo == .playground and options.interactive == options.scripted_input) return error.PlaygroundRequiresExactlyOneInputMode;
     if (options.demo == .playground and options.scripted_input and options.maximum_frames != 1800) return error.PlaygroundScriptRequiresExactFrameCount;
     if (options.demo == .foundation and options.interactive == options.scripted_input) return error.FoundationRequiresExactlyOneInputMode;
     if (options.demo == .foundation and options.scripted_input and options.maximum_frames != 1800) return error.FoundationScriptRequiresExactFrameCount;
     if (options.demo == .side_scroller and (!options.scripted_input or options.interactive)) return error.SideScrollerRequiresScriptedInput;
     if (options.demo == .side_scroller and options.maximum_frames != 1100) return error.SideScrollerScriptRequiresExactFrameCount;
+    if (options.demo == .art_assets and options.maximum_frames != 240) return error.ArtAssetDemoRequiresExactFrameCount;
+    if (options.demo == .character_presentation and options.interactive == options.scripted_input) return error.CharacterPresentationRequiresExactlyOneInputMode;
+    if (options.demo == .character_presentation and options.scripted_input and options.maximum_frames != 360) return error.CharacterPresentationScriptRequiresExactFrameCount;
+    if (options.demo == .wardrobe and options.interactive == options.scripted_input) return error.WardrobeRequiresExactlyOneInputMode;
+    if (options.demo == .wardrobe and options.scripted_input and options.maximum_frames != 600) return error.WardrobeScriptRequiresExactFrameCount;
+    if (options.demo == .visual_quality and
+        (!options.scripted_input or options.interactive or options.maximum_frames != 600))
+    {
+        return error.VisualQualityRequiresExactScriptedRoute;
+    }
     return options;
 }

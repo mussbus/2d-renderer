@@ -34,6 +34,13 @@ pub fn build(b: *std.Build) void {
     const dxv = ".deps/dxc-1.9.2602.24/bin/x64/dxv.exe";
     const shader_source = "assets/shaders/sprite.hlsl";
     const mesh_shader_source = "assets/shaders/deformable_mesh.hlsl";
+    const mechanical_art_atlas = "assets/art/p23_mechanical_atlas.png";
+    const energy_art_atlas = "assets/art/p23_energy_atlas.png";
+    const male_character_atlas = "assets/art/p25a_male_base_anatomy_atlas.png";
+    const female_character_atlas = "assets/art/p25a_female_base_anatomy_atlas.png";
+    const wardrobe_upper_atlas = "assets/art/p25_wardrobe_upper_atlas.png";
+    const wardrobe_layers_atlas = "assets/art/p25_wardrobe_layers_atlas.png";
+    const wardrobe_lower_atlas = "assets/art/p25_wardrobe_lower_atlas.png";
 
     for ([_][]const u8{
         sdl_library,
@@ -44,6 +51,13 @@ pub fn build(b: *std.Build) void {
         dxv,
         shader_source,
         mesh_shader_source,
+        mechanical_art_atlas,
+        energy_art_atlas,
+        male_character_atlas,
+        female_character_atlas,
+        wardrobe_upper_atlas,
+        wardrobe_layers_atlas,
+        wardrobe_lower_atlas,
         "tools/dependencies.lock.json",
     }) |path| {
         requireFile(b, path);
@@ -111,10 +125,24 @@ pub fn build(b: *std.Build) void {
     const install_vertex_shader = b.addInstallFileWithDir(vertex_shader.output, .bin, "shaders/sprite_vs.dxil");
     const install_fragment_shader = b.addInstallFileWithDir(fragment_shader.output, .bin, "shaders/sprite_ps.dxil");
     const install_mesh_vertex_shader = b.addInstallFileWithDir(mesh_vertex_shader.output, .bin, "shaders/deformable_mesh_vs.dxil");
+    const install_mechanical_art_atlas = b.addInstallFileWithDir(b.path(mechanical_art_atlas), .bin, "art/p23_mechanical_atlas.png");
+    const install_energy_art_atlas = b.addInstallFileWithDir(b.path(energy_art_atlas), .bin, "art/p23_energy_atlas.png");
+    const install_male_character_atlas = b.addInstallFileWithDir(b.path(male_character_atlas), .bin, "art/p25a_male_base_anatomy_atlas.png");
+    const install_female_character_atlas = b.addInstallFileWithDir(b.path(female_character_atlas), .bin, "art/p25a_female_base_anatomy_atlas.png");
+    const install_wardrobe_upper_atlas = b.addInstallFileWithDir(b.path(wardrobe_upper_atlas), .bin, "art/p25_wardrobe_upper_atlas.png");
+    const install_wardrobe_layers_atlas = b.addInstallFileWithDir(b.path(wardrobe_layers_atlas), .bin, "art/p25_wardrobe_layers_atlas.png");
+    const install_wardrobe_lower_atlas = b.addInstallFileWithDir(b.path(wardrobe_lower_atlas), .bin, "art/p25_wardrobe_lower_atlas.png");
     b.getInstallStep().dependOn(&install_sdl.step);
     b.getInstallStep().dependOn(&install_vertex_shader.step);
     b.getInstallStep().dependOn(&install_fragment_shader.step);
     b.getInstallStep().dependOn(&install_mesh_vertex_shader.step);
+    b.getInstallStep().dependOn(&install_mechanical_art_atlas.step);
+    b.getInstallStep().dependOn(&install_energy_art_atlas.step);
+    b.getInstallStep().dependOn(&install_male_character_atlas.step);
+    b.getInstallStep().dependOn(&install_female_character_atlas.step);
+    b.getInstallStep().dependOn(&install_wardrobe_upper_atlas.step);
+    b.getInstallStep().dependOn(&install_wardrobe_layers_atlas.step);
+    b.getInstallStep().dependOn(&install_wardrobe_lower_atlas.step);
 
     const installed_executable = b.getInstallPath(.bin, app.out_filename);
     const run_command = b.addSystemCommand(&.{installed_executable});
@@ -173,6 +201,21 @@ pub fn build(b: *std.Build) void {
     });
     const sprite_batch_module = b.createModule(.{
         .root_source_file = b.path("src/graphics/sprite_batch.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const art_pack_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/art_pack.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const presentation_view_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/presentation_view.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const image_decode_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/image_decode.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -249,6 +292,16 @@ pub fn build(b: *std.Build) void {
     render_queue_module.addImport("math", math_module);
     render_queue_module.addImport("deformable_mesh", deformable_mesh_module);
     render_queue_module.addImport("sprite_batch", sprite_batch_module);
+    const art_asset_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/art_asset_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    art_asset_demo_module.addImport("art_pack", art_pack_module);
+    art_asset_demo_module.addImport("deformable_mesh", deformable_mesh_module);
+    art_asset_demo_module.addImport("math", math_module);
+    art_asset_demo_module.addImport("render_queue", render_queue_module);
+    art_asset_demo_module.addImport("sprite_batch", sprite_batch_module);
     const mesh_gpu_catalog_module = b.createModule(.{
         .root_source_file = b.path("src/graphics/mesh_gpu_catalog.zig"),
         .target = target,
@@ -441,6 +494,7 @@ pub fn build(b: *std.Build) void {
     character_module.addImport("foot_planting", foot_planting_module);
     character_module.addImport("fixed_step", fixed_step_module);
     character_module.addImport("input", input_module);
+    character_module.addImport("presentation_view", presentation_view_module);
     character_module.addImport("collision_world", collision_world_module);
     character_module.addImport("character_controller", character_controller_module);
     character_module.addImport("sprite_batch", sprite_batch_module);
@@ -457,6 +511,7 @@ pub fn build(b: *std.Build) void {
     interaction_module.addImport("events", events_module);
     interaction_module.addImport("state_machine", state_machine_module);
     interaction_module.addImport("fixed_step", fixed_step_module);
+    interaction_module.addImport("presentation_view", presentation_view_module);
     const handshake_module = b.createModule(.{
         .root_source_file = b.path("src/interaction/handshake.zig"),
         .target = target,
@@ -481,6 +536,66 @@ pub fn build(b: *std.Build) void {
     interaction_system_module.addImport("arm_ik", arm_ik_module);
     interaction_system_module.addImport("character", character_module);
     interaction_system_module.addImport("interaction", interaction_module);
+    const presentation_pose_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/presentation_pose.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    presentation_pose_module.addImport("math", math_module);
+    presentation_pose_module.addImport("skeleton", skeleton_module);
+    presentation_pose_module.addImport("pose", pose_module);
+    presentation_pose_module.addImport("appearance", appearance_module);
+    presentation_pose_module.addImport("anatomy", anatomy_module);
+    const character_art_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/character_art.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    character_art_module.addImport("math", math_module);
+    character_art_module.addImport("art_pack", art_pack_module);
+    character_art_module.addImport("humanoid", humanoid_module);
+    character_art_module.addImport("character", character_module);
+    character_art_module.addImport("appearance", appearance_module);
+    character_art_module.addImport("presentation_pose", presentation_pose_module);
+    character_art_module.addImport("presentation_view", presentation_view_module);
+    character_art_module.addImport("render_queue", render_queue_module);
+    character_art_module.addImport("sprite_batch", sprite_batch_module);
+    const wardrobe_catalog_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/wardrobe_catalog.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    wardrobe_catalog_module.addImport("math", math_module);
+    wardrobe_catalog_module.addImport("deformation", deformation_module);
+    wardrobe_catalog_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
+    wardrobe_catalog_module.addImport("deformable_mesh", deformable_mesh_module);
+    wardrobe_catalog_module.addImport("equipment", equipment_module);
+    wardrobe_catalog_module.addImport("humanoid", humanoid_module);
+    const wardrobe_art_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/wardrobe_art.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    wardrobe_art_module.addImport("art_pack", art_pack_module);
+    wardrobe_art_module.addImport("equipment", equipment_module);
+    wardrobe_art_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    const wardrobe_presentation_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/wardrobe_presentation.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    wardrobe_presentation_module.addImport("art_pack", art_pack_module);
+    wardrobe_presentation_module.addImport("math", math_module);
+    wardrobe_presentation_module.addImport("deformable_mesh", deformable_mesh_module);
+    wardrobe_presentation_module.addImport("equipment", equipment_module);
+    wardrobe_presentation_module.addImport("humanoid", humanoid_module);
+    wardrobe_presentation_module.addImport("character", character_module);
+    wardrobe_presentation_module.addImport("presentation_pose", presentation_pose_module);
+    wardrobe_presentation_module.addImport("presentation_view", presentation_view_module);
+    wardrobe_presentation_module.addImport("render_queue", render_queue_module);
+    wardrobe_presentation_module.addImport("sprite_batch", sprite_batch_module);
+    wardrobe_presentation_module.addImport("wardrobe_art", wardrobe_art_module);
+    wardrobe_presentation_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
     const multi_character_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/multi_character_demo.zig"),
         .target = target,
@@ -622,6 +737,43 @@ pub fn build(b: *std.Build) void {
     modular_body_demo_module.addImport("character", character_module);
     modular_body_demo_module.addImport("sprite_batch", sprite_batch_module);
     modular_body_demo_module.addImport("fault_injection", fault_injection_module);
+    const character_presentation_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/character_presentation_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    character_presentation_demo_module.addImport("fixed_step", fixed_step_module);
+    character_presentation_demo_module.addImport("input", input_module);
+    character_presentation_demo_module.addImport("collision_world", collision_world_module);
+    character_presentation_demo_module.addImport("character_controller", character_controller_module);
+    character_presentation_demo_module.addImport("authored_clips", authored_clips_module);
+    character_presentation_demo_module.addImport("humanoid", humanoid_module);
+    character_presentation_demo_module.addImport("character", character_module);
+    character_presentation_demo_module.addImport("character_art", character_art_module);
+    character_presentation_demo_module.addImport("modular_body_demo", modular_body_demo_module);
+    character_presentation_demo_module.addImport("interaction_system", interaction_system_module);
+    character_presentation_demo_module.addImport("handshake", handshake_module);
+    character_presentation_demo_module.addImport("render_queue", render_queue_module);
+    const wardrobe_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/wardrobe_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    wardrobe_demo_module.addImport("math", math_module);
+    wardrobe_demo_module.addImport("fixed_step", fixed_step_module);
+    wardrobe_demo_module.addImport("input", input_module);
+    wardrobe_demo_module.addImport("collision_world", collision_world_module);
+    wardrobe_demo_module.addImport("character_controller", character_controller_module);
+    wardrobe_demo_module.addImport("authored_clips", authored_clips_module);
+    wardrobe_demo_module.addImport("humanoid", humanoid_module);
+    wardrobe_demo_module.addImport("character", character_module);
+    wardrobe_demo_module.addImport("character_art", character_art_module);
+    wardrobe_demo_module.addImport("modular_body_demo", modular_body_demo_module);
+    wardrobe_demo_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    wardrobe_demo_module.addImport("wardrobe_art", wardrobe_art_module);
+    wardrobe_demo_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
+    wardrobe_demo_module.addImport("render_queue", render_queue_module);
+    wardrobe_demo_module.addImport("deformable_mesh", deformable_mesh_module);
     const equipment_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/equipment_demo.zig"),
         .target = target,
@@ -760,6 +912,17 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("breathing_demo", breathing_demo_module);
     app_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
     app_module.addImport("foundation_playground", foundation_playground_module);
+    app_module.addImport("art_pack", art_pack_module);
+    app_module.addImport("image_decode", image_decode_module);
+    app_module.addImport("art_asset_demo", art_asset_demo_module);
+    app_module.addImport("presentation_view", presentation_view_module);
+    app_module.addImport("presentation_pose", presentation_pose_module);
+    app_module.addImport("character_art", character_art_module);
+    app_module.addImport("character_presentation_demo", character_presentation_demo_module);
+    app_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    app_module.addImport("wardrobe_art", wardrobe_art_module);
+    app_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
+    app_module.addImport("wardrobe_demo", wardrobe_demo_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("deformable_mesh", deformable_mesh_module);
@@ -800,6 +963,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("handshake", handshake_module);
     test_module.addImport("interaction_system", interaction_system_module);
     test_module.addImport("handshake_demo", handshake_demo_module);
+    test_module.addImport("handshake_ik_demo", handshake_ik_demo_module);
     test_module.addImport("foot_planting_demo", foot_planting_demo_module);
     test_module.addImport("diagnostics", diagnostics_module);
     test_module.addImport("debug_draw", debug_draw_module);
@@ -810,6 +974,90 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("breathing_demo", breathing_demo_module);
     test_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
     test_module.addImport("foundation_playground", foundation_playground_module);
+    test_module.addImport("art_pack", art_pack_module);
+    test_module.addImport("art_asset_demo", art_asset_demo_module);
+    test_module.addImport("presentation_view", presentation_view_module);
+    test_module.addImport("presentation_pose", presentation_pose_module);
+    test_module.addImport("character_art", character_art_module);
+    test_module.addImport("character_presentation_demo", character_presentation_demo_module);
+    test_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    test_module.addImport("wardrobe_art", wardrobe_art_module);
+    test_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
+    test_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    const art_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/art_pipeline_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    art_test_module.addImport("art_pack", art_pack_module);
+    art_test_module.addImport("art_asset_demo", art_asset_demo_module);
+    art_test_module.addImport("render_queue", render_queue_module);
+    const art_tests = b.addTest(.{ .name = "art-pipeline-tests", .root_module = art_test_module });
+    const run_art_tests = b.addRunArtifact(art_tests);
+    const image_decode_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/image_decode_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    image_decode_test_module.addImport("image_decode", image_decode_module);
+    const image_decode_tests = b.addTest(.{ .name = "image-decode-tests", .root_module = image_decode_test_module });
+    const run_image_decode_tests = b.addRunArtifact(image_decode_tests);
+    const art_test_step = b.step("test-art", "Run the Prompt 23 art-definition, PNG-decoder, and renderer-routing tests");
+    art_test_step.dependOn(&run_art_tests.step);
+    art_test_step.dependOn(&run_image_decode_tests.step);
+    const presentation_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/character_presentation_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    presentation_test_module.addImport("input", input_module);
+    presentation_test_module.addImport("humanoid", humanoid_module);
+    presentation_test_module.addImport("character", character_module);
+    presentation_test_module.addImport("presentation_view", presentation_view_module);
+    presentation_test_module.addImport("presentation_pose", presentation_pose_module);
+    presentation_test_module.addImport("character_art", character_art_module);
+    presentation_test_module.addImport("modular_body_demo", modular_body_demo_module);
+    presentation_test_module.addImport("handshake_ik_demo", handshake_ik_demo_module);
+    presentation_test_module.addImport("render_queue", render_queue_module);
+    const presentation_tests = b.addTest(.{
+        .name = "character-presentation-tests",
+        .root_module = presentation_test_module,
+    });
+    const run_presentation_tests = b.addRunArtifact(presentation_tests);
+    const presentation_test_step = b.step(
+        "test-presentation",
+        "Run the Prompt 24 view-policy, character-art, interaction, and steady-state tests",
+    );
+    presentation_test_step.dependOn(&run_presentation_tests.step);
+    const wardrobe_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/wardrobe_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    wardrobe_test_module.addImport("math", math_module);
+    wardrobe_test_module.addImport("input", input_module);
+    wardrobe_test_module.addImport("character_controller", character_controller_module);
+    wardrobe_test_module.addImport("equipment", equipment_module);
+    wardrobe_test_module.addImport("humanoid", humanoid_module);
+    wardrobe_test_module.addImport("character", character_module);
+    wardrobe_test_module.addImport("presentation_view", presentation_view_module);
+    wardrobe_test_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    wardrobe_test_module.addImport("wardrobe_art", wardrobe_art_module);
+    wardrobe_test_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
+    wardrobe_test_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    wardrobe_test_module.addImport("modular_body_demo", modular_body_demo_module);
+    wardrobe_test_module.addImport("authored_clips", authored_clips_module);
+    wardrobe_test_module.addImport("render_queue", render_queue_module);
+    const wardrobe_tests = b.addTest(.{
+        .name = "wardrobe-tests",
+        .root_module = wardrobe_test_module,
+    });
+    const run_wardrobe_tests = b.addRunArtifact(wardrobe_tests);
+    const wardrobe_test_step = b.step(
+        "test-wardrobe",
+        "Run Prompt 25 wardrobe catalog, preset, view-binding, and steady-state tests",
+    );
+    wardrobe_test_step.dependOn(&run_wardrobe_tests.step);
     const foundation_test_module = b.createModule(.{
         .root_source_file = b.path("tests/foundation_playground_tests.zig"),
         .target = target,
@@ -829,6 +1077,8 @@ pub fn build(b: *std.Build) void {
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");
     test_step.dependOn(&run_tests.step);
+    test_step.dependOn(&run_image_decode_tests.step);
+    test_step.dependOn(&run_wardrobe_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });
     format.setName("verify Zig formatting");
@@ -839,6 +1089,8 @@ pub fn build(b: *std.Build) void {
     const check_step = b.step("check", "Verify formatting, deterministic tests, and source policy without a GPU");
     check_step.dependOn(&format.step);
     check_step.dependOn(&run_tests.step);
+    check_step.dependOn(&run_image_decode_tests.step);
+    check_step.dependOn(&run_wardrobe_tests.step);
     check_step.dependOn(&repository_audit.step);
 }
 

@@ -145,3 +145,19 @@ Sprite + Mesh Rendering         Gameplay Consumers
 
 This is a runtime composition, not an inventory, loot, economy, persistence, combat, or editor model.
 - Changing topology with equipped required items calls bounded rebind validation. Ordinary gameplay should validate a proposed topology/loadout pair before exposing a topology change that may be rejected.
+
+## Prompt 25 wardrobe catalog
+
+Prompt 25 adds `PresentationSemanticId` as a data-extensible typed bridge from a reusable equipment visual component to paired side/front art. It does not add a closed garment enum. The production wardrobe contains 30 cosmetic items, 36 components, and 15 presets. `OutfitPresetId` resolves to an item list only; it never replaces the loadout.
+
+`Loadout.replaceAll` and `CharacterInstance.selectEquipmentItems` copy, validate, topology-expand, recompute properties, and commit a complete candidate transactionally. A slot conflict or invalid ID leaves the current loadout unchanged. The operation does not write body/hair, facing, presentation, controller, physics, animation, camera, interaction, or unrelated property state.
+
+The wardrobe makes the three independent equipment axes concrete:
+
+- the ivory blouse occupies `torso`/`sleeves`, renders on `upper`/`sleeves`, and covers torso/arms;
+- the crimson cardigan occupies `torso_outer`/`sleeves_outer`, renders on `upper_outer`/`sleeves_outer`, and covers the same regions;
+- both coexist in the custom outfit because coverage is not occupancy and occupancy does not determine draw order.
+
+Sleeves, gloves, legwear, and footwear retain `every_compatible` topology expansion. Shoes bind to semantic foot instances and cannot change canonical foot sockets or foot-planting authority. Every fashion item has zero modifiers and capabilities.
+
+See `WARDROBE.md` for the complete catalog, authoring steps, view resolution, long-garment route, and controls.

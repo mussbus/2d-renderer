@@ -25,6 +25,11 @@ const character_properties_demo = @import("character_properties_demo");
 const breathing_demo = @import("breathing_demo");
 const mesh_attachment_demo = @import("mesh_attachment_demo");
 const foundation_playground = @import("foundation_playground");
+const art_pack = @import("art_pack");
+const art_asset_demo = @import("art_asset_demo");
+const character_presentation_demo = @import("character_presentation_demo");
+const wardrobe_demo = @import("wardrobe_demo");
+const image_decode = @import("image_decode");
 const diagnostics = @import("diagnostics");
 
 pub const DemoMode = enum {
@@ -47,16 +52,41 @@ pub const DemoMode = enum {
     attachment_secondary,
     side_scroller,
     foundation,
+    art_assets,
+    character_presentation,
+    wardrobe,
+    visual_quality,
 };
 
 fn usesUnifiedRendering(mode: DemoMode) bool {
-    return mode == .mesh_attachments or mode == .attachment_secondary or mode == .foundation;
+    return mode == .mesh_attachments or mode == .attachment_secondary or mode == .foundation or
+        mode == .art_assets or mode == .character_presentation or mode == .wardrobe or
+        mode == .visual_quality;
+}
+
+fn visualCapturePath(frame: u32) ?[]const u8 {
+    return switch (frame) {
+        30 => visual_capture_directory ++ "/01_base_front.ppm",
+        90 => visual_capture_directory ++ "/02_base_side.ppm",
+        150 => visual_capture_directory ++ "/03_wide_brim_and_male_outfit_front.ppm",
+        210 => visual_capture_directory ++ "/04_wide_brim_and_male_outfit_side.ppm",
+        270 => visual_capture_directory ++ "/05_ivory_blouse_front.ppm",
+        330 => visual_capture_directory ++ "/06_ivory_blouse_side.ppm",
+        390 => visual_capture_directory ++ "/07_layered_custom_front.ppm",
+        450 => visual_capture_directory ++ "/08_layered_custom_side.ppm",
+        510 => visual_capture_directory ++ "/09_locomotion_stride.ppm",
+        550 => visual_capture_directory ++ "/10_jump_rise.ppm",
+        575 => visual_capture_directory ++ "/11_jump_fall.ppm",
+        else => null,
+    };
 }
 
 const TimeMode = enum { normal, quarter_speed, paused };
 
 const target_width: u32 = 640;
 const target_height: u32 = 480;
+const visual_capture_directory = "zig-out/p25a_visual_gpu";
+const visual_capture_count: u32 = 11;
 const texture_width: u32 = 4;
 const texture_height: u32 = 4;
 const upload_texture_row_pitch: u32 = 256;
@@ -99,6 +129,20 @@ const FrameSlot = struct {
     mesh_instance_buffer: ?*c.SDL_GPUBuffer = null,
     mesh_transfer_buffer: ?*c.SDL_GPUTransferBuffer = null,
     fence: ?*c.SDL_GPUFence = null,
+};
+
+const ArtTexturePage = struct {
+    stable_id: art_pack.TexturePageId,
+    width: u32,
+    height: u32,
+    sampling: art_pack.SamplingPolicy,
+    texture: *c.SDL_GPUTexture,
+    sampler: *c.SDL_GPUSampler,
+};
+
+const ArtUploadFault = enum {
+    after_texture_creation,
+    before_upload_submission,
 };
 
 const ResourceMetrics = struct {
@@ -145,6 +189,7 @@ const LandingEvidence = struct {
 
 pub const GpuDemo = struct {
     allocator: std.mem.Allocator,
+    io: std.Io,
     batch: ?sprite.SpriteBatch = null,
     unified_queue: ?render_queue.UnifiedRenderQueue = null,
     mesh_catalog: ?mesh_gpu_catalog.Catalog = null,
@@ -163,6 +208,7 @@ pub const GpuDemo = struct {
     mesh_vertex_buffer: ?*c.SDL_GPUBuffer = null,
     mesh_index_buffer: ?*c.SDL_GPUBuffer = null,
     static_upload_transfer: ?*c.SDL_GPUTransferBuffer = null,
+    visual_capture_transfer: ?*c.SDL_GPUTransferBuffer = null,
     offscreen_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
     window_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
     mesh_offscreen_pipeline: ?*c.SDL_GPUGraphicsPipeline = null,
@@ -175,9 +221,19 @@ pub const GpuDemo = struct {
     drawable_width: u32 = target_width,
     drawable_height: u32 = target_height,
     drawable_available: bool = true,
+    texture_page_count: u32 = 1,
+    art_texture_pages: [art_pack.maximum_texture_pages]?ArtTexturePage = [_]?ArtTexturePage{null} ** art_pack.maximum_texture_pages,
+    art_texture_page_count: usize = 0,
+    image_decode_metrics: image_decode.Metrics = .{},
+    visual_captures_written: u32 = 0,
 
-    pub fn init(allocator: std.mem.Allocator, hidden: bool, injector: ?fault_injection.Injector) !GpuDemo {
-        var self = GpuDemo{ .allocator = allocator };
+    pub fn init(
+        allocator: std.mem.Allocator,
+        io: std.Io,
+        hidden: bool,
+        injector: ?fault_injection.Injector,
+    ) !GpuDemo {
+        var self = GpuDemo{ .allocator = allocator, .io = io };
         errdefer self.deinit();
 
         self.batch = try sprite.SpriteBatch.init(allocator, sprite.initial_capacity, 1);
@@ -303,12 +359,20 @@ pub const GpuDemo = struct {
             if (self.mesh_offscreen_pipeline) |resource| self.releasePipeline(device, resource);
             if (self.window_pipeline) |resource| self.releasePipeline(device, resource);
             if (self.offscreen_pipeline) |resource| self.releasePipeline(device, resource);
+            if (self.visual_capture_transfer) |resource| self.releaseTransfer(device, resource);
             if (self.static_upload_transfer) |resource| self.releaseTransfer(device, resource);
             if (self.mesh_index_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.mesh_vertex_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.quad_index_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.quad_vertex_buffer) |resource| self.releaseBuffer(device, resource);
             if (self.render_target) |resource| self.releaseTexture(device, resource);
+            for (self.art_texture_pages[0..self.art_texture_page_count]) |page| {
+                if (page) |resource| {
+                    self.releaseTexture(device, resource.texture);
+                    self.releaseSampler(device, resource.sampler);
+                }
+            }
+            self.art_texture_page_count = 0;
             if (self.sampled_texture) |resource| self.releaseTexture(device, resource);
             if (self.sampler) |resource| self.releaseSampler(device, resource);
             if (self.fragment_shader) |resource| self.releaseShader(device, resource);
@@ -327,17 +391,43 @@ pub const GpuDemo = struct {
         self.mesh_catalog = null;
     }
 
-    fn initializeMeshRendering(self: *GpuDemo, definitions: []const mesh.DefinitionView) !void {
-        if (self.unified_queue != null or self.mesh_catalog != null or self.mesh_vertex_shader != null) {
-            return error.MeshRenderingAlreadyInitialized;
-        }
+    fn initializeUnifiedQueue(self: *GpuDemo) !void {
+        if (self.unified_queue != null) return error.UnifiedQueueAlreadyInitialized;
         self.unified_queue = try render_queue.UnifiedRenderQueue.init(
             self.allocator,
             render_queue.default_entry_capacity,
             render_queue.default_sprite_capacity,
             render_queue.default_mesh_capacity,
-            1,
+            self.texture_page_count,
         );
+    }
+
+    fn initializeVisualCaptureTransfer(self: *GpuDemo) !void {
+        if (self.visual_capture_transfer != null) {
+            return error.VisualCaptureTransferAlreadyInitialized;
+        }
+        try std.Io.Dir.cwd().createDirPath(self.io, visual_capture_directory);
+        const row_pitch = alignForward(target_width * 4, 256);
+        var transfer_info: c.SDL_GPUTransferBufferCreateInfo = std.mem.zeroes(
+            c.SDL_GPUTransferBufferCreateInfo,
+        );
+        transfer_info.usage = c.SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
+        transfer_info.size = row_pitch * target_height;
+        self.visual_capture_transfer = c.SDL_CreateGPUTransferBuffer(
+            self.device.?,
+            &transfer_info,
+        ) orelse return failSdl(
+            "SDL_CreateGPUTransferBuffer(Prompt 25A persistent capture)",
+            error.GpuTransferBufferCreationFailure,
+        );
+        self.resource_metrics.gpu_resource_creations += 1;
+    }
+
+    fn initializeMeshRendering(self: *GpuDemo, definitions: []const mesh.DefinitionView) !void {
+        if (self.unified_queue != null or self.mesh_catalog != null or self.mesh_vertex_shader != null) {
+            return error.MeshRenderingAlreadyInitialized;
+        }
+        try self.initializeUnifiedQueue();
         self.mesh_catalog = try mesh_gpu_catalog.Catalog.init(self.allocator, definitions);
         const catalog = &self.mesh_catalog.?;
 
@@ -413,6 +503,255 @@ pub const GpuDemo = struct {
             transfer_size,
             frame_slot_count,
         });
+    }
+
+    fn initializeArtTexturePages(self: *GpuDemo, definition: *const art_pack.Definition) !void {
+        return self.initializeArtTexturePageSets(&.{definition});
+    }
+
+    fn initializeArtTexturePageSets(
+        self: *GpuDemo,
+        definitions: []const *const art_pack.Definition,
+    ) !void {
+        if (self.art_texture_page_count != 0 or self.texture_page_count != 1) {
+            return error.ArtTexturePagesAlreadyInitialized;
+        }
+        if (definitions.len == 0) return error.InvalidArtTexturePageCount;
+        var total_pages: usize = 0;
+        for (definitions) |definition| {
+            if (definition.pages.len == 0) return error.InvalidArtTexturePageCount;
+            total_pages = std.math.add(usize, total_pages, definition.pages.len) catch
+                return error.InvalidArtTexturePageCount;
+        }
+        if (total_pages > art_pack.maximum_texture_pages) {
+            return error.InvalidArtTexturePageCount;
+        }
+        const configured_page_count = 1 + @as(u32, @intCast(total_pages));
+        var replacement_batch = try sprite.SpriteBatch.init(
+            self.allocator,
+            sprite.initial_capacity,
+            configured_page_count,
+        );
+        var replacement_batch_authoritative = false;
+        defer if (!replacement_batch_authoritative) replacement_batch.deinit();
+
+        var pending = [_]?ArtTexturePage{null} ** art_pack.maximum_texture_pages;
+        var pending_count: usize = 0;
+        errdefer for (pending[0..pending_count]) |page| {
+            if (page) |resource| {
+                self.releaseTexture(self.device.?, resource.texture);
+                self.releaseSampler(self.device.?, resource.sampler);
+            }
+        };
+
+        self.image_decode_metrics = .{};
+        for (definitions) |definition| {
+            for (definition.pages) |page_definition| {
+                pending[pending_count] = try self.createArtTexturePage(page_definition, null);
+                pending_count += 1;
+            }
+        }
+
+        for (pending[0..pending_count], 0..) |page, index| self.art_texture_pages[index] = page;
+        self.art_texture_page_count = pending_count;
+        self.texture_page_count = configured_page_count;
+        self.batch.?.deinit();
+        self.batch = replacement_batch;
+        replacement_batch_authoritative = true;
+        std.log.info("initialized production art pages: pages={d} configured_renderer_pages={d} decoded_files={d} decoded_bytes={d}", .{
+            pending_count,
+            self.texture_page_count,
+            self.image_decode_metrics.successful_decodes,
+            self.image_decode_metrics.decoded_bytes,
+        });
+    }
+
+    fn runArtTextureFaultChecks(self: *GpuDemo, definition: *const art_pack.Definition) !void {
+        if (definition.pages.len == 0) return error.MissingTexturePages;
+        for ([_]ArtUploadFault{ .after_texture_creation, .before_upload_submission }) |fault| {
+            const creations_before = self.resource_metrics.gpu_resource_creations;
+            const releases_before = self.resource_metrics.gpu_resource_releases;
+            const result = self.createArtTexturePage(definition.pages[0], fault);
+            if (result) |page| {
+                self.releaseTexture(self.device.?, page.texture);
+                self.releaseSampler(self.device.?, page.sampler);
+                return error.ArtTextureFaultDidNotTrigger;
+            } else |err| {
+                if (err != error.InjectedArtTextureFailure) return err;
+            }
+            const creation_delta = self.resource_metrics.gpu_resource_creations - creations_before;
+            const release_delta = self.resource_metrics.gpu_resource_releases - releases_before;
+            if (creation_delta == 0 or creation_delta != release_delta) {
+                std.log.err("art texture fault cleanup mismatch: stage={s} creations={d} releases={d}", .{
+                    @tagName(fault),
+                    creation_delta,
+                    release_delta,
+                });
+                return error.ArtTextureFaultCleanupMismatch;
+            }
+            std.log.info("art texture fault cleanup passed: stage={s} resources={d}", .{ @tagName(fault), creation_delta });
+        }
+        if (definition.pages.len >= 2) {
+            const creations_before = self.resource_metrics.gpu_resource_creations;
+            const releases_before = self.resource_metrics.gpu_resource_releases;
+            const first_page = try self.createArtTexturePage(definition.pages[0], null);
+            var first_page_owned = true;
+            defer if (first_page_owned) {
+                self.releaseTexture(self.device.?, first_page.texture);
+                self.releaseSampler(self.device.?, first_page.sampler);
+            };
+            const result = self.createArtTexturePage(definition.pages[1], .after_texture_creation);
+            if (result) |second_page| {
+                self.releaseTexture(self.device.?, second_page.texture);
+                self.releaseSampler(self.device.?, second_page.sampler);
+                return error.ArtTextureFaultDidNotTrigger;
+            } else |err| {
+                if (err != error.InjectedArtTextureFailure) return err;
+            }
+            self.releaseTexture(self.device.?, first_page.texture);
+            self.releaseSampler(self.device.?, first_page.sampler);
+            first_page_owned = false;
+            const creation_delta = self.resource_metrics.gpu_resource_creations - creations_before;
+            const release_delta = self.resource_metrics.gpu_resource_releases - releases_before;
+            if (creation_delta != release_delta) return error.ArtTextureFaultCleanupMismatch;
+            std.log.info("art texture page-set rollback passed: completed_pages=1 resources={d}", .{creation_delta});
+        }
+    }
+
+    fn createArtTexturePage(
+        self: *GpuDemo,
+        definition: art_pack.TexturePageDefinition,
+        injected_fault: ?ArtUploadFault,
+    ) !ArtTexturePage {
+        const base_pointer = c.SDL_GetBasePath();
+        if (base_pointer == null) return failSdl("SDL_GetBasePath(art texture)", error.ImagePathResolutionFailure);
+        const base = std.mem.span(@as([*:0]const u8, @ptrCast(base_pointer)));
+        var path_buffer: [4096]u8 = undefined;
+        const path = std.fmt.bufPrintZ(&path_buffer, "{s}{s}", .{ base, definition.asset_path.slice() }) catch
+            return error.ImagePathTooLong;
+        var decoded = image_decode.decodePngFile(self.allocator, path, &self.image_decode_metrics) catch |err| {
+            std.log.err("decode art page failed: page={s} path={s} error={s}", .{
+                definition.stable_name.slice(),
+                path,
+                @errorName(err),
+            });
+            return err;
+        };
+        defer decoded.deinit();
+        if (decoded.layout.width != definition.expected_width or decoded.layout.height != definition.expected_height) {
+            std.log.err("art page dimensions mismatch: page={s} expected={d}x{d} decoded={d}x{d}", .{
+                definition.stable_name.slice(),
+                definition.expected_width,
+                definition.expected_height,
+                decoded.layout.width,
+                decoded.layout.height,
+            });
+            return error.ImageDimensionsMismatch;
+        }
+
+        var sampler_info: c.SDL_GPUSamplerCreateInfo = std.mem.zeroes(c.SDL_GPUSamplerCreateInfo);
+        sampler_info.min_filter = if (definition.sampling == .nearest) c.SDL_GPU_FILTER_NEAREST else c.SDL_GPU_FILTER_LINEAR;
+        sampler_info.mag_filter = if (definition.sampling == .nearest) c.SDL_GPU_FILTER_NEAREST else c.SDL_GPU_FILTER_LINEAR;
+        sampler_info.mipmap_mode = if (definition.sampling == .nearest) c.SDL_GPU_SAMPLERMIPMAPMODE_NEAREST else c.SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+        sampler_info.address_mode_u = c.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        sampler_info.address_mode_v = c.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        sampler_info.address_mode_w = c.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        const sampler = c.SDL_CreateGPUSampler(self.device.?, &sampler_info) orelse
+            return failSdl("SDL_CreateGPUSampler(art page)", error.SamplerCreationFailure);
+        self.resource_metrics.gpu_resource_creations += 1;
+        errdefer self.releaseSampler(self.device.?, sampler);
+
+        const texture = createTexture(
+            self.device.?,
+            c.SDL_GPU_TEXTUREUSAGE_SAMPLER,
+            decoded.layout.width,
+            decoded.layout.height,
+        ) orelse return failSdl("SDL_CreateGPUTexture(art page)", error.TextureCreationFailure);
+        self.resource_metrics.gpu_resource_creations += 1;
+        errdefer self.releaseTexture(self.device.?, texture);
+        if (injected_fault == .after_texture_creation) return error.InjectedArtTextureFailure;
+
+        const row_pitch = std.math.add(u32, decoded.layout.row_bytes, upload_texture_row_pitch - 1) catch
+            return error.ImageUploadSizeOverflow;
+        const aligned_row_pitch = row_pitch & ~(upload_texture_row_pitch - 1);
+        const upload_size = std.math.mul(u32, aligned_row_pitch, decoded.layout.height) catch
+            return error.ImageUploadSizeOverflow;
+        var transfer_info: c.SDL_GPUTransferBufferCreateInfo = std.mem.zeroes(c.SDL_GPUTransferBufferCreateInfo);
+        transfer_info.usage = c.SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        transfer_info.size = upload_size;
+        const transfer = c.SDL_CreateGPUTransferBuffer(self.device.?, &transfer_info) orelse
+            return failSdl("SDL_CreateGPUTransferBuffer(art page)", error.GpuTransferBufferCreationFailure);
+        self.resource_metrics.gpu_resource_creations += 1;
+        defer self.releaseTransfer(self.device.?, transfer);
+
+        const mapped = c.SDL_MapGPUTransferBuffer(self.device.?, transfer, false) orelse
+            return failSdl("SDL_MapGPUTransferBuffer(art page)", error.UploadFailure);
+        const mapped_bytes: [*]u8 = @ptrCast(mapped);
+        @memset(mapped_bytes[0..upload_size], 0);
+        for (0..decoded.layout.height) |row| {
+            const source_start = row * decoded.layout.row_bytes;
+            const destination_start = row * aligned_row_pitch;
+            @memcpy(
+                mapped_bytes[destination_start .. destination_start + decoded.layout.row_bytes],
+                decoded.pixels[source_start .. source_start + decoded.layout.row_bytes],
+            );
+        }
+        c.SDL_UnmapGPUTransferBuffer(self.device.?, transfer);
+        if (injected_fault == .before_upload_submission) return error.InjectedArtTextureFailure;
+
+        const command = c.SDL_AcquireGPUCommandBuffer(self.device.?) orelse
+            return failSdl("SDL_AcquireGPUCommandBuffer(art page upload)", error.UploadFailure);
+        var command_active = true;
+        errdefer if (command_active) {
+            if (!c.SDL_CancelGPUCommandBuffer(command)) {
+                std.log.err("SDL_CancelGPUCommandBuffer(art page upload): {s}", .{sdlErrorText()});
+            }
+        };
+        const copy_pass = c.SDL_BeginGPUCopyPass(command);
+        if (copy_pass == null) return failSdl("SDL_BeginGPUCopyPass(art page upload)", error.UploadFailure);
+        const source = c.SDL_GPUTextureTransferInfo{
+            .transfer_buffer = transfer,
+            .offset = 0,
+            .pixels_per_row = aligned_row_pitch / image_decode.rgba_channel_count,
+            .rows_per_layer = decoded.layout.height,
+        };
+        const destination = c.SDL_GPUTextureRegion{
+            .texture = texture,
+            .mip_level = 0,
+            .layer = 0,
+            .x = 0,
+            .y = 0,
+            .z = 0,
+            .w = decoded.layout.width,
+            .h = decoded.layout.height,
+            .d = 1,
+        };
+        c.SDL_UploadToGPUTexture(copy_pass.?, &source, &destination, false);
+        c.SDL_EndGPUCopyPass(copy_pass.?);
+        const fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
+        command_active = false;
+        if (fence == null) return failSdl("SDL_SubmitGPUCommandBufferAndAcquireFence(art page)", error.UploadFailure);
+        self.resource_metrics.fence_acquisitions += 1;
+        try self.waitReleaseStandaloneFence(fence.?);
+
+        return .{
+            .stable_id = definition.id,
+            .width = decoded.layout.width,
+            .height = decoded.layout.height,
+            .sampling = definition.sampling,
+            .texture = texture,
+            .sampler = sampler,
+        };
+    }
+
+    fn textureBinding(self: *const GpuDemo, texture_page: u32) !c.SDL_GPUTextureSamplerBinding {
+        if (texture_page == 0) {
+            return .{ .texture = self.sampled_texture.?, .sampler = self.sampler.? };
+        }
+        const index: usize = texture_page - 1;
+        if (index >= self.art_texture_page_count) return error.InvalidTexturePage;
+        const page = self.art_texture_pages[index] orelse return error.InvalidTexturePage;
+        return .{ .texture = page.texture, .sampler = page.sampler };
     }
 
     fn handleWindowEvent(self: *GpuDemo, event: *const c.SDL_Event) !void {
@@ -499,6 +838,12 @@ pub const GpuDemo = struct {
         defer if (mesh_attachment_scene) |*scene| scene.deinit();
         var foundation_scene: ?foundation_playground.Scene = null;
         defer if (foundation_scene) |*scene| scene.deinit();
+        var art_scene: ?art_asset_demo.Scene = null;
+        defer if (art_scene) |*scene| scene.deinit();
+        var character_presentation_scene: ?character_presentation_demo.Scene = null;
+        defer if (character_presentation_scene) |*scene| scene.deinit();
+        var wardrobe_scene: ?wardrobe_demo.Scene = null;
+        defer if (wardrobe_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
@@ -625,6 +970,59 @@ pub const GpuDemo = struct {
             }
             const definitions = foundation_scene.?.meshDefinitions();
             try self.initializeMeshRendering(&definitions);
+        }
+        if (mode == .art_assets) {
+            art_scene = try art_asset_demo.Scene.init(humanoid_allocator.allocator(), 1);
+            try self.runArtTextureFaultChecks(&art_scene.?.definition);
+            try self.initializeArtTexturePages(&art_scene.?.definition);
+            const definitions = art_scene.?.meshDefinitions();
+            try self.initializeMeshRendering(&definitions);
+        }
+        if (mode == .character_presentation) {
+            if (scripted_input_enabled == interactive_enabled) {
+                return error.CharacterPresentationRequiresExactlyOneInputMode;
+            }
+            character_presentation_scene = try character_presentation_demo.Scene.init(
+                humanoid_allocator.allocator(),
+            );
+            try self.visible_camera.setCenter(.{
+                .x = 0.8,
+                .y = self.visible_camera.center.y,
+            });
+            try self.runArtTextureFaultChecks(&character_presentation_scene.?.art_definition.art);
+            try self.initializeArtTexturePages(&character_presentation_scene.?.art_definition.art);
+            try self.initializeUnifiedQueue();
+            if (interactive_enabled) platform_input = sdl_input.PlatformInput.init();
+        }
+        if (mode == .wardrobe or mode == .visual_quality) {
+            if ((mode == .wardrobe and scripted_input_enabled == interactive_enabled) or
+                (mode == .visual_quality and
+                    (!scripted_input_enabled or interactive_enabled)))
+            {
+                return error.WardrobeRequiresExactlyOneInputMode;
+            }
+            wardrobe_scene = try wardrobe_demo.Scene.init(humanoid_allocator.allocator());
+            if (mode == .visual_quality) {
+                try wardrobe_scene.?.enableVisualQualityAcceptance();
+            }
+            try self.visible_camera.setCenter(.{
+                .x = 0,
+                .y = self.visible_camera.center.y,
+            });
+            try self.runArtTextureFaultChecks(
+                &wardrobe_scene.?.character_art_definition.art,
+            );
+            try self.runArtTextureFaultChecks(
+                &wardrobe_scene.?.wardrobe_art_definition.art,
+            );
+            try self.initializeArtTexturePageSets(&.{
+                &wardrobe_scene.?.character_art_definition.art,
+                &wardrobe_scene.?.wardrobe_art_definition.art,
+            });
+            const definitions = wardrobe_scene.?.meshDefinitions();
+            try self.initializeMeshRendering(&definitions);
+            if (mode == .visual_quality) try self.initializeVisualCaptureTransfer();
+            if (interactive_enabled) platform_input = sdl_input.PlatformInput.init();
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
@@ -1124,11 +1522,67 @@ pub const GpuDemo = struct {
                     humanoid_instances = try scene.submit(&self.unified_queue.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
+                .art_assets => {
+                    self.unified_queue.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try art_scene.?.submit(&self.unified_queue.?, frame);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
+                .character_presentation => {
+                    const scene = &character_presentation_scene.?;
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    if (scripted_input_enabled) {
+                        try scene.updateScriptedFrame();
+                    } else {
+                        const snapshot = try platform_input.?.pollFrame();
+                        if (snapshot.exit.pressed) {
+                            std.log.info("exit requested", .{});
+                            running = false;
+                            break;
+                        }
+                        try scene.updateInteractiveFrame(snapshot);
+                    }
+                    pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
+                    self.unified_queue.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.unified_queue.?);
+                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                },
+                .wardrobe, .visual_quality => {
+                    const scene = &wardrobe_scene.?;
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    if (mode == .visual_quality) {
+                        try scene.updateVisualQualityFrame();
+                    } else if (scripted_input_enabled) {
+                        try scene.updateScriptedFrame();
+                    } else {
+                        const snapshot = try platform_input.?.pollFrame();
+                        if (snapshot.exit.pressed) {
+                            std.log.info("exit requested", .{});
+                            running = false;
+                            break;
+                        }
+                        try scene.updateInteractiveFrame(snapshot);
+                    }
+                    pose_evaluation_allocations +=
+                        humanoid_allocator.end_index - allocation_checkpoint;
+                    self.unified_queue.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.unified_queue.?);
+                    humanoid_submission_allocations +=
+                        humanoid_allocator.end_index - submission_checkpoint;
+                },
             }
-            const rendered = if (usesUnifiedRendering(mode))
-                try self.renderUnifiedToWindow(self.unified_queue.?.prepare())
-            else
-                try self.renderPreparedToWindow(self.batch.?.prepare(), null);
+            const rendered = if (usesUnifiedRendering(mode)) unified: {
+                const prepared = self.unified_queue.?.prepare();
+                const window_rendered = try self.renderUnifiedToWindow(prepared);
+                if (mode == .visual_quality) {
+                    if (visualCapturePath(frame)) |capture_path| {
+                        try self.captureUnifiedToPpm(prepared, capture_path);
+                    }
+                }
+                break :unified window_rendered;
+            } else try self.renderPreparedToWindow(self.batch.?.prepare(), null);
             if (rendered) {
                 self.resource_metrics.frames_rendered += 1;
             } else {
@@ -2146,6 +2600,319 @@ pub const GpuDemo = struct {
             {
                 return error.BreathingRenderingEvidenceIncomplete;
             }
+        } else if (mode == .art_assets) {
+            if (self.resource_metrics.frames_rendered != art_asset_demo.required_frames) {
+                return error.ArtAssetFrameCountMismatch;
+            }
+            const unified_metrics = self.unified_queue.?.frame_metrics;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const total_draws = unified_metrics.sprite_draws + unified_metrics.mesh_draws;
+            var mechanical_page_observed = false;
+            var energy_page_observed = false;
+            for (self.unified_queue.?.ranges[0..self.unified_queue.?.range_count]) |range| {
+                mechanical_page_observed = mechanical_page_observed or range.texture_page == 1;
+                energy_page_observed = energy_page_observed or range.texture_page == 2;
+            }
+            const mechanical_page = self.art_texture_pages[0] orelse return error.MissingArtTexturePage;
+            const energy_page = self.art_texture_pages[1] orelse return error.MissingArtTexturePage;
+            std.log.info("PROMPT 23 ART ASSET EVIDENCE", .{});
+            std.log.info("Definitions: pages={d} regions={d} bindings={d} arbitrary_view_id={d} semantic_lookup=numeric", .{
+                art_scene.?.definition.pages.len,
+                art_scene.?.definition.regions.len,
+                art_scene.?.definition.bindings.len,
+                @intFromEnum(art_asset_demo.arbitrary_detail_view),
+            });
+            std.log.info("Decode and ownership: attempts={d} successes={d} decoded_bytes={d} retained_cpu_images=0 persistent_gpu_pages={d}", .{
+                self.image_decode_metrics.decode_attempts,
+                self.image_decode_metrics.successful_decodes,
+                self.image_decode_metrics.decoded_bytes,
+                self.art_texture_page_count,
+            });
+            std.log.info("Pages: mechanical={d}x{d}/{s}/id={d} energy={d}x{d}/{s}/id={d}", .{
+                mechanical_page.width,
+                mechanical_page.height,
+                @tagName(mechanical_page.sampling),
+                @intFromEnum(mechanical_page.stable_id),
+                energy_page.width,
+                energy_page.height,
+                @tagName(energy_page.sampling),
+                @intFromEnum(energy_page.stable_id),
+            });
+            std.log.info("Unified rendering: sprites={d} meshes={d} ranges={d} sprite_draws={d} mesh_draws={d} total_draws={d} page1={} page2={} upload={d}B", .{
+                unified_metrics.submitted_sprites,
+                unified_metrics.submitted_meshes,
+                self.unified_queue.?.range_count,
+                unified_metrics.sprite_draws,
+                unified_metrics.mesh_draws,
+                total_draws,
+                mechanical_page_observed,
+                energy_page_observed,
+                unified_metrics.sprite_upload_bytes + unified_metrics.mesh_upload_bytes,
+            });
+            std.log.info("Steady state: initialized_bytes={d} final_bytes={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                humanoid_submission_allocations,
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (self.image_decode_metrics.decode_attempts != 2 or self.image_decode_metrics.successful_decodes != 2 or
+                self.image_decode_metrics.decoded_bytes != 2 * 256 * 256 * 4 or
+                self.art_texture_page_count != 2 or self.texture_page_count != 3 or
+                mechanical_page.sampling != .nearest or energy_page.sampling != .nearest or
+                unified_metrics.submitted_sprites != 6 or unified_metrics.submitted_meshes != 1 or
+                unified_metrics.sprite_ranges != 6 or unified_metrics.mesh_ranges != 1 or
+                unified_metrics.sprite_draws != 6 or unified_metrics.mesh_draws != 1 or total_draws != 7 or
+                !mechanical_page_observed or !energy_page_observed or
+                runtime_allocation_delta != 0 or humanoid_submission_allocations != 0 or
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or gpu_resource_delta != 0)
+            {
+                return error.ArtAssetEvidenceIncomplete;
+            }
+        } else if (mode == .character_presentation) {
+            const scene = &character_presentation_scene.?;
+            try scene.art_definition.validateAnatomyClothingBoundary();
+            if (scripted_input_enabled) {
+                if (self.resource_metrics.frames_rendered != character_presentation_demo.required_frames) {
+                    return error.CharacterPresentationFrameCountMismatch;
+                }
+                try scene.validateComplete();
+            }
+            const unified_metrics = self.unified_queue.?.frame_metrics;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const male_page = self.art_texture_pages[0] orelse return error.MissingArtTexturePage;
+            const female_page = self.art_texture_pages[1] orelse return error.MissingArtTexturePage;
+            if (scripted_input_enabled) {
+                std.log.info("PROMPT 24 CHARACTER PRESENTATION EVIDENCE", .{});
+                std.log.info("Views: male_front_idle={} left_side={} front_kept_left_facing={} right_side={} forced_front={} forced_side={} handshake_side={} returned_front={}", .{
+                    scene.evidence.male_front_idle,
+                    scene.evidence.male_side_left,
+                    scene.evidence.front_preserved_left_facing,
+                    scene.evidence.male_side_right,
+                    scene.evidence.forced_front_observed,
+                    scene.evidence.forced_side_observed,
+                    scene.evidence.handshake_side_view_observed,
+                    scene.evidence.returned_to_front_after_interaction,
+                });
+                std.log.info("Characters: bald={} buzz_cut={} female_front={} female_side={} breathing={} long_hair_motion={} jump={} fall={} land={} interaction_complete={}", .{
+                    scene.evidence.bald_observed,
+                    scene.evidence.buzz_cut_observed,
+                    scene.evidence.female_front_idle,
+                    scene.evidence.female_side_movement,
+                    scene.evidence.breathing_observed,
+                    scene.evidence.long_hair_motion_observed,
+                    scene.evidence.jump_observed,
+                    scene.evidence.fall_observed,
+                    scene.evidence.landing_observed,
+                    scene.evidence.interaction_completed,
+                });
+            } else {
+                std.log.info("PROMPT 24 INTERACTIVE CHARACTER PRESENTATION INSPECTION", .{});
+                std.log.info("Current views: male={s}/{s} female={s}/{s}", .{
+                    @tagName(scene.male.presentationView()),
+                    @tagName(scene.male.presentationOverride()),
+                    @tagName(scene.female.presentationView()),
+                    @tagName(scene.female.presentationOverride()),
+                });
+            }
+            const male_front_base = try scene.art_definition.resolveBaseAnatomy(.male, .torso, .front);
+            const male_front_vest = try scene.art_definition.resolveGarment(.male, .training_vest, .front);
+            const female_front_base = try scene.art_definition.resolveBaseAnatomy(.female, .torso, .front);
+            const female_front_vest = try scene.art_definition.resolveGarment(.female, .training_vest, .front);
+            std.log.info("Boundary: base_without_garment=true semantic_identity_distinct=true shared_page=true male_front_base_region={d} male_front_vest_region={d} female_front_base_region={d} female_front_vest_region={d} permanent_modesty=base_presentation", .{
+                @intFromEnum(male_front_base.region_id),
+                @intFromEnum(male_front_vest.region_id),
+                @intFromEnum(female_front_base.region_id),
+                @intFromEnum(female_front_vest.region_id),
+            });
+            std.log.info("Art: pages=2 male={d}x{d}/{s} female={d}x{d}/{s} regions={d} bindings={d} sprites={d} ranges={d} draws={d}", .{
+                male_page.width,
+                male_page.height,
+                @tagName(male_page.sampling),
+                female_page.width,
+                female_page.height,
+                @tagName(female_page.sampling),
+                scene.art_definition.art.regions.len,
+                scene.art_definition.art.bindings.len,
+                unified_metrics.submitted_sprites,
+                self.unified_queue.?.range_count,
+                unified_metrics.sprite_draws,
+            });
+            std.log.info("Steady state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}", .{
+                humanoid_initialized_bytes,
+                humanoid_allocator.end_index,
+                pose_evaluation_allocations,
+                humanoid_submission_allocations,
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                gpu_resource_delta,
+            });
+            if (self.image_decode_metrics.decode_attempts != 2 or
+                self.image_decode_metrics.successful_decodes != 2 or
+                self.image_decode_metrics.decoded_bytes !=
+                    (1600 * 983 + 1599 * 984) * 4 or
+                self.art_texture_page_count != 2 or self.texture_page_count != 3 or
+                male_page.sampling != .nearest or female_page.sampling != .nearest or
+                runtime_allocation_delta != 0 or pose_evaluation_allocations != 0 or
+                humanoid_submission_allocations != 0 or
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
+                gpu_resource_delta != 0)
+            {
+                return error.CharacterPresentationRenderingEvidenceIncomplete;
+            }
+        } else if (mode == .wardrobe or mode == .visual_quality) {
+            const scene = &wardrobe_scene.?;
+            if (scripted_input_enabled) {
+                const required_frames = if (mode == .visual_quality)
+                    wardrobe_demo.visual_quality_required_frames
+                else
+                    wardrobe_demo.required_frames;
+                if (self.resource_metrics.frames_rendered != required_frames) {
+                    return error.WardrobeFrameCountMismatch;
+                }
+                if (mode == .visual_quality) {
+                    try scene.validateVisualQualityComplete();
+                } else {
+                    try scene.validateComplete();
+                }
+            }
+            const unified_metrics = self.unified_queue.?.frame_metrics;
+            const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
+            const gpu_resource_delta =
+                self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const male_page = self.art_texture_pages[0] orelse
+                return error.MissingArtTexturePage;
+            const female_page = self.art_texture_pages[1] orelse
+                return error.MissingArtTexturePage;
+            const upper_page = self.art_texture_pages[2] orelse
+                return error.MissingArtTexturePage;
+            const layers_page = self.art_texture_pages[3] orelse
+                return error.MissingArtTexturePage;
+            const lower_page = self.art_texture_pages[4] orelse
+                return error.MissingArtTexturePage;
+            if (mode == .visual_quality) {
+                const evidence = scene.visual_quality_evidence;
+                std.log.info("PROMPT 25A VISUAL QUALITY ACCEPTANCE ROUTE", .{});
+                std.log.info(
+                    "Views: base={}/{} male_outfit={}/{} female_outfit={}/{} wide_brim={}/{} ivory_blouse={}/{} layered_custom={}/{} locomotion={} jump={}",
+                    .{
+                        evidence.base_front,
+                        evidence.base_side,
+                        evidence.male_outfit_front,
+                        evidence.male_outfit_side,
+                        evidence.female_outfit_front,
+                        evidence.female_outfit_side,
+                        evidence.wide_brim_front,
+                        evidence.wide_brim_side,
+                        evidence.ivory_blouse_front,
+                        evidence.ivory_blouse_side,
+                        evidence.layered_custom_front,
+                        evidence.layered_custom_side,
+                        evidence.locomotion_observed,
+                        evidence.jump_observed,
+                    },
+                );
+                std.log.info(
+                    "Captures: count={d} format=P6_PPM size={d}x{d} directory={s} source=same_prepared_global_queue",
+                    .{
+                        self.visual_captures_written,
+                        target_width,
+                        target_height,
+                        visual_capture_directory,
+                    },
+                );
+            } else if (scripted_input_enabled) {
+                std.log.info("PROMPT 25 MODULAR WARDROBE EVIDENCE", .{});
+                std.log.info(
+                    "Catalog: presets={d} items={d} components={d} art_pages={d} regions={d} bindings={d} all_presets={} wide_brim={} ivory_blouse_red_shorts={} custom={}",
+                    .{
+                        scene.catalog.presets.len,
+                        scene.catalog.equipment_definition.items.len,
+                        scene.catalog.equipment_definition.visual_components.len,
+                        scene.wardrobe_art_definition.art.pages.len,
+                        scene.wardrobe_art_definition.art.regions.len,
+                        scene.wardrobe_art_definition.art.bindings.len,
+                        scene.evidence.rapid_cycle_complete,
+                        scene.evidence.mandatory_wide_brim,
+                        scene.evidence.mandatory_ivory_blouse_red_shorts,
+                        scene.evidence.custom_recombination,
+                    },
+                );
+                std.log.info(
+                    "Presentation: female_front_side=true long_mesh={} secondary={} hair_headwear={} legwear={} footwear={} breathing={} locomotion={} jump={} land={} male_unchanged={}",
+                    .{
+                        scene.evidence.long_garment_mesh,
+                        scene.evidence.long_garment_secondary_motion,
+                        scene.evidence.long_hair_with_headwear,
+                        scene.evidence.legwear_observed,
+                        scene.evidence.footwear_observed,
+                        scene.evidence.breathing_observed,
+                        scene.evidence.locomotion_observed,
+                        scene.evidence.jump_observed,
+                        scene.evidence.landing_observed,
+                        scene.evidence.male_unchanged,
+                    },
+                );
+            } else {
+                const current = try scene.catalog.preset(scene.current_preset);
+                std.log.info("PROMPT 25 INTERACTIVE WARDROBE INSPECTION", .{});
+                std.log.info(
+                    "Current outfit={s} custom={} paused={} view={s}/{s}; O cycles, P pauses, Q forces view",
+                    .{
+                        current.stable_id,
+                        scene.custom_active,
+                        scene.paused,
+                        @tagName(scene.female.presentationView()),
+                        @tagName(scene.female.presentationOverride()),
+                    },
+                );
+            }
+            std.log.info(
+                "Rendering: art_pages=5 configured_pages=6 decoded_files={d} sprites={d} meshes={d} sprite_ranges={d} mesh_ranges={d} sprite_draws={d} mesh_draws={d}",
+                .{
+                    self.image_decode_metrics.successful_decodes,
+                    unified_metrics.submitted_sprites,
+                    unified_metrics.submitted_meshes,
+                    unified_metrics.sprite_ranges,
+                    unified_metrics.mesh_ranges,
+                    unified_metrics.sprite_draws,
+                    unified_metrics.mesh_draws,
+                },
+            );
+            std.log.info(
+                "Steady state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}",
+                .{
+                    humanoid_initialized_bytes,
+                    humanoid_allocator.end_index,
+                    pose_evaluation_allocations,
+                    humanoid_submission_allocations,
+                    self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                    gpu_resource_delta,
+                },
+            );
+            const expected_decoded_bytes =
+                (1600 * 983 + 1599 * 984) * 4 + 3 * 1536 * 1024 * 4;
+            if (self.image_decode_metrics.decode_attempts != 5 or
+                self.image_decode_metrics.successful_decodes != 5 or
+                self.image_decode_metrics.decoded_bytes != expected_decoded_bytes or
+                self.art_texture_page_count != 5 or
+                self.texture_page_count != 6 or
+                male_page.sampling != .nearest or
+                female_page.sampling != .nearest or
+                upper_page.sampling != .linear or
+                layers_page.sampling != .linear or
+                lower_page.sampling != .linear or
+                runtime_allocation_delta != 0 or
+                pose_evaluation_allocations != 0 or
+                humanoid_submission_allocations != 0 or
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
+                (mode == .visual_quality and
+                    self.visual_captures_written != visual_capture_count) or
+                gpu_resource_delta != 0)
+            {
+                return error.WardrobeRenderingEvidenceIncomplete;
+            }
         } else if (mode == .foundation) {
             const scene = &foundation_scene.?;
             if (scripted_input_enabled) {
@@ -2553,8 +3320,9 @@ pub const GpuDemo = struct {
             prepared,
             swapchain_texture.?,
             self.window_pipeline.?,
-            self.mesh_window_pipeline.?,
+            self.mesh_window_pipeline,
             self.visible_camera,
+            true,
             true,
         );
 
@@ -2569,6 +3337,121 @@ pub const GpuDemo = struct {
         self.current_frame_slot = (slot_index + 1) % frame_slot_count;
         self.unified_queue.?.recordDraws(encoded.sprites, encoded.meshes);
         return swapchain_acquired;
+    }
+
+    fn captureUnifiedToPpm(
+        self: *GpuDemo,
+        prepared: render_queue.PreparedQueue,
+        path: []const u8,
+    ) !void {
+        const transfer = self.visual_capture_transfer orelse
+            return error.VisualCaptureTransferNotInitialized;
+        const row_pitch = alignForward(target_width * 4, 256);
+        if (prepared.sprites.len > self.gpu_instance_capacity) {
+            return error.GpuInstanceCapacityExceeded;
+        }
+        if (prepared.meshes.len > render_queue.default_mesh_capacity) {
+            return error.MeshInstanceCapacityExceeded;
+        }
+
+        const slot_index = try self.acquireFrameSlot();
+        try self.populateInstanceTransfer(slot_index, prepared.sprites);
+        try self.populateMeshInstanceTransfer(slot_index, prepared.meshes);
+        const command = c.SDL_AcquireGPUCommandBuffer(self.device.?) orelse
+            return failSdl(
+                "SDL_AcquireGPUCommandBuffer(Prompt 25A capture)",
+                error.PipelineResourceBindingFailure,
+            );
+        var command_active = true;
+        errdefer if (command_active) {
+            if (!c.SDL_CancelGPUCommandBuffer(command)) {
+                std.log.err(
+                    "SDL_CancelGPUCommandBuffer(Prompt 25A capture): {s}",
+                    .{sdlErrorText()},
+                );
+            }
+        };
+        _ = try self.encodeUnifiedQueue(
+            command,
+            slot_index,
+            prepared,
+            self.render_target.?,
+            self.offscreen_pipeline.?,
+            self.mesh_offscreen_pipeline,
+            camera2d.Camera2D.initDefault(),
+            false,
+            false,
+        );
+        const copy_pass = c.SDL_BeginGPUCopyPass(command);
+        if (copy_pass == null) {
+            return failSdl(
+                "SDL_BeginGPUCopyPass(Prompt 25A capture)",
+                error.UploadFailure,
+            );
+        }
+        const source = c.SDL_GPUTextureRegion{
+            .texture = self.render_target.?,
+            .mip_level = 0,
+            .layer = 0,
+            .x = 0,
+            .y = 0,
+            .z = 0,
+            .w = target_width,
+            .h = target_height,
+            .d = 1,
+        };
+        const destination = c.SDL_GPUTextureTransferInfo{
+            .transfer_buffer = transfer,
+            .offset = 0,
+            .pixels_per_row = row_pitch / 4,
+            .rows_per_layer = target_height,
+        };
+        c.SDL_DownloadFromGPUTexture(copy_pass.?, &source, &destination);
+        c.SDL_EndGPUCopyPass(copy_pass.?);
+        const fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
+        command_active = false;
+        if (fence == null) {
+            return failSdl(
+                "SDL_SubmitGPUCommandBufferAndAcquireFence(Prompt 25A capture)",
+                error.FrameFenceAcquisitionFailure,
+            );
+        }
+        self.resource_metrics.fence_acquisitions += 1;
+        try self.waitReleaseStandaloneFence(fence.?);
+        self.current_frame_slot = (slot_index + 1) % frame_slot_count;
+
+        const mapped = c.SDL_MapGPUTransferBuffer(
+            self.device.?,
+            transfer,
+            false,
+        ) orelse return failSdl(
+            "SDL_MapGPUTransferBuffer(Prompt 25A capture)",
+            error.ReadbackFailure,
+        );
+        defer c.SDL_UnmapGPUTransferBuffer(self.device.?, transfer);
+        const rgba: [*]const u8 = @ptrCast(mapped);
+        var file = try std.Io.Dir.cwd().createFile(self.io, path, .{});
+        defer file.close(self.io);
+        var header_buffer: [64]u8 = undefined;
+        const header = try std.fmt.bufPrint(
+            &header_buffer,
+            "P6\n{d} {d}\n255\n",
+            .{ target_width, target_height },
+        );
+        try file.writeStreamingAll(self.io, header);
+        var rgb_row: [target_width * 3]u8 = undefined;
+        for (0..target_height) |y| {
+            for (0..target_width) |x| {
+                const source_offset =
+                    @as(usize, @intCast(y * row_pitch + x * 4));
+                const destination_offset = @as(usize, @intCast(x * 3));
+                rgb_row[destination_offset + 0] = rgba[source_offset + 0];
+                rgb_row[destination_offset + 1] = rgba[source_offset + 1];
+                rgb_row[destination_offset + 2] = rgba[source_offset + 2];
+            }
+            try file.writeStreamingAll(self.io, &rgb_row);
+        }
+        self.visual_captures_written += 1;
     }
 
     fn renderPreparedToWindow(self: *GpuDemo, prepared: sprite.PreparedBatch, injector: ?fault_injection.Injector) !bool {
@@ -2719,13 +3602,19 @@ pub const GpuDemo = struct {
         prepared: render_queue.PreparedQueue,
         target: *c.SDL_GPUTexture,
         sprite_pipeline: *c.SDL_GPUGraphicsPipeline,
-        mesh_pipeline: *c.SDL_GPUGraphicsPipeline,
+        mesh_pipeline: ?*c.SDL_GPUGraphicsPipeline,
         camera: camera2d.Camera2D,
         cycle_target: bool,
+        record_metrics: bool,
     ) !EncodedDrawCounts {
         const sprite_upload_bytes = try sprite.instanceByteSize(prepared.sprites.len);
         const mesh_upload_bytes = try render_queue.meshInstanceByteSize(prepared.meshes.len);
-        self.unified_queue.?.recordUploads(sprite_upload_bytes, mesh_upload_bytes);
+        if (record_metrics) {
+            self.unified_queue.?.recordUploads(
+                sprite_upload_bytes,
+                mesh_upload_bytes,
+            );
+        }
         if (sprite_upload_bytes > 0 or mesh_upload_bytes > 0) {
             const copy_pass = c.SDL_BeginGPUCopyPass(command);
             if (copy_pass == null) return failSdl("SDL_BeginGPUCopyPass(unified instance upload)", error.UploadFailure);
@@ -2768,16 +3657,15 @@ pub const GpuDemo = struct {
         if (render_pass == null) return failSdl("SDL_BeginGPURenderPass(unified queue)", error.PipelineResourceBindingFailure);
 
         var encoded = EncodedDrawCounts{};
-        const texture_binding = c.SDL_GPUTextureSamplerBinding{
-            .texture = self.sampled_texture.?,
-            .sampler = self.sampler.?,
-        };
         for (prepared.ranges) |range| {
-            if (range.texture_page != 0) {
-                std.log.err("bind unified texture page: invalid texture_page={d}, configured_pages=1", .{range.texture_page});
+            const texture_binding = self.textureBinding(range.texture_page) catch |err| {
+                std.log.err("bind unified texture page: invalid texture_page={d}, configured_pages={d}", .{
+                    range.texture_page,
+                    self.texture_page_count,
+                });
                 c.SDL_EndGPURenderPass(render_pass.?);
-                return error.InvalidTexturePage;
-            }
+                return err;
+            };
             c.SDL_BindGPUFragmentSamplers(render_pass.?, 0, &texture_binding, 1);
             switch (range.kind) {
                 .rigid_sprite => {
@@ -2793,7 +3681,10 @@ pub const GpuDemo = struct {
                     encoded.sprites += 1;
                 },
                 .deformable_mesh => {
-                    c.SDL_BindGPUGraphicsPipeline(render_pass.?, mesh_pipeline);
+                    c.SDL_BindGPUGraphicsPipeline(render_pass.?, mesh_pipeline orelse {
+                        c.SDL_EndGPURenderPass(render_pass.?);
+                        return error.MeshRenderingNotInitialized;
+                    });
                     const vertex_bindings = [_]c.SDL_GPUBufferBinding{
                         .{ .buffer = self.mesh_vertex_buffer.?, .offset = 0 },
                         .{ .buffer = self.frame_slots[slot_index].mesh_instance_buffer.?, .offset = 0 },
@@ -2869,12 +3760,15 @@ pub const GpuDemo = struct {
             const index_binding = c.SDL_GPUBufferBinding{ .buffer = self.quad_index_buffer.?, .offset = 0 };
             c.SDL_BindGPUIndexBuffer(render_pass.?, &index_binding, c.SDL_GPU_INDEXELEMENTSIZE_16BIT);
             for (prepared.ranges) |range| {
-                if (range.texture_page != 0) {
-                    std.log.err("bind sprite texture page: invalid texture_page={d}, configured_pages=1, first_instance={d}", .{ range.texture_page, range.first_instance });
+                const binding = self.textureBinding(range.texture_page) catch |err| {
+                    std.log.err("bind sprite texture page: invalid texture_page={d}, configured_pages={d}, first_instance={d}", .{
+                        range.texture_page,
+                        self.texture_page_count,
+                        range.first_instance,
+                    });
                     c.SDL_EndGPURenderPass(render_pass.?);
-                    return error.InvalidTexturePage;
-                }
-                const binding = c.SDL_GPUTextureSamplerBinding{ .texture = self.sampled_texture.?, .sampler = self.sampler.? };
+                    return err;
+                };
                 c.SDL_BindGPUFragmentSamplers(render_pass.?, 0, &binding, 1);
                 drawIndexedPrimitives(render_pass.?, quad_indices.len, range.instance_count, 0, 0, range.first_instance);
                 encoded_draws += 1;
