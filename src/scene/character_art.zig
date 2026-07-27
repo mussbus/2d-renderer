@@ -11,7 +11,8 @@ const sprite = @import("sprite_batch");
 
 pub const male_page_id: art_pack.TexturePageId = @enumFromInt(41);
 pub const female_page_id: art_pack.TexturePageId = @enumFromInt(42);
-pub const texture_page_count: usize = 2;
+pub const component_page_id: art_pack.TexturePageId = @enumFromInt(43);
+pub const texture_page_count: usize = 3;
 
 pub const Style = enum(u8) {
     male,
@@ -115,6 +116,14 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
         .sampling = .nearest,
         .expected_width = 1599,
         .expected_height = 984,
+    },
+    .{
+        .id = component_page_id,
+        .stable_name = "p25b_anatomy_components_atlas",
+        .asset_path = "art/p25b_anatomy_components_atlas.png",
+        .sampling = .nearest,
+        .expected_width = 1792,
+        .expected_height = 1024,
     },
 };
 
@@ -351,10 +360,13 @@ pub const Presentation = struct {
                 projection,
             );
             const sprite_transform = try humanoid.spriteTransform(world);
-            const world_size = sprite_transform.signed_scale.componentMul(.{
+            var world_size = sprite_transform.signed_scale.componentMul(.{
                 .x = selected.visual.authored_size[0],
                 .y = selected.visual.authored_size[1],
             });
+            if (view == .front and mirrorsFrontRegion(binding.slot)) {
+                world_size.x = -world_size.x;
+            }
             const order = presentationOrder(instance, attachment, binding.slot, presentation.style, view);
             const key = try queue.submitSprite(.{
                 .world_position = sprite_transform.world_position.toArray(),
@@ -390,14 +402,14 @@ fn presentationOrder(
 ) sprite.OrderInput {
     const default_layer = if (attachment.canonical_semantic) |raw_semantic| layer: {
         const semantic: humanoid.AttachmentSemantic = @enumFromInt(raw_semantic);
-        const authored_layer = switch (view) {
-            .side => sideBodyPartLayer(semantic, instance.facing),
-            .front => frontBodyPartLayer(semantic),
+        break :layer switch (view) {
+            .side => connectorLayer(
+                semantic,
+                sideBodyPartLayer(semantic, instance.facing),
+                .side,
+            ),
+            .front => frontPresentationLayer(semantic),
         };
-        break :layer if (style == .male)
-            maleConnectorLayer(semantic, authored_layer)
-        else
-            authored_layer;
     } else if (slot == .hair and style == .female)
         29
     else
@@ -411,14 +423,21 @@ fn presentationOrder(
     };
 }
 
-fn maleConnectorLayer(
+fn connectorLayer(
     semantic: humanoid.AttachmentSemantic,
     authored_layer: u16,
+    view: presentation_view.View,
 ) u16 {
     return switch (semantic) {
         .pelvis => 9,
         .left_thigh, .right_thigh => authored_layer - 1,
         .left_shin, .right_shin => authored_layer + 1,
+        // The front forearm's soft overlap end covers the independently
+        // articulated upper-arm edge without changing either joint transform.
+        .left_forearm, .right_forearm => if (view == .front)
+            authored_layer + 2
+        else
+            authored_layer,
         else => authored_layer,
     };
 }
@@ -514,6 +533,10 @@ pub fn frontBodyPartLayer(semantic: humanoid.AttachmentSemantic) u16 {
     };
 }
 
+pub fn frontPresentationLayer(semantic: humanoid.AttachmentSemantic) u16 {
+    return connectorLayer(semantic, frontBodyPartLayer(semantic), .front);
+}
+
 fn sideBodyPartLayer(
     semantic: humanoid.AttachmentSemantic,
     facing: humanoid.Facing,
@@ -551,6 +574,19 @@ fn sideBodyPartLayer(
 
 fn sideFeatureVisible(slot: Slot) bool {
     return slot != .left_eye and slot != .left_ear;
+}
+
+fn mirrorsFrontRegion(slot: Slot) bool {
+    return switch (slot) {
+        .left_upper_arm,
+        .left_forearm,
+        .left_hand,
+        .left_thigh,
+        .left_shin,
+        .left_foot,
+        => true,
+        else => false,
+    };
 }
 
 fn slotForAttachment(style: Style, attachment: appearance.VisualAttachment) ?Slot {
@@ -668,7 +704,7 @@ fn makeRegionInputs() [region_key_count * 2]art_pack.AtlasRegionInput {
             result[index] = .{
                 .id = regionId(style, key),
                 .stable_name = std.fmt.comptimePrint("{s}_{s}", .{ @tagName(style), @tagName(key) }),
-                .page_id = if (style == .male) male_page_id else female_page_id,
+                .page_id = pageForRegion(style, key),
                 .source = sourceRect(style, key),
                 .authored_size = authoredSize(style, key),
                 .pivot = pivotFor(style, key),
@@ -715,19 +751,23 @@ fn makeBindingInputs() [anatomy_binding_count + garment_binding_count]art_pack.V
 
 fn authoredSize(style: Style, key: RegionKey) [2]f32 {
     return switch (key) {
-        .side_head, .front_head => .{ 0.78, 0.86 },
-        .side_torso => if (style == .male) .{ 0.84, 1.30 } else .{ 0.82, 1.30 },
-        .front_torso => .{ 1.14, 1.30 },
-        .side_pelvis, .front_pelvis => if (style == .male) .{ 0.90, 0.70 } else .{ 1.08, 0.72 },
-        .side_upper_arm => if (style == .male) .{ 0.71, 0.28 } else .{ 0.71, 0.27 },
-        .side_forearm => .{ 0.68, 0.24 },
-        .side_hand => .{ 0.38, 0.22 },
-        .side_thigh, .front_thigh => .{ 0.36, 1.05 },
-        .side_shin, .front_shin => .{ 0.30, 0.99 },
-        .side_foot, .front_foot => .{ 0.48, 0.26 },
-        .front_upper_arm => if (style == .male) .{ 0.28, 0.78 } else .{ 0.27, 0.78 },
-        .front_forearm => .{ 0.24, 0.68 },
-        .front_hand => .{ 0.24, 0.38 },
+        .side_head, .front_head => .{ 0.68, 0.96 },
+        .side_torso => if (style == .male) .{ 0.66, 1.30 } else .{ 0.72, 1.30 },
+        .front_torso => if (style == .male) .{ 1.06, 1.30 } else .{ 0.95, 1.30 },
+        .side_pelvis => if (style == .male) .{ 0.88, 0.70 } else .{ 0.98, 0.72 },
+        .front_pelvis => if (style == .male) .{ 0.76, 1.05 } else .{ 1.08, 0.80 },
+        .side_upper_arm => if (style == .male) .{ 0.72, 0.30 } else .{ 0.72, 0.27 },
+        .side_forearm => if (style == .male) .{ 0.62, 0.20 } else .{ 0.62, 0.18 },
+        .side_hand => if (style == .male) .{ 0.34, 0.20 } else .{ 0.34, 0.18 },
+        .side_thigh => if (style == .male) .{ 0.43, 1.00 } else .{ 0.48, 1.00 },
+        .side_shin => .{ 0.34, 0.94 },
+        .side_foot => .{ 0.44, 0.30 },
+        .front_upper_arm => if (style == .male) .{ 0.255, 0.70 } else .{ 0.18, 0.72 },
+        .front_forearm => if (style == .male) .{ 0.20, 0.64 } else .{ 0.141, 0.64 },
+        .front_hand => if (style == .male) .{ 0.22, 0.40 } else .{ 0.17, 0.34 },
+        .front_thigh => if (style == .male) .{ 0.36, 1.00 } else .{ 0.46, 1.00 },
+        .front_shin => if (style == .male) .{ 0.34, 0.92 } else .{ 0.31, 0.94 },
+        .front_foot => if (style == .male) .{ 0.42, 0.31 } else .{ 0.36, 0.34 },
         .side_eye => .{ 0.14, 0.09 },
         .front_left_eye, .front_right_eye => .{ 0.13, 0.085 },
         .side_brow => .{ 0.16, 0.045 },
@@ -746,9 +786,15 @@ fn authoredSize(style: Style, key: RegionKey) [2]f32 {
 
 fn pivotFor(style: Style, key: RegionKey) [2]f32 {
     return switch (key) {
+        .side_pelvis => .{ 0.5, 0.3 },
+        // The taller male base-presentation bridge begins behind the lower
+        // torso and ends behind the thighs, hiding both independent edges.
+        .front_pelvis => if (style == .male) .{ 0.5, 0.38 } else .{ 0.5, 0.5 },
         .side_upper_arm => .{ 0, 0.5 },
         .side_forearm, .side_hand => .{ 0.09, 0.5 },
         .side_thigh, .side_shin, .front_thigh, .front_shin => .{ 0.5, 0.93 },
+        // The torso owns the deltoid silhouette and draws over this narrow,
+        // domed overlap end. No pose-space shoulder compression is required.
         .front_upper_arm => .{ 0.5, 1 },
         .front_forearm, .front_hand => .{ 0.5, 0.93 },
         .side_foot, .front_foot => .{ 0.12, 0.55 },
@@ -782,21 +828,26 @@ fn restRotation(style: Style, slot: Slot, view: presentation_view.View) f32 {
 }
 
 fn sourceRect(style: Style, key: RegionKey) art_pack.PixelRect {
+    if (componentSourceRect(style, key)) |component| return component;
+    const base = baseSourceRect(style, key);
+    // RegionKey is partitioned between componentSourceRect and baseSourceRect.
+    std.debug.assert(base != null);
+    return base.?;
+}
+
+fn baseSourceRect(style: Style, key: RegionKey) ?art_pack.PixelRect {
     return switch (style) {
         .male => switch (key) {
             .side_head => rect(65, 27, 185, 210),
             .side_torso => rect(284, 17, 379, 233),
-            .side_pelvis => rect(460, 24, 573, 239),
-            .side_upper_arm => rect(650, 104, 794, 163),
-            // The generated forearm candidate included hand detail at its distal
-            // end. Reusing the clean straight segment keeps the semantic
-            // forearm independent while preserving the intended taper at its
-            // smaller authored size.
-            .side_forearm => rect(650, 104, 794, 163),
-            .side_hand => rect(1048, 115, 1164, 187),
-            .side_thigh => rect(1284, 23, 1339, 229),
-            .side_shin => rect(1444, 23, 1498, 229),
-            .side_foot => rect(60, 301, 173, 377),
+            .side_pelvis,
+            .side_upper_arm,
+            .side_forearm,
+            .side_hand,
+            .side_thigh,
+            .side_shin,
+            .side_foot,
+            => null,
             .side_eye => rect(275, 312, 346, 360),
             .side_brow => rect(451, 316, 533, 342),
             .side_nose => rect(647, 283, 702, 370),
@@ -804,14 +855,15 @@ fn sourceRect(style: Style, key: RegionKey) art_pack.PixelRect {
             .side_ear => rect(1048, 284, 1099, 377),
             .side_hair => rect(1202, 284, 1328, 380),
             .front_head => rect(59, 432, 165, 595),
-            .front_torso => rect(252, 431, 398, 611),
-            .front_pelvis => rect(453, 442, 571, 614),
-            .front_upper_arm => rect(662, 437, 713, 613),
-            .front_forearm => rect(870, 436, 919, 613),
-            .front_hand => rect(1045, 436, 1109, 572),
-            .front_thigh => rect(1237, 419, 1296, 610),
-            .front_shin => rect(1426, 420, 1479, 610),
-            .front_foot => rect(62, 663, 176, 741),
+            .front_torso => rect(248, 430, 398, 612),
+            .front_pelvis,
+            .front_upper_arm,
+            .front_forearm,
+            .front_hand,
+            .front_thigh,
+            .front_shin,
+            .front_foot,
+            => null,
             .front_left_eye => rect(291, 680, 356, 731),
             .front_right_eye => rect(445, 680, 509, 731),
             .front_brows => rect(608, 701, 768, 720),
@@ -826,16 +878,14 @@ fn sourceRect(style: Style, key: RegionKey) art_pack.PixelRect {
         .female => switch (key) {
             .side_head => rect(46, 40, 157, 203),
             .side_torso => rect(245, 39, 344, 229),
-            .side_pelvis => rect(408, 54, 523, 237),
-            .side_upper_arm => rect(605, 108, 726, 164),
-            .side_forearm => rect(783, 108, 910, 164),
-            .side_hand => rect(962, 101, 1124, 167),
-            .side_thigh => rect(1234, 36, 1294, 210),
-            // The dedicated generated cell incorrectly included a foot.
-            // A separate region identity intentionally reuses the clean
-            // straight lower-limb source; authored geometry remains distinct.
-            .side_shin => rect(1234, 36, 1294, 210),
-            .side_foot => rect(57, 299, 181, 400),
+            .side_pelvis,
+            .side_upper_arm,
+            .side_forearm,
+            .side_hand,
+            .side_thigh,
+            .side_shin,
+            .side_foot,
+            => null,
             .side_eye => rect(263, 307, 335, 371),
             .side_brow => rect(413, 322, 526, 355),
             .side_nose => rect(628, 298, 686, 384),
@@ -843,14 +893,15 @@ fn sourceRect(style: Style, key: RegionKey) art_pack.PixelRect {
             .side_ear => rect(956, 293, 1020, 382),
             .side_hair => rect(1107, 223, 1297, 470),
             .front_head => rect(45, 455, 150, 617),
-            .front_torso => rect(214, 447, 357, 627),
-            .front_pelvis => rect(404, 461, 556, 635),
-            .front_upper_arm => rect(630, 471, 685, 621),
-            .front_forearm => rect(812, 474, 865, 626),
-            .front_hand => rect(958, 512, 1120, 580),
-            .front_thigh => rect(1234, 464, 1300, 635),
-            .front_shin => rect(1234, 464, 1300, 635),
-            .front_foot => rect(63, 653, 180, 750),
+            .front_torso => rect(224, 446, 348, 628),
+            .front_pelvis,
+            .front_upper_arm,
+            .front_forearm,
+            .front_hand,
+            .front_thigh,
+            .front_shin,
+            .front_foot,
+            => null,
             .front_left_eye => rect(256, 675, 337, 739),
             .front_right_eye => rect(443, 675, 524, 739),
             .front_brows => rect(578, 697, 766, 724),
@@ -861,6 +912,71 @@ fn sourceRect(style: Style, key: RegionKey) art_pack.PixelRect {
             .front_hair => rect(44, 754, 237, 960),
             .side_training_vest => rect(340, 784, 450, 947),
             .front_training_vest => rect(500, 790, 621, 949),
+        },
+    };
+}
+
+fn pageForRegion(style: Style, key: RegionKey) art_pack.TexturePageId {
+    if (isComponentRegion(key)) return component_page_id;
+    return if (style == .male) male_page_id else female_page_id;
+}
+
+fn isComponentRegion(key: RegionKey) bool {
+    return switch (key) {
+        .side_pelvis,
+        .side_upper_arm,
+        .side_forearm,
+        .side_hand,
+        .side_thigh,
+        .side_shin,
+        .side_foot,
+        .front_pelvis,
+        .front_upper_arm,
+        .front_forearm,
+        .front_hand,
+        .front_thigh,
+        .front_shin,
+        .front_foot,
+        => true,
+        else => false,
+    };
+}
+
+fn componentSourceRect(style: Style, key: RegionKey) ?art_pack.PixelRect {
+    return switch (style) {
+        .male => switch (key) {
+            .side_upper_arm => rect(72, 103, 184, 153),
+            .side_forearm => rect(335, 111, 432, 144),
+            .side_hand => rect(612, 111, 667, 145),
+            .side_thigh => rect(857, 51, 934, 205),
+            .side_shin => rect(1124, 55, 1179, 200),
+            .side_foot => rect(1373, 103, 1443, 152),
+            .side_pelvis => rect(1596, 67, 1732, 189),
+            .front_upper_arm => rect(209, 317, 251, 441),
+            .front_forearm => rect(364, 334, 397, 436),
+            .front_hand => rect(623, 352, 656, 416),
+            .front_thigh => rect(869, 306, 923, 462),
+            .front_shin => rect(1123, 313, 1181, 455),
+            .front_foot => rect(1374, 358, 1441, 409),
+            .front_pelvis => rect(1608, 293, 1711, 436),
+            else => null,
+        },
+        .female => switch (key) {
+            .side_upper_arm => rect(72, 617, 184, 662),
+            .side_forearm => rect(335, 624, 432, 655),
+            .side_hand => rect(612, 624, 667, 655),
+            .side_thigh => rect(854, 563, 938, 717),
+            .side_shin => rect(1125, 567, 1179, 712),
+            .side_foot => rect(1373, 616, 1443, 664),
+            .side_pelvis => rect(1588, 586, 1739, 694),
+            .front_upper_arm => rect(209, 827, 239, 953),
+            .front_forearm => rect(364, 845, 388, 947),
+            .front_hand => rect(624, 864, 655, 928),
+            .front_thigh => rect(855, 819, 937, 973),
+            .front_shin => rect(1126, 823, 1177, 968),
+            .front_foot => rect(1379, 868, 1437, 924),
+            .front_pelvis => rect(1581, 834, 1747, 958),
+            else => null,
         },
     };
 }

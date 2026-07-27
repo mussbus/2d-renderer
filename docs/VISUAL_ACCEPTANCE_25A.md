@@ -13,8 +13,9 @@ It writes eleven 640 by 480 P6 captures from the same prepared global
 sprite/mesh queue that is submitted to the visible SDL GPU window. The capture
 copy uses a persistent transfer buffer created before the resource checkpoint;
 it does not create a per-frame resource or a per-character path. The runtime
-must report Direct3D 12, DXIL agreement, exactly eleven captures, five decoded
-art pages, zero post-stabilization allocation, and zero GPU-resource delta.
+must report Direct3D 12, DXIL agreement, exactly eleven captures, six decoded
+art pages after Prompt 25B, zero post-stabilization allocation, and zero
+GPU-resource delta.
 
 Normal-size PNGs, nearest-neighbor 2x PNGs, the contact sheet, and the direct
 before/after comparison are under:
@@ -22,6 +23,8 @@ before/after comparison are under:
 ```text
 zig-out/p25a_visual_gpu/
 zig-out/p25a_visual_gpu_final_contact.png
+zig-out/p25b_visual/
+zig-out/p25b_followup_final/
 ```
 
 The rejected Prompt 25 capture remains unchanged at
@@ -61,9 +64,9 @@ These marks are based on the following concrete pixel observations:
 
 | Capture | Concrete observation |
 | --- | --- |
-| `01_base_front.png` | Male and female neck-to-torso, shoulder-to-arm, pelvis-to-thigh, knee, ankle, wrist, and foot silhouettes remain closed. The neutral opaque torso/pelvis surfaces follow each body contour and have no bar, debug-block, fabric-edge, or missing-texture appearance. |
+| `01_base_front.png` | The final hard-gate capture shows compact torso-owned deltoids flowing into narrow upper arms without round balls, dark elbow bands, or arm-root compression. The male neutral base bridge remains behind cap-free proximal thighs, so lower torso, pelvis, and thighs read continuously without resembling shorts or a codpiece. Female hands remain proportionate to the forearms. |
 | `02_base_side.png` | The dedicated profile heads, torsos, pelvises, hands, and feet read as side art. Both arm chains stay within/along the torso silhouette, both legs reach the feet, and the male pelvis layer conceals the former horizontal hip seam. |
-| `03_wide_brim_and_male_outfit_front.png` | The brim crosses the female crown without replacing long hair. Halter and shorts are centered on both bodies, thigh-highs meet the lower legs, and the toe/sole shoe pivots keep both shoes on the feet. |
+| `03_wide_brim_and_male_outfit_front.png` | The brim crosses the female crown without replacing long hair. Halter and shorts are centered on both bodies, thigh-highs meet the lower legs, and reflected `0.05/0.95` shoe pivots keep two distinct shoes on their corresponding semantic feet instead of piling both at viewer right. |
 | `04_wide_brim_and_male_outfit_side.png` | Hat and hair retain a readable profile. Tops wrap the profile torso, shorts meet the pelvis, legwear follows both shins, and shoe soles remain at the planted foot line. |
 | `05_ivory_blouse_front.png` | Alpha-tight sleeve extraction puts both puffed sleeves at the shoulders and both cuffs at the wrists. The blouse center remains independent from the sleeves, shorts remain independent from the blouse, and the shoe cutouts cover the semantic feet. |
 | `06_ivory_blouse_side.png` | The two topology-expanded sleeves overlap the profile shoulders instead of floating at the elbows. The blouse collar follows the neck, the shorts follow the side pelvis, and the footwear remains grounded. |
@@ -82,12 +85,12 @@ clothing remains reusable; the renderer conceals those boundaries through
 source extraction, pivots, controlled overlap, projection, and layer order.
 
 Minor enlarged-scale limitations are recorded in
-`PROMPT25A_DECISION_RECORD.md`; none becomes a normal-scale background gap or a
-detached body part.
+`PROMPT25A_DECISION_RECORD.md` and `PROMPT25B_DECISION_RECORD.md`; none becomes
+a normal-scale background gap or a detached body part.
 
-The final verification snapshot passed 311 of 311 aggregate tests, the
-103-file repository audit, Debug/ReleaseSafe/ReleaseFast builds, D3D12/DXIL GPU
-smoke, Prompt 23/24/25 regression routes, and this exact 600-frame route. The
-route retained 127184 initialized/final bytes, submitted 60 sprites through 13
-global ranges/draws, and reported zero update, submission, queue, or GPU-resource
-growth.
+The final verification snapshot passed the complete aggregate gate, the
+104-file repository audit, Debug/ReleaseSafe/ReleaseFast builds, D3D12/DXIL GPU
+smoke, Prompt 23/24/25 regression routes, and this exact 600-frame route.
+The route retained 127456 initialized/final bytes, submitted 60 sprites through
+15 global ranges/draws, and reported zero update, submission, queue, or
+GPU-resource growth.

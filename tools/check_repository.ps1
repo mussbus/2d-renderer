@@ -1784,6 +1784,7 @@ if ([regex]::IsMatch($presentationPoseSource, 'allocator|SDL_|CreateGPU|Characte
 foreach ($phrase in @(
     'p25a_male_base_anatomy_atlas.png',
     'p25a_female_base_anatomy_atlas.png',
+    'p25b_anatomy_components_atlas.png',
     'pub const region_inputs = makeRegionInputs()',
     'pub const binding_inputs = makeBindingInputs()',
     'presentation_view.View',
@@ -1842,6 +1843,7 @@ foreach ($phrase in @(
 foreach ($phrase in @(
     'p25a_male_base_anatomy_atlas.png',
     'p25a_female_base_anatomy_atlas.png',
+    'p25b_anatomy_components_atlas.png',
     'app_module.addImport("presentation_view", presentation_view_module)',
     'app_module.addImport("character_art", character_art_module)',
     'app_module.addImport("character_presentation_demo", character_presentation_demo_module)',
@@ -2018,7 +2020,9 @@ if (-not $sdlInputSource.Contains('SDL_SCANCODE_O') -or
 foreach ($relativePath in @(
     'assets/art/p25a_male_base_anatomy_atlas.png',
     'assets/art/p25a_female_base_anatomy_atlas.png',
+    'assets/art/p25b_anatomy_components_atlas.png',
     'docs/PROMPT25A_DECISION_RECORD.md',
+    'docs/PROMPT25B_DECISION_RECORD.md',
     'docs/VISUAL_ACCEPTANCE_25A.md'
 )) {
     $path = Join-Path $repositoryRoot $relativePath
@@ -2029,22 +2033,42 @@ foreach ($relativePath in @(
     }
 }
 foreach ($phrase in @(
-    'front_arm_x_compression: f32 = 0.90',
     'side_arm_x_compression: f32 = 0.68',
-    'compressArmRoots'
+    'remapProjectedArmRest',
+    'initBoneWorlds',
+    'compressArmRoots',
+    '&authoritative_locals'
 )) {
     if (-not $presentationPoseSource.Contains($phrase)) {
-        Write-Error "Prompt 25A view composition correction is missing: '$phrase'." -ErrorAction Continue
+        Write-Error "Prompt 25B authoritative view composition correction is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
+}
+if ($presentationPoseSource.Contains('front_arm_x_compression')) {
+    Write-Error 'Prompt 25B front shoulders must not retain the rejected root-compression correction.' -ErrorAction Continue
+    $failed = $true
 }
 foreach ($phrase in @(
     'p25a_male_base_anatomy_atlas',
     'p25a_female_base_anatomy_atlas',
-    'maleConnectorLayer'
+    'p25b_anatomy_components_atlas',
+    'component_page_id',
+    'mirrorsFrontRegion',
+    'connectorLayer',
+    'componentSourceRect'
 )) {
     if (-not $characterArtSource.Contains($phrase)) {
-        Write-Error "Prompt 25A production anatomy correction is missing: '$phrase'." -ErrorAction Continue
+        Write-Error "Prompt 25B production anatomy correction is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'std.mem.startsWith',
+    '"left_"',
+    'world_size.x = -world_size.x'
+)) {
+    if (-not $wardrobePresentationSource.Contains($phrase)) {
+        Write-Error "Prompt 25B bilateral equipment mirroring is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
 }
@@ -2078,7 +2102,12 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'Prompt 25A production anatomy pages and regions have exact valid bounds',
+    'Prompt 25B production anatomy pages and regions have exact valid bounds',
+    'Prompt 25B real component bindings are distinct and preserve authored aspect',
+    'Prompt 25B component sizes and pivots follow rig attachment lengths',
+    'Prompt 25B final front joins use authored overlap without pose compression',
+    'Prompt 25B side projection applies one root compression from the authoritative pose',
+    'Prompt 25B bilateral front equipment follows anatomy mirroring',
     'Prompt 25A wardrobe regions are nonzero bounded and alpha-tight where required',
     'Prompt 25A side anatomy submission geometry remains registered at joints',
     'Prompt 25A front anatomy geometry overlaps every core limb joint',
@@ -2086,6 +2115,17 @@ foreach ($phrase in @(
 )) {
     if (-not ($characterPresentationTestsSource + [Environment]::NewLine + $wardrobeTestsSource).Contains($phrase)) {
         Write-Error "Required Prompt 25A deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+$prompt25bArtAudit = Join-Path $repositoryRoot 'tools/audit_p25b_art.ps1'
+if (-not (Test-Path -LiteralPath $prompt25bArtAudit -PathType Leaf)) {
+    Write-Error 'Prompt 25B automated source-alpha audit is missing.' -ErrorAction Continue
+    $failed = $true
+} else {
+    & $prompt25bArtAudit -RepositoryRoot $repositoryRoot
+    if (-not $?) {
+        Write-Error 'Prompt 25B automated source-alpha audit failed.' -ErrorAction Continue
         $failed = $true
     }
 }
@@ -2152,4 +2192,5 @@ Write-Host 'Prompt 24 character-presentation audit passed: distinct facing/view 
 Write-Host 'Prompt 24A art-boundary audit passed: production base anatomy resolves without garments, character/equipment identities remain distinct on shared pages, clothing-baked canonical names and legacy production paths are absent, and garment resolution cannot replace anatomy.'
 Write-Host 'Prompt 25 wardrobe audit passed: original paired production art, typed reusable items/presets, independent slots/layers/coverage, topology-aware bindings, transactional cycling, cosmetic effects, long-mesh reuse, focus-safe controls, unified submission, and allocation/resource-free steady state.'
 Write-Host 'Prompt 25A visual-correction audit passed: re-authored separated anatomy, view spacing, joint overlap, connector layers, alpha-tight wardrobe regions, semantic footwear registration, bounded D3D captures, and focused deterministic coverage.'
+Write-Host 'Prompt 25B art-correction audit passed: real forearm/shin assets, bounded alpha/aspect checks, deterministic bilateral mirroring, authoritative single-pass side projection, corrected connector order, D3D comparison captures, and unchanged unified rendering ownership.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

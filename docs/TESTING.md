@@ -296,7 +296,7 @@ The GPU-backed acceptance route is:
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --scripted-input --frames 360
 ```
 
-The route executes exactly 1,440 fixed ticks. Its runtime evidence must include front idle, left and right side movement, preserved left facing while front, jump/rise/fall/land, bald/buzz switching, female front/side states, breathing, long-hair displacement, both debug overrides, side-view handshake ownership, completion cleanup, and return to front. Prompt 24A startup also validates the anatomy/clothing boundary over the actual page bindings and logs the distinct male/female front torso and vest region IDs. The final two-character frame must retain two real art pages, 68 regions, 96 bindings, 46 submitted sprites, two texture-page ranges/draws, no update/submission/queue allocation after stabilization, and no steady-state GPU-resource delta.
+The route executes exactly 1,440 fixed ticks. Its runtime evidence must include front idle, left and right side movement, preserved left facing while front, jump/rise/fall/land, bald/buzz switching, female front/side states, breathing, long-hair displacement, both debug overrides, side-view handshake ownership, completion cleanup, and return to front. Prompt 24A startup also validates the anatomy/clothing boundary over the actual page bindings and logs the distinct male/female front torso and vest region IDs. The final two-character frame must retain three real art pages, 68 regions, 96 bindings, bounded texture-page ranges/draws, no update/submission/queue allocation after stabilization, and no steady-state GPU-resource delta.
 
 Manual visual acceptance is separate from the automated verdict. Inspect both source atlases at native resolution and run the interactive route to check coherent silhouettes, face readability, hair shape, consistent lighting/scale, shoulder/elbow/wrist/hip/knee/ankle/neck overlaps, front semantic ordering, movement articulation, breathing, hair response, view transitions, and handshake contact. For Prompt 24A, inspect male/female front and side captures from the live D3D12 window and confirm bare neutral limbs/feet, featureless torso/pelvis base-presentation surfaces, and preserved joints/overlaps. Automated success proves routing and invariants but cannot by itself prove subjective joint/art quality.
 
@@ -314,7 +314,7 @@ The focused suite validates all item/preset/component IDs, complete and distinct
 The D3D12 route must report:
 
 - `direct3d12` selected and DXIL agreement;
-- five decoded production art pages and two persistent skirt mesh definitions;
+- six decoded production art pages and two persistent skirt mesh definitions;
 - 15 presets, 30 items, 36 components, 72 wardrobe regions, and 72 bindings;
 - every preset observed in front and side, including both mandatory outfits;
 - custom recombination, headwear/hair, long mesh/secondary motion, legwear, footwear, breathing, locomotion, jump, land, and unchanged male evidence;
@@ -350,3 +350,41 @@ before/after evidence. `PROMPT25A_DECISION_RECORD.md` records the root causes,
 rejected iterations, image-generation provenance, architecture decisions, and
 minor remaining visual limitations. This scripted/GPU evidence does not claim
 physical keyboard input or manual window resizing.
+
+## Prompt 25B character-art gate
+
+Run the two focused suites and the real-art alpha audit before the aggregate
+regression:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-presentation
+& '.\.deps\zig-0.16.0\zig.exe' build test-wardrobe
+& '.\tools\audit_p25b_art.ps1'
+```
+
+The art audit opens the production component PNG and both production base
+pages. It checks all 28 corrected pelvis/arm/hand/leg/foot regions plus the two
+re-authored front torso regions for exact atlas bounds, visible alpha, packing
+margin, unique source rectangles where applicable, compact shoulder
+silhouettes, and authored-to-alpha aspect ratio in the 0.82..1.20 band. Focused
+tests additionally prove distinct forearm/shin UVs, rig-length and pivot
+bounds, one authoritative-to-side root compression, deterministic front
+anatomy mirroring, forearm-over-upper-arm elbow overlap, pelvis-behind-thigh
+overlap, corrected female hand size, allocation-free submission, and the
+existing anatomy/equipment ownership boundary.
+
+The bilateral-equipment regression calculates actual transformed shoe centers.
+It requires opposite signed X scales, reflected pivots `0.05/0.95`, equal
+absolute widths, and at least `0.35 m` center separation for semantic feet
+authored `0.40 m` apart. This rejects the former approximately `0.08 m`
+pile-up even when the two equipment bindings themselves are correct.
+
+Visual acceptance uses the same Prompt 25A D3D12 route after rebuilding. The
+accepted Prompt 25B hard-gate captures are retained under
+`zig-out/p25b_followup_final`; the earlier comparison remains under
+`zig-out/p25b_visual`. The
+same-scale before/after review is
+`zig-out/p25b_visual/prompt25a_vs_prompt25b_same_scale.png`. Inspect neutral
+front/side first, then clothed front/side, stride, jump rise, and jump fall.
+`PROMPT25B_DECISION_RECORD.md` records source identities, actual region
+rectangles, causes, corrections, and remaining visual limits.

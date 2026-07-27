@@ -244,6 +244,48 @@ test "Prompt 25A wardrobe pivots match semantic anchor ends" {
     );
 }
 
+test "Prompt 25B bilateral front equipment follows anatomy mirroring" {
+    var scene = try wardrobe_demo.Scene.init(std.testing.allocator);
+    defer scene.deinit();
+    try scene.selectPreset(try scene.catalog.presetId("ivory_blouse_red_shorts"));
+    try scene.female.setPresentationOverride(.force_front);
+
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        128,
+        120,
+        8,
+        wardrobe_demo.combined_art_page_count + 1,
+    );
+    defer queue.deinit();
+    queue.beginFrame();
+    _ = try scene.wardrobe.submit(&scene.female, &queue);
+
+    const shoe_spec = try visualSpec("crimson_strap_shoe");
+    const shoe_visual = try scene.wardrobe_art_definition.resolve(shoe_spec.semantic, true);
+    var shoes: [2]@TypeOf(queue.sprite_submissions[0]) = undefined;
+    var shoe_count: usize = 0;
+    for (queue.sprite_submissions[0..queue.sprite_count]) |submitted| {
+        if (!std.meta.eql(submitted.uv_rect, shoe_visual.uv_rect)) continue;
+        if (shoe_count >= shoes.len) return error.TooManyFrontShoes;
+        shoes[shoe_count] = submitted;
+        shoe_count += 1;
+    }
+    try std.testing.expectEqual(shoes.len, shoe_count);
+    try std.testing.expect(shoes[0].scale[0] * shoes[1].scale[0] < 0);
+    try std.testing.expectApproxEqAbs(@abs(shoes[0].scale[0]), @abs(shoes[1].scale[0]), 0.000001);
+    const left_shoe = if (shoes[0].scale[0] < 0) shoes[0] else shoes[1];
+    const right_shoe = if (shoes[0].scale[0] > 0) shoes[0] else shoes[1];
+    try std.testing.expectApproxEqAbs(@as(f32, 0.05), left_shoe.pivot[0], 0.000001);
+    try std.testing.expectApproxEqAbs(@as(f32, 0.95), right_shoe.pivot[0], 0.000001);
+    const left_center = submissionPoint(left_shoe, .{ 0.5, left_shoe.pivot[1] });
+    const right_center = submissionPoint(right_shoe, .{ 0.5, right_shoe.pivot[1] });
+    // The semantic foot bindings are 0.40 m apart in this neutral front pose.
+    // A 0.35 m lower bound allows f32 composition and morphology while
+    // rejecting the old 0.08 m pile-up caused by retaining pivot.x = 0.95.
+    try std.testing.expect(@abs(left_center[0] - right_center[0]) >= 0.35);
+}
+
 test "Prompt 25A acceptance schedule is deterministic and allocation free" {
     var storage: [4 * 1024 * 1024]u8 = undefined;
     var fixed = std.heap.FixedBufferAllocator.init(&storage);
@@ -480,7 +522,7 @@ test "long garment mesh and secondary state clear on replacement and reset retur
         256,
         224,
         32,
-        6,
+        wardrobe_demo.combined_art_page_count + 1,
     );
     defer queue.deinit();
     try scene.selectPreset(try scene.catalog.presetId("garnet_formal"));
@@ -535,7 +577,7 @@ test "front and side preset cycling and submission allocate nothing after initia
         256,
         224,
         32,
-        6,
+        wardrobe_demo.combined_art_page_count + 1,
     );
     defer queue.deinit();
     queue.markStabilized();
@@ -604,7 +646,7 @@ test "Prompt 25 scene composes base anatomy and wardrobe through one bounded que
         256,
         224,
         32,
-        6,
+        wardrobe_demo.combined_art_page_count + 1,
     );
     defer queue.deinit();
 

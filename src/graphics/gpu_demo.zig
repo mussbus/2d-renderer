@@ -2727,13 +2727,18 @@ pub const GpuDemo = struct {
                 @intFromEnum(female_front_base.region_id),
                 @intFromEnum(female_front_vest.region_id),
             });
-            std.log.info("Art: pages=2 male={d}x{d}/{s} female={d}x{d}/{s} regions={d} bindings={d} sprites={d} ranges={d} draws={d}", .{
+            const component_page = self.art_texture_pages[2] orelse
+                return error.MissingArtTexturePage;
+            std.log.info("Art: pages=3 male={d}x{d}/{s} female={d}x{d}/{s} components={d}x{d}/{s} regions={d} bindings={d} sprites={d} ranges={d} draws={d}", .{
                 male_page.width,
                 male_page.height,
                 @tagName(male_page.sampling),
                 female_page.width,
                 female_page.height,
                 @tagName(female_page.sampling),
+                component_page.width,
+                component_page.height,
+                @tagName(component_page.sampling),
                 scene.art_definition.art.regions.len,
                 scene.art_definition.art.bindings.len,
                 unified_metrics.submitted_sprites,
@@ -2748,12 +2753,13 @@ pub const GpuDemo = struct {
                 self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
                 gpu_resource_delta,
             });
-            if (self.image_decode_metrics.decode_attempts != 2 or
-                self.image_decode_metrics.successful_decodes != 2 or
+            if (self.image_decode_metrics.decode_attempts != 3 or
+                self.image_decode_metrics.successful_decodes != 3 or
                 self.image_decode_metrics.decoded_bytes !=
-                    (1600 * 983 + 1599 * 984) * 4 or
-                self.art_texture_page_count != 2 or self.texture_page_count != 3 or
+                    (1600 * 983 + 1599 * 984 + 1792 * 1024) * 4 or
+                self.art_texture_page_count != 3 or self.texture_page_count != 4 or
                 male_page.sampling != .nearest or female_page.sampling != .nearest or
+                component_page.sampling != .nearest or
                 runtime_allocation_delta != 0 or pose_evaluation_allocations != 0 or
                 humanoid_submission_allocations != 0 or
                 self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
@@ -2785,11 +2791,13 @@ pub const GpuDemo = struct {
                 return error.MissingArtTexturePage;
             const female_page = self.art_texture_pages[1] orelse
                 return error.MissingArtTexturePage;
-            const upper_page = self.art_texture_pages[2] orelse
+            const component_page = self.art_texture_pages[2] orelse
                 return error.MissingArtTexturePage;
-            const layers_page = self.art_texture_pages[3] orelse
+            const upper_page = self.art_texture_pages[3] orelse
                 return error.MissingArtTexturePage;
-            const lower_page = self.art_texture_pages[4] orelse
+            const layers_page = self.art_texture_pages[4] orelse
+                return error.MissingArtTexturePage;
+            const lower_page = self.art_texture_pages[5] orelse
                 return error.MissingArtTexturePage;
             if (mode == .visual_quality) {
                 const evidence = scene.visual_quality_evidence;
@@ -2869,7 +2877,7 @@ pub const GpuDemo = struct {
                 );
             }
             std.log.info(
-                "Rendering: art_pages=5 configured_pages=6 decoded_files={d} sprites={d} meshes={d} sprite_ranges={d} mesh_ranges={d} sprite_draws={d} mesh_draws={d}",
+                "Rendering: art_pages=6 configured_pages=7 decoded_files={d} sprites={d} meshes={d} sprite_ranges={d} mesh_ranges={d} sprite_draws={d} mesh_draws={d}",
                 .{
                     self.image_decode_metrics.successful_decodes,
                     unified_metrics.submitted_sprites,
@@ -2892,14 +2900,16 @@ pub const GpuDemo = struct {
                 },
             );
             const expected_decoded_bytes =
-                (1600 * 983 + 1599 * 984) * 4 + 3 * 1536 * 1024 * 4;
-            if (self.image_decode_metrics.decode_attempts != 5 or
-                self.image_decode_metrics.successful_decodes != 5 or
+                (1600 * 983 + 1599 * 984 + 1792 * 1024) * 4 +
+                3 * 1536 * 1024 * 4;
+            if (self.image_decode_metrics.decode_attempts != 6 or
+                self.image_decode_metrics.successful_decodes != 6 or
                 self.image_decode_metrics.decoded_bytes != expected_decoded_bytes or
-                self.art_texture_page_count != 5 or
-                self.texture_page_count != 6 or
+                self.art_texture_page_count != 6 or
+                self.texture_page_count != 7 or
                 male_page.sampling != .nearest or
                 female_page.sampling != .nearest or
+                component_page.sampling != .nearest or
                 upper_page.sampling != .linear or
                 layers_page.sampling != .linear or
                 lower_page.sampling != .linear or

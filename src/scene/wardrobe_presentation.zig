@@ -212,16 +212,31 @@ pub const Presentation = struct {
                 });
             } else {
                 const sprite_transform = try humanoid.spriteTransform(try resolved.world());
-                const world_size = sprite_transform.signed_scale.componentMul(.{
+                var world_size = sprite_transform.signed_scale.componentMul(.{
                     .x = selected.authored_size[0],
                     .y = selected.authored_size[1],
                 });
+                var pivot = selected.pivot;
+                if (view == .front) {
+                    const bound_to_left_part = switch (visual.source) {
+                        .anatomy_part => |part_id| std.mem.startsWith(
+                            u8,
+                            anatomy_definition.part_instances[part_id.index()].stable_id.slice(),
+                            "left_",
+                        ),
+                        .attachment_point => false,
+                    };
+                    if (bound_to_left_part) {
+                        world_size.x = -world_size.x;
+                        pivot[0] = 1.0 - pivot[0];
+                    }
+                }
                 _ = try queue.submitSprite(.{
                     .world_position = sprite_transform.world_position.toArray(),
                     .rotation = sprite_transform.rotation_radians +
                         restRotation(binding.anchor, view, instance.facing),
                     .scale = world_size.toArray(),
-                    .pivot = selected.pivot,
+                    .pivot = pivot,
                     .uv_rect = selected.uv_rect,
                     .tint = .{ 1, 1, 1, 1 },
                     .texture_page = presentation.renderer_page_offset + selected.texture_page,

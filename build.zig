@@ -38,6 +38,7 @@ pub fn build(b: *std.Build) void {
     const energy_art_atlas = "assets/art/p23_energy_atlas.png";
     const male_character_atlas = "assets/art/p25a_male_base_anatomy_atlas.png";
     const female_character_atlas = "assets/art/p25a_female_base_anatomy_atlas.png";
+    const character_component_atlas = "assets/art/p25b_anatomy_components_atlas.png";
     const wardrobe_upper_atlas = "assets/art/p25_wardrobe_upper_atlas.png";
     const wardrobe_layers_atlas = "assets/art/p25_wardrobe_layers_atlas.png";
     const wardrobe_lower_atlas = "assets/art/p25_wardrobe_lower_atlas.png";
@@ -55,6 +56,7 @@ pub fn build(b: *std.Build) void {
         energy_art_atlas,
         male_character_atlas,
         female_character_atlas,
+        character_component_atlas,
         wardrobe_upper_atlas,
         wardrobe_layers_atlas,
         wardrobe_lower_atlas,
@@ -129,6 +131,7 @@ pub fn build(b: *std.Build) void {
     const install_energy_art_atlas = b.addInstallFileWithDir(b.path(energy_art_atlas), .bin, "art/p23_energy_atlas.png");
     const install_male_character_atlas = b.addInstallFileWithDir(b.path(male_character_atlas), .bin, "art/p25a_male_base_anatomy_atlas.png");
     const install_female_character_atlas = b.addInstallFileWithDir(b.path(female_character_atlas), .bin, "art/p25a_female_base_anatomy_atlas.png");
+    const install_character_component_atlas = b.addInstallFileWithDir(b.path(character_component_atlas), .bin, "art/p25b_anatomy_components_atlas.png");
     const install_wardrobe_upper_atlas = b.addInstallFileWithDir(b.path(wardrobe_upper_atlas), .bin, "art/p25_wardrobe_upper_atlas.png");
     const install_wardrobe_layers_atlas = b.addInstallFileWithDir(b.path(wardrobe_layers_atlas), .bin, "art/p25_wardrobe_layers_atlas.png");
     const install_wardrobe_lower_atlas = b.addInstallFileWithDir(b.path(wardrobe_lower_atlas), .bin, "art/p25_wardrobe_lower_atlas.png");
@@ -140,6 +143,7 @@ pub fn build(b: *std.Build) void {
     b.getInstallStep().dependOn(&install_energy_art_atlas.step);
     b.getInstallStep().dependOn(&install_male_character_atlas.step);
     b.getInstallStep().dependOn(&install_female_character_atlas.step);
+    b.getInstallStep().dependOn(&install_character_component_atlas.step);
     b.getInstallStep().dependOn(&install_wardrobe_upper_atlas.step);
     b.getInstallStep().dependOn(&install_wardrobe_layers_atlas.step);
     b.getInstallStep().dependOn(&install_wardrobe_lower_atlas.step);

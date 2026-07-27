@@ -116,7 +116,7 @@ test "character art definitions cover both views bald buzz cut and long hair" {
     defer definition.deinit();
     const male = try character_art.Presentation.init(&art, &definition, .male, 1);
     const female = try character_art.Presentation.init(&art, &definition, .female, 1);
-    try std.testing.expectEqual(@as(usize, 2), art.art.pages.len);
+    try std.testing.expectEqual(character_art.texture_page_count, art.art.pages.len);
     try std.testing.expectEqual(@as(usize, 68), art.art.regions.len);
     try std.testing.expectEqual(@as(usize, 96), art.art.bindings.len);
     try std.testing.expect(male.hasHair(.bald));
@@ -126,7 +126,7 @@ test "character art definitions cover both views bald buzz cut and long hair" {
     try std.testing.expect(!female.hasHair(.buzz_cut));
 }
 
-test "Prompt 25A production anatomy pages and regions have exact valid bounds" {
+test "Prompt 25B production anatomy pages and regions have exact valid bounds" {
     try std.testing.expectEqualStrings(
         "art/p25a_male_base_anatomy_atlas.png",
         character_art.page_inputs[0].asset_path,
@@ -139,6 +139,12 @@ test "Prompt 25A production anatomy pages and regions have exact valid bounds" {
     );
     try std.testing.expectEqual(@as(u32, 1599), character_art.page_inputs[1].expected_width);
     try std.testing.expectEqual(@as(u32, 984), character_art.page_inputs[1].expected_height);
+    try std.testing.expectEqualStrings(
+        "art/p25b_anatomy_components_atlas.png",
+        character_art.page_inputs[2].asset_path,
+    );
+    try std.testing.expectEqual(@as(u32, 1792), character_art.page_inputs[2].expected_width);
+    try std.testing.expectEqual(@as(u32, 1024), character_art.page_inputs[2].expected_height);
 
     for (character_art.region_inputs) |region| {
         const page = for (character_art.page_inputs) |candidate| {
@@ -153,6 +159,163 @@ test "Prompt 25A production anatomy pages and regions have exact valid bounds" {
         try std.testing.expect(region.pivot[0] >= 0 and region.pivot[0] <= 1);
         try std.testing.expect(region.pivot[1] >= 0 and region.pivot[1] <= 1);
     }
+}
+
+test "Prompt 25B real component bindings are distinct and preserve authored aspect" {
+    var art = try character_art.Definition.init(std.testing.allocator);
+    defer art.deinit();
+
+    for (std.enums.values(character_art.Style)) |style| {
+        for (std.enums.values(presentation_view.View)) |view| {
+            const upper_arm = try art.resolveBaseAnatomy(style, .left_upper_arm, view);
+            const forearm = try art.resolveBaseAnatomy(style, .left_forearm, view);
+            const hand = try art.resolveBaseAnatomy(style, .left_hand, view);
+            const thigh = try art.resolveBaseAnatomy(style, .left_thigh, view);
+            const shin = try art.resolveBaseAnatomy(style, .left_shin, view);
+            const foot = try art.resolveBaseAnatomy(style, .left_foot, view);
+            const pelvis = try art.resolveBaseAnatomy(style, .pelvis, view);
+
+            try std.testing.expect(upper_arm.region_id != forearm.region_id);
+            try std.testing.expect(!std.meta.eql(upper_arm.uv_rect, forearm.uv_rect));
+            try std.testing.expect(thigh.region_id != shin.region_id);
+            try std.testing.expect(!std.meta.eql(thigh.uv_rect, shin.uv_rect));
+            try std.testing.expect(!std.meta.eql(shin.uv_rect, foot.uv_rect));
+            for ([_]@TypeOf(upper_arm){
+                upper_arm,
+                forearm,
+                hand,
+                thigh,
+                shin,
+                foot,
+                pelvis,
+            }) |component| {
+                try std.testing.expectEqual(@as(u32, 2), component.texture_page);
+            }
+        }
+    }
+
+    for (character_art.region_inputs) |region| {
+        if (region.page_id != character_art.component_page_id and
+            !isCoreBaseRegionName(region.stable_name))
+        {
+            continue;
+        }
+        const source_aspect =
+            @as(f32, @floatFromInt(region.source.width)) /
+            @as(f32, @floatFromInt(region.source.height));
+        const authored_aspect = region.authored_size[0] / region.authored_size[1];
+        const aspect_ratio = authored_aspect / source_aspect;
+        // The 0.82..1.20 band permits only modest silhouette cleanup around
+        // alpha-tight padding; it rejects the old 0.26 hand and 2.45 pelvis distortions.
+        try std.testing.expect(aspect_ratio >= 0.82 and aspect_ratio <= 1.20);
+    }
+}
+
+test "Prompt 25B component sizes and pivots follow rig attachment lengths" {
+    var art = try character_art.Definition.init(std.testing.allocator);
+    defer art.deinit();
+
+    for (std.enums.values(character_art.Style)) |style| {
+        for (std.enums.values(presentation_view.View)) |view| {
+            const upper_arm = try art.resolveBaseAnatomy(style, .left_upper_arm, view);
+            const forearm = try art.resolveBaseAnatomy(style, .left_forearm, view);
+            const hand = try art.resolveBaseAnatomy(style, .left_hand, view);
+            const thigh = try art.resolveBaseAnatomy(style, .left_thigh, view);
+            const shin = try art.resolveBaseAnatomy(style, .left_shin, view);
+            const foot = try art.resolveBaseAnatomy(style, .left_foot, view);
+
+            const upper_length = if (view == .side)
+                upper_arm.authored_size[0]
+            else
+                upper_arm.authored_size[1];
+            const forearm_length = if (view == .side)
+                forearm.authored_size[0]
+            else
+                forearm.authored_size[1];
+            try std.testing.expect(upper_length >= 0.65 and upper_length <= 0.75);
+            try std.testing.expect(forearm_length >= 0.55 and forearm_length <= 0.65);
+            try std.testing.expect(thigh.authored_size[1] >= 0.90 and thigh.authored_size[1] <= 1.05);
+            try std.testing.expect(shin.authored_size[1] >= 0.85 and shin.authored_size[1] <= 0.96);
+            try std.testing.expect(foot.authored_size[0] >= 0.35 and foot.authored_size[0] <= 0.45);
+
+            if (view == .side) {
+                try std.testing.expect(upper_arm.pivot[0] <= 0.10);
+                try std.testing.expect(forearm.pivot[0] <= 0.15);
+                try std.testing.expect(hand.pivot[0] <= 0.15);
+            } else {
+                try std.testing.expect(upper_arm.pivot[1] >= 0.90);
+                try std.testing.expect(forearm.pivot[1] >= 0.90);
+                try std.testing.expect(hand.pivot[1] >= 0.90);
+            }
+            try std.testing.expect(thigh.pivot[1] >= 0.90);
+            try std.testing.expect(shin.pivot[1] >= 0.90);
+            try std.testing.expect(foot.pivot[0] <= 0.15);
+        }
+    }
+}
+
+test "Prompt 25B final front joins use authored overlap without pose compression" {
+    var art = try character_art.Definition.init(std.testing.allocator);
+    defer art.deinit();
+
+    const male_torso = try art.resolveBaseAnatomy(.male, .torso, .front);
+    const female_torso = try art.resolveBaseAnatomy(.female, .torso, .front);
+    const male_pelvis = try art.resolveBaseAnatomy(.male, .pelvis, .front);
+    const male_thigh = try art.resolveBaseAnatomy(.male, .left_thigh, .front);
+    const female_hand = try art.resolveBaseAnatomy(.female, .left_hand, .front);
+
+    try std.testing.expectEqual([2]f32{ 1.06, 1.30 }, male_torso.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.95, 1.30 }, female_torso.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.76, 1.05 }, male_pelvis.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.5, 0.38 }, male_pelvis.pivot);
+    try std.testing.expectEqual([2]f32{ 0.36, 1.00 }, male_thigh.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.17, 0.34 }, female_hand.authored_size);
+
+    try std.testing.expect(
+        character_art.frontPresentationLayer(.left_forearm) >
+            character_art.frontPresentationLayer(.left_upper_arm),
+    );
+    try std.testing.expect(
+        character_art.frontPresentationLayer(.right_forearm) >
+            character_art.frontPresentationLayer(.right_upper_arm),
+    );
+    try std.testing.expect(
+        character_art.frontPresentationLayer(.pelvis) <
+            character_art.frontPresentationLayer(.left_thigh),
+    );
+    try std.testing.expect(
+        character_art.frontPresentationLayer(.pelvis) <
+            character_art.frontPresentationLayer(.right_thigh),
+    );
+    try std.testing.expect(
+        character_art.frontPresentationLayer(.torso) >
+            character_art.frontPresentationLayer(.left_thigh),
+    );
+}
+
+test "Prompt 25B side projection applies one root compression from the authoritative pose" {
+    var scene = try modular_body_demo.Scene.init(std.testing.allocator);
+    defer scene.deinit();
+    const male = &scene.conventional_male;
+    const definition = &male.definition.skeleton_definition;
+    const source = male.character.local_and_world_pose;
+    const projection = try presentation_pose.FrontProjection.initSide(
+        definition,
+        source,
+        male.definition.visual_definition,
+        male.character.appearance_runtime,
+        male.world_position,
+        false,
+    );
+    const upper_index = try definition.boneIndex(.right_upper_arm);
+    const source_upper = source.world_transforms[upper_index].translationPart();
+    const root_x = male.world_position.x;
+    const adjustment_x = (source_upper.x - root_x) * (0.68 - 1.0);
+    const tolerance: f32 = 0.000001; // Matrix composition is the same f32 path, so six decimals is ample.
+    try std.testing.expect(projection.bone_world[upper_index].translationPart().approxEqAbs(
+        .{ .x = source_upper.x + adjustment_x, .y = source_upper.y },
+        tolerance,
+    ));
 }
 
 test "actual base anatomy resolves without a garment and garment identity cannot replace anatomy" {
@@ -200,6 +363,11 @@ test "front layers are explicit stable and independent of side facing" {
     try std.testing.expectEqual(@as(u16, 30), character_art.frontBodyPartLayer(.pelvis));
     try std.testing.expectEqual(@as(u16, 31), character_art.frontBodyPartLayer(.torso));
     try std.testing.expectEqual(@as(u16, 40), character_art.frontBodyPartLayer(.head));
+    try std.testing.expectEqual(@as(u16, 23), character_art.frontPresentationLayer(.left_forearm));
+    try std.testing.expectEqual(@as(u16, 27), character_art.frontPresentationLayer(.right_forearm));
+    try std.testing.expectEqual(@as(u16, 11), character_art.frontPresentationLayer(.left_thigh));
+    try std.testing.expectEqual(@as(u16, 15), character_art.frontPresentationLayer(.right_thigh));
+    try std.testing.expectEqual(@as(u16, 9), character_art.frontPresentationLayer(.pelvis));
 }
 
 test "interaction owns side view and cancellation releases both participants to front" {
@@ -262,7 +430,13 @@ test "Q input cycles presentation only and art submission remains bounded in bot
     var art = try character_art.Definition.init(std.testing.allocator);
     defer art.deinit();
     const male_art = try character_art.Presentation.init(&art, &scene.definition, .male, 1);
-    var queue = try render_queue.UnifiedRenderQueue.init(std.testing.allocator, 64, 62, 2, 3);
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        64,
+        62,
+        2,
+        1 + character_art.texture_page_count,
+    );
     defer queue.deinit();
 
     var builder = input.SnapshotBuilder{};
@@ -282,6 +456,49 @@ test "Q input cycles presentation only and art submission remains bounded in bot
     try std.testing.expect(front_count > side_count);
     const prepared = queue.prepare();
     try std.testing.expectEqual(@as(usize, front_count), prepared.sprites.len);
-    try std.testing.expectEqual(@as(u32, 1), queue.frame_metrics.sprite_ranges);
+    try std.testing.expect(queue.frame_metrics.sprite_ranges >= 2);
     try std.testing.expectEqual(@as(u32, 0), queue.frame_metrics.sprite_draws);
+
+    for ([_][2]humanoid.AttachmentSemantic{
+        .{ .left_upper_arm, .right_upper_arm },
+        .{ .left_forearm, .right_forearm },
+        .{ .left_hand, .right_hand },
+        .{ .left_thigh, .right_thigh },
+        .{ .left_shin, .right_shin },
+        .{ .left_foot, .right_foot },
+    }) |pair| {
+        const left = spriteForLayer(prepared.sprites, character_art.frontPresentationLayer(pair[0])) orelse
+            return error.MissingLeftFrontComponent;
+        const right = spriteForLayer(prepared.sprites, character_art.frontPresentationLayer(pair[1])) orelse
+            return error.MissingRightFrontComponent;
+        try std.testing.expect(left.scale[0] * right.scale[0] < 0);
+        try std.testing.expectApproxEqAbs(@abs(left.scale[0]), @abs(right.scale[0]), 0.000001);
+    }
+}
+
+fn isCoreBaseRegionName(name: []const u8) bool {
+    for ([_][]const u8{
+        "_head",
+        "_torso",
+        "_pelvis",
+        "_upper_arm",
+        "_forearm",
+        "_hand",
+        "_thigh",
+        "_shin",
+        "_foot",
+    }) |suffix| {
+        if (std.mem.endsWith(u8, name, suffix)) return true;
+    }
+    return false;
+}
+
+fn spriteForLayer(
+    sprites: anytype,
+    layer: u16,
+) ?@TypeOf(sprites[0]) {
+    for (sprites) |submitted| {
+        if (submitted.order.body_part_layer == layer) return submitted;
+    }
+    return null;
 }

@@ -27,7 +27,9 @@ The shared page is intentional: texture packing controls batching, while binding
 - Removing or replacing a garment cannot remove or replace an anatomy binding.
 - Hair remains independently addressable presentation content.
 - The existing fixed-tick simulation, animation, physics, IK, interaction, appearance, global render queue, and D3D12 resource model are unchanged.
-- The corrected pack still uses two pages and the same per-character submission path; only four initialization-time art bindings were added.
+- Prompt 24A used two style pages and added only four initialization-time
+  garment bindings. Prompt 25B later added one co-packed anatomy-component page
+  without changing the same per-character submission or global queue path.
 
 ## Implementation note
 

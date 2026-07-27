@@ -5,7 +5,6 @@ const pose = @import("pose");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
 
-const front_arm_x_compression: f32 = 0.90;
 const side_arm_x_compression: f32 = 0.68;
 
 pub const FrontProjection = struct {
@@ -28,85 +27,66 @@ pub const FrontProjection = struct {
         appearance_runtime: appearance.Runtime,
         world_position: math.Vec2,
     ) !FrontProjection {
+        try validateInputs(
+            skeleton_definition,
+            source_pose,
+            appearance_definition,
+            appearance_runtime,
+            world_position,
+        );
+        var remapped_locals = [_]math.Transform2D{math.Transform2D.identity()} ** skeleton.maximum_bones;
+        @memcpy(
+            remapped_locals[0..skeleton_definition.boneCount()],
+            source_pose.local_transforms,
+        );
+        try remapProjectedArmRest(skeleton_definition, &remapped_locals);
+        var projection = try initBoneWorlds(
+            skeleton_definition,
+            appearance_definition,
+            world_position,
+            &remapped_locals,
+        );
+        try projection.rebuildDerivedWorlds(
+            appearance_definition,
+            appearance_runtime,
+        );
+        return projection;
+    }
+
+    fn validateInputs(
+        skeleton_definition: *const skeleton.SkeletonDefinition,
+        source_pose: pose.Pose,
+        appearance_definition: appearance.DefinitionView,
+        appearance_runtime: appearance.Runtime,
+        world_position: math.Vec2,
+    ) !void {
         try source_pose.validateCompatibility(skeleton_definition);
         try appearance_runtime.validateCompatibility(appearance_definition);
         if (!source_pose.evaluated) return error.PoseNotEvaluated;
         if (!world_position.isFinite()) return error.InvalidNonFiniteTransform;
+    }
 
+    fn initBoneWorlds(
+        skeleton_definition: *const skeleton.SkeletonDefinition,
+        appearance_definition: appearance.DefinitionView,
+        world_position: math.Vec2,
+        locals: *const [skeleton.maximum_bones]math.Transform2D,
+    ) !FrontProjection {
         var projection = FrontProjection{
             .bone_count = skeleton_definition.boneCount(),
             .attachment_point_count = appearance_definition.attachment_points.len,
             .module_joint_count = appearance_definition.module_joints.len,
             .module_socket_count = appearance_definition.module_sockets.len,
         };
-        var remapped_locals = [_]math.Transform2D{math.Transform2D.identity()} ** skeleton.maximum_bones;
-        @memcpy(
-            remapped_locals[0..skeleton_definition.boneCount()],
-            source_pose.local_transforms,
-        );
-        try remapArm(
-            skeleton_definition,
-            &remapped_locals,
-            .left_upper_arm,
-            -std.math.pi / 2.0,
-            true,
-        );
-        try remapArm(
-            skeleton_definition,
-            &remapped_locals,
-            .right_upper_arm,
-            -std.math.pi / 2.0,
-            false,
-        );
-        try remapArm(
-            skeleton_definition,
-            &remapped_locals,
-            .left_forearm,
-            0,
-            true,
-        );
-        try remapArm(
-            skeleton_definition,
-            &remapped_locals,
-            .right_forearm,
-            0,
-            false,
-        );
-        try remapArm(
-            skeleton_definition,
-            &remapped_locals,
-            .left_hand,
-            0,
-            true,
-        );
-        try remapArm(
-            skeleton_definition,
-            &remapped_locals,
-            .right_hand,
-            0,
-            false,
-        );
-
         const character_matrix = math.Mat3.translation(world_position);
         for (skeleton_definition.evaluation_order) |bone_index| {
             const bone = skeleton_definition.bones[bone_index];
-            const local_matrix = try remapped_locals[bone_index].localToParent();
+            const local_matrix = try locals[bone_index].localToParent();
             projection.bone_world[bone_index] = if (bone.parent_index == skeleton.no_parent)
                 character_matrix.mul(local_matrix)
             else
                 projection.bone_world[bone.parent_index].mul(local_matrix);
         }
-
-        try compressArmRoots(
-            &projection,
-            skeleton_definition,
-            world_position.x,
-            front_arm_x_compression,
-        );
-        try projection.rebuildDerivedWorlds(
-            appearance_definition,
-            appearance_runtime,
-        );
         return projection;
     }
 
@@ -154,12 +134,25 @@ pub const FrontProjection = struct {
         world_position: math.Vec2,
         reflect_x: bool,
     ) !FrontProjection {
-        var projection = try FrontProjection.init(
+        try validateInputs(
             skeleton_definition,
             source_pose,
             appearance_definition,
             appearance_runtime,
             world_position,
+        );
+        var authoritative_locals =
+            [_]math.Transform2D{math.Transform2D.identity()} ** skeleton.maximum_bones;
+        @memcpy(
+            authoritative_locals[0..skeleton_definition.boneCount()],
+            source_pose.local_transforms,
+        );
+        try remapProjectedArmRest(skeleton_definition, &authoritative_locals);
+        var projection = try initBoneWorlds(
+            skeleton_definition,
+            appearance_definition,
+            world_position,
+            &authoritative_locals,
         );
         try compressArmRoots(
             &projection,
@@ -293,6 +286,18 @@ pub const FrontAnatomyProjection = struct {
         return projection.part_binding_world[part_id.index()];
     }
 };
+
+fn remapProjectedArmRest(
+    definition: *const skeleton.SkeletonDefinition,
+    locals: *[skeleton.maximum_bones]math.Transform2D,
+) !void {
+    try remapArm(definition, locals, .left_upper_arm, -std.math.pi / 2.0, true);
+    try remapArm(definition, locals, .right_upper_arm, -std.math.pi / 2.0, false);
+    try remapArm(definition, locals, .left_forearm, 0, true);
+    try remapArm(definition, locals, .right_forearm, 0, false);
+    try remapArm(definition, locals, .left_hand, 0, true);
+    try remapArm(definition, locals, .right_hand, 0, false);
+}
 
 fn remapArm(
     definition: *const skeleton.SkeletonDefinition,

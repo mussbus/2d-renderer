@@ -31,22 +31,52 @@ nearest-sampled atlases:
   anatomy, open overlap connectors, original long-hair art, and separate
   training-vest overlays.
 
+Prompt 25B adds `assets/art/p25b_anatomy_components_atlas.png`, 1792 by
+1024 RGBA. Its 28 alpha-tight regions replace the production pelvis, arm,
+hand, leg, and foot bindings for both styles and both views. It contains real
+forearm and calf/shin art rather than source aliases. Male/female heads,
+torsos, face features, hair, and training vests remain on the Prompt 25A pages.
+
 Before the correction, the torso pixels contained a top, arms contained sleeves/cuffs, pelvis and legs contained trousers/shorts/stockings, and feet contained shoes or boots. Those images are no longer build inputs or installed assets. The corrected canonical torso, upper arm, forearm, pelvis, thigh, shin, foot, and hand regions contain only base-form pixels. Arms, legs, hands, and feet are bare neutral anatomy. Torso and pelvis use a smooth, opaque, skin-adjacent permanent modesty surface with no fabric edge, seam, waistband, neckline, or equipped-garment identity. That surface is classified as `base_presentation`: it is not an equipment item, cannot be unequipped, and preserves a neutral silhouette beneath arbitrary future clothing.
 
-Each physical page deliberately co-packs 32 character/presentation regions and two garment-only vest regions. Across both pages, `character_art.zig` defines 68 tight atlas regions, 92 `.character` semantic/view bindings, and four `.equipment` vest bindings. Texture-page equality therefore proves batching policy only; the typed binding kind, semantic ID, and region ID retain ownership. `Presentation` resolves all canonical body parts without resolving a garment. `Definition.validateAnatomyClothingBoundary` rejects character/equipment identity crossover and verifies that the distinct torso and vest identities genuinely share each production page.
+The two style pages deliberately co-pack character presentation and garment-only
+vest regions; the component page co-packs male/female and side/front anatomy.
+Across all three pages, `character_art.zig` still defines 68 regions, 92
+`.character` semantic/view bindings, and four `.equipment` vest bindings.
+Texture-page location is batching policy only. Typed binding kind, semantic ID,
+and region ID retain ownership. `Presentation` resolves all canonical body
+parts without resolving a garment. `Definition.validateAnatomyClothingBoundary`
+rejects character/equipment identity crossover and verifies that the distinct
+torso and vest identities genuinely share their style page.
 
 Each style resolves side and front head, torso, pelvis, segmented arms/hands, segmented legs/feet, face features, and its supported hair. Bald means no active hair visual. Buzz cut and long hair are real view-specific regions. Authored region size, pivot, overlap, and rest rotation are content metadata; the engine does not impose pixel density or nearest sampling on future packs.
 
-Prompt 25A adds deliberate connector overlap and view-appropriate projected arm
-spacing. The side view still selects separately authored profile regions; the
-bounded projection only moves arm roots into a coherent profile silhouette.
-Male pelvis/thigh/shin order covers internal connector ends. These are
-presentation decisions over the existing semantic parts, not new anatomy,
-animation, or rendering paths.
+Prompt 25B removes front shoulder-root compression, mirrors anatomical left
+components in front view, and derives side projection directly from the
+authoritative pose before one view-specific arm remap and one root compression.
+The final front torsos use compact rounded torso-owned deltoids without
+sleeve-like arm stubs. Narrow curved-end upper-arm art is registered beneath
+them through transparent atlas lead-in rather than a second shoulder bulb,
+pose compression, or connector patch. Front forearms draw one local overlap
+step above their upper arms to cover the source edge without changing either
+joint transform. The male base-presentation pelvis uses a taller bridge behind
+the torso and re-authored thighs; it remains character anatomy rather than
+equipment.
+
+Pelvis/thigh/shin connector order applies to both styles. Front equipment bound
+to a left anatomy part mirrors both signed X scale and the authored horizontal
+pivot. Negating scale without complementing the pivot caused the rejected
+female shoes to collapse onto the same screen foot even though their semantic
+bindings were correct. The corrected submissions retain the separate left and
+right foot transforms. These are bounded presentation decisions over existing
+semantic parts, not new anatomy, animation, or rendering paths.
 
 The supplied reference images informed only broad adult proportions, build, limb length, and silhouette. No source pixels, logos, text, clothing catalog, or source-game assets were traced or copied. The third reference is explicit and was not supplied to image generation; only the brief's broad non-explicit body-shape requirements were used.
 
-Both characters submit through the existing global `UnifiedRenderQueue`. The final scripted frame has 46 sprites across the two atlas pages, two page ranges, and two indexed-instanced draws. There is no per-character renderer and no per-part command submission.
+Both characters submit through the existing global `UnifiedRenderQueue`. The
+final scripted frame has 46 sprites across three decoded atlas pages, four page
+ranges, and four indexed-instanced draws. There is no per-character renderer
+and no per-part command submission.
 
 ## Demonstration
 

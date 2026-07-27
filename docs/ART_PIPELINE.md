@@ -74,6 +74,7 @@ Prompt 24 additionally installs:
 ```text
 zig-out/bin/art/p25a_male_base_anatomy_atlas.png
 zig-out/bin/art/p25a_female_base_anatomy_atlas.png
+zig-out/bin/art/p25b_anatomy_components_atlas.png
 ```
 
 The Prompt 25A visual correction re-authored these as original 1600x983 male
@@ -89,7 +90,31 @@ to the generator, no source pixels were traced, and explicit reference material
 was deliberately excluded. The accepted/rejected generation paths and prompt
 set are recorded in `PROMPT25A_DECISION_RECORD.md`.
 
-`character_art.zig` supplies 68 tight atlas rectangles: 64 body/face/hair rectangles plus four garment-only rectangles. Its 96 bindings comprise 92 `.character` bindings and four `.equipment` bindings. The two kinds intentionally resolve regions from the same two pages, proving that packing does not establish semantic ownership. Region metadata defines each part's authored dimensions and pivot. Pixel style and nearest filtering remain properties of this pack, not engine-wide rules.
+Prompt 25B moves the production pelvis, arm, hand, leg, and foot regions to the
+1792x1024 component page. The page contains 28 alpha-tight regions with
+separate upper-arm/forearm and thigh/shin pixels for both styles and both views.
+The final front upper arms use curved, shoulder-open sources with transparent
+registration lead-in so the torso-owned deltoid overlaps the arm without
+exposing a square crop edge. A bounded per-style palette transfer aligns the
+independently generated components with their corresponding torso page; it
+does not alter alpha or geometry.
+
+The final Prompt 25B hard gate also re-authors the actual front torso pixels
+in-place on the male and female style pages. Those torso regions end at compact
+rounded deltoids and contain no sleeve-like upper-arm stub. Front forearm
+overlap order hides the elbow source edge while preserving separate upper-arm
+and forearm identities. The male component page contains a tall neutral
+`base_presentation` pelvis bridge and a separate cap-free proximal thigh; the
+bridge remains behind the thighs so it cannot read as equipped shorts.
+Wardrobe front mirroring reflects both signed scale X and `pivot.x`, which
+keeps separately bound left/right footwear centered on its corresponding foot
+without changing shoe pixels.
+`character_art.zig` still supplies 68 regions and 96 bindings: 92
+`.character` bindings and four `.equipment` bindings. Character and equipment
+co-packing on the two style pages still proves that packing does not establish
+semantic ownership. Region metadata defines each part's authored dimensions
+and pivot. Pixel style and nearest filtering remain properties of this pack,
+not engine-wide rules.
 
 ## Steady-state contract
 
