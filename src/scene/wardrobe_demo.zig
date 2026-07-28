@@ -2,6 +2,7 @@ const std = @import("std");
 const math = @import("math");
 const fixed_step = @import("fixed_step");
 const input = @import("input");
+const collider = @import("collider");
 const collision_world = @import("collision_world");
 const character_controller = @import("character_controller");
 const authored = @import("authored_clips");
@@ -26,6 +27,14 @@ pub const combined_art_page_count: usize =
     character_art.texture_page_count + wardrobe_art.texture_page_count;
 pub const mesh_definition_count: usize = wardrobe_presentation.mesh_definition_count;
 const preset_frames: u32 = 24;
+
+pub const Initialization = struct {
+    collider_inputs: ?[]const collider.StaticColliderInput = null,
+    male_spawn: math.Vec2 = .{ .x = 1.40, .y = 1.05 },
+    female_spawn: math.Vec2 = .{ .x = -1.02, .y = 1.05 },
+    male_facing: humanoid.Facing = .left,
+    female_facing: humanoid.Facing = .left,
+};
 
 pub const Evidence = struct {
     preset_selected: [wardrobe_catalog.preset_count]bool =
@@ -94,6 +103,13 @@ pub const Scene = struct {
     visual_quality_evidence: VisualQualityEvidence = .{},
 
     pub fn init(allocator: std.mem.Allocator) !Scene {
+        return initWithConfiguration(allocator, .{});
+    }
+
+    pub fn initWithConfiguration(
+        allocator: std.mem.Allocator,
+        configuration: Initialization,
+    ) !Scene {
         var character_art_definition = try character_art.Definition.init(allocator);
         errdefer character_art_definition.deinit();
         var wardrobe_art_definition = try wardrobe_art.Definition.init(allocator);
@@ -108,7 +124,10 @@ pub const Scene = struct {
             null,
         );
         errdefer animations.deinit();
-        var world = try collision_world.CollisionWorld.initDemo(allocator, null);
+        var world = if (configuration.collider_inputs) |inputs|
+            try collision_world.CollisionWorld.init(allocator, inputs, null)
+        else
+            try collision_world.CollisionWorld.initDemo(allocator, null);
         errdefer world.deinit();
 
         var male = try character.CharacterInstance.init(
@@ -116,8 +135,8 @@ pub const Scene = struct {
             try character.entityIdFromRaw(1),
             &definition,
             &animations,
-            .{ .x = 1.40, .y = 1.05 },
-            .left,
+            configuration.male_spawn,
+            configuration.male_facing,
             0,
             null,
         );
@@ -129,8 +148,8 @@ pub const Scene = struct {
             &animations,
             &world,
             .{},
-            .{ .x = -1.02, .y = 1.05 },
-            .left,
+            configuration.female_spawn,
+            configuration.female_facing,
             1,
             null,
         );
@@ -216,6 +235,14 @@ pub const Scene = struct {
         scene: *Scene,
         snapshot: input.FrameInputSnapshot,
     ) !void {
+        return scene.updateInteractiveFrameDelta(snapshot, 1.0 / 60.0);
+    }
+
+    pub fn updateInteractiveFrameDelta(
+        scene: *Scene,
+        snapshot: input.FrameInputSnapshot,
+        frame_delta: f64,
+    ) !void {
         try scene.female.applyPresentationInput(snapshot);
         if (snapshot.outfit_cycle.pressed) {
             try scene.selectPreset(try scene.catalog.nextPreset(scene.current_preset));
@@ -228,7 +255,7 @@ pub const Scene = struct {
         }
         if (!scene.paused) {
             try scene.pending_input.acceptFrame(snapshot);
-            const frame = try scene.clock.beginFrame(1.0 / 60.0);
+            const frame = try scene.clock.beginFrame(frame_delta);
             for (0..frame.substeps) |_| {
                 scene.simulation_tick = std.math.add(u64, scene.simulation_tick, 1) catch
                     return error.SimulationTickOverflow;

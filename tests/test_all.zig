@@ -26,6 +26,7 @@ test {
     _ = @import("art_pipeline_tests.zig");
     _ = @import("character_presentation_tests.zig");
     _ = @import("wardrobe_tests.zig");
+    _ = @import("environment_tests.zig");
 }
 
 test "every initialization stage round-trips through its command-line name" {

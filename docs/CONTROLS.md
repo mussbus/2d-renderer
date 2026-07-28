@@ -178,3 +178,18 @@ Run `zig build run -- --demo wardrobe --interactive`.
 O and P are sampled only by `sdl_input.PlatformInput`, then carried as platform-neutral pressed/held/released fields in `FrameInputSnapshot`. Focus loss clears pending customization edges and suppresses held keys until physical release, so refocus cannot synthesize an outfit change or pause toggle. Preset selection never bypasses `CharacterIntent` for movement and never polls SDL from scene code.
 
 The deterministic route is `zig build run -- --demo wardrobe --scripted-input --frames 600`. It uses programmatic scene selection for repeatable preset/view evidence and synthetic input tests for O/P edge semantics. It is not evidence of physical keyboard or gamepad use.
+
+## Prompt 26 environment inspection
+
+Run:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo environment --interactive
+```
+
+`T` swaps between the preloaded violet crystal ruin and neutral debug world in
+place. The input edge does not enter `CharacterIntent`; it is consumed by the
+environment presentation owner before the unchanged character snapshot enters
+the controller. `F1` toggles detailed cyan/orange collider outlines, while the
+thin white top edges remain visible as normal product presentation. `O`, `P`,
+`Q`, movement, jump, reset, resize, and Escape retain their existing meanings.

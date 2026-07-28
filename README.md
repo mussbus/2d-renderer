@@ -77,6 +77,21 @@ $env:SDL_GPU_DRIVER = 'direct3d12'
 & '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
 ```
 
+Prompt 26 adds two original layered environment themes over the unchanged
+Prompt 22 world: a violet crystal ruin and a neutral diagnostic chamber.
+Far/mid/terrain/foreground art uses the existing camera and global queue, both
+theme pages preload before steady state, and `T` swaps them without changing
+physics, animation, view, wardrobe, clock, pending input, interaction
+ownership, camera, collision, or GPU resources. Thin white standable tops are
+derived exactly from `ground_query_eligible` collider tops; walls and
+decorative ledges receive none:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-environment -j1
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo environment --scripted-input --frames 720
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo environment --interactive
+```
+
 The open-ended primary foundation route is:
 
 ```powershell
@@ -107,6 +122,7 @@ The open-ended primary foundation route is:
 | `Q` | Cycle automatic, force side, and force front in the character-presentation route |
 | `O` | Cycle complete outfit presets in the wardrobe route |
 | `P` | Pause or resume wardrobe simulation for inspection |
+| `T` | Cycle the preloaded environment theme in the Prompt 26 environment route |
 | Escape | Exit |
 
 Walk right toward the passive character and stop near the authored handshake position. Both characters must be grounded and facing one another; spacing remains deliberately strict, and pressing `E` never snaps or warps either root. The raised platforms, short/held jump behavior, foot planting, arm IK, reset, and debug overlay all use the production runtime paths.
@@ -137,6 +153,7 @@ Start with:
 - [`docs/MESH_ATTACHMENTS.md`](docs/MESH_ATTACHMENTS.md) for mesh validation, topology-aware runtime ownership, unified ordering, GPU resources, batching, metrics, and evidence.
 - [`docs/ATTACHMENT_SECONDARY_MOTION.md`](docs/ATTACHMENT_SECONDARY_MOTION.md) for bounded visual control points, per-instance ownership, lifecycle/facing reset, composition, and evidence.
 - [`docs/ART_PIPELINE.md`](docs/ART_PIPELINE.md) for PNG decoding, immutable art packs, stable semantic/view identity, atlas validation, multi-page GPU ownership, installed assets, and the future offline authoring boundary.
+- [`docs/ENVIRONMENT_THEMES.md`](docs/ENVIRONMENT_THEMES.md) for layered theme ownership, parallax, collision-derived white standable edges, hot-swap invariants, bounds, and the future level-editor boundary.
 - [`docs/CHARACTER_PRESENTATION.md`](docs/CHARACTER_PRESENTATION.md) for facing/view separation, interaction authority, shared-pose interpretation, original character art, layers, secondary reset, and evidence.
 - [`docs/WARDROBE.md`](docs/WARDROBE.md) for garment semantics, view/topology binding, presets, controls, and the future authoring workflow.
 - [`docs/VISUAL_GEOMETRY.md`](docs/VISUAL_GEOMETRY.md) for semantic landmarks, visible-alpha geometry, anatomy-relative fit contracts, pose/morphology sweeps, quantitative failure reports, debug overlays, and golden policy.

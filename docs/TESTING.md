@@ -449,3 +449,45 @@ same-scale before/after review is
 front/side first, then clothed front/side, stride, jump rise, and jump fall.
 `PROMPT25B_DECISION_RECORD.md` records source identities, actual region
 rectangles, causes, corrections, and remaining visual limits.
+
+## Prompt 26 environment validation
+
+Fast deterministic gate:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-environment -j1
+```
+
+The focused tests prove:
+
+- exact two-page/two-theme art-pack completeness and missing-reference errors;
+- absence of collision/spawn/interaction ownership in theme input;
+- exact eligible-collider surface count, IDs, and endpoint coordinates;
+- exclusion of walls, ceilings, and decorative non-collision ledges;
+- terrain/surface/character/debug ordering in `UnifiedRenderQueue`;
+- distinct preloaded page identity with no GPU/file owner in presentation;
+- allocation-free repeated switching;
+- preservation of controller, root, facing, view, outfit, interaction owner,
+  fixed clock, pending input, camera, collision, and surface state;
+- deterministic `T` edge and focus-loss filtering;
+- scripted front/side, parallax, stationary in-place switching, jump and
+  non-floor raised-platform landing, resize, reset, debug, allocation, and
+  fixed-tick evidence.
+
+Real D3D12 acceptance route:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo environment --scripted-input --frames 720
+```
+
+The route must preload eight art pages, retain nine configured renderer pages,
+produce seven 640 by 480 captures in `zig-out/p26_environment_gpu`, report two
+theme switches, six white standable segments, a recorded raised-platform
+landing frame, unchanged collision/surface
+fingerprints, zero post-initialization allocation/resource growth, and real
+D3D12/DXIL rendering. Inspect neutral front, side/parallax, in-place debug
+theme, switch-back, jump, raised-platform landing, and detailed collider
+frames. White tops
+must match floor/platform collision exactly and remain visually distinct from
+cyan/orange detailed debug.

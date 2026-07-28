@@ -29,6 +29,7 @@ const art_pack = @import("art_pack");
 const art_asset_demo = @import("art_asset_demo");
 const character_presentation_demo = @import("character_presentation_demo");
 const wardrobe_demo = @import("wardrobe_demo");
+const environment_demo = @import("environment_demo");
 const image_decode = @import("image_decode");
 const diagnostics = @import("diagnostics");
 const debug_draw = @import("debug_draw");
@@ -59,12 +60,13 @@ pub const DemoMode = enum {
     character_presentation,
     wardrobe,
     visual_quality,
+    environment,
 };
 
 fn usesUnifiedRendering(mode: DemoMode) bool {
     return mode == .mesh_attachments or mode == .attachment_secondary or mode == .foundation or
         mode == .art_assets or mode == .character_presentation or mode == .wardrobe or
-        mode == .visual_quality;
+        mode == .visual_quality or mode == .environment;
 }
 
 fn visualCapturePath(frame: u32) ?[]const u8 {
@@ -93,6 +95,21 @@ const visual_capture_count: u32 = 11;
 const geometry_debug_capture_directory = "zig-out/p25c_visual_geometry_debug";
 const geometry_debug_capture_path =
     geometry_debug_capture_directory ++ "/03_wide_brim_front_geometry.ppm";
+const environment_capture_directory = "zig-out/p26_environment_gpu";
+const environment_capture_count: u32 = 7;
+
+fn environmentCapturePath(frame: u32) ?[]const u8 {
+    return switch (frame) {
+        20 => environment_capture_directory ++ "/01_violet_neutral_front.ppm",
+        70 => environment_capture_directory ++ "/02_debug_switch_in_place.ppm",
+        100 => environment_capture_directory ++ "/03_violet_switch_back.ppm",
+        165 => environment_capture_directory ++ "/04_violet_side_parallax.ppm",
+        200 => environment_capture_directory ++ "/05_jump_rise.ppm",
+        224 => environment_capture_directory ++ "/06_raised_platform_landing.ppm",
+        540 => environment_capture_directory ++ "/07_detailed_collider_debug.ppm",
+        else => null,
+    };
+}
 const texture_width: u32 = 4;
 const texture_height: u32 = 4;
 const upload_texture_row_pitch: u32 = 256;
@@ -413,6 +430,7 @@ pub const GpuDemo = struct {
             return error.VisualCaptureTransferAlreadyInitialized;
         }
         try std.Io.Dir.cwd().createDirPath(self.io, visual_capture_directory);
+        try std.Io.Dir.cwd().createDirPath(self.io, environment_capture_directory);
         if (geometry_debug) {
             try std.Io.Dir.cwd().createDirPath(self.io, geometry_debug_capture_directory);
         }
@@ -853,6 +871,8 @@ pub const GpuDemo = struct {
         defer if (character_presentation_scene) |*scene| scene.deinit();
         var wardrobe_scene: ?wardrobe_demo.Scene = null;
         defer if (wardrobe_scene) |*scene| scene.deinit();
+        var environment_scene: ?environment_demo.Scene = null;
+        defer if (environment_scene) |*scene| scene.deinit();
         var platform_input: ?sdl_input.PlatformInput = null;
         defer if (platform_input) |*platform| platform.deinit();
         var scripted_sequence = controller_demo.ScriptedInput{};
@@ -860,8 +880,10 @@ pub const GpuDemo = struct {
         var playground_sequence = playground_demo.ScriptedInput{};
         var side_scroller_sequence = playground_demo.SideScrollerScriptedInput{};
         var foundation_sequence = foundation_playground.ScriptedInput{};
+        var environment_sequence = environment_demo.ScriptedInput{};
         var playground_snapshot_builder = input.SnapshotBuilder{};
         var foundation_snapshot_builder = input.SnapshotBuilder{};
+        var environment_snapshot_builder = input.SnapshotBuilder{};
         var previous_playground_snapshot: ?input.FrameInputSnapshot = null;
         var animation_clock = try fixed_step.Clock.init(.{});
         var time_mode: TimeMode = .normal;
@@ -1035,6 +1057,32 @@ pub const GpuDemo = struct {
             }
             if (interactive_enabled) platform_input = sdl_input.PlatformInput.init();
         }
+        if (mode == .environment) {
+            if (scripted_input_enabled == interactive_enabled) {
+                return error.EnvironmentRequiresExactlyOneInputMode;
+            }
+            environment_scene = try environment_demo.Scene.init(humanoid_allocator.allocator());
+            environment_scene.?.detailed_debug_enabled = integrated_debug_enabled;
+            self.visible_camera = environment_scene.?.camera;
+            try self.runArtTextureFaultChecks(
+                &environment_scene.?.production.character_art_definition.art,
+            );
+            try self.runArtTextureFaultChecks(
+                &environment_scene.?.production.wardrobe_art_definition.art,
+            );
+            try self.runArtTextureFaultChecks(
+                &environment_scene.?.environment_art_definition.art,
+            );
+            try self.initializeArtTexturePageSets(&.{
+                &environment_scene.?.production.character_art_definition.art,
+                &environment_scene.?.production.wardrobe_art_definition.art,
+                &environment_scene.?.environment_art_definition.art,
+            });
+            const definitions = environment_scene.?.meshDefinitions();
+            try self.initializeMeshRendering(&definitions);
+            if (scripted_input_enabled) try self.initializeVisualCaptureTransfer(false);
+            if (interactive_enabled) platform_input = sdl_input.PlatformInput.init();
+        }
         var geometry_alpha_catalog: ?visual_geometry_overlay.AlphaCatalog = null;
         if (mode == .visual_quality and integrated_debug_enabled) {
             geometry_alpha_catalog = try visual_geometry_overlay.AlphaCatalog.init(self.allocator);
@@ -1079,12 +1127,16 @@ pub const GpuDemo = struct {
             while (c.SDL_PollEvent(&event)) {
                 if (event.type == c.SDL_EVENT_QUIT or event.type == c.SDL_EVENT_WINDOW_CLOSE_REQUESTED) running = false;
                 try self.handleWindowEvent(&event);
-                if (mode == .foundation and self.drawable_available and
+                if ((mode == .foundation or mode == .environment) and self.drawable_available and
                     (event.type == c.SDL_EVENT_WINDOW_RESIZED or
                         event.type == c.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED or
                         event.type == c.SDL_EVENT_WINDOW_RESTORED))
                 {
-                    try foundation_scene.?.applyViewport(self.drawable_width, self.drawable_height);
+                    if (mode == .foundation) {
+                        try foundation_scene.?.applyViewport(self.drawable_width, self.drawable_height);
+                    } else {
+                        try environment_scene.?.applyViewport(self.drawable_width, self.drawable_height);
+                    }
                 }
                 if (platform_input) |*platform| platform.handleEvent(&event);
             }
@@ -1606,6 +1658,42 @@ pub const GpuDemo = struct {
                     humanoid_submission_allocations +=
                         humanoid_allocator.end_index - submission_checkpoint;
                 },
+                .environment => {
+                    const scene = &environment_scene.?;
+                    const now_ticks_ns = c.SDL_GetTicksNS();
+                    const measured_delta =
+                        @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;
+                    last_ticks_ns = now_ticks_ns;
+                    const snapshot = if (scripted_input_enabled)
+                        try environment_snapshot_builder.update(environment_sequence.nextRaw())
+                    else
+                        try platform_input.?.pollFrame();
+                    if (snapshot.exit.pressed) {
+                        std.log.info("exit requested", .{});
+                        running = false;
+                        break;
+                    }
+                    const allocation_checkpoint = humanoid_allocator.end_index;
+                    try scene.updateFrame(
+                        if (scripted_input_enabled) 1.0 / 60.0 else measured_delta,
+                        snapshot,
+                    );
+                    if (scripted_input_enabled and frame == 280) {
+                        try scene.applyViewport(960, 540);
+                    } else if (scripted_input_enabled and frame == 281) {
+                        try scene.applyViewport(target_width, target_height);
+                    }
+                    pose_evaluation_allocations +=
+                        humanoid_allocator.end_index - allocation_checkpoint;
+                    self.visible_camera = scene.camera;
+                    minimum_camera_x = @min(minimum_camera_x, scene.camera.center.x);
+                    maximum_camera_x = @max(maximum_camera_x, scene.camera.center.x);
+                    self.unified_queue.?.beginFrame();
+                    const submission_checkpoint = humanoid_allocator.end_index;
+                    humanoid_instances = try scene.submit(&self.unified_queue.?);
+                    humanoid_submission_allocations +=
+                        humanoid_allocator.end_index - submission_checkpoint;
+                },
             }
             const rendered = if (usesUnifiedRendering(mode)) unified: {
                 const prepared = self.unified_queue.?.prepare();
@@ -1616,6 +1704,10 @@ pub const GpuDemo = struct {
                             try self.captureUnifiedToPpm(prepared, geometry_debug_capture_path);
                         }
                     } else if (visualCapturePath(frame)) |capture_path| {
+                        try self.captureUnifiedToPpm(prepared, capture_path);
+                    }
+                } else if (mode == .environment and scripted_input_enabled) {
+                    if (environmentCapturePath(frame)) |capture_path| {
                         try self.captureUnifiedToPpm(prepared, capture_path);
                     }
                 }
@@ -2805,6 +2897,100 @@ pub const GpuDemo = struct {
             {
                 return error.CharacterPresentationRenderingEvidenceIncomplete;
             }
+        } else if (mode == .environment) {
+            const scene = &environment_scene.?;
+            if (scripted_input_enabled) {
+                if (self.resource_metrics.frames_rendered != environment_demo.required_frames) {
+                    return error.EnvironmentFrameCountMismatch;
+                }
+                try scene.validateComplete();
+            }
+            const unified_metrics = self.unified_queue.?.frame_metrics;
+            const runtime_allocation_delta =
+                humanoid_allocator.end_index - humanoid_initialized_bytes;
+            const gpu_resource_delta =
+                self.resource_metrics.gpu_resource_creations - creations_before_run;
+            const violet_page = self.art_texture_pages[6] orelse
+                return error.MissingArtTexturePage;
+            const debug_page = self.art_texture_pages[7] orelse
+                return error.MissingArtTexturePage;
+            const expected_decoded_bytes =
+                (1600 * 983 + 1599 * 984 + 1792 * 1024) * 4 +
+                3 * 1536 * 1024 * 4 +
+                2 * 1024 * 1024 * 4;
+            std.log.info("PROMPT 26 LAYERED ENVIRONMENT EVIDENCE", .{});
+            std.log.info(
+                "Themes: violet={} debug={} switches={d} preserved={} collision_fingerprint=0x{x} surface_fingerprint=0x{x}",
+                .{
+                    scene.evidence.violet_observed,
+                    scene.evidence.debug_observed,
+                    scene.evidence.switch_count,
+                    scene.evidence.switch_preserved_authoritative_state,
+                    scene.evidence.collision_fingerprint,
+                    scene.evidence.surface_fingerprint,
+                },
+            );
+            std.log.info(
+                "World: colliders={d} standable_white_edges={d} decorative_without_edges={} camera_min={d:.4} camera_max={d:.4} parallax={} resize={} front_idle={} side={} jump={} land={} raised_land={} raised_land_frame={any} reset={} detailed_debug={}",
+                .{
+                    scene.production.world.colliders.len,
+                    scene.environment.surfaces.count,
+                    scene.evidence.decorative_ledges_without_edges,
+                    scene.evidence.camera_minimum_x,
+                    scene.evidence.camera_maximum_x,
+                    scene.evidence.parallax_observed,
+                    scene.evidence.resize_observed,
+                    scene.evidence.front_idle_observed,
+                    scene.evidence.side_locomotion_observed,
+                    scene.evidence.jump_observed,
+                    scene.evidence.landing_observed,
+                    scene.evidence.raised_platform_landing_observed,
+                    scene.evidence.raised_platform_landing_frame,
+                    scene.evidence.reset_observed,
+                    scene.evidence.detailed_debug_observed,
+                },
+            );
+            std.log.info(
+                "Rendering: preloaded_art_pages={d} configured_pages={d} decoded_files={d} sprites={d} meshes={d} sprite_ranges={d} mesh_ranges={d} captures={d}",
+                .{
+                    self.art_texture_page_count,
+                    self.texture_page_count,
+                    self.image_decode_metrics.successful_decodes,
+                    unified_metrics.submitted_sprites,
+                    unified_metrics.submitted_meshes,
+                    unified_metrics.sprite_ranges,
+                    unified_metrics.mesh_ranges,
+                    self.visual_captures_written,
+                },
+            );
+            std.log.info(
+                "Steady state: initialized_bytes={d} final_bytes={d} update_allocations={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}",
+                .{
+                    humanoid_initialized_bytes,
+                    humanoid_allocator.end_index,
+                    pose_evaluation_allocations,
+                    humanoid_submission_allocations,
+                    self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                    gpu_resource_delta,
+                },
+            );
+            if (self.image_decode_metrics.decode_attempts != 8 or
+                self.image_decode_metrics.successful_decodes != 8 or
+                self.image_decode_metrics.decoded_bytes != expected_decoded_bytes or
+                self.art_texture_page_count != 8 or
+                self.texture_page_count != 9 or
+                violet_page.sampling != .nearest or
+                debug_page.sampling != .nearest or
+                runtime_allocation_delta != 0 or
+                pose_evaluation_allocations != 0 or
+                humanoid_submission_allocations != 0 or
+                self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
+                gpu_resource_delta != 0 or
+                (scripted_input_enabled and
+                    self.visual_captures_written != environment_capture_count))
+            {
+                return error.EnvironmentRenderingEvidenceIncomplete;
+            }
         } else if (mode == .wardrobe or mode == .visual_quality) {
             const scene = &wardrobe_scene.?;
             if (scripted_input_enabled) {
@@ -3430,7 +3616,7 @@ pub const GpuDemo = struct {
             self.render_target.?,
             self.offscreen_pipeline.?,
             self.mesh_offscreen_pipeline,
-            camera2d.Camera2D.initDefault(),
+            self.visible_camera,
             false,
             false,
         );

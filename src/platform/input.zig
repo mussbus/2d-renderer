@@ -21,6 +21,7 @@ pub const KeyboardState = struct {
     o: bool = false,
     p: bool = false,
     q: bool = false,
+    t: bool = false,
     escape: bool = false,
 
     pub fn leftHeld(state: KeyboardState) bool {
@@ -67,6 +68,7 @@ pub const FrameInputSnapshot = struct {
     outfit_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     pause_toggle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     presentation_view_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
+    environment_theme_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     exit: ButtonSnapshot,
     focus_lost: bool,
 };
@@ -100,6 +102,7 @@ pub const SnapshotBuilder = struct {
     previous_outfit_cycle: bool = false,
     previous_pause_toggle: bool = false,
     previous_presentation_view_cycle: bool = false,
+    previous_environment_theme_cycle: bool = false,
     previous_exit: bool = false,
     keyboard_focused: bool = true,
     blocked_until_release: KeyboardState = .{},
@@ -155,6 +158,7 @@ pub const SnapshotBuilder = struct {
             .outfit_cycle = button(builder.previous_outfit_cycle, effective_keyboard.o),
             .pause_toggle = button(builder.previous_pause_toggle, effective_keyboard.p),
             .presentation_view_cycle = button(builder.previous_presentation_view_cycle, effective_keyboard.q),
+            .environment_theme_cycle = button(builder.previous_environment_theme_cycle, effective_keyboard.t),
             .exit = button(builder.previous_exit, exit_held),
             .focus_lost = raw.focus_lost,
         };
@@ -172,6 +176,7 @@ pub const SnapshotBuilder = struct {
         builder.previous_outfit_cycle = effective_keyboard.o;
         builder.previous_pause_toggle = effective_keyboard.p;
         builder.previous_presentation_view_cycle = effective_keyboard.q;
+        builder.previous_environment_theme_cycle = effective_keyboard.t;
         builder.previous_exit = exit_held;
         return snapshot;
     }
@@ -270,6 +275,7 @@ fn keyboardWithout(state: KeyboardState, blocked: KeyboardState) KeyboardState {
         .o = state.o and !blocked.o,
         .p = state.p and !blocked.p,
         .q = state.q and !blocked.q,
+        .t = state.t and !blocked.t,
         .escape = state.escape and !blocked.escape,
     };
 }
@@ -294,6 +300,7 @@ fn keyboardUnion(left: KeyboardState, right: KeyboardState) KeyboardState {
         .o = left.o or right.o,
         .p = left.p or right.p,
         .q = left.q or right.q,
+        .t = left.t or right.t,
         .escape = left.escape or right.escape,
     };
 }
@@ -318,6 +325,7 @@ fn keyboardIntersection(left: KeyboardState, right: KeyboardState) KeyboardState
         .o = left.o and right.o,
         .p = left.p and right.p,
         .q = left.q and right.q,
+        .t = left.t and right.t,
         .escape = left.escape and right.escape,
     };
 }

@@ -69,6 +69,7 @@ pub const PlatformInput = struct {
                 .o = keyHeld(keyboard, key_count, c.SDL_SCANCODE_O),
                 .p = keyHeld(keyboard, key_count, c.SDL_SCANCODE_P),
                 .q = keyHeld(keyboard, key_count, c.SDL_SCANCODE_Q),
+                .t = keyHeld(keyboard, key_count, c.SDL_SCANCODE_T),
                 .escape = keyHeld(keyboard, key_count, c.SDL_SCANCODE_ESCAPE),
             },
             .keyboard_focused = platform.keyboard_focused,

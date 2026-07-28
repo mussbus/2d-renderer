@@ -289,6 +289,25 @@ Long garments reuse Prompt 19 deformable meshes and Prompt 20 bounded secondary 
 
 The full content/authoring contract is in `WARDROBE.md`; engineering decisions are in `WARDROBE_DECISION_RECORD.md`.
 
+## Prompt 26 environment-presentation boundary
+
+Environment themes are presentation definitions layered over one authoritative
+world. They do not own colliders, ground eligibility, player spawns,
+interaction coordinates, controller state, fixed time, camera state, character
+customization, or GPU resources. Both theme packs resolve and upload at
+initialization; `T` changes only the active resolved theme ID.
+
+The global queue orders far backdrop, parallax midground, collision-aligned
+terrain, collision-derived white standable tops, existing characters and
+wardrobe, foreground framing, and optional detailed collider debug. White tops
+are exact projections of solid `ground_query_eligible` AABB tops, not painted
+terrain metadata or a debug view. Walls and decorative ledges cannot receive
+them.
+
+`docs/ENVIRONMENT_THEMES.md` binds the data model, layer factors, hot-swap
+invariants, edge derivation, debug distinction, bounds, and future
+level-editor/theme boundary.
+
 ## Prompt 25C semantic visual geometry
 
 Semantic visual geometry is bounded authoring metadata evaluated against the

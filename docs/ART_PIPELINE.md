@@ -175,3 +175,24 @@ coverage identity.
 See `WARDROBE.md` for ordinary garment/view authoring,
 `WARDROBE_DECISION_RECORD.md` for the packing and art-boundary decisions, and
 `VISUAL_ACCEPTANCE_25A.md` for the final D3D12 pixel review.
+
+## Prompt 26 environment pages
+
+Prompt 26 extends the same immutable art-pack boundary with
+`AssetKind.environment`. Two original 1024 by 1024 RGBA atlases are installed:
+
+- `art/p26_violet_crystal_ruin_atlas.png`;
+- `art/p26_neutral_debug_atlas.png`.
+
+Each page contains fixed far-backdrop, midground, terrain, foreground,
+decorative-ledge, accent, and opaque-white surface regions. Sampling is
+nearest. Both pages are decoded and uploaded with the character and wardrobe
+pages before the first frame; switching themes never reads a path, decodes,
+uploads, allocates, or creates a resource.
+
+The supplied cavern image informed violet mood/depth only, and Prompt 23
+atlases informed project pixel-art language only. Generated source output was
+deterministically cropped, nearest-resized, alpha-matte removed, and packed
+into the fixed production layout. No reference file is a runtime asset.
+Theme/collision separation and the future editor boundary are specified in
+`ENVIRONMENT_THEMES.md`.

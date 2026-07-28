@@ -142,6 +142,10 @@ $wardrobeArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 's
 $wardrobePresentationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_presentation.zig')
 $wardrobeDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_demo.zig')
 $wardrobeTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/wardrobe_tests.zig')
+$environmentArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/environment_art.zig')
+$environmentThemeSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/environment_theme.zig')
+$environmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/environment_demo.zig')
+$environmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/environment_tests.zig')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
@@ -2138,16 +2142,65 @@ if (-not (Test-Path -LiteralPath $prompt25bArtAudit -PathType Leaf)) {
         $failed = $true
     }
 }
-if ([regex]::IsMatch(
-    $wardrobeCatalogSource + [Environment]::NewLine +
-    $wardrobeArtSource + [Environment]::NewLine +
-    $wardrobePresentationSource + [Environment]::NewLine +
-    $wardrobeDemoSource + [Environment]::NewLine +
-    $wardrobeTestsSource + [Environment]::NewLine +
-    $buildSource,
-    '(?i)prompt[ _-]?26|p26[_-]'
+foreach ($phrase in @(
+    'pub const ThemeId = enum(u8)',
+    'violet_crystal_ruin',
+    'neutral_debug',
+    'pub const SurfaceOverlay',
+    'ground_query_eligible',
+    'pub fn submit(',
+    'pub fn cycle('
 )) {
-    Write-Error 'Prompt 26 implementation markers must not enter Prompt 25 scope.' -ErrorAction Continue
+    if (-not ($environmentArtSource + [Environment]::NewLine + $environmentThemeSource).Contains($phrase)) {
+        Write-Error "Required Prompt 26 environment-theme contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'wardrobe_demo.Scene',
+    'GameplaySnapshot',
+    'collision_fingerprint',
+    'surface_fingerprint',
+    'environment_theme_cycle',
+    'scene.environment.submit'
+)) {
+    if (-not $environmentDemoSource.Contains($phrase)) {
+        Write-Error "Required Prompt 26 production-composition proof is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 26 art pack contains both complete nearest-sampled original themes',
+    'standable surface overlay is an exact collision-authority projection',
+    'theme switching preserves collision spawn view outfit clock input and interaction state',
+    'environment submission orders terrain then white surfaces then characters and debug',
+    'scripted Prompt 26 matrix proves front side parallax swap raised-platform landing reset resize and stability'
+)) {
+    if (-not $environmentTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 26 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+$prompt26ArtAudit = Join-Path $repositoryRoot 'tools/audit_p26_environment_art.ps1'
+if (-not (Test-Path -LiteralPath $prompt26ArtAudit -PathType Leaf)) {
+    Write-Error 'Prompt 26 automated environment-art audit is missing.' -ErrorAction Continue
+    $failed = $true
+} else {
+    & $prompt26ArtAudit -RepositoryRoot $repositoryRoot
+    if (-not $?) {
+        Write-Error 'Prompt 26 automated environment-art audit failed.' -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch(
+    $environmentArtSource + [Environment]::NewLine +
+    $environmentThemeSource + [Environment]::NewLine +
+    $environmentDemoSource + [Environment]::NewLine +
+    $environmentTestsSource + [Environment]::NewLine +
+    $buildSource,
+    '(?i)prompt[ _-]?27|p27[_-]'
+)) {
+    Write-Error 'Prompt 27 implementation markers must not enter Prompt 26 scope.' -ErrorAction Continue
     $failed = $true
 }
 
@@ -2161,6 +2214,7 @@ Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test mark
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'
+Write-Host 'Prompt 26 environment audit passed: both preloaded themes use production art-pack assets, exact collision-derived walkable surface overlays, invariant gameplay authority, one global queue, bounded hot switching, and no Prompt 27 markers.'
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
 Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'
 Write-Host 'Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.'

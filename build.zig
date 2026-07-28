@@ -42,6 +42,8 @@ pub fn build(b: *std.Build) void {
     const wardrobe_upper_atlas = "assets/art/p25_wardrobe_upper_atlas.png";
     const wardrobe_layers_atlas = "assets/art/p25_wardrobe_layers_atlas.png";
     const wardrobe_lower_atlas = "assets/art/p25_wardrobe_lower_atlas.png";
+    const violet_environment_atlas = "assets/art/p26_violet_crystal_ruin_atlas.png";
+    const debug_environment_atlas = "assets/art/p26_neutral_debug_atlas.png";
 
     for ([_][]const u8{
         sdl_library,
@@ -60,6 +62,8 @@ pub fn build(b: *std.Build) void {
         wardrobe_upper_atlas,
         wardrobe_layers_atlas,
         wardrobe_lower_atlas,
+        violet_environment_atlas,
+        debug_environment_atlas,
         "tools/dependencies.lock.json",
     }) |path| {
         requireFile(b, path);
@@ -135,6 +139,8 @@ pub fn build(b: *std.Build) void {
     const install_wardrobe_upper_atlas = b.addInstallFileWithDir(b.path(wardrobe_upper_atlas), .bin, "art/p25_wardrobe_upper_atlas.png");
     const install_wardrobe_layers_atlas = b.addInstallFileWithDir(b.path(wardrobe_layers_atlas), .bin, "art/p25_wardrobe_layers_atlas.png");
     const install_wardrobe_lower_atlas = b.addInstallFileWithDir(b.path(wardrobe_lower_atlas), .bin, "art/p25_wardrobe_lower_atlas.png");
+    const install_violet_environment_atlas = b.addInstallFileWithDir(b.path(violet_environment_atlas), .bin, "art/p26_violet_crystal_ruin_atlas.png");
+    const install_debug_environment_atlas = b.addInstallFileWithDir(b.path(debug_environment_atlas), .bin, "art/p26_neutral_debug_atlas.png");
     b.getInstallStep().dependOn(&install_sdl.step);
     b.getInstallStep().dependOn(&install_vertex_shader.step);
     b.getInstallStep().dependOn(&install_fragment_shader.step);
@@ -147,6 +153,8 @@ pub fn build(b: *std.Build) void {
     b.getInstallStep().dependOn(&install_wardrobe_upper_atlas.step);
     b.getInstallStep().dependOn(&install_wardrobe_layers_atlas.step);
     b.getInstallStep().dependOn(&install_wardrobe_lower_atlas.step);
+    b.getInstallStep().dependOn(&install_violet_environment_atlas.step);
+    b.getInstallStep().dependOn(&install_debug_environment_atlas.step);
 
     const installed_executable = b.getInstallPath(.bin, app.out_filename);
     const run_command = b.addSystemCommand(&.{installed_executable});
@@ -800,6 +808,7 @@ pub fn build(b: *std.Build) void {
     wardrobe_demo_module.addImport("math", math_module);
     wardrobe_demo_module.addImport("fixed_step", fixed_step_module);
     wardrobe_demo_module.addImport("input", input_module);
+    wardrobe_demo_module.addImport("collider", collider_module);
     wardrobe_demo_module.addImport("collision_world", collision_world_module);
     wardrobe_demo_module.addImport("character_controller", character_controller_module);
     wardrobe_demo_module.addImport("authored_clips", authored_clips_module);
@@ -893,6 +902,44 @@ pub fn build(b: *std.Build) void {
     foundation_playground_module.addImport("debug_draw", debug_draw_module);
     foundation_playground_module.addImport("modular_body_demo", modular_body_demo_module);
     foundation_playground_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
+    const environment_art_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/environment_art.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    environment_art_module.addImport("art_pack", art_pack_module);
+    const environment_theme_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/environment_theme.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    environment_theme_module.addImport("math", math_module);
+    environment_theme_module.addImport("art_pack", art_pack_module);
+    environment_theme_module.addImport("collider", collider_module);
+    environment_theme_module.addImport("collision_world", collision_world_module);
+    environment_theme_module.addImport("character", character_module);
+    environment_theme_module.addImport("environment_art", environment_art_module);
+    environment_theme_module.addImport("render_queue", render_queue_module);
+    const environment_demo_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/environment_demo.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    environment_demo_module.addImport("math", math_module);
+    environment_demo_module.addImport("input", input_module);
+    environment_demo_module.addImport("character_controller", character_controller_module);
+    environment_demo_module.addImport("foundation_playground", foundation_playground_module);
+    environment_demo_module.addImport("camera2d", camera2d_module);
+    environment_demo_module.addImport("character", character_module);
+    environment_demo_module.addImport("humanoid", humanoid_module);
+    environment_demo_module.addImport("presentation_view", presentation_view_module);
+    environment_demo_module.addImport("environment_art", environment_art_module);
+    environment_demo_module.addImport("environment_theme", environment_theme_module);
+    environment_demo_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    environment_demo_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    environment_demo_module.addImport("render_queue", render_queue_module);
+    environment_demo_module.addImport("deformable_mesh", deformable_mesh_module);
+    environment_demo_module.addImport("collision_world", collision_world_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -962,6 +1009,9 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("wardrobe_art", wardrobe_art_module);
     app_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
     app_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    app_module.addImport("environment_art", environment_art_module);
+    app_module.addImport("environment_theme", environment_theme_module);
+    app_module.addImport("environment_demo", environment_demo_module);
     app_module.addImport("visual_geometry", visual_geometry_module);
     app_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     app_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
@@ -1026,6 +1076,9 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("wardrobe_art", wardrobe_art_module);
     test_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
     test_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    test_module.addImport("environment_art", environment_art_module);
+    test_module.addImport("environment_theme", environment_theme_module);
+    test_module.addImport("environment_demo", environment_demo_module);
     test_module.addImport("visual_geometry", visual_geometry_module);
     test_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     const art_test_module = b.createModule(.{
@@ -1182,6 +1235,40 @@ pub fn build(b: *std.Build) void {
     const run_foundation_tests = b.addRunArtifact(foundation_tests);
     const foundation_test_step = b.step("test-foundation", "Run the Prompt 22 deterministic foundation-playground tests");
     foundation_test_step.dependOn(&run_foundation_tests.step);
+    const environment_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/environment_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    environment_test_module.addImport("math", math_module);
+    environment_test_module.addImport("input", input_module);
+    environment_test_module.addImport("art_pack", art_pack_module);
+    environment_test_module.addImport("collider", collider_module);
+    environment_test_module.addImport("collision_world", collision_world_module);
+    environment_test_module.addImport("character", character_module);
+    environment_test_module.addImport("render_queue", render_queue_module);
+    environment_test_module.addImport("foundation_playground", foundation_playground_module);
+    environment_test_module.addImport("environment_art", environment_art_module);
+    environment_test_module.addImport("environment_theme", environment_theme_module);
+    environment_test_module.addImport("environment_demo", environment_demo_module);
+    const environment_tests = b.addTest(.{ .name = "environment-tests", .root_module = environment_test_module });
+    const run_environment_tests = b.addRunArtifact(environment_tests);
+    const environment_art_audit = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    environment_art_audit.addFileArg(b.path("tools/audit_p26_environment_art.ps1"));
+    environment_art_audit.setName("audit Prompt 26 environment atlas geometry");
+    const environment_test_step = b.step(
+        "test-environment",
+        "Run Prompt 26 theme, hot-swap, collision-surface, ordering, and invariance tests",
+    );
+    environment_test_step.dependOn(&run_environment_tests.step);
+    environment_test_step.dependOn(&environment_art_audit.step);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");
@@ -1189,6 +1276,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_image_decode_tests.step);
     test_step.dependOn(&run_wardrobe_tests.step);
     test_step.dependOn(&run_visual_geometry_tests.step);
+    test_step.dependOn(&run_environment_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });
     format.setName("verify Zig formatting");
@@ -1202,6 +1290,8 @@ pub fn build(b: *std.Build) void {
     check_step.dependOn(&run_image_decode_tests.step);
     check_step.dependOn(&run_wardrobe_tests.step);
     check_step.dependOn(&run_visual_geometry_tests.step);
+    check_step.dependOn(&run_environment_tests.step);
+    check_step.dependOn(&environment_art_audit.step);
     check_step.dependOn(&verify_p25d_goldens.step);
     check_step.dependOn(&repository_audit.step);
 }
