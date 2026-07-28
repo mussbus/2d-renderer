@@ -207,6 +207,45 @@ pub const FrontProjection = struct {
         world_position: math.Vec2,
         reflect_x: bool,
     ) !FrontProjection {
+        return initSideWithArmPolicy(
+            skeleton_definition,
+            source_pose,
+            appearance_definition,
+            appearance_runtime,
+            world_position,
+            reflect_x,
+            true,
+        );
+    }
+
+    pub fn initSideInteraction(
+        skeleton_definition: *const skeleton.SkeletonDefinition,
+        source_pose: pose.Pose,
+        appearance_definition: appearance.DefinitionView,
+        appearance_runtime: appearance.Runtime,
+        world_position: math.Vec2,
+        reflect_x: bool,
+    ) !FrontProjection {
+        return initSideWithArmPolicy(
+            skeleton_definition,
+            source_pose,
+            appearance_definition,
+            appearance_runtime,
+            world_position,
+            reflect_x,
+            false,
+        );
+    }
+
+    fn initSideWithArmPolicy(
+        skeleton_definition: *const skeleton.SkeletonDefinition,
+        source_pose: pose.Pose,
+        appearance_definition: appearance.DefinitionView,
+        appearance_runtime: appearance.Runtime,
+        world_position: math.Vec2,
+        reflect_x: bool,
+        remap_profile_arm_rest: bool,
+    ) !FrontProjection {
         try validateInputs(
             skeleton_definition,
             source_pose,
@@ -220,18 +259,66 @@ pub const FrontProjection = struct {
             authoritative_locals[0..skeleton_definition.boneCount()],
             source_pose.local_transforms,
         );
-        try remapProjectedArmRest(skeleton_definition, &authoritative_locals);
+        if (remap_profile_arm_rest) {
+            try remapProjectedArmRest(skeleton_definition, &authoritative_locals);
+        } else {
+            try remapArm(
+                skeleton_definition,
+                &authoritative_locals,
+                .left_upper_arm,
+                -std.math.pi / 2.0,
+                false,
+            );
+            try remapArm(
+                skeleton_definition,
+                &authoritative_locals,
+                .left_forearm,
+                0,
+                false,
+            );
+            try remapArm(
+                skeleton_definition,
+                &authoritative_locals,
+                .left_hand,
+                0,
+                false,
+            );
+        }
         var projection = try initBoneWorlds(
             skeleton_definition,
             appearance_definition,
             world_position,
             &authoritative_locals,
         );
-        try projectBilateralRoots(
-            &projection,
-            skeleton_definition,
-            world_position.x,
-        );
+        if (remap_profile_arm_rest) {
+            try projectBilateralRoots(
+                &projection,
+                skeleton_definition,
+                world_position.x,
+            );
+        } else {
+            try projectRoot(
+                &projection,
+                skeleton_definition,
+                world_position.x,
+                .left_upper_arm,
+                side_profile_arm_root_offset,
+            );
+            try projectRoot(
+                &projection,
+                skeleton_definition,
+                world_position.x,
+                .left_thigh,
+                side_profile_thigh_root_offset,
+            );
+            try projectRoot(
+                &projection,
+                skeleton_definition,
+                world_position.x,
+                .right_thigh,
+                side_profile_thigh_root_offset,
+            );
+        }
         try projection.rebuildDerivedWorlds(
             appearance_definition,
             appearance_runtime,
@@ -402,20 +489,30 @@ fn projectBilateralRoots(
         .left_thigh,
         .right_thigh,
     }) |semantic| {
-        const arm_root = try definition.boneIndex(semantic);
-        const shoulder_x = projection.bone_world[arm_root].translationPart().x;
         const profile_offset = switch (semantic) {
             .left_upper_arm, .right_upper_arm => side_profile_arm_root_offset,
             .left_thigh, .right_thigh => side_profile_thigh_root_offset,
             else => unreachable, // The loop above is exhaustively limited to these four roots.
         };
-        const delta_x = root_x + profile_offset - shoulder_x;
-        const adjustment = math.Mat3.translation(.{ .x = delta_x, .y = 0 });
-        for (definition.bones, 0..) |_, bone_index| {
-            if (isDescendantOf(definition, bone_index, arm_root)) {
-                projection.bone_world[bone_index] =
-                    adjustment.mul(projection.bone_world[bone_index]);
-            }
+        try projectRoot(projection, definition, root_x, semantic, profile_offset);
+    }
+}
+
+fn projectRoot(
+    projection: *FrontProjection,
+    definition: *const skeleton.SkeletonDefinition,
+    root_x: f32,
+    semantic: skeleton.BoneSemantic,
+    profile_offset: f32,
+) !void {
+    const root = try definition.boneIndex(semantic);
+    const source_x = projection.bone_world[root].translationPart().x;
+    const delta_x = root_x + profile_offset - source_x;
+    const adjustment = math.Mat3.translation(.{ .x = delta_x, .y = 0 });
+    for (definition.bones, 0..) |_, bone_index| {
+        if (isDescendantOf(definition, bone_index, root)) {
+            projection.bone_world[bone_index] =
+                adjustment.mul(projection.bone_world[bone_index]);
         }
     }
 }

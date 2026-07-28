@@ -292,13 +292,22 @@ Prompt 22 adds four grouped deterministic tests in `tests/foundation_playground_
 
 Coverage includes the complete 1,800-frame raw-input route; left/right traversal, camera follow, three-layer parallax, short and stronger held jumps, body/build/hair changes, topology rebind, speed/jump loadouts, double jump, dash, landing, breathing, cape/sleeve response, approach, one handshake contact/release/completion, two synthetic viewport changes, exact loadout restoration, reset, and stable final state. Separate cases compare gameplay/loadout/pending edges across viewport changes, mutate then verify the complete reset baseline, and exercise deterministic bounded unified sprite/mesh ordering with debug primitives.
 
-The GPU-backed acceptance route is:
+Prompt 27 supersedes the old procedural GPU composition while preserving the
+Prompt 22 route as the focused `test-foundation` regression. The current
+GPU-backed acceptance route is:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo foundation --scripted-input
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2100 --demo foundation --scripted-input
 ```
 
-It requires Direct3D 12/DXIL, three persistent mesh definitions, three modular characters, eight static colliders, conventional two-sleeve and nonstandard four-sleeve expansion, actual controller property consumption, canonical handshake IK/foot planting, exact reset, zero fixed-buffer update/submission growth, zero unified-queue allocation after stabilization, and zero GPU-resource creation after scene/topology initialization. It reports actual sprite/mesh instance, range, draw, and upload counts and rejects more than 32 total mixed draw commands. The interactive companion is `zig build run -- --demo foundation --interactive`.
+The current route requires Direct3D 12/DXIL, two persistent garment mesh
+definitions, two production-art characters, eight static colliders, actual
+controller property consumption, canonical handshake IK/foot planting, exact
+reset, zero fixed-buffer update/submission growth, zero unified-queue
+allocation after stabilization, and zero GPU-resource creation after
+scene/topology initialization. It reports actual sprite/mesh instance, range,
+draw, and upload peaks. The interactive companion is
+`zig build run -- --demo foundation --interactive`.
 
 Resize verification is split deliberately: pure tests use synthetic nonzero viewports and compare authoritative state plus pending edge counts exactly; the SDL route feeds real resize/pixel-size/restore events through drawable-size refresh and the same camera setter. Neither form claims physical manual resizing unless it was actually performed.
 
@@ -491,3 +500,44 @@ theme, switch-back, jump, raised-platform landing, and detailed collider
 frames. White tops
 must match floor/platform collision exactly and remain visually distinct from
 cyan/orange detailed debug.
+
+## Prompt 27 integrated visual foundation
+
+Fast deterministic gate:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
+```
+
+The focused tests run a bounded 2,100-frame composition through production
+character, wardrobe, environment, interaction, and mixed-queue paths. They
+assert automatic front/side behavior, body/build/hair controls, idle and
+moving outfit changes, short/full/double jumps, dash, raised-platform landing,
+camera/parallax, both themes, six collision-derived white surfaces, three
+fixed-root handshakes, exact presentation cleanup, viewport invariance, full
+reset, bounded sprites/meshes/ranges, and zero queue allocation after
+stabilization.
+
+Each handshake record includes typed ID, participant entities, preset, theme,
+requested role views, start/contact/release/complete ticks, pre/post-IK socket
+separation, projected production-presentation hand separation, contact views,
+body/equipment ordering proof, root invariance, and finite secondary state. The
+required presets are `wide_brim_crimson`,
+`garnet_formal`, and `ivory_blouse_red_shorts`. A separate validated synthetic
+definition selects front/front, proving that side view is handshake data
+rather than a manager constant.
+
+Real D3D12 route:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2100
+```
+
+It must preload eight art pages into nine configured renderer pages, decode
+eight files during initialization only, upload two persistent garment meshes,
+write nine 640 by 480 captures under `zig-out/p27_visual_foundation`, and
+report zero post-stabilization update, submission, queue, and GPU-resource
+growth. Inspect initial front, stopped-front retained facing, side jump, all
+three contact frames, front-idle cleanup, detailed debug, and reset-stable
+front. Automated contact measurements do not replace pixel inspection.

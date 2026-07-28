@@ -504,7 +504,7 @@ pub const Scene = struct {
         }
     }
 
-    fn selectMalePreset(
+    pub fn selectMalePreset(
         scene: *Scene,
         preset_id: wardrobe_catalog.OutfitPresetId,
     ) !void {
@@ -570,31 +570,33 @@ pub const Scene = struct {
         try scene.stepMale();
     }
 
-    fn stepFemale(
+    pub fn stepFemale(
         scene: *Scene,
         intent: input.CharacterIntent,
     ) !character_controller.StepResult {
         const physics = try scene.female.stepController(&scene.world, intent);
         if (!scene.female.isInteractionLocked()) {
             try scene.female.selectControllerAnimation(physics);
+            try scene.female.advanceVisualTickWithFootPlanting(&scene.world, .{
+                .horizontal_velocity = scene.female.controller.?.state.velocity.x,
+                .vertical_velocity = scene.female.controller.?.state.velocity.y,
+                .physically_grounded = scene.female.controller.?.state.grounded,
+                .landing_event = if (physics.landed) .{
+                    .simulation_tick = physics.simulation_tick,
+                    .impact_speed = physics.landing_impact_speed,
+                } else null,
+            });
         }
-        try scene.female.advanceVisualTickWithFootPlanting(&scene.world, .{
-            .horizontal_velocity = scene.female.controller.?.state.velocity.x,
-            .vertical_velocity = scene.female.controller.?.state.velocity.y,
-            .physically_grounded = scene.female.controller.?.state.grounded,
-            .landing_event = if (physics.landed) .{
-                .simulation_tick = physics.simulation_tick,
-                .impact_speed = physics.landing_impact_speed,
-            } else null,
-        });
         return physics;
     }
 
-    fn stepMale(scene: *Scene) !void {
-        try scene.male.advanceVisualTick(.{
-            .horizontal_velocity = 0,
-            .physically_grounded = true,
-        });
+    pub fn stepMale(scene: *Scene) !void {
+        if (!scene.male.isInteractionLocked()) {
+            try scene.male.advanceVisualTick(.{
+                .horizontal_velocity = 0,
+                .physically_grounded = true,
+            });
+        }
     }
 
     fn captureEvidence(scene: *Scene) void {

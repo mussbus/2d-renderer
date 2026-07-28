@@ -39,7 +39,7 @@ Prompt 21 adds data-defined finite numeric attributes, source-counted capabiliti
 Prompt 22 adds the primary Character + World Foundation Playground without replacing any focused route. One modular controlled character, a canonical handshake partner, and a nonstandard-topology showcase share the established skeleton, animation, controller, collision, interaction, IK, foot-planting, deformation, secondary-motion, equipment, and unified sprite/mesh rendering paths in a traversable cave. The bounded route changes appearance and topology-aware loadouts, proves resolved movement/jump/double-jump/dash behavior, exercises camera/parallax and synthetic viewport changes, completes one measured handshake, performs the exact reset contract, and rejects allocation, resource, or draw-count growth:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo foundation --scripted-input
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2100 --demo foundation --scripted-input
 ```
 
 Prompt 23 adds a production-oriented PNG/atlas presentation boundary without changing gameplay or creating another renderer. Windows Imaging Component decodes alpha-bearing installed PNGs, immutable art-pack definitions resolve numeric semantic/view IDs to validated regions, and bounded persistent texture/sampler pages are shared by sprite and mesh ranges. Two original nearest-sampled technical pixel-art atlases prove eight regions, synthetic view extensibility, alpha, honest page-transition draws, cleanup, and allocation-free steady state; a definition test proves that a future pack may instead select linear filtering:
@@ -98,6 +98,15 @@ The open-ended primary foundation route is:
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --demo foundation --interactive
 ```
 
+Prompt 27 promotes that same `foundation` route to the complete real-art
+integration root. It preloads the production character, wardrobe, and
+environment pages and runs three data-declared side-view handshakes in the
+wide-brim, long-garment, and ivory-blouse outfits. The 2,100-frame route
+records view cleanup, contact ticks, pre/post-IK separation,
+participant-qualified body/equipment ordering, theme invariance, reset,
+draw/upload peaks, and zero steady-state allocation/resource growth. Nine
+D3D12 readback captures are written to `zig-out/p27_visual_foundation`.
+
 ## Interactive playground
 
 ```powershell
@@ -118,11 +127,11 @@ The open-ended primary foundation route is:
 | `C` | Cycle the controlled character body preset in the foundation playground |
 | `V` | Cycle the controlled character global build value in the foundation playground |
 | `H` | Cycle hair in the foundation playground |
-| `L` | Cycle the representative speed, jump/armor, and double-jump loadouts |
-| `Q` | Cycle automatic, force side, and force front in the character-presentation route |
-| `O` | Cycle complete outfit presets in the wardrobe route |
-| `P` | Pause or resume wardrobe simulation for inspection |
-| `T` | Cycle the preloaded environment theme in the Prompt 26 environment route |
+| `L` | Legacy alias for cycling complete equipment/outfit loadouts in the foundation route |
+| `Q` | Cycle automatic, force side, and force front in presentation routes |
+| `O` | Cycle complete outfit presets in wardrobe and foundation routes |
+| `P` | Pause or resume wardrobe/foundation simulation for inspection |
+| `T` | Cycle the preloaded environment theme in environment and foundation routes |
 | Escape | Exit |
 
 Walk right toward the passive character and stop near the authored handshake position. Both characters must be grounded and facing one another; spacing remains deliberately strict, and pressing `E` never snaps or warps either root. The raised platforms, short/held jump behavior, foot planting, arm IK, reset, and debug overlay all use the production runtime paths.

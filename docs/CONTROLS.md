@@ -154,10 +154,46 @@ The bounded Prompt 21 route is `zig build run -- --frames 240 --demo properties`
 The bounded Prompt 22 route is:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo foundation --scripted-input
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2100 --demo foundation --scripted-input
 ```
 
 Its `C`, `V`, `H`, and `L` changes originate as `RawInputState.KeyboardState`, become pressed/held/released fields in `FrameInputSnapshot`, and are consumed as frame-level customization commands. Movement, jump, dash, and interaction continue through `PendingInput -> CharacterIntent`; no gameplay or character code polls SDL. The scripted viewport changes call the same platform-neutral camera method as real resize events and assert that pending edge count and authoritative gameplay state are unchanged.
+
+Prompt 27 keeps that CLI and input boundary while using the production
+character, wardrobe, and environment presentations. `L` remains a legacy
+loadout-cycle alias; `O` performs the same complete outfit-preset cycle. `T`
+changes the preloaded environment theme. `Q` cycles automatic/front/side
+inspection, and an active handshake temporarily owns the required side view.
+Completion, cancellation, and reset release that ownership.
+
+| Input | Prompt 27 foundation action |
+|---|---|
+| `A` / Left Arrow | Move left; automatic side-left presentation |
+| `D` / Right Arrow | Move right; automatic side-right presentation |
+| `Space` | Jump; release while rising for a shorter jump |
+| Left Shift | Dash |
+| `E` | Request the eligible fixed-root handshake |
+| `C` | Cycle body preset |
+| `V` | Cycle global build |
+| `H` | Cycle hair |
+| `L` or `O` | Cycle complete transactional outfit presets |
+| `T` | Cycle violet cavern / neutral debug environment |
+| `Q` | Cycle automatic / forced-front / forced-side presentation |
+| `P` | Pause/resume |
+| `F1` | Toggle detailed collider visualization |
+| `F2` | Cycle normal / quarter-speed / paused time |
+| `F3` | Advance one fixed tick while paused |
+| `R` | Full integrated reset |
+| Escape | Exit |
+
+Deterministic route:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2100
+```
+
+This uses synthetic snapshots, not physical-keyboard evidence.
 
 Foundation reset restores the player spawn, velocity, grounded/support state, air-jump and dash counters, interaction/IK/override ownership, foot locks, animator/procedural/breathing state, body/build/hair selection, per-part override, default loadout, resolved attributes/capabilities, mesh/secondary runtime state, fixed-step clock, pending edges, and camera center. It preserves the current nonzero viewport extent and creates no GPU resource.
 

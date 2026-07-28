@@ -940,6 +940,31 @@ pub fn build(b: *std.Build) void {
     environment_demo_module.addImport("render_queue", render_queue_module);
     environment_demo_module.addImport("deformable_mesh", deformable_mesh_module);
     environment_demo_module.addImport("collision_world", collision_world_module);
+    const visual_foundation_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/visual_foundation.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    visual_foundation_module.addImport("math", math_module);
+    visual_foundation_module.addImport("input", input_module);
+    visual_foundation_module.addImport("fixed_step", fixed_step_module);
+    visual_foundation_module.addImport("character_controller", character_controller_module);
+    visual_foundation_module.addImport("character", character_module);
+    visual_foundation_module.addImport("humanoid", humanoid_module);
+    visual_foundation_module.addImport("interaction", interaction_module);
+    visual_foundation_module.addImport("interaction_system", interaction_system_module);
+    visual_foundation_module.addImport("handshake", handshake_module);
+    visual_foundation_module.addImport("presentation_view", presentation_view_module);
+    visual_foundation_module.addImport("presentation_pose", presentation_pose_module);
+    visual_foundation_module.addImport("skeleton", skeleton_module);
+    visual_foundation_module.addImport("environment_demo", environment_demo_module);
+    visual_foundation_module.addImport("environment_art", environment_art_module);
+    visual_foundation_module.addImport("environment_theme", environment_theme_module);
+    visual_foundation_module.addImport("foundation_playground", foundation_playground_module);
+    visual_foundation_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    visual_foundation_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    visual_foundation_module.addImport("render_queue", render_queue_module);
+    visual_foundation_module.addImport("deformable_mesh", deformable_mesh_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -1012,6 +1037,7 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("environment_art", environment_art_module);
     app_module.addImport("environment_theme", environment_theme_module);
     app_module.addImport("environment_demo", environment_demo_module);
+    app_module.addImport("visual_foundation", visual_foundation_module);
     app_module.addImport("visual_geometry", visual_geometry_module);
     app_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     app_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
@@ -1269,6 +1295,27 @@ pub fn build(b: *std.Build) void {
     );
     environment_test_step.dependOn(&run_environment_tests.step);
     environment_test_step.dependOn(&environment_art_audit.step);
+    const visual_foundation_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/visual_foundation_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    visual_foundation_test_module.addImport("input", input_module);
+    visual_foundation_test_module.addImport("interaction", interaction_module);
+    visual_foundation_test_module.addImport("handshake", handshake_module);
+    visual_foundation_test_module.addImport("presentation_view", presentation_view_module);
+    visual_foundation_test_module.addImport("render_queue", render_queue_module);
+    visual_foundation_test_module.addImport("visual_foundation", visual_foundation_module);
+    const visual_foundation_tests = b.addTest(.{
+        .name = "visual-foundation-tests",
+        .root_module = visual_foundation_test_module,
+    });
+    const run_visual_foundation_tests = b.addRunArtifact(visual_foundation_tests);
+    const visual_foundation_test_step = b.step(
+        "test-visual-foundation",
+        "Run Prompt 27 real-art integrated foundation and interaction-presentation tests",
+    );
+    visual_foundation_test_step.dependOn(&run_visual_foundation_tests.step);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");
@@ -1277,6 +1324,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_wardrobe_tests.step);
     test_step.dependOn(&run_visual_geometry_tests.step);
     test_step.dependOn(&run_environment_tests.step);
+    test_step.dependOn(&run_visual_foundation_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });
     format.setName("verify Zig formatting");
@@ -1291,6 +1339,7 @@ pub fn build(b: *std.Build) void {
     check_step.dependOn(&run_wardrobe_tests.step);
     check_step.dependOn(&run_visual_geometry_tests.step);
     check_step.dependOn(&run_environment_tests.step);
+    check_step.dependOn(&run_visual_foundation_tests.step);
     check_step.dependOn(&environment_art_audit.step);
     check_step.dependOn(&verify_p25d_goldens.step);
     check_step.dependOn(&repository_audit.step);

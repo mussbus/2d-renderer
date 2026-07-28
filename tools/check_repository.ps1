@@ -146,6 +146,8 @@ $environmentArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot
 $environmentThemeSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/environment_theme.zig')
 $environmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/environment_demo.zig')
 $environmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/environment_tests.zig')
+$visualFoundationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/visual_foundation.zig')
+$visualFoundationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/visual_foundation_tests.zig')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
@@ -1755,18 +1757,25 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'required_presentation_view: ?presentation_view.View = null',
-    '.required_presentation_view = input.required_presentation_view'
+    'pub const PresentationDefinition = struct',
+    'role_views: [participant_count]?presentation_view.View',
+    'suppress_automatic_view: bool = false',
+    'occlusion_profile: OcclusionProfileId = .none',
+    '.presentation = input.presentation'
 )) {
     if (-not $interactionDefinitionSource.Contains($phrase)) {
-        Write-Error "Prompt 24 interaction-view definition contract is missing: '$phrase'." -ErrorAction Continue
+        Write-Error "Prompt 27 typed interaction-presentation contract is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
 }
-if (-not $handshakeDefinitionSource.Contains('.required_presentation_view = .side') -or
+if (-not $handshakeDefinitionSource.Contains('.role_views = .{ .side, .side }') -or
+    -not $handshakeDefinitionSource.Contains('.occlusion_profile = .handshake_right_hand_contact') -or
+    -not $interactionSystemSource.Contains('viewForRole(.initiator)') -or
+    -not $interactionSystemSource.Contains('viewForRole(.receiver)') -or
+    -not $interactionSystemSource.Contains('applyOcclusionProfile') -or
     -not $interactionSystemSource.Contains('claimInteractionPresentation') -or
     -not $characterSource.Contains('presentation.releaseInteraction(owner_id)')) {
-    Write-Error 'Prompt 24 handshake view ownership must claim side for both participants and release through character cleanup.' -ErrorAction Continue
+    Write-Error 'Prompt 27 interaction presentation must resolve per-role views and typed occlusion while releasing through character cleanup.' -ErrorAction Continue
     $failed = $true
 }
 foreach ($phrase in @(
@@ -2196,12 +2205,55 @@ if ([regex]::IsMatch(
     $environmentArtSource + [Environment]::NewLine +
     $environmentThemeSource + [Environment]::NewLine +
     $environmentDemoSource + [Environment]::NewLine +
-    $environmentTestsSource + [Environment]::NewLine +
-    $buildSource,
+    $environmentTestsSource,
     '(?i)prompt[ _-]?27|p27[_-]'
 )) {
-    Write-Error 'Prompt 27 implementation markers must not enter Prompt 26 scope.' -ErrorAction Continue
+    Write-Error 'Prompt 27 orchestration must not be embedded in Prompt 26 environment ownership.' -ErrorAction Continue
     $failed = $true
+}
+foreach ($phrase in @(
+    'environment_demo.Scene',
+    'interaction_system.Manager',
+    'production.stepFemale',
+    'projected_hand_separation',
+    'validateComplete',
+    'required_frames: u32 = 2_100'
+)) {
+    if (-not $visualFoundationSource.Contains($phrase)) {
+        Write-Error "Prompt 27 production-composed visual foundation is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 27 bounded real-art foundation route proves presentation interaction and reset',
+    'interaction presentation data can select front without a second interaction subsystem',
+    'interaction presentation rejects suppression without both role views'
+)) {
+    if (-not $visualFoundationTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 27 deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'src/scene/visual_foundation.zig',
+    'tests/visual_foundation_tests.zig',
+    'b.step(',
+    '"test-visual-foundation"'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 27 build integration is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'PROMPT 27 INTEGRATED VISUAL FOUNDATION EVIDENCE',
+    'PROMPT 27 INTERACTIVE SESSION SUMMARY',
+    'self.visual_captures_written != foundation_capture_count'
+)) {
+    if (-not $gpuSource.Contains($phrase)) {
+        Write-Error "Prompt 27 GPU acceptance or interactive-session boundary is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
 }
 
 if ($failed) {
@@ -2214,7 +2266,8 @@ Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test mark
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'
-Write-Host 'Prompt 26 environment audit passed: both preloaded themes use production art-pack assets, exact collision-derived walkable surface overlays, invariant gameplay authority, one global queue, bounded hot switching, and no Prompt 27 markers.'
+Write-Host 'Prompt 26 environment audit passed: both preloaded themes use production art-pack assets, exact collision-derived walkable surface overlays, invariant gameplay authority, one global queue, bounded hot switching, and no Prompt 27 orchestration in environment ownership.'
+Write-Host 'Prompt 27 visual-foundation audit passed: real-art production composition, typed per-role interaction presentation, focused deterministic coverage, and explicit build integration are present.'
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
 Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'
 Write-Host 'Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.'

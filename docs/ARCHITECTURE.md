@@ -323,3 +323,96 @@ Test/audit-time alpha processing may allocate. Trace collection and debug
 submission are fixed-capacity and leave ordinary steady-state behavior
 unchanged. `docs/VISUAL_GEOMETRY.md` records the detailed contracts, coordinate
 spaces, bounds, diagnostics, and engineering decisions.
+
+## Prompt 27 integrated visual-foundation boundary
+
+`visual_foundation.Scene` is the production composition used by the existing
+`--demo foundation` route. It directly composes the Prompt 26 environment
+scene and its two Prompt 25 character instances. Those same instances own
+controller, animation, anatomy, morphology, breathing, equipment, properties,
+deformable garments, secondary motion, view, interaction locks, IK, and final
+submissions. The route adds one existing `interaction_system.Manager`; it does
+not add another skeleton, character model, animation clock, renderer, or
+simulation root.
+
+```text
+Character / Anatomy Definition
+  + Equipment / Outfit Definitions
+  + Art Pack
+        |
+        v
+Character Runtime
+        |
+        v
+Animation / Controller / Interaction
+        |
+        v
+Presentation View Resolution
+        |
+        v
+Semantic Body + Equipment Visual Resolution
+        |
+        v
+Deformation + Secondary Motion + Interaction IK
+        |
+        v
+Unified Sprite/Mesh Render Ordering
+        |
+        v
+Atlas-backed SDL GPU Rendering
+
+World / Collision + Environment Theme
+        |
+        v
+Layered World Presentation
+```
+
+### Interaction presentation data
+
+`interaction.PresentationDefinition` contains a view per semantic participant
+role, an automatic-view suppression flag, and a typed `OcclusionProfileId`.
+The handshake declares side/side and
+`handshake_right_hand_contact`. The manager interprets that profile through
+its existing four owned override handles. Definitions contain no renderer
+callback and no outfit name. Wardrobe visuals inherit the interaction layer
+of their bound canonical anatomy part while retaining their authored clothing
+layer, so a right-hand glove follows the same participant-qualified ordering
+as the right hand.
+
+Ordinary side presentation remaps both arm rests into a readable profile.
+During an interaction-owned side view, the participating right-arm chain
+preserves the authored animation/IK plane, while the nonparticipating arm and
+legs retain profile treatment. This downstream projection does not change
+socket positions, IK targets, physics roots, or interaction timing.
+
+Completion, cancellation, startup rollback, character reset, and scene reset
+release view claims, override handles, IK ownership, and interaction locks.
+Grounded-idle front presentation then resumes.
+
+### Future interaction and authoring boundaries
+
+A future paired definition may add a bounded array of semantic contacts such
+as hand-to-hand, hand-to-shoulder, or hand-to-torso. Authored paired animation
+remains primary; IK corrects measured endpoints rather than inventing a
+full-body pose. Richer interactions may need a larger data-defined occlusion
+profile later, but the current handshake deliberately retains its sufficient
+four manager-owned slots.
+
+Carrying or lifting requires a separately owned bounded
+participant-relative root constraint; the fixed-root handshake neither
+parents roots nor provides that behavior. Chairs, doors, beds, ledges, and
+other props would expose typed world interaction anchors owned by world data.
+Front, back, three-quarter, or cinematic interactions remain presentation
+definition choices backed by authored views. A focused synthetic definition
+test proves front/front selection without adding a second visible interaction.
+
+Future 3D authoring remains offline:
+
+```text
+3D source character
+  -> generate multiple 2D presentation views
+  -> atlas + semantic metadata
+  -> existing Art Pack and runtime
+```
+
+The runtime has no dependency on that future editor.

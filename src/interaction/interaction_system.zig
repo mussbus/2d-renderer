@@ -332,13 +332,13 @@ pub const Manager = struct {
 
         try participant_a.reserveInteraction(id.raw());
         a_reserved = true;
-        if (manager.definition.required_presentation_view) |view| {
+        if (manager.definition.presentation.viewForRole(.initiator)) |view| {
             try participant_a.claimInteractionPresentation(id.raw(), view);
         }
         if (fault == .after_reserve_a) return error.InjectedInteractionStartFailure;
         try participant_b.reserveInteraction(id.raw());
         b_reserved = true;
-        if (manager.definition.required_presentation_view) |view| {
+        if (manager.definition.presentation.viewForRole(.receiver)) |view| {
             try participant_b.claimInteractionPresentation(id.raw(), view);
         }
         if (fault == .after_reserve_b) return error.InjectedInteractionStartFailure;
@@ -493,10 +493,8 @@ pub const Manager = struct {
         current_tick: u64,
     ) !void {
         slot.instance.phase = .contact;
-        try manager.addOverride(&slot.instance, participant_a, .right_hand, .{ .interaction_layer = 3 });
+        try manager.applyOcclusionProfile(&slot.instance, participant_a, participant_b);
         errdefer manager.clearOwnedOverrides(&slot.instance, &.{ participant_a, participant_b }) catch {};
-        try manager.addOverride(&slot.instance, participant_b, .right_hand, .{ .interaction_layer = 2 });
-        try manager.addOverride(&slot.instance, participant_a, .right_forearm, .{ .interaction_layer = 1 });
         const a_socket = try participant_a.socketPosition(manager.definition.role(.initiator).handshake_socket);
         const b_socket = try participant_b.socketPosition(manager.definition.role(.receiver).handshake_socket);
         const delta = b_socket.sub(a_socket);
@@ -536,6 +534,28 @@ pub const Manager = struct {
                 .pre_separation = separation,
                 .post_separation = separation,
             };
+        }
+    }
+
+    fn applyOcclusionProfile(
+        manager: *Manager,
+        instance_value: *Instance,
+        participant_a: *character.CharacterInstance,
+        participant_b: *character.CharacterInstance,
+    ) !void {
+        switch (manager.definition.presentation.occlusion_profile) {
+            .none => {},
+            .handshake_right_hand_contact => {
+                try manager.addOverride(instance_value, participant_a, .right_hand, .{
+                    .interaction_layer = 3,
+                });
+                try manager.addOverride(instance_value, participant_b, .right_hand, .{
+                    .interaction_layer = 2,
+                });
+                try manager.addOverride(instance_value, participant_a, .right_forearm, .{
+                    .interaction_layer = 1,
+                });
+            },
         }
     }
 

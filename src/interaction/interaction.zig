@@ -52,6 +52,32 @@ pub const CompletionBehavior = enum(u8) {
     grounded_motion_fallback,
 };
 
+pub const OcclusionProfileId = enum(u8) {
+    none,
+    handshake_right_hand_contact,
+};
+
+pub const PresentationDefinition = struct {
+    role_views: [participant_count]?presentation_view.View = .{ null, null },
+    suppress_automatic_view: bool = false,
+    occlusion_profile: OcclusionProfileId = .none,
+
+    pub fn validate(presentation: PresentationDefinition) !void {
+        if (presentation.suppress_automatic_view and
+            (presentation.role_views[0] == null or presentation.role_views[1] == null))
+        {
+            return error.SuppressedInteractionViewMissing;
+        }
+    }
+
+    pub fn viewForRole(
+        presentation: PresentationDefinition,
+        role_value: Role,
+    ) ?presentation_view.View {
+        return presentation.role_views[@intFromEnum(role_value)];
+    }
+};
+
 pub const RoleDefinition = struct {
     role: Role,
     state: state_machine.StateId,
@@ -108,7 +134,7 @@ pub const DefinitionInput = struct {
     allowed_start_states: [2]state_machine.StateId,
     envelope: SpatialEnvelope,
     completion_behavior: CompletionBehavior,
-    required_presentation_view: ?presentation_view.View = null,
+    presentation: PresentationDefinition = .{},
 };
 
 pub const Definition = struct {
@@ -123,7 +149,7 @@ pub const Definition = struct {
     allowed_start_states: [2]state_machine.StateId,
     events: [event_count]EventDefinition,
     completion_behavior: CompletionBehavior,
-    required_presentation_view: ?presentation_view.View,
+    presentation: PresentationDefinition,
 
     pub fn init(
         input: DefinitionInput,
@@ -133,6 +159,7 @@ pub const Definition = struct {
         if (!input.type_id.isValid()) return error.InvalidInteractionType;
         if (input.declared_participant_count != participant_count) return error.InvalidParticipantCount;
         try input.envelope.validate();
+        try input.presentation.validate();
         if (input.role_a_clip_raw >= clip.clip_count or input.role_b_clip_raw >= clip.clip_count) {
             return error.InvalidRoleClip;
         }
@@ -186,7 +213,7 @@ pub const Definition = struct {
             .allowed_start_states = input.allowed_start_states,
             .events = shared_events,
             .completion_behavior = input.completion_behavior,
-            .required_presentation_view = input.required_presentation_view,
+            .presentation = input.presentation,
         };
     }
 

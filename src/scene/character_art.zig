@@ -351,14 +351,24 @@ pub const Presentation = struct {
                 );
                 break :projection front;
             },
-            .side => try presentation_pose.FrontProjection.initSide(
-                &instance.definition.skeleton_definition,
-                instance.character.local_and_world_pose,
-                instance.definition.visual_definition,
-                instance.character.appearance_runtime,
-                instance.world_position,
-                instance.facing == .left,
-            ),
+            .side => if (instance.isInteractionLocked())
+                try presentation_pose.FrontProjection.initSideInteraction(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                    instance.facing == .left,
+                )
+            else
+                try presentation_pose.FrontProjection.initSide(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                    instance.facing == .left,
+                ),
         };
 
         instance.last_submitted_keys =

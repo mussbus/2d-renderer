@@ -328,13 +328,29 @@ test "presets are cosmetic conflict-free recipes with reuse and a non-monolithic
         try std.testing.expectEqual(@as(u16, 0), item.capability_count);
     }
     try std.testing.expectEqual(
-        @as(usize, 0),
+        @as(usize, 2),
         scene.catalog.equipment_definition.attributes.len,
     );
     try std.testing.expectEqual(
-        @as(usize, 0),
+        @as(usize, 2),
         scene.catalog.equipment_definition.capabilities.len,
     );
+    const movement_speed = scene.catalog.equipment_definition.attributes[
+        (try scene.catalog.equipment_definition.attributeId("movement_speed")).index()
+    ];
+    const jump_strength = scene.catalog.equipment_definition.attributes[
+        (try scene.catalog.equipment_definition.attributeId("jump_strength")).index()
+    ];
+    const double_jump = scene.catalog.equipment_definition.capabilities[
+        (try scene.catalog.equipment_definition.capabilityId("double_jump")).index()
+    ];
+    const dash = scene.catalog.equipment_definition.capabilities[
+        (try scene.catalog.equipment_definition.capabilityId("dash")).index()
+    ];
+    try std.testing.expectApproxEqAbs(@as(f32, 4.5), movement_speed.base_value, 0.0001);
+    try std.testing.expectApproxEqAbs(@as(f32, 9), jump_strength.base_value, 0.0001);
+    try std.testing.expect(double_jump.granted_by_default);
+    try std.testing.expect(dash.granted_by_default);
 
     for (scene.catalog.presets) |preset| {
         for (preset.items(), 0..) |item_id, item_index| {

@@ -400,6 +400,14 @@ pub const Catalog = struct {
             .{ .stable_id = "waist", .render_layer = 76 },
             .{ .stable_id = "headwear", .render_layer = 80 },
         };
+        const attributes = [_]equipment.AttributeDefinitionInput{
+            .{ .stable_id = "movement_speed", .base_value = 4.5, .minimum = 0.1, .maximum = 20 },
+            .{ .stable_id = "jump_strength", .base_value = 9, .minimum = 3.51, .maximum = 30 },
+        };
+        const capabilities = [_]equipment.CapabilityDefinitionInput{
+            .{ .stable_id = "double_jump", .granted_by_default = true },
+            .{ .stable_id = "dash", .granted_by_default = true },
+        };
 
         const items = comptime wardrobeItems();
         var equipment_definition = try equipment.Definition.init(
@@ -411,8 +419,8 @@ pub const Catalog = struct {
                 .anatomy_roles = &roles,
                 .visual_layers = &layers,
                 .visual_components = &components,
-                .attributes = &.{},
-                .capabilities = &.{},
+                .attributes = &attributes,
+                .capabilities = &capabilities,
                 .items = &items,
                 .default_loadout = &.{},
             },

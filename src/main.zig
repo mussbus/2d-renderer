@@ -141,7 +141,11 @@ fn parseOptions(arguments: []const []const u8) !Options {
     if (options.demo == .playground and options.interactive == options.scripted_input) return error.PlaygroundRequiresExactlyOneInputMode;
     if (options.demo == .playground and options.scripted_input and options.maximum_frames != 1800) return error.PlaygroundScriptRequiresExactFrameCount;
     if (options.demo == .foundation and options.interactive == options.scripted_input) return error.FoundationRequiresExactlyOneInputMode;
-    if (options.demo == .foundation and options.scripted_input and options.maximum_frames != 1800) return error.FoundationScriptRequiresExactFrameCount;
+    if (options.demo == .foundation and options.scripted_input and
+        options.maximum_frames != @import("visual_foundation").required_frames)
+    {
+        return error.FoundationScriptRequiresExactFrameCount;
+    }
     if (options.demo == .side_scroller and (!options.scripted_input or options.interactive)) return error.SideScrollerRequiresScriptedInput;
     if (options.demo == .side_scroller and options.maximum_frames != 1100) return error.SideScrollerScriptRequiresExactFrameCount;
     if (options.demo == .art_assets and options.maximum_frames != 240) return error.ArtAssetDemoRequiresExactFrameCount;

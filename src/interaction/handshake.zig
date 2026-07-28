@@ -12,6 +12,17 @@ pub const maximum_horizontal_separation: f32 = authored_horizontal_separation + 
 pub const maximum_vertical_root_difference: f32 = 0.02;
 
 pub fn definition(definitions: *const authored.Definitions) !interaction.Definition {
+    return definitionWithPresentation(definitions, .{
+        .role_views = .{ .side, .side },
+        .suppress_automatic_view = true,
+        .occlusion_profile = .handshake_right_hand_contact,
+    });
+}
+
+pub fn definitionWithPresentation(
+    definitions: *const authored.Definitions,
+    presentation: interaction.PresentationDefinition,
+) !interaction.Definition {
     return interaction.Definition.init(.{
         .type_id = .handshake,
         .debug_name = "fixed_position_handshake",
@@ -31,6 +42,6 @@ pub fn definition(definitions: *const authored.Definitions) !interaction.Definit
             .facing_tolerance_radians = 0,
         },
         .completion_behavior = .grounded_motion_fallback,
-        .required_presentation_view = .side,
+        .presentation = presentation,
     }, definitions.library.clips, &definitions.machine);
 }

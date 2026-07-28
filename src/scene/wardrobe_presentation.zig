@@ -3,6 +3,7 @@ const math = @import("math");
 const mesh = @import("deformable_mesh");
 const equipment = @import("equipment");
 const humanoid = @import("humanoid");
+const anatomy = @import("anatomy");
 const character = @import("character");
 const presentation_pose = @import("presentation_pose");
 const presentation_view = @import("presentation_view");
@@ -168,14 +169,24 @@ pub const Presentation = struct {
                 );
                 break :projection front;
             },
-            .side => try presentation_pose.FrontProjection.initSide(
-                &instance.definition.skeleton_definition,
-                instance.character.local_and_world_pose,
-                instance.definition.visual_definition,
-                instance.character.appearance_runtime,
-                instance.world_position,
-                instance.facing == .left,
-            ),
+            .side => if (instance.isInteractionLocked())
+                try presentation_pose.FrontProjection.initSideInteraction(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                    instance.facing == .left,
+                )
+            else
+                try presentation_pose.FrontProjection.initSide(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                    instance.facing == .left,
+                ),
         };
         const projected_anatomy = try presentation_pose.FrontAnatomyProjection.init(
             projection,
@@ -205,13 +216,10 @@ pub const Presentation = struct {
                 projection,
                 projected_anatomy,
             );
-            const layer = loadout.definition.visual_layers[recipe.visual_layer.index()];
-            const order = sprite.OrderInput{
-                .scene_layer = character.characters_scene_layer,
-                .interaction_layer = character.neutral_interaction_layer,
-                .actor_layer = instance.actor_layer,
-                .body_part_layer = layer.render_layer,
-            };
+            const order = try presentation.resolvedVisualOrder(
+                instance,
+                visual_index,
+            );
 
             if (component.presentation_semantic == semantic(25_032)) {
                 const definition = if (view == .front)
@@ -452,6 +460,42 @@ pub const Presentation = struct {
         }
         return submitted;
     }
+
+    pub fn resolvedVisualOrder(
+        presentation: *const Presentation,
+        instance: *const character.CharacterInstance,
+        visual_index: usize,
+    ) !sprite.OrderInput {
+        const loadout = if (instance.equipment_loadout) |*value|
+            value
+        else
+            return error.CharacterEquipmentNotInitialized;
+        if (visual_index >= loadout.visuals().len) return error.InvalidResolvedEquipmentVisualIndex;
+        const visual = loadout.visuals()[visual_index];
+        const recipe = try loadout.definition.recipe(visual.recipe);
+        if (recipe.component.index() >= presentation.component_count or
+            recipe.visual_layer.index() >= loadout.definition.visual_layers.len)
+        {
+            return error.InvalidEquipmentVisualReference;
+        }
+        const component = loadout.definition.visual_components[recipe.component.index()];
+        const binding = presentation.bindings[component.id.index()];
+        if (!binding.active) return error.MissingWardrobePresentationBinding;
+        const anatomy_definition = instance.definition.anatomy_definition orelse
+            return error.CharacterHasNoAnatomy;
+        const layer = loadout.definition.visual_layers[recipe.visual_layer.index()];
+        return .{
+            .scene_layer = character.characters_scene_layer,
+            .interaction_layer = try equipmentInteractionLayer(
+                instance,
+                visual,
+                binding.anchor,
+                anatomy_definition,
+            ),
+            .actor_layer = instance.actor_layer,
+            .body_part_layer = layer.render_layer,
+        };
+    }
 };
 
 fn sourceForWardrobeRegion(id: @import("art_pack").AtlasRegionId) ?@import("art_pack").PixelRect {
@@ -459,6 +503,30 @@ fn sourceForWardrobeRegion(id: @import("art_pack").AtlasRegionId) ?@import("art_
         if (region.id == id) return region.source;
     }
     return null;
+}
+
+fn equipmentInteractionLayer(
+    instance: *const character.CharacterInstance,
+    visual: equipment.ResolvedVisualInstance,
+    anchor: wardrobe_catalog.AnchorKind,
+    anatomy_definition: anatomy.DefinitionView,
+) !i32 {
+    const part_id = switch (visual.source) {
+        .anatomy_part => |value| value,
+        .attachment_point => return character.neutral_interaction_layer,
+    };
+    const part_name = anatomy_definition.part_instances[part_id.index()].stable_id.slice();
+    const left = std.mem.startsWith(u8, part_name, "left_");
+    const anatomy_semantic: humanoid.AttachmentSemantic = switch (anchor) {
+        .torso => .torso,
+        .pelvis, .waist => .pelvis,
+        .head => .head,
+        .upper_arm => if (left) .left_upper_arm else .right_upper_arm,
+        .hand => if (left) .left_hand else .right_hand,
+        .lower_leg => if (left) .left_shin else .right_shin,
+        .foot => if (left) .left_foot else .right_foot,
+    };
+    return (try instance.resolvedOrder(anatomy_semantic)).interaction_layer;
 }
 
 fn geometryView(view: presentation_view.View, facing: humanoid.Facing) visual_geometry.View {
