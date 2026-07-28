@@ -1,4 +1,5 @@
 const std = @import("std");
+const foundation_evidence = @import("foundation_evidence");
 const math = @import("math");
 const input = @import("input");
 const fixed_step = @import("fixed_step");
@@ -18,19 +19,49 @@ const foundation_playground = @import("foundation_playground");
 const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_demo = @import("wardrobe_demo");
 const render_queue = @import("render_queue");
+const debug_draw = @import("debug_draw");
 
-pub const required_frames: u32 = 2_100;
+pub const required_frames: u32 = 2_400;
 pub const character_count: u32 = 2;
 pub const mesh_definition_count: usize = environment_demo.mesh_definition_count;
 pub const configured_texture_page_count: u32 = environment_demo.configured_texture_page_count;
 pub const required_handshake_count: usize = 3;
 pub const handshake_target_x: f32 =
     foundation_playground.partner_spawn.x - handshake.authored_horizontal_separation;
+pub const raised_platform_collider: u32 = 4;
 
 pub const TimeMode = enum(u8) {
     normal,
     quarter_speed,
     paused,
+};
+
+pub const ScriptPhase = foundation_evidence.Stage;
+
+pub const ThemeTransitionEvidence = struct {
+    count: u32 = 0,
+    changed: bool = false,
+    fingerprint_unchanged: bool = false,
+    root_delta_m: f32 = 0,
+    camera_delta_m: f32 = 0,
+};
+
+pub const FramePhysicsEvidence = struct {
+    landed: bool = false,
+    landing_support: ?u16 = null,
+};
+
+pub const RenderObservationInput = struct {
+    render_frame: u32,
+    texture_pages: u32,
+    submitted_sprites: u32,
+    submitted_meshes: u32,
+    sprite_ranges: u32,
+    mesh_ranges: u32,
+    gpu_resource_creations: u64,
+    steady_update_allocations: u64,
+    steady_submission_allocations: u64,
+    steady_queue_allocations: u64,
 };
 
 pub const InteractionRecord = struct {
@@ -121,6 +152,13 @@ pub const Scene = struct {
     interaction_root_b: ?math.Vec2 = null,
     interaction_record_index: ?usize = null,
     initial_breathing_sample: f32,
+    last_grounded_y: f32 = foundation_playground.player_spawn.y,
+    frame_physics: FramePhysicsEvidence = .{},
+    theme_transition: ThemeTransitionEvidence = .{},
+    debug_commands: debug_draw.CommandBuffer = .{},
+    debug_counts: foundation_evidence.DebugCounts = .{},
+    debug_enabled_ticks: u32 = 0,
+    reset_generation: u32 = 0,
     evidence: Evidence = .{},
 
     pub fn init(allocator: std.mem.Allocator) !Scene {
@@ -157,6 +195,7 @@ pub const Scene = struct {
         frame_delta: f64,
         snapshot: input.FrameInputSnapshot,
     ) !void {
+        scene.frame_physics = .{};
         if (snapshot.reset.pressed) {
             try scene.resetWorld();
             scene.evidence.reset_observed = true;
@@ -195,10 +234,23 @@ pub const Scene = struct {
         }
         if (snapshot.environment_theme_cycle.pressed) {
             const before = scene.authoritativeInteractionFingerprint();
+            const before_theme = scene.integrated.environment.active_theme;
+            const before_root = scene.integrated.production.female.world_position;
+            const before_camera = scene.integrated.camera.center;
             try scene.integrated.cycleThemePreservingState();
-            scene.evidence.theme_invariance =
-                scene.evidence.theme_invariance and
-                before == scene.authoritativeInteractionFingerprint();
+            const after = scene.authoritativeInteractionFingerprint();
+            const root_delta = scene.integrated.production.female.world_position
+                .sub(before_root).length();
+            const camera_delta = scene.integrated.camera.center.sub(before_camera).length();
+            const unchanged = before == after;
+            scene.evidence.theme_invariance = scene.evidence.theme_invariance and unchanged;
+            scene.theme_transition = .{
+                .count = scene.theme_transition.count +| 1,
+                .changed = before_theme != scene.integrated.environment.active_theme,
+                .fingerprint_unchanged = unchanged,
+                .root_delta_m = root_delta,
+                .camera_delta_m = camera_delta,
+            };
         }
         try scene.integrated.production.female.applyPresentationInput(snapshot);
 
@@ -275,13 +327,31 @@ pub const Scene = struct {
             }
         }
         try scene.validateSecondaryFinite();
+        if (scene.integrated.detailed_debug_enabled) {
+            scene.debug_enabled_ticks = std.math.add(
+                u32,
+                scene.debug_enabled_ticks,
+                1,
+            ) catch return error.DebugEnabledTickOverflow;
+        } else {
+            scene.debug_enabled_ticks = 0;
+        }
         scene.observePresentation();
     }
 
     pub fn submit(scene: *Scene, queue: *render_queue.UnifiedRenderQueue) !u32 {
         const before_sprites = queue.frame_metrics.submitted_sprites;
         const before_meshes = queue.frame_metrics.submitted_meshes;
-        const submitted = try scene.integrated.submit(queue);
+        var submitted = try scene.integrated.submit(queue);
+        scene.debug_counts = .{};
+        if (scene.integrated.detailed_debug_enabled) {
+            scene.debug_counts.collider =
+                @as(u32, @intCast(scene.integrated.production.world.colliders.len)) * 4;
+            try scene.buildDiagnosticCommands();
+            submitted += try scene.debug_commands.submitUnified(queue);
+        } else {
+            scene.debug_commands.beginFrame();
+        }
         scene.evidence.maximum_active_sprites = @max(
             scene.evidence.maximum_active_sprites,
             queue.frame_metrics.submitted_sprites - before_sprites,
@@ -291,6 +361,81 @@ pub const Scene = struct {
             queue.frame_metrics.submitted_meshes - before_meshes,
         );
         return submitted;
+    }
+
+    fn buildDiagnosticCommands(scene: *Scene) !void {
+        scene.debug_commands.beginFrame();
+        const characters = [_]*const character.CharacterInstance{
+            &scene.integrated.production.female,
+            &scene.integrated.production.male,
+        };
+        for (characters) |instance| {
+            try scene.debug_commands.addMarker(
+                instance.world_position,
+                .{ 1, 0.20, 0.20, 1 },
+            );
+            scene.debug_counts.root += 1;
+            const root_index =
+                try instance.definition.skeleton_definition.boneIndex(.root);
+            const visual_root = (try instance.character.local_and_world_pose.worldForBone(
+                &instance.definition.skeleton_definition,
+                root_index,
+            )).translationPart();
+            try scene.debug_commands.addMarker(visual_root, .{ 1, 0.85, 0.10, 1 });
+            scene.debug_counts.root += 1;
+
+            const feet = .{
+                &instance.foot_plants.left,
+                &instance.foot_plants.right,
+            };
+            inline for (feet) |foot| {
+                if (foot.last_ground_sample.hit) {
+                    const origin = foot.pre_ik_sole.add(.{ .x = 0, .y = 0.12 });
+                    try scene.debug_commands.addLine(
+                        origin,
+                        foot.last_ground_sample.hit_position,
+                        .{ 0.20, 1, 0.40, 0.80 },
+                    );
+                    try scene.debug_commands.addMarker(
+                        foot.last_ground_sample.hit_position,
+                        .{ 0.20, 1, 0.40, 1 },
+                    );
+                    scene.debug_counts.ground += 2;
+                }
+            }
+            if (instance.rightHandIkMetrics()) |metrics| {
+                try scene.debug_commands.addLine(
+                    metrics.shoulder_position,
+                    metrics.elbow_position,
+                    .{ 1, 0.65, 0.05, 1 },
+                );
+                try scene.debug_commands.addLine(
+                    metrics.elbow_position,
+                    metrics.post_ik_hand_position,
+                    .{ 1, 0.65, 0.05, 1 },
+                );
+                try scene.debug_commands.addMarker(
+                    metrics.post_ik_hand_position,
+                    .{ 1, 1, 0.10, 1 },
+                );
+                scene.debug_counts.ik += 3;
+            }
+        }
+        if (scene.manager.firstActiveInstance()) |active| {
+            if (active.ik.target_valid) {
+                try scene.debug_commands.addMarker(
+                    active.ik.shared_target,
+                    .{ 0.10, 1, 1, 1 },
+                );
+                scene.debug_counts.ik += 1;
+            }
+            try scene.debug_commands.addLine(
+                scene.integrated.production.female.world_position,
+                scene.integrated.production.male.world_position,
+                .{ 0.65, 0.25, 1, 0.70 },
+            );
+            scene.debug_counts.participant_link += 1;
+        }
     }
 
     pub fn recordRendering(
@@ -358,6 +503,12 @@ pub const Scene = struct {
         scene.interaction_root_a = null;
         scene.interaction_root_b = null;
         scene.interaction_record_index = null;
+        scene.last_grounded_y = foundation_playground.player_spawn.y;
+        scene.frame_physics = .{};
+        scene.debug_counts = .{};
+        scene.debug_enabled_ticks = 0;
+        scene.reset_generation = std.math.add(u32, scene.reset_generation, 1) catch
+            return error.ResetGenerationOverflow;
     }
 
     pub fn interactionEligibility(scene: *Scene) interaction_system.Eligibility {
@@ -682,6 +833,10 @@ pub const Scene = struct {
     ) void {
         const state = scene.integrated.production.female.controller.?.state;
         scene.evidence.landing_observed = scene.evidence.landing_observed or physics.landed;
+        if (physics.landed) {
+            scene.frame_physics.landed = true;
+            scene.frame_physics.landing_support = state.supporting_collider;
+        }
         scene.evidence.raised_platform_landing =
             scene.evidence.raised_platform_landing or
             (physics.landed and state.supporting_collider != null and
@@ -690,6 +845,7 @@ pub const Scene = struct {
         scene.evidence.double_jump_observed =
             scene.evidence.double_jump_observed or
             (physics.jump_accepted and physics.jump_source == .air);
+        if (state.grounded) scene.last_grounded_y = state.position.y;
     }
 
     fn observePresentation(scene: *Scene) void {
@@ -793,7 +949,209 @@ pub const Scene = struct {
         hash.update(std.mem.asBytes(&scene.active_interaction));
         return hash.final();
     }
+
+    pub fn captureObservation(
+        scene: *Scene,
+        script: *const ScriptedInput,
+        render: RenderObservationInput,
+    ) !foundation_evidence.Observation {
+        const production = &scene.integrated.production;
+        const female = &production.female;
+        const male = &production.male;
+        const state = female.controller.?.state;
+        const anatomy_definition = production.definition.anatomy_definition.?.view();
+        const anatomy_runtime = female.character.anatomy_runtime.?;
+        const body = anatomy_definition.body_presets[
+            anatomy_runtime.selected_body_preset.index()
+        ].stable_id.slice();
+        const morphology = anatomy_definition.morphology_presets[
+            anatomy_runtime.selected_morphology_preset.index()
+        ].stable_id.slice();
+        const hair = if (anatomy_runtime.selected_hair) |hair_id|
+            anatomy_definition.hair_definitions[hair_id.index()].stable_id.slice()
+        else
+            "none";
+        const outfit = (try production.catalog.preset(production.current_preset)).stable_id;
+        const override = female.presentationOverride();
+        const presentation_mode: foundation_evidence.PresentationMode =
+            if (female.interactionOwnerId() != 0)
+                .interaction_owned
+            else switch (override) {
+                .automatic => .automatic,
+                .force_side => .force_side,
+                .force_front => .force_front,
+            };
+        var interaction_id: u32 = 0;
+        var interaction_lifecycle: foundation_evidence.InteractionLifecycle = .none;
+        var interaction_phase: foundation_evidence.InteractionPhase = .none;
+        var interaction_elapsed_ticks: u32 = 0;
+        var contact_tick: u64 = 0;
+        var release_tick: u64 = 0;
+        var complete_tick: u64 = 0;
+        var ik_active = false;
+        var ordering_valid = false;
+        if (scene.manager.firstActiveInstance()) |active| {
+            interaction_id = active.id.raw();
+            interaction_lifecycle = evidenceLifecycle(active.lifecycle);
+            interaction_phase = evidenceInteractionPhase(active.phase);
+            interaction_elapsed_ticks = active.elapsed_ticks;
+            contact_tick = active.event_ticks[
+                @intFromEnum(interaction.EventSemantic.contact)
+            ] orelse 0;
+            release_tick = active.event_ticks[
+                @intFromEnum(interaction.EventSemantic.release)
+            ] orelse 0;
+            complete_tick = active.event_ticks[
+                @intFromEnum(interaction.EventSemantic.complete)
+            ] orelse 0;
+            ik_active = active.ik.target_valid;
+            if (active.phase == .contact) {
+                ordering_valid =
+                    (try scene.bodyOrderingValid()) and
+                    (try scene.equipmentOrderingValid());
+            }
+        }
+        const eligibility = scene.interactionEligibility();
+        const animation_state = female.animationState();
+        const animation_normalized_time = female.animationNormalizedTime();
+        const supporting_collider: ?u32 = if (state.supporting_collider) |value|
+            @intCast(value)
+        else
+            null;
+        const landing_support: ?u32 = if (scene.frame_physics.landing_support) |value|
+            @intCast(value)
+        else
+            null;
+        const raised_collider: u16 = @intCast(raised_platform_collider);
+        const left_surface_error_m: ?f32 =
+            if (female.foot_plants.left.last_ground_sample.hit and
+            female.foot_plants.left.last_ground_sample.collider_id == raised_collider)
+                @abs(
+                    female.foot_plants.left.post_ik_sole.y -
+                        female.foot_plants.left.last_ground_sample.ground_height,
+                )
+            else
+                null;
+        const right_surface_error_m: ?f32 =
+            if (female.foot_plants.right.last_ground_sample.hit and
+            female.foot_plants.right.last_ground_sample.collider_id == raised_collider)
+                @abs(
+                    female.foot_plants.right.post_ik_sole.y -
+                        female.foot_plants.right.last_ground_sample.ground_height,
+                )
+            else
+                null;
+        const feet_surface_contact_valid =
+            left_surface_error_m != null and right_surface_error_m != null and
+            left_surface_error_m.? <=
+                foundation_evidence.landing_surface_contact_threshold_m and
+            right_surface_error_m.? <=
+                foundation_evidence.landing_surface_contact_threshold_m;
+        const participant_owner_count: u32 =
+            @as(u32, @intFromBool(female.interactionOwnerId() != 0)) +
+            @as(u32, @intFromBool(male.interactionOwnerId() != 0));
+        return .{
+            .render_frame = render.render_frame,
+            .simulation_tick = production.simulation_tick,
+            .stage = script.phase,
+            .stage_frame = script.phase_frame,
+            .female_entity = female.id.raw(),
+            .male_entity = male.id.raw(),
+            .position = state.position.toArray(),
+            .velocity = state.velocity.toArray(),
+            .facing = switch (female.facing) {
+                .left => .left,
+                .right => .right,
+            },
+            .presentation_mode = presentation_mode,
+            .view = switch (female.presentationView()) {
+                .side => .side,
+                .front => .front,
+            },
+            .grounded = state.grounded,
+            .supporting_collider = supporting_collider,
+            .animation_state = @tagName(animation_state),
+            .animation_normalized_time = animation_normalized_time,
+            .locomotion_phase_valid = animation_state == .walk and
+                animation_normalized_time >= 0 and
+                animation_normalized_time <= 1,
+            .airborne_clearance_m = @max(0, state.position.y - scene.last_grounded_y),
+            .landed_this_frame = scene.frame_physics.landed,
+            .landing_support = landing_support,
+            .raised_support = raised_platform_collider,
+            .left_surface_error_m = left_surface_error_m,
+            .right_surface_error_m = right_surface_error_m,
+            .feet_surface_contact_valid = feet_surface_contact_valid,
+            .body = body,
+            .morphology = morphology,
+            .global_build = anatomy_runtime.global_build_normalized * 100,
+            .hair = hair,
+            .outfit = outfit,
+            .theme = @tagName(scene.integrated.environment.active_theme),
+            .theme_transition_count = scene.theme_transition.count,
+            .theme_changed = scene.theme_transition.changed,
+            .theme_fingerprint_unchanged = scene.theme_transition.fingerprint_unchanged,
+            .theme_root_delta_m = scene.theme_transition.root_delta_m,
+            .theme_camera_delta_m = scene.theme_transition.camera_delta_m,
+            .interaction_eligible = eligibility.isEligible(),
+            .interaction_id = interaction_id,
+            .interaction_lifecycle = interaction_lifecycle,
+            .interaction_phase = interaction_phase,
+            .interaction_elapsed_ticks = interaction_elapsed_ticks,
+            .contact_tick = contact_tick,
+            .release_tick = release_tick,
+            .complete_tick = complete_tick,
+            .ik_active = ik_active,
+            .ordering_valid = ordering_valid,
+            .active_interactions = @intCast(scene.manager.activeCount()),
+            .active_ik_constraints = @intCast(scene.manager.activeIkConstraintCount()),
+            .active_overrides = @intCast(scene.manager.activeOwnedOverrideCount()),
+            .participant_owner_count = participant_owner_count,
+            .detailed_debug_enabled = scene.integrated.detailed_debug_enabled,
+            .debug_enabled_ticks = scene.debug_enabled_ticks,
+            .debug_counts = scene.debug_counts,
+            .camera_center = scene.integrated.camera.center.toArray(),
+            .viewport = .{
+                scene.integrated.camera.viewport_width,
+                scene.integrated.camera.viewport_height,
+            },
+            .texture_pages = render.texture_pages,
+            .submitted_sprites = render.submitted_sprites,
+            .submitted_meshes = render.submitted_meshes,
+            .sprite_ranges = render.sprite_ranges,
+            .mesh_ranges = render.mesh_ranges,
+            .gpu_resource_creations = render.gpu_resource_creations,
+            .steady_update_allocations = render.steady_update_allocations,
+            .steady_submission_allocations = render.steady_submission_allocations,
+            .steady_queue_allocations = render.steady_queue_allocations,
+            .reset_generation = scene.reset_generation,
+        };
+    }
 };
+
+fn evidenceLifecycle(
+    value: interaction.Lifecycle,
+) foundation_evidence.InteractionLifecycle {
+    return switch (value) {
+        .inactive => .none,
+        .requested => .requested,
+        .active => .active,
+        .completing => .completing,
+        .completed => .completed,
+        .cancelled => .cancelled,
+    };
+}
+
+fn evidenceInteractionPhase(
+    value: interaction.Phase,
+) foundation_evidence.InteractionPhase {
+    return switch (value) {
+        .approach => .approach,
+        .contact => .contact,
+        .released => .released,
+        .complete => .complete,
+    };
+}
 
 fn projectedRightHand(instance: *const character.CharacterInstance) !math.Vec2 {
     const definition = &instance.definition.skeleton_definition;
@@ -830,43 +1188,6 @@ fn configureLineup(production: *wardrobe_demo.Scene) !void {
     try production.selectPreset(try production.catalog.presetId("wide_brim_crimson"));
 }
 
-pub const ScriptPhase = enum(u8) {
-    idle,
-    customization_press,
-    customization_release,
-    move_left,
-    stop_left,
-    move_right,
-    short_jump_press,
-    short_jump_release,
-    travel_to_platform,
-    full_jump,
-    wait_raised_landing,
-    outfit_motion_press,
-    outfit_motion_release,
-    double_jump_first,
-    double_jump_release,
-    double_jump_second,
-    double_jump_land,
-    dash_to_handshake,
-    dash_release,
-    approach,
-    first_interact,
-    first_wait,
-    long_outfit,
-    second_interact,
-    second_wait,
-    ivory_outfit,
-    third_interact,
-    third_wait,
-    cleanup_idle,
-    debug_press,
-    debug_release,
-    reset_press,
-    reset_release,
-    final_idle,
-};
-
 pub const ScriptedInput = struct {
     phase: ScriptPhase = .idle,
     phase_frame: u32 = 0,
@@ -884,17 +1205,21 @@ pub const ScriptedInput = struct {
             .stop_left,
             .short_jump_release,
             .wait_raised_landing,
+            .theme_hold,
+            .theme_restore_release,
             .outfit_motion_release,
             .double_jump_release,
             .double_jump_land,
             .dash_release,
             .first_wait,
+            .first_cleanup_hold,
+            .debug_hold,
             .long_outfit,
             .second_wait,
+            .debug_disable_release,
             .ivory_outfit,
             .third_wait,
             .cleanup_idle,
-            .debug_release,
             .reset_release,
             .final_idle,
             => {},
@@ -910,6 +1235,7 @@ pub const ScriptedInput = struct {
                 if (script.phase == .outfit_motion_press) raw.keyboard.o = true;
             },
             .short_jump_press => raw.keyboard.space = script.phase_frame < 3,
+            .theme_switch_press, .theme_restore_press => raw.keyboard.t = true,
             .double_jump_first, .double_jump_second => raw.keyboard.space = true,
             .dash_to_handshake => {
                 const error_value = handshake_target_x - state.position.x;
@@ -939,7 +1265,9 @@ pub const ScriptedInput = struct {
             },
             .first_interact, .second_interact, .third_interact => raw.keyboard.e = true,
             .debug_press => raw.keyboard.f1 = true,
+            .debug_disable_press => raw.keyboard.f1 = true,
             .reset_press => raw.keyboard.r = true,
+            .approach_hold => {},
         }
         return raw;
     }
@@ -948,7 +1276,7 @@ pub const ScriptedInput = struct {
         script.phase_frame += 1;
         const state = scene.integrated.production.female.controller.?.state;
         switch (script.phase) {
-            .idle => if (script.phase_frame >= 35) script.transition(.customization_press),
+            .idle => if (script.phase_frame >= 65) script.transition(.customization_press),
             .customization_press => if (script.phase_frame >= 1)
                 script.transition(.customization_release),
             .customization_release => if (script.phase_frame >= 2) {
@@ -962,7 +1290,10 @@ pub const ScriptedInput = struct {
                 script.transition(.move_left);
             },
             .move_left => if (state.position.x <= -5.4) script.transition(.stop_left),
-            .stop_left => if (script.phase_frame >= 15 and @abs(state.velocity.x) < 0.02)
+            .stop_left => if (script.phase_frame >= 130 and
+                @abs(state.velocity.x) < 0.02 and
+                scene.integrated.production.female.animationState() == .idle and
+                scene.integrated.production.female.presentationView() == .front)
                 script.transition(.move_right),
             .move_right => if (state.position.x >= -3.1) script.transition(.short_jump_press),
             .short_jump_press => if (script.phase_frame >= 4)
@@ -976,8 +1307,16 @@ pub const ScriptedInput = struct {
             .wait_raised_landing => if (script.phase_frame > 8 and
                 scene.evidence.raised_platform_landing)
             {
-                script.transition(.outfit_motion_press);
+                script.transition(.theme_switch_press);
             },
+            .theme_switch_press => if (script.phase_frame >= 1)
+                script.transition(.theme_hold),
+            .theme_hold => if (script.phase_frame >= 130)
+                script.transition(.theme_restore_press),
+            .theme_restore_press => if (script.phase_frame >= 1)
+                script.transition(.theme_restore_release),
+            .theme_restore_release => if (script.phase_frame >= 2)
+                script.transition(.outfit_motion_press),
             .outfit_motion_press => if (script.phase_frame >= 1) {
                 scene.evidence.outfit_motion_change = true;
                 script.transition(.outfit_motion_release);
@@ -1013,29 +1352,46 @@ pub const ScriptedInput = struct {
                 }
                 if (scene.interactionEligibility().isEligible()) {
                     scene.evidence.approach_observed = true;
-                    script.transition(.first_interact);
+                    script.transition(.approach_hold);
                 }
             },
+            .approach_hold => if (script.phase_frame >= 65 and
+                @abs(state.velocity.x) < 0.02 and
+                scene.integrated.production.female.animationState() == .idle and
+                scene.integrated.production.female.presentationView() == .front)
+                script.transition(.first_interact),
             .first_interact => if (scene.evidence.interaction_count == 1)
                 script.transition(.first_wait),
             .first_wait => if (scene.evidence.interaction_records[0].captured) {
                 script.completed_interactions = 1;
+                script.transition(.first_cleanup_hold);
+            },
+            .first_cleanup_hold => if (script.phase_frame >= 65) {
                 try scene.selectFemalePresetByName("garnet_formal");
                 scene.evidence.outfit_idle_change = true;
                 try scene.integrated.cycleThemePreservingState();
-                script.transition(.long_outfit);
+                script.transition(.debug_press);
             },
-            .long_outfit => if (script.phase_frame >= 12)
+            .debug_press => if (script.phase_frame >= 1)
+                script.transition(.debug_hold),
+            .debug_hold => if (script.phase_frame >= 65)
+                script.transition(.long_outfit),
+            .long_outfit => if (script.phase_frame >= 2)
                 script.transition(.second_interact),
             .second_interact => if (scene.evidence.interaction_count == 2)
                 script.transition(.second_wait),
             .second_wait => if (scene.evidence.interaction_records[1].captured) {
                 script.completed_interactions = 2;
+                script.transition(.debug_disable_press);
+            },
+            .debug_disable_press => if (script.phase_frame >= 1)
+                script.transition(.debug_disable_release),
+            .debug_disable_release => if (script.phase_frame >= 2) {
                 try scene.selectFemalePresetByName("ivory_blouse_red_shorts");
                 try scene.integrated.cycleThemePreservingState();
                 script.transition(.ivory_outfit);
             },
-            .ivory_outfit => if (script.phase_frame >= 12)
+            .ivory_outfit => if (script.phase_frame >= 60)
                 script.transition(.third_interact),
             .third_interact => if (scene.evidence.interaction_count == 3)
                 script.transition(.third_wait),
@@ -1046,12 +1402,8 @@ pub const ScriptedInput = struct {
             .cleanup_idle => if (script.phase_frame >= 30 and
                 scene.evidence.front_idle_restored)
             {
-                script.transition(.debug_press);
+                script.transition(.reset_press);
             },
-            .debug_press => if (script.phase_frame >= 1)
-                script.transition(.debug_release),
-            .debug_release => if (script.phase_frame >= 5)
-                script.transition(.reset_press),
             .reset_press => if (scene.evidence.reset_observed)
                 script.transition(.reset_release),
             .reset_release => if (script.phase_frame >= 4)

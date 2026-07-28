@@ -112,9 +112,10 @@ Draw calls are committed only after a command buffer returns a valid submission 
 
 Prompt 23 makes the existing `texture_page` field authoritative for retained image-backed pages. Prepared sprite and unified sprite/mesh ranges preserve semantic order and split at page transitions. Immediately before each range draw, the renderer binds that page's persistent texture and sampler. This remains range batching, not one independent submission per body part or atlas region; honest draw counts rise when sorted content alternates pages. Sprite and deformable-mesh materials share the same page table. Definition, upload, ownership, and failure details are in `docs/ART_PIPELINE.md`.
 
-Prompt 27's 2,100-frame integrated route peaks at 125 sprites, one active mesh,
-16 sprite ranges/draws, one mesh range/draw, 8,000 sprite upload bytes, and 64
-mesh upload bytes. Those are actual prepared and encoded counts after global
+Prompt 27A's 2,400-frame integrated route peaks at 139 clean production
+sprites, one active mesh, 17 sprite ranges/draws, one mesh range/draw, 85,824
+window sprite-upload bytes with the same-queue HUD, and 64 mesh-upload bytes.
+Those are actual prepared and encoded counts after global
 semantic sorting of environment, surfaces, two characters, wardrobe,
 interaction-qualified equipment, foreground, and optional debug work. The
 route does not claim one draw across incompatible page or primitive

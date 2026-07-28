@@ -25,6 +25,8 @@ const character_properties_demo = @import("character_properties_demo");
 const breathing_demo = @import("breathing_demo");
 const mesh_attachment_demo = @import("mesh_attachment_demo");
 const foundation_playground = @import("foundation_playground");
+const foundation_evidence = @import("foundation_evidence");
+const acceptance_hud = @import("acceptance_hud");
 const visual_foundation = @import("visual_foundation");
 const art_pack = @import("art_pack");
 const art_asset_demo = @import("art_asset_demo");
@@ -98,8 +100,8 @@ const geometry_debug_capture_path =
     geometry_debug_capture_directory ++ "/03_wide_brim_front_geometry.ppm";
 const environment_capture_directory = "zig-out/p26_environment_gpu";
 const environment_capture_count: u32 = 7;
-const foundation_capture_directory = "zig-out/p27_visual_foundation";
-const foundation_capture_count: u32 = 9;
+const foundation_capture_directory = "zig-out/p27a_evidence/candidate";
+const foundation_capture_count: u32 = @intCast(foundation_evidence.capture_count);
 
 fn environmentCapturePath(frame: u32) ?[]const u8 {
     return switch (frame) {
@@ -114,57 +116,6 @@ fn environmentCapturePath(frame: u32) ?[]const u8 {
     };
 }
 
-fn foundationCapturePath(
-    scene: *const visual_foundation.Scene,
-    script: *const visual_foundation.ScriptedInput,
-    captured_count: u32,
-    frame: u32,
-) ?[]const u8 {
-    return switch (captured_count) {
-        0 => if (frame >= 20)
-            foundation_capture_directory ++ "/01_initial_front_idle.ppm"
-        else
-            null,
-        1 => if (script.phase == .stop_left)
-            foundation_capture_directory ++ "/02_stop_front_facing_left.ppm"
-        else
-            null,
-        2 => if (script.phase == .full_jump)
-            foundation_capture_directory ++ "/03_jump_side_environment.ppm"
-        else
-            null,
-        3 => if (script.phase == .first_wait and interactionAtContact(scene))
-            foundation_capture_directory ++ "/04_wide_brim_handshake_violet.ppm"
-        else
-            null,
-        4 => if (script.phase == .second_wait and interactionAtContact(scene))
-            foundation_capture_directory ++ "/05_long_garment_handshake_debug.ppm"
-        else
-            null,
-        5 => if (script.phase == .third_wait and interactionAtContact(scene))
-            foundation_capture_directory ++ "/06_ivory_handshake_violet.ppm"
-        else
-            null,
-        6 => if (script.phase == .cleanup_idle)
-            foundation_capture_directory ++ "/07_interaction_cleanup_front.ppm"
-        else
-            null,
-        7 => if (script.phase == .debug_release)
-            foundation_capture_directory ++ "/08_detailed_debug.ppm"
-        else
-            null,
-        8 => if (script.phase == .final_idle and script.final_frames >= 20)
-            foundation_capture_directory ++ "/09_reset_stable_front.ppm"
-        else
-            null,
-        else => null,
-    };
-}
-
-fn interactionAtContact(scene: *const visual_foundation.Scene) bool {
-    const active = scene.manager.firstActiveInstance() orelse return false;
-    return active.phase == .contact;
-}
 const texture_width: u32 = 4;
 const texture_height: u32 = 4;
 const upload_texture_row_pitch: u32 = 256;
@@ -242,6 +193,43 @@ const ReadbackPixels = struct {
     inside_b: [4]u8,
     row_pitch: u32,
 };
+
+const CapturePixelEvidence = struct {
+    width: u32 = 0,
+    height: u32 = 0,
+    rgb_payload_bytes: u64 = 0,
+    sha256: [32]u8 = [_]u8{0} ** 32,
+    minimum_channel: u8 = 255,
+    maximum_channel: u8 = 0,
+    mean_channel: f64 = 0,
+};
+
+const FoundationCaptureArtifact = struct {
+    captured: bool = false,
+    stable_ticks: u32 = 0,
+    observation: foundation_evidence.Observation = .{},
+    pixels: CapturePixelEvidence = .{},
+};
+
+fn writeOptionalU32(file: anytype, io: std.Io, value: ?u32) !void {
+    if (value) |number| {
+        var buffer: [32]u8 = undefined;
+        const bytes = try std.fmt.bufPrint(&buffer, "{d}", .{number});
+        try file.writeStreamingAll(io, bytes);
+    } else {
+        try file.writeStreamingAll(io, "null");
+    }
+}
+
+fn writeOptionalF32(file: anytype, io: std.Io, value: ?f32) !void {
+    if (value) |number| {
+        var buffer: [32]u8 = undefined;
+        const bytes = try std.fmt.bufPrint(&buffer, "{d:.6}", .{number});
+        try file.writeStreamingAll(io, bytes);
+    } else {
+        try file.writeStreamingAll(io, "null");
+    }
+}
 
 const EncodedDrawCounts = struct {
     sprites: u32 = 0,
@@ -936,6 +924,9 @@ pub const GpuDemo = struct {
         var playground_sequence = playground_demo.ScriptedInput{};
         var side_scroller_sequence = playground_demo.SideScrollerScriptedInput{};
         var foundation_sequence = visual_foundation.ScriptedInput{};
+        var foundation_capture_tracker = foundation_evidence.Tracker{};
+        var foundation_capture_artifacts =
+            [_]FoundationCaptureArtifact{.{}} ** foundation_evidence.capture_count;
         var environment_sequence = environment_demo.ScriptedInput{};
         var playground_snapshot_builder = input.SnapshotBuilder{};
         var foundation_snapshot_builder = input.SnapshotBuilder{};
@@ -1070,6 +1061,10 @@ pub const GpuDemo = struct {
                 &foundation_scene.?.integrated.production.wardrobe_art_definition.art,
                 &foundation_scene.?.integrated.environment_art_definition.art,
             });
+            // The bounded Prompt 27A HUD shares the production queue and GPU
+            // instance path. Reserve its fixed maximum before stabilization so
+            // evidence frames never grow GPU resources.
+            try self.ensureGpuCapacity(render_queue.default_sprite_capacity, null);
             const definitions = foundation_scene.?.meshDefinitions();
             try self.initializeMeshRendering(&definitions);
             if (scripted_input_enabled) try self.initializeVisualCaptureTransfer(false);
@@ -1768,32 +1763,82 @@ pub const GpuDemo = struct {
                 },
             }
             const rendered = if (usesUnifiedRendering(mode)) unified: {
-                const prepared = self.unified_queue.?.prepare();
+                var prepared = self.unified_queue.?.prepare();
+                if (mode == .foundation) {
+                    if (scripted_input_enabled) {
+                        const observation = try foundation_scene.?.captureObservation(
+                            &foundation_sequence,
+                            .{
+                                .render_frame = frame,
+                                .texture_pages = self.texture_page_count,
+                                .submitted_sprites = self.unified_queue.?.frame_metrics.submitted_sprites,
+                                .submitted_meshes = self.unified_queue.?.frame_metrics.submitted_meshes,
+                                .sprite_ranges = self.unified_queue.?.frame_metrics.sprite_ranges,
+                                .mesh_ranges = self.unified_queue.?.frame_metrics.mesh_ranges,
+                                .gpu_resource_creations = self.resource_metrics.gpu_resource_creations,
+                                .steady_update_allocations = pose_evaluation_allocations,
+                                .steady_submission_allocations = humanoid_submission_allocations,
+                                .steady_queue_allocations = self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization,
+                            },
+                        );
+                        if (try foundation_capture_tracker.observe(observation)) |candidate| {
+                            const spec = foundation_evidence.specs[candidate.spec_index];
+                            var capture_path_buffer: [256]u8 = undefined;
+                            const capture_path = try std.fmt.bufPrint(
+                                &capture_path_buffer,
+                                "{s}/{s}",
+                                .{ foundation_capture_directory, spec.filename },
+                            );
+                            const pixels = try self.captureUnifiedToPpm(prepared, capture_path);
+                            foundation_capture_artifacts[candidate.spec_index] = .{
+                                .captured = true,
+                                .stable_ticks = candidate.stable_ticks,
+                                .observation = observation,
+                                .pixels = pixels,
+                            };
+                            try foundation_capture_tracker.commit(candidate, observation);
+                            std.log.info(
+                                "Prompt 27A capture accepted: id={s} frame={d} tick={d} stable_ticks={d} stage={s} view={s} facing={s}",
+                                .{
+                                    @tagName(spec.id),
+                                    observation.render_frame,
+                                    observation.simulation_tick,
+                                    candidate.stable_ticks,
+                                    @tagName(observation.stage),
+                                    @tagName(observation.view),
+                                    @tagName(observation.facing),
+                                },
+                            );
+                        }
+                        const next_target = if (foundation_capture_tracker.currentSpec()) |spec|
+                            spec.id
+                        else
+                            null;
+                        _ = try acceptance_hud.submit(
+                            &self.unified_queue.?,
+                            self.visible_camera,
+                            observation,
+                            next_target,
+                        );
+                        prepared = self.unified_queue.?.prepare();
+                    }
+                    const window_rendered = try self.renderUnifiedToWindow(prepared);
+                    foundation_scene.?.recordRendering(self.unified_queue.?.frame_metrics);
+                    break :unified window_rendered;
+                }
                 const window_rendered = try self.renderUnifiedToWindow(prepared);
                 if (mode == .visual_quality) {
                     if (integrated_debug_enabled) {
                         if (frame == 150) {
-                            try self.captureUnifiedToPpm(prepared, geometry_debug_capture_path);
+                            _ = try self.captureUnifiedToPpm(prepared, geometry_debug_capture_path);
                         }
                     } else if (visualCapturePath(frame)) |capture_path| {
-                        try self.captureUnifiedToPpm(prepared, capture_path);
+                        _ = try self.captureUnifiedToPpm(prepared, capture_path);
                     }
                 } else if (mode == .environment and scripted_input_enabled) {
                     if (environmentCapturePath(frame)) |capture_path| {
-                        try self.captureUnifiedToPpm(prepared, capture_path);
+                        _ = try self.captureUnifiedToPpm(prepared, capture_path);
                     }
-                } else if (mode == .foundation and scripted_input_enabled) {
-                    if (foundationCapturePath(
-                        &foundation_scene.?,
-                        &foundation_sequence,
-                        self.visual_captures_written,
-                        frame,
-                    )) |capture_path| {
-                        try self.captureUnifiedToPpm(prepared, capture_path);
-                    }
-                }
-                if (mode == .foundation) {
-                    foundation_scene.?.recordRendering(self.unified_queue.?.frame_metrics);
                 }
                 break :unified window_rendered;
             } else try self.renderPreparedToWindow(self.batch.?.prepare(), null);
@@ -3242,6 +3287,8 @@ pub const GpuDemo = struct {
                     return error.FoundationFrameCountMismatch;
                 }
                 try scene.validateComplete(&foundation_sequence);
+                try foundation_capture_tracker.validateComplete();
+                try self.writeFoundationEvidence(&foundation_capture_artifacts);
             }
             const unified_metrics = self.unified_queue.?.frame_metrics;
             const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
@@ -3251,7 +3298,7 @@ pub const GpuDemo = struct {
                 3 * 1536 * 1024 * 4 +
                 2 * 1024 * 1024 * 4;
             if (scripted_input_enabled) {
-                std.log.info("PROMPT 27 INTEGRATED VISUAL FOUNDATION EVIDENCE", .{});
+                std.log.info("PROMPT 27A STATE-CONDITIONED VISUAL FOUNDATION EVIDENCE", .{});
             } else {
                 std.log.info("PROMPT 27 INTERACTIVE SESSION SUMMARY", .{});
             }
@@ -3700,7 +3747,7 @@ pub const GpuDemo = struct {
         self: *GpuDemo,
         prepared: render_queue.PreparedQueue,
         path: []const u8,
-    ) !void {
+    ) !CapturePixelEvidence {
         const transfer = self.visual_capture_transfer orelse
             return error.VisualCaptureTransferNotInitialized;
         const row_pitch = alignForward(target_width * 4, 256);
@@ -3797,6 +3844,10 @@ pub const GpuDemo = struct {
         );
         try file.writeStreamingAll(self.io, header);
         var rgb_row: [target_width * 3]u8 = undefined;
+        var sha256 = std.crypto.hash.sha2.Sha256.init(.{});
+        var minimum_channel: u8 = 255;
+        var maximum_channel: u8 = 0;
+        var channel_sum: u64 = 0;
         for (0..target_height) |y| {
             for (0..target_width) |x| {
                 const source_offset =
@@ -3805,10 +3856,218 @@ pub const GpuDemo = struct {
                 rgb_row[destination_offset + 0] = rgba[source_offset + 0];
                 rgb_row[destination_offset + 1] = rgba[source_offset + 1];
                 rgb_row[destination_offset + 2] = rgba[source_offset + 2];
+                inline for (0..3) |channel_index| {
+                    const channel = rgb_row[destination_offset + channel_index];
+                    minimum_channel = @min(minimum_channel, channel);
+                    maximum_channel = @max(maximum_channel, channel);
+                    channel_sum += channel;
+                }
             }
             try file.writeStreamingAll(self.io, &rgb_row);
+            sha256.update(&rgb_row);
         }
         self.visual_captures_written += 1;
+        var digest: [32]u8 = undefined;
+        sha256.final(&digest);
+        const payload_bytes: u64 = target_width * target_height * 3;
+        return .{
+            .width = target_width,
+            .height = target_height,
+            .rgb_payload_bytes = payload_bytes,
+            .sha256 = digest,
+            .minimum_channel = minimum_channel,
+            .maximum_channel = maximum_channel,
+            .mean_channel = @as(f64, @floatFromInt(channel_sum)) /
+                @as(f64, @floatFromInt(payload_bytes)),
+        };
+    }
+
+    fn writeFoundationEvidence(
+        self: *GpuDemo,
+        artifacts: *const [foundation_evidence.capture_count]FoundationCaptureArtifact,
+    ) !void {
+        var manifest = try std.Io.Dir.cwd().createFile(
+            self.io,
+            foundation_capture_directory ++ "/capture_manifest.json",
+            .{},
+        );
+        defer manifest.close(self.io);
+        try manifest.writeStreamingAll(
+            self.io,
+            "{\n  \"schema_version\": 1,\n  \"status\": \"candidate_pending_owner_review\",\n  \"capture_count\": 16,\n  \"failure_count\": 0,\n  \"captures\": [\n",
+        );
+        for (foundation_evidence.specs, artifacts, 0..) |spec, artifact, index| {
+            if (!artifact.captured) return error.FoundationCaptureArtifactMissing;
+            try artifact.observation.validate();
+            if (artifact.pixels.width != target_width or
+                artifact.pixels.height != target_height or
+                artifact.pixels.rgb_payload_bytes != target_width * target_height * 3 or
+                artifact.pixels.minimum_channel >= artifact.pixels.maximum_channel)
+            {
+                return error.FoundationCapturePixelEvidenceInvalid;
+            }
+            const hash_hex = std.fmt.bytesToHex(artifact.pixels.sha256, .lower);
+            var metadata_path_buffer: [256]u8 = undefined;
+            const metadata_path = try std.fmt.bufPrint(
+                &metadata_path_buffer,
+                "{s}/{s}.json",
+                .{ foundation_capture_directory, spec.filename },
+            );
+            try self.writeFoundationCaptureMetadata(
+                metadata_path,
+                spec,
+                artifact,
+                hash_hex[0..],
+            );
+            var line_buffer: [768]u8 = undefined;
+            const line = try std.fmt.bufPrint(
+                &line_buffer,
+                "    {{\"order\":{d},\"capture_id\":\"{s}\",\"filename\":\"{s}\",\"metadata\":\"{s}.json\",\"render_frame\":{d},\"simulation_tick\":{d},\"stable_ticks\":{d},\"pixel_sha256\":\"{s}\"}}{s}\n",
+                .{
+                    index + 1,
+                    @tagName(spec.id),
+                    spec.filename,
+                    spec.filename,
+                    artifact.observation.render_frame,
+                    artifact.observation.simulation_tick,
+                    artifact.stable_ticks,
+                    hash_hex[0..],
+                    if (index + 1 == artifacts.len) "" else ",",
+                },
+            );
+            try manifest.writeStreamingAll(self.io, line);
+        }
+        try manifest.writeStreamingAll(self.io, "  ]\n}\n");
+    }
+
+    fn writeFoundationCaptureMetadata(
+        self: *GpuDemo,
+        path: []const u8,
+        spec: foundation_evidence.CaptureSpec,
+        artifact: FoundationCaptureArtifact,
+        hash_hex: []const u8,
+    ) !void {
+        const observation = artifact.observation;
+        var file = try std.Io.Dir.cwd().createFile(self.io, path, .{});
+        defer file.close(self.io);
+        var buffer: [4096]u8 = undefined;
+        const first = try std.fmt.bufPrint(
+            &buffer,
+            "{{\n  \"schema_version\":1,\n  \"capture_id\":\"{s}\",\n  \"filename\":\"{s}\",\n  \"render_frame\":{d},\n  \"simulation_tick\":{d},\n  \"script_phase\":\"{s}\",\n  \"script_phase_frame\":{d},\n  \"required_stable_ticks\":{d},\n  \"consecutive_stable_ticks\":{d},\n  \"female_entity_id\":{d},\n  \"male_entity_id\":{d},\n  \"position_m\":[{d:.6},{d:.6}],\n  \"velocity_mps\":[{d:.6},{d:.6}],\n  \"gameplay_facing\":\"{s}\",\n  \"presentation_mode\":\"{s}\",\n  \"resolved_view\":\"{s}\",\n  \"grounded\":{},\n  \"supporting_collider\":",
+            .{
+                @tagName(spec.id),
+                spec.filename,
+                observation.render_frame,
+                observation.simulation_tick,
+                @tagName(observation.stage),
+                observation.stage_frame,
+                spec.minimum_stable_ticks,
+                artifact.stable_ticks,
+                observation.female_entity,
+                observation.male_entity,
+                observation.position[0],
+                observation.position[1],
+                observation.velocity[0],
+                observation.velocity[1],
+                @tagName(observation.facing),
+                @tagName(observation.presentation_mode),
+                @tagName(observation.view),
+                observation.grounded,
+            },
+        );
+        try file.writeStreamingAll(self.io, first);
+        try writeOptionalU32(&file, self.io, observation.supporting_collider);
+        const second = try std.fmt.bufPrint(
+            &buffer,
+            ",\n  \"animation_state\":\"{s}\",\n  \"animation_normalized_time\":{d:.6},\n  \"physics\":{{\"locomotion_phase_valid\":{},\"airborne_clearance_m\":{d:.6},\"landed_this_frame\":{},\"landing_support\":",
+            .{
+                observation.animation_state,
+                observation.animation_normalized_time,
+                observation.locomotion_phase_valid,
+                observation.airborne_clearance_m,
+                observation.landed_this_frame,
+            },
+        );
+        try file.writeStreamingAll(self.io, second);
+        try writeOptionalU32(&file, self.io, observation.landing_support);
+        const third = try std.fmt.bufPrint(
+            &buffer,
+            ",\"raised_support\":{d},\"left_surface_error_m\":",
+            .{observation.raised_support},
+        );
+        try file.writeStreamingAll(self.io, third);
+        try writeOptionalF32(&file, self.io, observation.left_surface_error_m);
+        try file.writeStreamingAll(self.io, ",\"right_surface_error_m\":");
+        try writeOptionalF32(&file, self.io, observation.right_surface_error_m);
+        const fourth = try std.fmt.bufPrint(
+            &buffer,
+            ",\"surface_contact_valid\":{}}},\n  \"body\":\"{s}\",\n  \"morphology\":\"{s}\",\n  \"global_build_percent\":{d:.6},\n  \"hair\":\"{s}\",\n  \"outfit\":\"{s}\",\n  \"theme\":\"{s}\",\n  \"theme_transition\":{{\"count\":{d},\"changed\":{},\"fingerprint_unchanged\":{},\"root_delta_m\":{d:.9},\"camera_delta_m\":{d:.9}}},\n  \"interaction\":{{\"eligible\":{},\"id\":{d},\"lifecycle\":\"{s}\",\"phase\":\"{s}\",\"elapsed_ticks\":{d},\"contact_tick\":{d},\"release_tick\":{d},\"complete_tick\":{d},\"ik_active\":{},\"ordering_valid\":{},\"active_count\":{d},\"ik_constraint_count\":{d},\"override_count\":{d},\"participant_owner_count\":{d}}},\n",
+            .{
+                observation.feet_surface_contact_valid,
+                observation.body,
+                observation.morphology,
+                observation.global_build,
+                observation.hair,
+                observation.outfit,
+                observation.theme,
+                observation.theme_transition_count,
+                observation.theme_changed,
+                observation.theme_fingerprint_unchanged,
+                observation.theme_root_delta_m,
+                observation.theme_camera_delta_m,
+                observation.interaction_eligible,
+                observation.interaction_id,
+                @tagName(observation.interaction_lifecycle),
+                @tagName(observation.interaction_phase),
+                observation.interaction_elapsed_ticks,
+                observation.contact_tick,
+                observation.release_tick,
+                observation.complete_tick,
+                observation.ik_active,
+                observation.ordering_valid,
+                observation.active_interactions,
+                observation.active_ik_constraints,
+                observation.active_overrides,
+                observation.participant_owner_count,
+            },
+        );
+        try file.writeStreamingAll(self.io, fourth);
+        const fifth = try std.fmt.bufPrint(
+            &buffer,
+            "  \"debug\":{{\"enabled\":{},\"enabled_ticks\":{d},\"collider\":{d},\"root\":{d},\"ground\":{d},\"ik\":{d},\"participant_link\":{d},\"total\":{d}}},\n  \"camera\":{{\"center_m\":[{d:.6},{d:.6}],\"viewport_px\":[{d},{d}] }},\n  \"render\":{{\"texture_pages\":{d},\"submitted_sprites\":{d},\"submitted_meshes\":{d},\"sprite_ranges\":{d},\"mesh_ranges\":{d},\"gpu_resource_creations\":{d}}},\n  \"allocations\":{{\"update\":{d},\"submission\":{d},\"queue\":{d}}},\n  \"reset_generation\":{d},\n  \"pixels\":{{\"width_px\":{d},\"height_px\":{d},\"rgb_payload_bytes\":{d},\"sha256\":\"{s}\",\"minimum_channel\":{d},\"maximum_channel\":{d},\"mean_channel\":{d:.6}}},\n  \"manual_visual_acceptance\":\"PENDING OWNER REVIEW\"\n}}\n",
+            .{
+                observation.detailed_debug_enabled,
+                observation.debug_enabled_ticks,
+                observation.debug_counts.collider,
+                observation.debug_counts.root,
+                observation.debug_counts.ground,
+                observation.debug_counts.ik,
+                observation.debug_counts.participant_link,
+                observation.debug_counts.total(),
+                observation.camera_center[0],
+                observation.camera_center[1],
+                observation.viewport[0],
+                observation.viewport[1],
+                observation.texture_pages,
+                observation.submitted_sprites,
+                observation.submitted_meshes,
+                observation.sprite_ranges,
+                observation.mesh_ranges,
+                observation.gpu_resource_creations,
+                observation.steady_update_allocations,
+                observation.steady_submission_allocations,
+                observation.steady_queue_allocations,
+                observation.reset_generation,
+                artifact.pixels.width,
+                artifact.pixels.height,
+                artifact.pixels.rgb_payload_bytes,
+                hash_hex,
+                artifact.pixels.minimum_channel,
+                artifact.pixels.maximum_channel,
+                artifact.pixels.mean_channel,
+            },
+        );
+        try file.writeStreamingAll(self.io, fifth);
     }
 
     fn renderPreparedToWindow(self: *GpuDemo, prepared: sprite.PreparedBatch, injector: ?fault_injection.Injector) !bool {

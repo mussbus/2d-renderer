@@ -1,6 +1,7 @@
 # Prompt 27 — Integrated Visual Foundation, View-Aware Interaction Presentation, and Final Art/Gameplay Acceptance
 
-- Status: **complete**.
+- Status: **automated integration complete; manual visual acceptance reopened
+  by Prompt 27A**.
 - Source: **exact roadmap text** — [`exact/027-source.txt`](exact/027-source.txt).
 - Objective delivered: one production `foundation` route proving that accepted
   character, wardrobe, environment, animation, physics, and interaction
@@ -40,3 +41,13 @@
   integrated foundation acceptance route, not a beginning-to-completion game
   loop.
 - Scope boundary: Prompt 28 or other later work was not started.
+
+## Prompt 27A follow-on
+
+Prompt 27A does not replace the integrated runtime. It preserves this
+milestone's nine original captures and report as historical evidence, while
+replacing phase/frame-selected review captures with a 16-case
+state-conditioned matrix, per-capture semantic metadata, a bounded same-queue
+HUD, deterministic PNG/contact-sheet tooling, and repeatability comparison.
+See [`027A-evidence-integrity.md`](027A-evidence-integrity.md). Owner visual
+acceptance is `[PENDING OWNER REVIEW]`.

@@ -940,11 +940,28 @@ pub fn build(b: *std.Build) void {
     environment_demo_module.addImport("render_queue", render_queue_module);
     environment_demo_module.addImport("deformable_mesh", deformable_mesh_module);
     environment_demo_module.addImport("collision_world", collision_world_module);
+    const foundation_evidence_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/foundation_evidence.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const acceptance_hud_module = b.createModule(.{
+        .root_source_file = b.path("src/debug/acceptance_hud.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    acceptance_hud_module.addImport("math", math_module);
+    acceptance_hud_module.addImport("camera2d", camera2d_module);
+    acceptance_hud_module.addImport("character", character_module);
+    acceptance_hud_module.addImport("sprite_batch", sprite_batch_module);
+    acceptance_hud_module.addImport("render_queue", render_queue_module);
+    acceptance_hud_module.addImport("foundation_evidence", foundation_evidence_module);
     const visual_foundation_module = b.createModule(.{
         .root_source_file = b.path("src/scene/visual_foundation.zig"),
         .target = target,
         .optimize = optimize,
     });
+    visual_foundation_module.addImport("foundation_evidence", foundation_evidence_module);
     visual_foundation_module.addImport("math", math_module);
     visual_foundation_module.addImport("input", input_module);
     visual_foundation_module.addImport("fixed_step", fixed_step_module);
@@ -965,6 +982,7 @@ pub fn build(b: *std.Build) void {
     visual_foundation_module.addImport("wardrobe_demo", wardrobe_demo_module);
     visual_foundation_module.addImport("render_queue", render_queue_module);
     visual_foundation_module.addImport("deformable_mesh", deformable_mesh_module);
+    visual_foundation_module.addImport("debug_draw", debug_draw_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -1037,6 +1055,8 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("environment_art", environment_art_module);
     app_module.addImport("environment_theme", environment_theme_module);
     app_module.addImport("environment_demo", environment_demo_module);
+    app_module.addImport("foundation_evidence", foundation_evidence_module);
+    app_module.addImport("acceptance_hud", acceptance_hud_module);
     app_module.addImport("visual_foundation", visual_foundation_module);
     app_module.addImport("visual_geometry", visual_geometry_module);
     app_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
@@ -1305,6 +1325,9 @@ pub fn build(b: *std.Build) void {
     visual_foundation_test_module.addImport("handshake", handshake_module);
     visual_foundation_test_module.addImport("presentation_view", presentation_view_module);
     visual_foundation_test_module.addImport("render_queue", render_queue_module);
+    visual_foundation_test_module.addImport("camera2d", camera2d_module);
+    visual_foundation_test_module.addImport("acceptance_hud", acceptance_hud_module);
+    visual_foundation_test_module.addImport("foundation_evidence", foundation_evidence_module);
     visual_foundation_test_module.addImport("visual_foundation", visual_foundation_module);
     const visual_foundation_tests = b.addTest(.{
         .name = "visual-foundation-tests",
@@ -1316,6 +1339,21 @@ pub fn build(b: *std.Build) void {
         "Run Prompt 27 real-art integrated foundation and interaction-presentation tests",
     );
     visual_foundation_test_step.dependOn(&run_visual_foundation_tests.step);
+    const p27a_review_package = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    p27a_review_package.addFileArg(b.path("tools/build_p27a_review_package.ps1"));
+    p27a_review_package.setName("validate and package Prompt 27A D3D12 evidence");
+    const p27a_review_step = b.step(
+        "p27a-review",
+        "Validate Prompt 27A captures and create PNG contact sheets and raw metrics",
+    );
+    p27a_review_step.dependOn(&p27a_review_package.step);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");

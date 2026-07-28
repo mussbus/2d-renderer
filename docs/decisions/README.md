@@ -19,3 +19,4 @@ Related historical decisions:
 - [Prompt 25D](../PROMPT25D_DECISION_RECORD.md)
 - [Prompt 26 environment presentation](../PROMPT26_DECISION_RECORD.md)
 - [Prompt 27 integrated visual foundation](../PROMPT27_DECISION_RECORD.md)
+- [Prompt 27A evidence integrity](../PROMPT27A_DECISION_RECORD.md)

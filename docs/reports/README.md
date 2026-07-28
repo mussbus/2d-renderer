@@ -9,5 +9,7 @@ The report archive preserves historical evidence without rewriting it to match l
   archive. Their index entries link the current prompt records, decision
   records, tests, and acceptance documentation without fabricating historical
   prose.
+- Prompt 27A has a current exact implementation report at
+  [`prompt-implementation-reports/exact/027A-implementation-report.md`](prompt-implementation-reports/exact/027A-implementation-report.md).
 
 Historical report paths, command outputs, and limitations are preserved as written even when a later prompt superseded the visual result. Use the prompt ledger’s supersession links to find current authority.

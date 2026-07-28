@@ -147,7 +147,11 @@ $environmentThemeSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRo
 $environmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/environment_demo.zig')
 $environmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/environment_tests.zig')
 $visualFoundationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/visual_foundation.zig')
+$foundationEvidenceSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_evidence.zig')
+$acceptanceHudSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/debug/acceptance_hud.zig')
 $visualFoundationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/visual_foundation_tests.zig')
+$p27aReviewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/build_p27a_review_package.ps1')
+$p27aRepeatSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/compare_p27a_repeats.ps1')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
@@ -2217,7 +2221,7 @@ foreach ($phrase in @(
     'production.stepFemale',
     'projected_hand_separation',
     'validateComplete',
-    'required_frames: u32 = 2_100'
+    'required_frames: u32 = 2_400'
 )) {
     if (-not $visualFoundationSource.Contains($phrase)) {
         Write-Error "Prompt 27 production-composed visual foundation is missing: '$phrase'." -ErrorAction Continue
@@ -2235,10 +2239,74 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
+    'pub const specs = [_]CaptureSpec',
+    'minimum_stable_ticks',
+    'timeout_render_frames',
+    'landing_surface_contact_threshold_m',
+    'CapturePredicateTimeout',
+    'CaptureCommitStateMismatch',
+    'CaptureMatrixIncomplete'
+)) {
+    if (-not $foundationEvidenceSource.Contains($phrase)) {
+        Write-Error "Prompt 27A state-conditioned evidence contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'maximum_hud_sprites',
+    'foundation_evidence.Observation',
+    'UnifiedRenderQueue',
+    'cpu_allocations_after_stabilization'
+)) {
+    if (-not ($acceptanceHudSource + [Environment]::NewLine + $visualFoundationTestsSource).Contains($phrase)) {
+        Write-Error "Prompt 27A bounded acceptance HUD contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 27A timeout fails instead of omitting a capture',
+    'Prompt 27A stability is independent of duplicate render observations',
+    'Prompt 27A capture commit validates order and current metadata',
+    'Prompt 27A raised landing requires measured bilateral surface contact',
+    'Prompt 27A acceptance HUD is bounded and allocation free after initialization'
+)) {
+    if (-not $visualFoundationTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 27A deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Expected exactly $($expected.Count) PPM captures',
+    'Duplicate D3D12 pixel payload detected',
+    'payload_hash_matches_metadata',
+    'manual_visual_acceptance = "PENDING OWNER REVIEW"',
+    'New-ContactSheet "04_interaction_sequence"'
+)) {
+    if (-not $p27aReviewSource.Contains($phrase)) {
+        Write-Error "Prompt 27A deterministic review package is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'semantic_metadata_match',
+    'ppm_byte_identical',
+    'metadata_byte_identical',
+    'png_byte_identical',
+    'canonical_metrics_identical'
+)) {
+    if (-not $p27aRepeatSource.Contains($phrase)) {
+        Write-Error "Prompt 27A repeatability audit is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
     'src/scene/visual_foundation.zig',
+    'src/scene/foundation_evidence.zig',
+    'src/debug/acceptance_hud.zig',
     'tests/visual_foundation_tests.zig',
     'b.step(',
-    '"test-visual-foundation"'
+    '"test-visual-foundation"',
+    '"p27a-review"'
 )) {
     if (-not $buildSource.Contains($phrase)) {
         Write-Error "Prompt 27 build integration is missing: '$phrase'." -ErrorAction Continue
@@ -2246,9 +2314,11 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'PROMPT 27 INTEGRATED VISUAL FOUNDATION EVIDENCE',
+    'PROMPT 27A STATE-CONDITIONED VISUAL FOUNDATION EVIDENCE',
     'PROMPT 27 INTERACTIVE SESSION SUMMARY',
-    'self.visual_captures_written != foundation_capture_count'
+    'self.visual_captures_written != foundation_capture_count',
+    'candidate_pending_owner_review',
+    'consecutive_stable_ticks'
 )) {
     if (-not $gpuSource.Contains($phrase)) {
         Write-Error "Prompt 27 GPU acceptance or interactive-session boundary is missing: '$phrase'." -ErrorAction Continue
@@ -2268,6 +2338,7 @@ Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists;
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'
 Write-Host 'Prompt 26 environment audit passed: both preloaded themes use production art-pack assets, exact collision-derived walkable surface overlays, invariant gameplay authority, one global queue, bounded hot switching, and no Prompt 27 orchestration in environment ownership.'
 Write-Host 'Prompt 27 visual-foundation audit passed: real-art production composition, typed per-role interaction presentation, focused deterministic coverage, and explicit build integration are present.'
+Write-Host 'Prompt 27A evidence-integrity audit passed: state predicates, stable holds, fail-closed metadata, bounded HUD submission, D3D12 review packaging, and repeatability comparison are present.'
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
 Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'
 Write-Host 'Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.'

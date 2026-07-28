@@ -1,6 +1,6 @@
 # Scope Boundaries
 
-## Current production scope through Prompt 27
+## Current production scope through Prompt 27A
 
 - Modular 2D segmented characters.
 - Front and canonical-side presentation with stable gameplay-facing
@@ -23,6 +23,9 @@
   characters, current wardrobe, environment themes, traversal, three
   data-declared fixed-root handshakes, view-aware presentation,
   participant-qualified equipment ordering, reset, and bounded rendering.
+- One state-conditioned evidence harness with 16 ordered D3D12 captures,
+  fail-closed metadata, a bounded read-only HUD, deterministic review
+  packaging, and repeatability evidence. Manual aesthetics remain pending.
 
 ## Possible next product scope
 
@@ -34,8 +37,8 @@ One narrow gameplay vertical slice may add:
 - a completion condition;
 - replay/reset.
 
-Prompt 27 does not implement that gameplay loop, and this document does not
-authorize it or any later prompt.
+Prompt 27A does not implement that gameplay loop, and this document does not
+authorize Prompt 27B, Prompt 28, or any unrelated later work.
 
 ## Later tools
 

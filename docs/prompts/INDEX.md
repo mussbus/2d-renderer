@@ -37,10 +37,15 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 | 25D | Production geometry closure | complete and accepted | exact | [record](025D-production-geometry-closure.md) · [source](exact/025D-source.txt) | `7ba3687` |
 | 25E | Consolidation and authoring contracts | complete | exact | [record](025E-consolidation.md) · [source](exact/025E-source.txt) | `e328ec0` |
 | 26 | Environment themes | complete | exact roadmap source | [record](026-environments.md) · [source](exact/026-source.txt) | `0dd0f21` |
-| 27 | Integrated visual foundation | complete | exact roadmap source | [record](027-integrated-foundation.md) · [source](exact/027-source.txt) | `1de0d1d` |
+| 27 | Integrated visual foundation | automated complete; manual review reopened | exact roadmap source | [record](027-integrated-foundation.md) · [source](exact/027-source.txt) | `1de0d1d` |
+| 27A | Evidence integrity and owner-review harness | automated complete; owner review pending | exact user-supplied roadmap | [record](027A-evidence-integrity.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `7c4721a` |
 
 ## Evidence and reports
 
 - The report archive index is [`../reports/prompt-implementation-reports/INDEX.md`](../reports/prompt-implementation-reports/INDEX.md).
 - Existing topic documents remain authoritative for detailed subsystem design; this ledger links rather than rewrites them.
 - The original combined Prompt 23–27 roadmap is preserved as [`exact/023-027-roadmap-source.txt`](exact/023-027-roadmap-source.txt).
+- The user-supplied Prompt 27A–27H reopened visual-foundation roadmap is
+  preserved as
+  [`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md);
+  only Prompt 27A is implemented.

@@ -144,7 +144,7 @@ The focused route is:
 & '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
 ```
 
-The 2,100-frame production D3D12 route completes three interactions with the
+The 2,400-frame Prompt 27A production D3D12 route completes three interactions with the
 female initiator (entity 2) and male receiver (entity 1), using
 `wide_brim_crimson`, `garnet_formal`, and
 `ivory_blouse_red_shorts`. Each record includes role views, preset, theme,
@@ -152,6 +152,15 @@ start/contact/release/complete ticks, pre/post-IK separation, projected
 presentation separation, root invariance, and body/equipment ordering. All
 three use side/side only because the production definition requests it, and
 all return to front after cleanup.
+
+State-conditioned captures independently record eligible approach, active
+pre-contact reach, first contact, release, and cleanup/front restoration.
+Contact cannot be accepted before the real contact semantic; release must be
+within the bounded release-tick window; cleanup requires zero active
+interactions, IK constraints, presentation overrides, and participant owners.
+The detailed-debug case holds a later contact long enough to submit and record
+IK plus participant-link diagnostics. These observations do not create a
+second interaction system or change interaction timing.
 
 The route proves the fixed-root eligibility envelope, existing shared clock,
 existing arm IK, definition-owned presentation policy, and equipment-aware

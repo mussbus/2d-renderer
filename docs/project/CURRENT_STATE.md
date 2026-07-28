@@ -1,7 +1,7 @@
 # Current State
 
-Snapshot basis: Prompt 27 HEAD
-`1de0d1d6fe1b4a953e1bbba47e1216fd56a724eb`, inspected on 2026-07-28.
+Snapshot basis: Prompt 27A worktree based on HEAD
+`7c4721a5fedbac93eb507b429dfecf4b9e211cde`, inspected on 2026-07-28.
 
 Status vocabulary:
 
@@ -35,6 +35,7 @@ Status vocabulary:
 | Current production character visuals | complete | Prompt 25D production report has zero failures; 12 approved D3D12/DXIL goldens are stored. |
 | Environment themes | complete | Prompt 26 supplies violet-crystal and neutral-diagnostic themes, collision-derived white standable tops, bounded hot swapping, and seven D3D12 captures over the unchanged world. |
 | Integrated Prompt 27 presentation | complete | The visible `foundation` route composes the two production characters, all current wardrobe, both themes, movement, jumping, three measured fixed-root handshakes, view/ordering cleanup, debug, reset, and real D3D12 rendering. |
+| Prompt 27A evidence integrity | complete, owner review pending | Sixteen captures are selected by authoritative/presentation/interaction predicates, bound to validated semantic metadata and independent D3D12 pixel hashes, packaged into contact sheets, and repeated byte-exactly. Aesthetic acceptance is `[PENDING OWNER REVIEW]`. |
 | Semantic body-relative garment depth schema | documented only | Current content resolves numeric visual layers. Required reusable depth relations are defined in [AUTHORING_CONTRACTS.md](AUTHORING_CONTRACTS.md), but no current accepted item requires a runtime extension. |
 | Authored side-left/side-right garment variants | documented only | Current production side art is mirror-safe. Directional and mixed-fragment policies are defined for future content. |
 | First-class collar coverage and shoulder-slope contour | documented only | Current validator has point/span fit and per-item coverage zones, but not the richer semantic contour contract required by a future editor. |
@@ -43,8 +44,8 @@ Status vocabulary:
 
 ## Current integrated acceptance
 
-Prompt 27's focused `test-visual-foundation` gate passes 3/3 tests. The
-2,100-frame production route uses:
+Prompt 27A's focused `test-visual-foundation` gate passes 18/18 tests. The
+2,400-frame production route uses:
 
 - two production characters;
 - 30 wardrobe items and 15 outfit presets;
@@ -57,14 +58,19 @@ Prompt 27's focused `test-visual-foundation` gate passes 3/3 tests. The
 It completes three data-declared side-view handshakes in
 `wide_brim_crimson`, `garnet_formal`, and `ivory_blouse_red_shorts`, records
 pre/post-IK and projected contact separation, and verifies completion cleanup
-back to ordinary front presentation. Peak work was 125 sprites, one mesh, 16
-sprite ranges/draws, one mesh range/draw, 8,000 sprite upload bytes, and 64
-mesh upload bytes. The route reports zero post-stabilization update,
-submission, queue, or GPU-resource growth and writes nine D3D12 captures to
-`zig-out/p27_visual_foundation`.
+back to ordinary front presentation. Peak clean production work is 139
+sprites and one mesh. The same-queue HUD raises bounded window submission
+without adding a renderer or resource path. The route reports zero
+post-stabilization update, submission, queue, or GPU-resource growth and
+writes 16 D3D12 captures plus semantic metadata to
+`zig-out/p27a_evidence/candidate`.
 
-The aggregate Prompt 0–27 gate passes 356/356 tests in Debug and ReleaseFast.
-See [../TESTING.md](../TESTING.md) for exact commands and evidence boundaries.
+Two independent runs produced byte-identical PPMs, metadata, and PNGs; 263
+canonical raw metrics were identical with zero failures. The historical nine
+Prompt 27 captures remain unchanged under `zig-out/p27_visual_foundation`.
+The final Debug aggregate and `check` gates pass 371/371 tests; ReleaseSafe,
+ReleaseFast, and D3D12/DXIL GPU smoke pass. See
+[../TESTING.md](../TESTING.md) for exact commands and evidence boundaries.
 
 ## Focused demonstrations
 
@@ -78,6 +84,7 @@ See [../TESTING.md](../TESTING.md) for exact commands and evidence boundaries.
 - Prompt 25C/25D visual-geometry reports, debug overlays, and approved goldens.
 - Prompt 26 `environment` theme/collision-readability route.
 - Prompt 27 production `foundation` integration route.
+- Prompt 27A state-conditioned capture and owner-review package.
 
 Prompt 27 changed the visible `--demo foundation` CLI owner to
 `visual_foundation.Scene`. The older procedural Prompt 22 scene remains a
@@ -85,6 +92,9 @@ focused headless regression and collider-data authority; it is not the
 current rendered application.
 
 ## Provisional or incomplete areas
+
+- Prompt 27A aesthetic/manual acceptance is `[PENDING OWNER REVIEW]`; no new
+  capture has been promoted to a golden.
 
 - Current garment fragments are recipes, but they expose no authored stable
   fragment name independent of the recipe ID.

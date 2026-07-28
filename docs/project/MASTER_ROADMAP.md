@@ -14,7 +14,7 @@ by the production contracts already implemented and by the explicit scope in
 
 ## Phase 1 — Renderer and deterministic runtime foundation
 
-Status: **complete**
+Status: **automated integration complete; manual visual acceptance reopened**
 
 - SDL3 platform initialization and Windows 11 D3D12-backed SDL GPU route.
 - HLSL-to-DXIL shader pipeline.
@@ -75,6 +75,9 @@ Status: **complete**
   characters, all current wardrobe, both themes, movement, traversal,
   view-aware interactions, IK, equipment-aware occlusion, cleanup, reset,
   resource bounds, and real D3D12 captures.
+- Prompt 27A: a 16-case state-conditioned capture matrix, validated semantic
+  metadata, bounded same-queue HUD, deterministic contact sheets/raw metrics,
+  and byte-exact two-run repeatability. Owner visual review remains pending.
 
 Both milestones reuse the existing collision authority, camera, character
 instances, interaction system, unified render queue, and SDL3 GPU renderer.
@@ -113,6 +116,7 @@ collision, theme, or atlas-identity models.
 
 ## Milestone gate
 
-Prompts 0–27 are implemented. No later milestone is authorized by this
-roadmap. Current non-blocking limitations and future schema triggers are
-recorded in [KNOWN_GAPS.md](KNOWN_GAPS.md).
+Prompts 0–27A are implemented. Prompt 27B and later milestones have not
+started. Current non-blocking limitations, the pending Prompt 27A owner
+review, and future schema triggers are recorded in
+[KNOWN_GAPS.md](KNOWN_GAPS.md).

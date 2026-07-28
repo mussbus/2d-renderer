@@ -111,3 +111,13 @@ for this archive. Use the
 [decision record](../../PROMPT27_DECISION_RECORD.md),
 [current state](../../project/CURRENT_STATE.md), and
 [test evidence](../../TESTING.md#prompt-27-integrated-visual-foundation).
+
+### Prompt 27A
+
+Prompt 27 automated integration remains protected, but its manual visual
+acceptance is reopened. Use the
+[roadmap source](../../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
+[decision record](../../PROMPT27A_DECISION_RECORD.md), and
+[test evidence](../../TESTING.md#prompt-27a-evidence-integrity).
+The exact implementation report is archived in
+[`exact/027A-implementation-report.md`](exact/027A-implementation-report.md).

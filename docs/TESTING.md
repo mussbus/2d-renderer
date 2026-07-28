@@ -12,12 +12,14 @@ records implementation through Prompt 27:
 
 It verifies required files, local Markdown targets, prompt navigation, report links, and practical orphan detection. Verbatim historical report files are excluded from link lint because their original local evidence paths are intentionally preserved rather than rewritten.
 
-## Current aggregate status through Prompt 27
+## Current aggregate status through Prompt 27A
 
-The Prompt 27 completion gate passed 356/356 tests in Debug and ReleaseFast.
-The focused Prompt 26 environment gate passed 13/13, and the focused Prompt 27
-visual-foundation gate passed 3/3. Current milestone-specific commands and
-their evidence boundaries are documented below.
+The Prompt 27A aggregate and `check` gates pass 371/371 tests in Debug. The
+focused visual-foundation gate expanded from 3 to 18 tests. ReleaseSafe and
+ReleaseFast application builds, D3D12/DXIL GPU smoke, the 16-case evidence
+route, review packaging, and two-run repeatability also pass. Current
+milestone-specific commands and their evidence boundaries are documented
+below.
 
 The aggregate commands remain:
 
@@ -318,7 +320,7 @@ Prompt 22 route as the focused `test-foundation` regression. The current
 GPU-backed acceptance route is:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2100 --demo foundation --scripted-input
+& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2400 --demo foundation --scripted-input
 ```
 
 The current route requires Direct3D 12/DXIL, two persistent garment mesh
@@ -530,7 +532,7 @@ Fast deterministic gate:
 & '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
 ```
 
-The focused tests run a bounded 2,100-frame composition through production
+The focused tests run a bounded 2,400-frame composition through production
 character, wardrobe, environment, interaction, and mixed-queue paths. They
 assert automatic front/side behavior, body/build/hair controls, idle and
 moving outfit changes, short/full/double jumps, dash, raised-platform landing,
@@ -548,17 +550,46 @@ required presets are `wide_brim_crimson`,
 definition selects front/front, proving that side view is handshake data
 rather than a manager constant.
 
+## Prompt 27A evidence integrity
+
+The same focused command now discovers 18 tests. In addition to the Prompt 27
+composition checks, controlled fixtures prove that every major capture
+predicate accepts its valid boundary and rejects minimally and clearly invalid
+state. Coverage includes view/facing/velocity, rise/apex/fall, bilateral raised
+landing contact, theme invariance, interaction approach/reach/contact/release
+and cleanup, complete debug categories, interrupted holds, timeout, metadata,
+commit order, duplicate render observations, and bounded allocation-free HUD
+submission.
+
 Real D3D12 route:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2100
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\.deps\zig-0.16.0\zig.exe' build p27a-review
 ```
 
 It must preload eight art pages into nine configured renderer pages, decode
 eight files during initialization only, upload two persistent garment meshes,
-write nine 640 by 480 captures under `zig-out/p27_visual_foundation`, and
-report zero post-stabilization update, submission, queue, and GPU-resource
-growth. Inspect initial front, stopped-front retained facing, side jump, all
-three contact frames, front-idle cleanup, detailed debug, and reset-stable
-front. Automated contact measurements do not replace pixel inspection.
+write exactly 16 state-conditioned 640 by 480 captures and JSON records under
+`zig-out/p27a_evidence/candidate`, and report zero post-stabilization update,
+submission, queue, and GPU-resource growth. The ordered matrix covers initial
+idle, left walk, stopped/front/left, right walk, rise, apex, fall, raised
+landing, theme switch, approach, reach, first contact, release, cleanup,
+detailed debug, and reset.
+
+`p27a-review` independently parses each PPM payload, verifies SHA-256 against
+both metadata and manifest, rejects duplicate payloads and missing/mismatched
+cases, checks semantic and resource metrics, converts to deterministic PNG,
+and writes:
+
+- `review_manifest.json`;
+- `raw_metrics.json`;
+- a complete matrix sheet;
+- clean/static, locomotion/jump, interaction, and detailed-debug sheets.
+
+The current required result is 16/16 captures and at least 263 raw metrics
+with zero automated failures. Run the route and review package twice, then use
+`tools/compare_p27a_repeats.ps1`; all PPM, metadata, PNG, state, and metric
+results must match. These checks prove evidence integrity, not aesthetic
+quality. Manual visual acceptance remains `[PENDING OWNER REVIEW]`.

@@ -87,12 +87,25 @@ composition from the historical Prompt 11 `integrated` route. Its
 - peak sprites, meshes, ranges, draws, upload bytes, fixed-buffer use, queue
   allocation, decoded-page ownership, and GPU-resource delta.
 
-The 2,100-frame D3D12 route writes nine scheduled captures under
-`zig-out/p27_visual_foundation`. The recorded peak is 125 sprites, one mesh,
-16 sprite ranges/draws, one mesh range/draw, 8,000 sprite upload bytes, and 64
-mesh upload bytes. Initialized and final fixed-buffer usage are both 131,216
-bytes; update, submission, and queue allocation deltas and GPU-resource delta
-are zero.
+The original 2,100-frame D3D12 route, nine scheduled captures, and timing
+records remain unchanged under `zig-out/p27_visual_foundation` as historical
+Prompt 27 evidence. Prompt 27A writes 16 separate state-conditioned captures
+and per-capture JSON under `zig-out/p27a_evidence/candidate`. Its fixed-tick
+tracker requires the named controller/presentation/interaction state, rejects
+early frames, and reports the actual state on timeout.
+
+Capture 15 requires all five submitted diagnostic categories: collider, root,
+ground query/target, interaction IK, and participant link. The current
+production observation records 32, 4, 8, 7, and 1 primitives respectively.
+The evidence-window HUD is a bounded read-only submission through the global
+queue; it has no SDL polling or control authority. Clean capture files exclude
+the HUD, while the detailed-debug capture includes production debug
+primitives.
+
+The Prompt 27A route retains initialized and final fixed-buffer usage of
+131,216 bytes and reports zero update, submission, queue-allocation, and GPU
+resource deltas. Its larger preinitialized sprite capacity accommodates the
+same-queue HUD without runtime growth.
 
 `F1` still appends detailed collider/debug evidence through the one global
 queue. Persistent white standable tops are ordinary product presentation,

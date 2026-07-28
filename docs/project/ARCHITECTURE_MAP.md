@@ -61,6 +61,9 @@ collider-data authority.
 | Stage | Current authority |
 |---|---|
 | Prompt 27 integration root | [`src/scene/visual_foundation.zig`](../../src/scene/visual_foundation.zig) |
+| Prompt 27A capture predicates and fixed-tick tracker | [`src/scene/foundation_evidence.zig`](../../src/scene/foundation_evidence.zig) |
+| Prompt 27A read-only acceptance HUD | [`src/debug/acceptance_hud.zig`](../../src/debug/acceptance_hud.zig) |
+| Prompt 27A deterministic review/repeatability tools | [`tools/build_p27a_review_package.ps1`](../../tools/build_p27a_review_package.ps1), [`tools/compare_p27a_repeats.ps1`](../../tools/compare_p27a_repeats.ps1) |
 | Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig), [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
 | Skeleton, poses, clips, state machine | [`src/animation/skeleton.zig`](../../src/animation/skeleton.zig), [`src/animation/pose.zig`](../../src/animation/pose.zig), [`src/animation/clip.zig`](../../src/animation/clip.zig), [`src/animation/state_machine.zig`](../../src/animation/state_machine.zig) |
 | Anatomy identity/runtime | [`src/scene/anatomy.zig`](../../src/scene/anatomy.zig), production definitions in [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |

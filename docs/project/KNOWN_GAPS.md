@@ -1,8 +1,10 @@
 # Known Gaps
 
-Prompt 27 is the accepted current integration boundary. The gaps below are
-future-content or tooling limitations; none invalidates the current Prompt 27
-acceptance route.
+Prompt 27's automated integration remains the protected runtime boundary.
+Prompt 27A has reopened its manual visual acceptance and produced the honest
+owner-review package; that review is still pending. The gaps below are
+future-content or tooling limitations and are separate from the specific
+visual issues that later Prompt 27B–27H milestones may address.
 
 | Gap | Impact | Current workaround | Trigger for implementation | Blocks current Prompt 27 acceptance? | Blocks a future editor? |
 |---|---|---|---|---|---|
@@ -23,10 +25,11 @@ acceptance route.
 
 ## Art-quality status
 
-The current Prompt 25D character art is accepted at the stored 640×480
-acceptance camera and required pose/view/preset matrix. Prompt 26 environment
-art and Prompt 27 combined captures were inspected through the real D3D12/DXIL
-route. This does not prove arbitrary future combinations, views, body
+The current Prompt 25D character art remains accepted at its stored 640×480
+acceptance camera and required pose/view/preset matrix. Prompt 27A has produced
+16 honest combined D3D12/DXIL captures and contact sheets, but their integrated
+aesthetic/manual field is `[PENDING OWNER REVIEW]`. No Prompt 27A capture is
+an approved golden. This does not prove arbitrary future combinations, views, body
 topologies, morphology ranges, themes, or interactions. New content must
 declare and pass its own contracts rather than inheriting acceptance from the
 current atlases.

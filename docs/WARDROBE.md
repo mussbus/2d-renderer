@@ -130,6 +130,6 @@ During interaction contact, every submitted equipment visual keeps its own
 component identity and visual layer while inheriting the interaction layer of
 its actual bound anatomy semantic. This makes gloves and other bound garments
 participate in hand/forearm ordering without outfit-specific logic. The
-2,100-frame route verifies outfit changes at idle and in motion, finite long
+2,400-frame Prompt 27A route verifies outfit changes at idle and in motion, finite long
 garment state, contact ordering, cleanup, reset, and zero steady-state
 allocation/resource growth.

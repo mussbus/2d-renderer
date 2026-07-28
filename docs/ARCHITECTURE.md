@@ -389,6 +389,35 @@ Completion, cancellation, startup rollback, character reset, and scene reset
 release view claims, override handles, IK ownership, and interaction locks.
 Grounded-idle front presentation then resumes.
 
+### Prompt 27A evidence integrity
+
+`foundation_evidence.zig` defines an ordered 16-case capture matrix. Each case
+combines an optional script-stage discriminator with authoritative controller,
+collision, animation, presentation, interaction, and debug predicates. Stage
+or filename identity is never sufficient. `Tracker` advances inspection holds
+in fixed simulation ticks, ignores duplicate zero-substep render
+observations, resets stability when a predicate becomes false, enforces a
+bounded timeout, and validates commit order and final completeness.
+
+`visual_foundation.Scene.captureObservation` is a read-only projection of the
+same production state submitted that frame. It records semantic entity,
+controller, foot-to-surface, presentation, body/morphology/hair/outfit, theme,
+interaction, debug, camera, render, resource, and allocation data. The
+production D3D12 readback and its SHA-256 payload evidence are bound to that
+observation in per-capture JSON and an ordered manifest.
+
+`acceptance_hud.zig` draws a fixed 3-by-5 glyph HUD through the existing
+`UnifiedRenderQueue`. It owns no input, mutable control, renderer, texture, or
+steady-state allocation. Clean readbacks occur from the prepared production
+queue; the HUD is then appended to that same queue for the visible evidence
+window. Detailed-debug capture uses the actual production diagnostic
+submissions.
+
+The deterministic review tool validates and converts the 16 PPMs, emits five
+contact sheets and raw per-case metrics, and leaves the result
+`[PENDING OWNER REVIEW]`. Historical Prompt 27 evidence is never overwritten,
+and no Prompt 27A artifact is an approved golden.
+
 ### Future interaction and authoring boundaries
 
 A future paired definition may add a bounded array of semantic contacts such

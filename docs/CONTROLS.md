@@ -202,10 +202,16 @@ Deterministic route:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2100
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\.deps\zig-0.16.0\zig.exe' build p27a-review
 ```
 
-This uses synthetic snapshots, not physical-keyboard evidence.
+This uses synthetic snapshots, not physical-keyboard evidence. Prompt 27A
+shows a read-only acceptance HUD in the evidence window with current phase,
+capture target, facing/view, outfit/theme, support/velocity, interaction
+lifecycle/phase, and debug count. The HUD cannot mutate the route. Clean
+D3D12 capture files exclude the HUD; capture 15 includes the actual detailed
+production diagnostics. Owner visual acceptance remains pending.
 
 Foundation reset restores the player spawn, velocity, grounded/support state, air-jump and dash counters, interaction/IK/override ownership, foot locks, animator/procedural/breathing state, body/build/hair selection, per-part override, default loadout, resolved attributes/capabilities, mesh/secondary runtime state, fixed-step clock, pending edges, and camera center. It preserves the current nonzero viewport extent and creates no GPU resource.
 

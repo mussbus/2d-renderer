@@ -81,9 +81,9 @@ upload bytes are the actual encoded counts.
 
 Body/build/hair changes, breathing, loadout property resolution, movement abilities, and secondary motion update only CPU instance records. They do not create topology buffers, shaders, pipelines, textures, samplers, transfer buffers, or frame slots. Reset clears each loadout's `InstanceState` and secondary state before the restored loadout can repopulate valid current-character handles on the next submission.
 
-Prompt 27's visible `--demo foundation` route instead preloads the two
+Prompt 27A's visible `--demo foundation` route preloads the same two
 production long-garment mesh definitions used by the current wardrobe. The
-2,100-frame route reaches a peak of one active mesh and one mesh range/draw
+2,400-frame route reaches a peak of one active mesh and one mesh range/draw
 while body, equipment, environment, standable-edge, and debug sprites remain
 in the same `UnifiedRenderQueue`. The two topology definitions and their GPU
 buffers persist across all outfit and theme changes; the route reports zero

@@ -28,6 +28,9 @@ $requiredFiles = @(
     'docs/prompts/exact/025E-source.txt',
     'docs/prompts/exact/026-source.txt',
     'docs/prompts/exact/027-source.txt',
+    'docs/prompts/027A-evidence-integrity.md',
+    'prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md',
+    'docs/PROMPT27A_DECISION_RECORD.md',
     'docs/decisions/README.md',
     'docs/reports/README.md',
     'docs/reports/prompt-implementation-reports/INDEX.md',
@@ -40,7 +43,8 @@ $requiredFiles = @(
     'docs/reports/prompt-implementation-reports/exact/025B-implementation-report.md',
     'docs/reports/prompt-implementation-reports/exact/025B-final-visual-gate-report.md',
     'docs/reports/prompt-implementation-reports/exact/025C-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/025D-implementation-report.md'
+    'docs/reports/prompt-implementation-reports/exact/025D-implementation-report.md',
+    'docs/reports/prompt-implementation-reports/exact/027A-implementation-report.md'
 )
 
 $failures = [Collections.Generic.List[string]]::new()
@@ -137,7 +141,7 @@ if (Test-Path -LiteralPath $promptIndex) {
             $failures.Add("prompt index does not identify Prompt $prompt")
         }
     }
-    foreach ($suffix in @('24A', '25A', '25B', '25C', '25D', '25E')) {
+    foreach ($suffix in @('24A', '25A', '25B', '25C', '25D', '25E', '27A')) {
         if ($indexText -notmatch "(?m)^\| $suffix \|") {
             $failures.Add("prompt index does not identify Prompt $suffix")
         }

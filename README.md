@@ -114,19 +114,27 @@ The open-ended primary foundation route is:
 ```
 
 Prompt 27 promotes that same `foundation` route to the complete real-art
-integration root. It preloads the production character, wardrobe, and
-environment pages and runs three data-declared side-view handshakes in the
-wide-brim, long-garment, and ivory-blouse outfits. The 2,100-frame route
-records view cleanup, contact ticks, pre/post-IK separation,
-participant-qualified body/equipment ordering, theme invariance, reset,
-draw/upload peaks, and zero steady-state allocation/resource growth. Nine
-D3D12 readback captures are written to `zig-out/p27_visual_foundation`.
+integration root. Prompt 27A retains the original 2,100-frame report and nine
+captures under `zig-out/p27_visual_foundation` as historical evidence, while
+reopening manual visual acceptance and replacing phase/frame capture timing
+with a 2,400-frame, 16-case state-conditioned evidence matrix. The current
+route records authoritative controller, presentation, interaction, foot
+surface, theme, debug, renderer, resource, and allocation metadata beside
+each real D3D12 readback under `zig-out/p27a_evidence/candidate`.
 
 ```powershell
 & '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2100
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\.deps\zig-0.16.0\zig.exe' build p27a-review
 ```
+
+`p27a-review` validates capture order, metadata, PPM payloads, independent
+pixel hashes, semantic thresholds, and steady-state counters, then writes
+PNG conversions, five labeled contact sheets, an ordered review manifest, and
+260 or more raw metrics to `zig-out/p27a_evidence/review_package`. It does not
+approve aesthetics or promote goldens. Prompt 27A manual visual acceptance is
+`[PENDING OWNER REVIEW]`.
 
 ## Interactive playground
 
