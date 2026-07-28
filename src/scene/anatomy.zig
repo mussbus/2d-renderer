@@ -196,6 +196,7 @@ pub const BodyPresetInput = struct {
     morphology_preset: []const u8,
     global_build: f32,
     presentation_profile: []const u8,
+    front_shoulder_half_span_metres: f32 = 0.45,
 };
 
 pub const DefinitionInputs = struct {
@@ -324,6 +325,7 @@ pub const BodyPreset = struct {
     morphology_preset: MorphologyPresetId,
     global_build_normalized: f32,
     presentation_profile: PresentationProfileId,
+    front_shoulder_half_span_metres: f32,
 };
 
 pub const DefinitionView = struct {
@@ -797,6 +799,11 @@ pub const Definition = struct {
                 body_preset_face_cursor += 1;
             }
             const global_build_normalized = try normalizeUserValue(input.global_build);
+            if (!std.math.isFinite(input.front_shoulder_half_span_metres) or
+                input.front_shoulder_half_span_metres <= 0)
+            {
+                return error.InvalidFrontShoulderHalfSpan;
+            }
             body_presets[index] = .{
                 .id = @enumFromInt(index),
                 .stable_id = stable_id,
@@ -807,6 +814,7 @@ pub const Definition = struct {
                 .morphology_preset = try findMorphologyPreset(morphology_presets, input.morphology_preset),
                 .global_build_normalized = global_build_normalized,
                 .presentation_profile = try findPresentationProfile(presentation_profiles, input.presentation_profile),
+                .front_shoulder_half_span_metres = input.front_shoulder_half_span_metres,
             };
             try validatePresetTopology(
                 part_instances,
@@ -1336,6 +1344,26 @@ pub const Runtime = struct {
             .breathing_sample = try runtime.breathing.sample(),
             .response = response,
         });
+    }
+
+    /// Returns the selected preset's authored-art baseline for one morphology
+    /// channel: the midpoint of its declared range.
+    pub fn nominalChannel(
+        runtime: Runtime,
+        definition: DefinitionView,
+        channel_id: MorphologyChannelId,
+    ) !f32 {
+        try runtime.validateCompatibility(definition);
+        if (channel_id.index() >= definition.morphology_channels.len) {
+            return error.InvalidMorphologyChannelId;
+        }
+        const preset = definition.morphology_presets[
+            runtime.selected_morphology_preset.index()
+        ];
+        const range = definition.morphology_ranges[
+            preset.range_start + channel_id.index()
+        ];
+        return (range.low + range.high) * 0.5;
     }
 
     fn resolveMorphology(runtime: *Runtime, definition: DefinitionView) !void {

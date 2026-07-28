@@ -570,6 +570,7 @@ fn initDefinitionWithInjector(
         .{ .stable_id = "horn_right", .local_to_part = math.Transform2D.init(.{ .x = 0.20, .y = 0.30 }, 0, math.Vec2.one), .accepted_child_tag = "horn" },
     };
     const torso_morph = [_]anatomy.MorphBindingInput{
+        .{ .channel = "shoulder_width", .scale_per_unit = .{ .x = 1, .y = 0 } },
         .{ .channel = "torso_width", .scale_per_unit = .{ .x = 1, .y = 0 } },
         .{ .channel = "chest_depth", .scale_per_unit = .{ .x = 0.35, .y = 0.10 } },
         .{ .channel = "waist_width", .scale_per_unit = .{ .x = 0.55, .y = 0 } },
@@ -733,13 +734,13 @@ fn initDefinitionWithInjector(
     const conventional_face = [_][]const u8{"conventional_face"};
     const angular_face = [_][]const u8{"angular_face"};
     const body_presets = [_]anatomy.BodyPresetInput{
-        .{ .stable_id = "conventional_male", .active_parts = &conventional_male_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "average", .global_build = 50, .presentation_profile = "simplified" },
-        .{ .stable_id = "conventional_female", .active_parts = &conventional_female_parts, .faces = &angular_face, .hair = "long_rigid", .morphology_preset = "curvy", .global_build = 50, .presentation_profile = "simplified" },
-        .{ .stable_id = "feminine_with_penis", .active_parts = &feminine_penis_parts, .faces = &angular_face, .hair = "long_rigid", .morphology_preset = "curvy", .global_build = 50, .presentation_profile = "modest" },
-        .{ .stable_id = "dual_genital_configuration", .active_parts = &dual_anatomy_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "average", .global_build = 50, .presentation_profile = "modest" },
-        .{ .stable_id = "two_penises", .active_parts = &dual_penis_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "athletic", .global_build = 50, .presentation_profile = "modest" },
-        .{ .stable_id = "three_breasts", .active_parts = &triple_breast_parts, .faces = &angular_face, .hair = "long_rigid", .morphology_preset = "curvy", .global_build = 50, .presentation_profile = "modest" },
-        .{ .stable_id = "nonstandard_humanoid", .active_parts = &nonstandard_parts, .faces = &conventional_face, .hair = "ponytail", .morphology_preset = "athletic", .global_build = 70, .presentation_profile = "simplified" },
+        .{ .stable_id = "conventional_male", .active_parts = &conventional_male_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "average", .global_build = 50, .presentation_profile = "simplified", .front_shoulder_half_span_metres = 0.36 },
+        .{ .stable_id = "conventional_female", .active_parts = &conventional_female_parts, .faces = &angular_face, .hair = "long_rigid", .morphology_preset = "curvy", .global_build = 50, .presentation_profile = "simplified", .front_shoulder_half_span_metres = 0.39 },
+        .{ .stable_id = "feminine_with_penis", .active_parts = &feminine_penis_parts, .faces = &angular_face, .hair = "long_rigid", .morphology_preset = "curvy", .global_build = 50, .presentation_profile = "modest", .front_shoulder_half_span_metres = 0.425 },
+        .{ .stable_id = "dual_genital_configuration", .active_parts = &dual_anatomy_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "average", .global_build = 50, .presentation_profile = "modest", .front_shoulder_half_span_metres = 0.425 },
+        .{ .stable_id = "two_penises", .active_parts = &dual_penis_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "athletic", .global_build = 50, .presentation_profile = "modest", .front_shoulder_half_span_metres = 0.425 },
+        .{ .stable_id = "three_breasts", .active_parts = &triple_breast_parts, .faces = &angular_face, .hair = "long_rigid", .morphology_preset = "curvy", .global_build = 50, .presentation_profile = "modest", .front_shoulder_half_span_metres = 0.425 },
+        .{ .stable_id = "nonstandard_humanoid", .active_parts = &nonstandard_parts, .faces = &conventional_face, .hair = "ponytail", .morphology_preset = "athletic", .global_build = 70, .presentation_profile = "simplified", .front_shoulder_half_span_metres = 0.42 },
     };
 
     return humanoid.HumanoidDefinition.initFromVisualDefinitionAndAnatomy(

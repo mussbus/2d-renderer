@@ -126,7 +126,14 @@ fn parseOptions(arguments: []const []const u8) !Options {
     if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated and options.demo != .playground and options.demo != .side_scroller and options.demo != .foundation and options.demo != .character_presentation and options.demo != .wardrobe and options.demo != .visual_quality) {
         return error.ScriptedInputRequiresControllerDemo;
     }
-    if (options.debug_visualization and options.demo != .integrated and options.demo != .playground and options.demo != .foundation) return error.DebugVisualizationRequiresIntegratedDemo;
+    if (options.debug_visualization and
+        options.demo != .integrated and
+        options.demo != .playground and
+        options.demo != .foundation and
+        options.demo != .visual_quality)
+    {
+        return error.DebugVisualizationRequiresIntegratedDemo;
+    }
     if (options.interactive and options.demo != .playground and options.demo != .foundation and options.demo != .character_presentation and options.demo != .wardrobe) return error.InteractiveRequiresPlaygroundDemo;
     if (options.demo == .playground and options.interactive == options.scripted_input) return error.PlaygroundRequiresExactlyOneInputMode;
     if (options.demo == .playground and options.scripted_input and options.maximum_frames != 1800) return error.PlaygroundScriptRequiresExactFrameCount;

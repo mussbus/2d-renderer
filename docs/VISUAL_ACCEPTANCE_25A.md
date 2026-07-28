@@ -1,5 +1,10 @@
 # Prompt 25A Visual Acceptance
 
+> Historical evidence only. Prompt 25C quantitatively rejects this previously
+> accepted Prompt 25B-derived output for footwear orientation/registration/fit,
+> clothing fit, and articulation geometry. Nothing in this document is a
+> current visual golden or overrides `VISUAL_GEOMETRY.md`.
+
 ## Evidence source
 
 The acceptance route is:

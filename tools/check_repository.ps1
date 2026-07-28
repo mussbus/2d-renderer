@@ -790,7 +790,7 @@ if (-not $diagnosticsSource.Contains('pub const history_capacity: usize = 32') -
     Write-Error 'Diagnostic history must remain fixed-capacity inline storage with a documented overwrite counter and no allocation path.' -ErrorAction Continue
     $failed = $true
 }
-if (-not $debugDrawSource.Contains('pub const command_capacity: usize = 256') -or
+if (-not $debugDrawSource.Contains('pub const command_capacity: usize = 512') -or
     -not $debugDrawSource.Contains('commands: [command_capacity]sprite.SpriteRequest') -or
     -not $debugDrawSource.Contains('return error.DebugCommandCapacityExceeded') -or
     [regex]::IsMatch($debugDrawSource, 'SDL_|CreateGPU|ReleaseGPU|DrawGPU|\.alloc\s*\(|\.create\s*\(|ArrayList|HashMap')) {
@@ -2033,19 +2033,27 @@ foreach ($relativePath in @(
     }
 }
 foreach ($phrase in @(
-    'side_arm_x_compression: f32 = 0.68',
     'remapProjectedArmRest',
     'initBoneWorlds',
-    'compressArmRoots',
     '&authoritative_locals'
 )) {
     if (-not $presentationPoseSource.Contains($phrase)) {
-        Write-Error "Prompt 25B authoritative view composition correction is missing: '$phrase'." -ErrorAction Continue
+        Write-Error "Prompt 25D authoritative view composition is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
 }
-if ($presentationPoseSource.Contains('front_arm_x_compression')) {
-    Write-Error 'Prompt 25B front shoulders must not retain the rejected root-compression correction.' -ErrorAction Continue
+foreach ($rejectedPhrase in @(
+    'front_arm_x_compression',
+    'side_arm_x_compression',
+    'compressArmRoots'
+)) {
+    if ($presentationPoseSource.Contains($rejectedPhrase)) {
+        Write-Error "Prompt 25D must not retain rejected arm-root compression: '$rejectedPhrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if (-not $presentationViewSource.Contains('spriteMorphologyScale')) {
+    Write-Error "Prompt 25D shared quarter-turn morphology mapping is missing: 'spriteMorphologyScale'." -ErrorAction Continue
     $failed = $true
 }
 foreach ($phrase in @(
@@ -2073,11 +2081,11 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'footwear_ankle_offset_metres: f32 = 0',
-    '.pivot = .{ 0.95, 0.55 }'
+    'footwear_ankle_offset_metres: f32 = -0.35',
+    '.pivot = .{ 0.70, 0.62 }'
 )) {
     if (-not $wardrobeCatalogSource.Contains($phrase)) {
-        Write-Error "Prompt 25A wardrobe registration correction is missing: '$phrase'." -ErrorAction Continue
+        Write-Error "Prompt 25D semantic footwear registration is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
 }
@@ -2103,11 +2111,12 @@ foreach ($phrase in @(
 }
 foreach ($phrase in @(
     'Prompt 25B production anatomy pages and regions have exact valid bounds',
-    'Prompt 25B real component bindings are distinct and preserve authored aspect',
-    'Prompt 25B component sizes and pivots follow rig attachment lengths',
-    'Prompt 25B final front joins use authored overlap without pose compression',
-    'Prompt 25B side projection applies one root compression from the authoritative pose',
-    'Prompt 25B bilateral front equipment follows anatomy mirroring',
+    'Prompt 25D real component bindings are distinct with valid authored extents',
+    'Prompt 25D component sizes and pivots follow view-specific rig spans',
+    'Prompt 25D final front joins retain accepted authored geometry',
+    'Prompt 25D side projection preserves one readable profile root per bilateral pair',
+    'Prompt 25D wardrobe pivots match alpha-derived semantic anchors',
+    'Prompt 25B bilateral footwear receives mirrored submission metadata',
     'Prompt 25A wardrobe regions are nonzero bounded and alpha-tight where required',
     'Prompt 25A side anatomy submission geometry remains registered at joints',
     'Prompt 25A front anatomy geometry overlaps every core limb joint',
@@ -2191,6 +2200,6 @@ Write-Host 'Prompt 23 art-pipeline audit passed: WIC PNG alpha decode, immutable
 Write-Host 'Prompt 24 character-presentation audit passed: distinct facing/view authority, fixed-tick automatic policy, interaction-owned side view, shared-pose front projection, single-root side reflection, original segmented art, explicit front layers, bounded spring reset, one global queue, and allocation/resource-free view changes.'
 Write-Host 'Prompt 24A art-boundary audit passed: production base anatomy resolves without garments, character/equipment identities remain distinct on shared pages, clothing-baked canonical names and legacy production paths are absent, and garment resolution cannot replace anatomy.'
 Write-Host 'Prompt 25 wardrobe audit passed: original paired production art, typed reusable items/presets, independent slots/layers/coverage, topology-aware bindings, transactional cycling, cosmetic effects, long-mesh reuse, focus-safe controls, unified submission, and allocation/resource-free steady state.'
-Write-Host 'Prompt 25A visual-correction audit passed: re-authored separated anatomy, view spacing, joint overlap, connector layers, alpha-tight wardrobe regions, semantic footwear registration, bounded D3D captures, and focused deterministic coverage.'
-Write-Host 'Prompt 25B art-correction audit passed: real forearm/shin assets, bounded alpha/aspect checks, deterministic bilateral mirroring, authoritative single-pass side projection, corrected connector order, D3D comparison captures, and unchanged unified rendering ownership.'
+Write-Host 'Prompt 25A visual-correction audit passed: re-authored separated anatomy, view spacing, joint overlap, connector layers, alpha-tight wardrobe regions, mirrored footwear submission metadata, bounded D3D captures, and focused deterministic coverage.'
+Write-Host 'Prompt 25B art-correction audit passed: real forearm/shin assets, bounded alpha/aspect checks, deterministic bilateral submission mirroring, authoritative single-pass side projection, corrected connector order, D3D comparison captures, and unchanged unified rendering ownership.'
 Write-Host (('Place' + 'holder') + '/disabled-test audit passed: the audited implementation-file scan is empty.')

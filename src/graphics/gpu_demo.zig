@@ -31,6 +31,9 @@ const character_presentation_demo = @import("character_presentation_demo");
 const wardrobe_demo = @import("wardrobe_demo");
 const image_decode = @import("image_decode");
 const diagnostics = @import("diagnostics");
+const debug_draw = @import("debug_draw");
+const visual_geometry = @import("visual_geometry");
+const visual_geometry_overlay = @import("visual_geometry_overlay");
 
 pub const DemoMode = enum {
     sprites,
@@ -87,6 +90,9 @@ const target_width: u32 = 640;
 const target_height: u32 = 480;
 const visual_capture_directory = "zig-out/p25a_visual_gpu";
 const visual_capture_count: u32 = 11;
+const geometry_debug_capture_directory = "zig-out/p25c_visual_geometry_debug";
+const geometry_debug_capture_path =
+    geometry_debug_capture_directory ++ "/03_wide_brim_front_geometry.ppm";
 const texture_width: u32 = 4;
 const texture_height: u32 = 4;
 const upload_texture_row_pitch: u32 = 256;
@@ -402,11 +408,14 @@ pub const GpuDemo = struct {
         );
     }
 
-    fn initializeVisualCaptureTransfer(self: *GpuDemo) !void {
+    fn initializeVisualCaptureTransfer(self: *GpuDemo, geometry_debug: bool) !void {
         if (self.visual_capture_transfer != null) {
             return error.VisualCaptureTransferAlreadyInitialized;
         }
         try std.Io.Dir.cwd().createDirPath(self.io, visual_capture_directory);
+        if (geometry_debug) {
+            try std.Io.Dir.cwd().createDirPath(self.io, geometry_debug_capture_directory);
+        }
         const row_pitch = alignForward(target_width * 4, 256);
         var transfer_info: c.SDL_GPUTransferBufferCreateInfo = std.mem.zeroes(
             c.SDL_GPUTransferBufferCreateInfo,
@@ -1021,8 +1030,14 @@ pub const GpuDemo = struct {
             });
             const definitions = wardrobe_scene.?.meshDefinitions();
             try self.initializeMeshRendering(&definitions);
-            if (mode == .visual_quality) try self.initializeVisualCaptureTransfer();
+            if (mode == .visual_quality) {
+                try self.initializeVisualCaptureTransfer(integrated_debug_enabled);
+            }
             if (interactive_enabled) platform_input = sdl_input.PlatformInput.init();
+        }
+        var geometry_alpha_catalog: ?visual_geometry_overlay.AlphaCatalog = null;
+        if (mode == .visual_quality and integrated_debug_enabled) {
+            geometry_alpha_catalog = try visual_geometry_overlay.AlphaCatalog.init(self.allocator);
         }
         const humanoid_initialized_bytes = humanoid_allocator.end_index;
         const creations_before_run = self.resource_metrics.gpu_resource_creations;
@@ -1033,6 +1048,8 @@ pub const GpuDemo = struct {
         var socket_evaluation_allocations: usize = 0;
         var humanoid_submission_allocations: usize = 0;
         var humanoid_instances: u32 = 0;
+        var geometry_trace = visual_geometry.Trace{};
+        var geometry_debug_commands = debug_draw.CommandBuffer{};
         var rest_right_hand: ?math.Vec2 = null;
         var modified_right_hand: ?math.Vec2 = null;
         var rest_left_foot: ?math.Vec2 = null;
@@ -1568,7 +1585,24 @@ pub const GpuDemo = struct {
                         humanoid_allocator.end_index - allocation_checkpoint;
                     self.unified_queue.?.beginFrame();
                     const submission_checkpoint = humanoid_allocator.end_index;
-                    humanoid_instances = try scene.submit(&self.unified_queue.?);
+                    if (mode == .visual_quality and integrated_debug_enabled) {
+                        geometry_trace.begin();
+                        humanoid_instances = try scene.submitTraced(
+                            &self.unified_queue.?,
+                            &geometry_trace,
+                        );
+                        try visual_geometry_overlay.build(
+                            &geometry_debug_commands,
+                            &geometry_trace,
+                            &geometry_alpha_catalog.?,
+                            self.visible_camera,
+                        );
+                        humanoid_instances += try geometry_debug_commands.submitUnified(
+                            &self.unified_queue.?,
+                        );
+                    } else {
+                        humanoid_instances = try scene.submit(&self.unified_queue.?);
+                    }
                     humanoid_submission_allocations +=
                         humanoid_allocator.end_index - submission_checkpoint;
                 },
@@ -1577,7 +1611,11 @@ pub const GpuDemo = struct {
                 const prepared = self.unified_queue.?.prepare();
                 const window_rendered = try self.renderUnifiedToWindow(prepared);
                 if (mode == .visual_quality) {
-                    if (visualCapturePath(frame)) |capture_path| {
+                    if (integrated_debug_enabled) {
+                        if (frame == 150) {
+                            try self.captureUnifiedToPpm(prepared, geometry_debug_capture_path);
+                        }
+                    } else if (visualCapturePath(frame)) |capture_path| {
                         try self.captureUnifiedToPpm(prepared, capture_path);
                     }
                 }
@@ -2827,7 +2865,10 @@ pub const GpuDemo = struct {
                         self.visual_captures_written,
                         target_width,
                         target_height,
-                        visual_capture_directory,
+                        if (integrated_debug_enabled)
+                            geometry_debug_capture_directory
+                        else
+                            visual_capture_directory,
                     },
                 );
             } else if (scripted_input_enabled) {
@@ -2918,7 +2959,8 @@ pub const GpuDemo = struct {
                 humanoid_submission_allocations != 0 or
                 self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
                 (mode == .visual_quality and
-                    self.visual_captures_written != visual_capture_count) or
+                    self.visual_captures_written !=
+                        (if (integrated_debug_enabled) 1 else visual_capture_count)) or
                 gpu_resource_delta != 0)
             {
                 return error.WardrobeRenderingEvidenceIncomplete;

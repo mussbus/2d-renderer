@@ -132,6 +132,8 @@ Start with:
 - [`docs/ART_PIPELINE.md`](docs/ART_PIPELINE.md) for PNG decoding, immutable art packs, stable semantic/view identity, atlas validation, multi-page GPU ownership, installed assets, and the future offline authoring boundary.
 - [`docs/CHARACTER_PRESENTATION.md`](docs/CHARACTER_PRESENTATION.md) for facing/view separation, interaction authority, shared-pose interpretation, original character art, layers, secondary reset, and evidence.
 - [`docs/WARDROBE.md`](docs/WARDROBE.md) for garment semantics, view/topology binding, presets, controls, and the future authoring workflow.
+- [`docs/VISUAL_GEOMETRY.md`](docs/VISUAL_GEOMETRY.md) for semantic landmarks, visible-alpha geometry, anatomy-relative fit contracts, pose/morphology sweeps, quantitative failure reports, debug overlays, and golden policy.
+- [`docs/PROMPT25D_DECISION_RECORD.md`](docs/PROMPT25D_DECISION_RECORD.md) for validator hardening, production root-cause corrections, before/after metrics, golden evidence, and the no-test-gaming audit.
 - [`docs/OUTFIT_REFERENCE_INVENTORY.md`](docs/OUTFIT_REFERENCE_INVENTORY.md) for the required reference-cluster inventory and project-local IDs.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.

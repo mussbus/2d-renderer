@@ -1,5 +1,54 @@
 # Testing Strategy
 
+## Prompt 25D focused visual geometry
+
+`zig build test-visual-geometry -j1` is the fast character-art iteration gate.
+It validates metadata, visible alpha bounds, the shared production transform,
+semantic side identity, registration, directional axes, fit, coverage,
+pixel-space joint continuity, profile proportions, front symmetry, the pose
+matrix, and male/female morphology variation without creating a window or GPU
+device. Controlled aligned/backwards, correctly sized/undersized, invalid
+coverage, and over-limit distal/knee/root continuity fixtures prove that the
+instrument neither accepts every input nor fails every input.
+
+The final Prompt 25D gate retains 158 focused production checks (above the
+required 129 baseline) and a separate 6,354-check pose/morphology sweep.
+Locomotion, compression, rise, fall, and landing are evaluated in both side
+facings; global-build and channel sweeps reset their authoritative state before
+the motion matrix so the declared matrices cannot leak state into each other.
+
+`zig build visual-geometry-report -j1` evaluates the current production
+acceptance matrix and writes human-readable and JSON reports under
+`zig-out/p25d_visual_geometry`. Exit code zero means every emitted production
+metric passed and `failure_count = 0`. The frozen `pre_correction_report.*`
+files retain the Prompt 25B-derived failure evidence.
+
+The clean D3D12 capture uses:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+.\zig-out\bin\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input
+```
+
+The corresponding geometry overlay uses the identical character, production
+submission, global queue, shaders, D3D12 backend, and readback:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+.\zig-out\bin\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input --debug-visualization
+```
+
+Golden hashing is a final change-detection layer only. After quantitative and
+human acceptance, the approved D3D12/DXIL PPMs are verified with:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build check-p25d-goldens -j1
+& '.\tools\check_p25d_goldens.ps1' -CompareLatest
+```
+
+The second command proves that the latest real-GPU readbacks equal the stored
+approved captures. Prompt 25B captures remain unapproved.
+
 ## Test layers
 
 Tests are divided by the external state they require. Ordinary `zig build test` and `zig build check` must not initialize SDL video or create a GPU device. GPU and manual visual tests are explicit separate steps.
@@ -137,7 +186,7 @@ Prompt 7's executable evidence run is `zig build run -- --frames 720 --demo mult
 
 Prompt 10's executable evidence run is `zig build run -- --frames 1200 --demo foot-planting --scripted-input`. It must record both contact/plant ticks, collider IDs and immutable targets, stable-plant slip/penetration/hover below `0.0002 m`, floor and `1.15 m` raised-platform pre/post error reduction, jump lock clearing, zero false airborne plants, fresh post-landing acquisition, exact enabled/disabled physics and animator timing, 15 humanoid plus five collider sprites, one page/range/draw, zero hot-path allocation, and zero foot-created GPU resources. Missing evidence is a nonzero exit.
 
-Prompt 11 originally added 11 deterministic integration tests. They cover a 32-entry diagnostic ring's overwrite order, 256-command debug overflow, debug-off/on authoritative equivalence, never-read/read-every-tick diagnostics equivalence, repeated non-destructive getters, landing-event single delivery, animation-contact physics invariance, pre-arm-IK target freezing, final hierarchy evaluation, reset during plant/airborne/pre-contact/contact, character-local isolation and interaction-peer release, three render grouping schedules, sequential complete handshakes, and a repeated integrated route. The final adversarial audit strengthens those same cases to 1,000 handshakes and 100,000 fixed ticks. The long route executes at least 30 complete walk/jump/platform/handshake/cleanup cycles, checks finite controller, spring, and foot state on every tick, rejects airborne locks, bounds slip to `0.0002 m`, and ends with zero allocation/resource growth and no stale interaction, override, or IK state.
+Prompt 11 originally added 11 deterministic integration tests. They cover a 32-entry diagnostic ring's overwrite order, fixed-capacity debug overflow (512 commands after Prompt 25C), debug-off/on authoritative equivalence, never-read/read-every-tick diagnostics equivalence, repeated non-destructive getters, landing-event single delivery, animation-contact physics invariance, pre-arm-IK target freezing, final hierarchy evaluation, reset during plant/airborne/pre-contact/contact, character-local isolation and interaction-peer release, three render grouping schedules, sequential complete handshakes, and a repeated integrated route. The final adversarial audit strengthens those same cases to 1,000 handshakes and 100,000 fixed ticks. The long route executes at least 30 complete walk/jump/platform/handshake/cleanup cycles, checks finite controller, spring, and foot state on every tick, rejects airborne locks, bounds slip to `0.0002 m`, and ends with zero allocation/resource growth and no stale interaction, override, or IK state.
 
 Prompt 12 adds four focused regression tests, bringing the aggregate Zig count from 179 to 183. They cover deterministic lowest-ID support and sweep-face selection under collider-array permutation; an exact wall/floor diagonal corner at maximum run/fall speeds, including stable rest and epsilon-height support; exact requested/executed/discarded time under sustained 20 FPS overload plus an alternating zero/eight-substep schedule; and four-character state isolation with deliberately different animation, spring, facing, layer, foot-lock, and interaction-lock state. Existing tests were also strengthened for 20 zero-substep input frames, eight-substep one-shot edge consumption, pending-edge reset, coherent foot lifecycle chronology across repeated semantic contacts, comparator law checks at signed integer extremes, the 1,000-cycle interaction run, and the 100,000-tick integrated stress run.
 
@@ -373,11 +422,13 @@ anatomy mirroring, forearm-over-upper-arm elbow overlap, pelvis-behind-thigh
 overlap, corrected female hand size, allocation-free submission, and the
 existing anatomy/equipment ownership boundary.
 
-The bilateral-equipment regression calculates actual transformed shoe centers.
-It requires opposite signed X scales, reflected pivots `0.05/0.95`, equal
-absolute widths, and at least `0.35 m` center separation for semantic feet
-authored `0.40 m` apart. This rejects the former approximately `0.08 m`
-pile-up even when the two equipment bindings themselves are correct.
+The legacy bilateral-equipment regression proves only mirrored submission
+metadata: two quads, opposite signed X scales, reflected pivots `0.05/0.95`,
+equal absolute widths, and at least `0.35 m` center separation. It does not
+prove heel/toe registration, forward direction, sole angle, fit, or visible
+coverage. Prompt 25C preserves that test under the precise name "bilateral
+footwear receives mirrored submission metadata" and adds the stronger semantic
+and alpha-visible checks separately.
 
 Visual acceptance uses the same Prompt 25A D3D12 route after rebuilding. The
 accepted Prompt 25B hard-gate captures are retained under

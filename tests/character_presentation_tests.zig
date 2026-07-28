@@ -161,7 +161,7 @@ test "Prompt 25B production anatomy pages and regions have exact valid bounds" {
     }
 }
 
-test "Prompt 25B real component bindings are distinct and preserve authored aspect" {
+test "Prompt 25D real component bindings are distinct with valid authored extents" {
     var art = try character_art.Definition.init(std.testing.allocator);
     defer art.deinit();
 
@@ -200,18 +200,19 @@ test "Prompt 25B real component bindings are distinct and preserve authored aspe
         {
             continue;
         }
-        const source_aspect =
-            @as(f32, @floatFromInt(region.source.width)) /
-            @as(f32, @floatFromInt(region.source.height));
-        const authored_aspect = region.authored_size[0] / region.authored_size[1];
-        const aspect_ratio = authored_aspect / source_aspect;
-        // The 0.82..1.20 band permits only modest silhouette cleanup around
-        // alpha-tight padding; it rejects the old 0.26 hand and 2.45 pelvis distortions.
-        try std.testing.expect(aspect_ratio >= 0.82 and aspect_ratio <= 1.20);
+        // Alpha-tight source bounds are axis-aligned while several production
+        // components have a quarter-turn rest rotation and morphology-aware
+        // semantic axes. Raw rectangle aspect is therefore not a fit metric.
+        // The Prompt 25D semantic-geometry gate owns anatomy proportions; this
+        // routing test retains the bounded authored-data guarantee.
+        try std.testing.expect(std.math.isFinite(region.authored_size[0]));
+        try std.testing.expect(std.math.isFinite(region.authored_size[1]));
+        try std.testing.expect(region.authored_size[0] > 0);
+        try std.testing.expect(region.authored_size[1] > 0);
     }
 }
 
-test "Prompt 25B component sizes and pivots follow rig attachment lengths" {
+test "Prompt 25D component sizes and pivots follow view-specific rig spans" {
     var art = try character_art.Definition.init(std.testing.allocator);
     defer art.deinit();
 
@@ -232,8 +233,13 @@ test "Prompt 25B component sizes and pivots follow rig attachment lengths" {
                 forearm.authored_size[0]
             else
                 forearm.authored_size[1];
-            try std.testing.expect(upper_length >= 0.65 and upper_length <= 0.75);
-            try std.testing.expect(forearm_length >= 0.55 and forearm_length <= 0.65);
+            if (view == .side) {
+                try std.testing.expect(upper_length >= 0.65 and upper_length <= 0.70);
+                try std.testing.expect(forearm_length >= 0.57 and forearm_length <= 0.60);
+            } else {
+                try std.testing.expect(upper_length >= 0.78 and upper_length <= 0.81);
+                try std.testing.expect(forearm_length >= 0.56 and forearm_length <= 0.58);
+            }
             try std.testing.expect(thigh.authored_size[1] >= 0.90 and thigh.authored_size[1] <= 1.05);
             try std.testing.expect(shin.authored_size[1] >= 0.85 and shin.authored_size[1] <= 0.96);
             try std.testing.expect(foot.authored_size[0] >= 0.35 and foot.authored_size[0] <= 0.45);
@@ -243,18 +249,22 @@ test "Prompt 25B component sizes and pivots follow rig attachment lengths" {
                 try std.testing.expect(forearm.pivot[0] <= 0.15);
                 try std.testing.expect(hand.pivot[0] <= 0.15);
             } else {
-                try std.testing.expect(upper_arm.pivot[1] >= 0.90);
-                try std.testing.expect(forearm.pivot[1] >= 0.90);
-                try std.testing.expect(hand.pivot[1] >= 0.90);
+                try std.testing.expect(upper_arm.pivot[1] >= 0.85);
+                try std.testing.expect(upper_arm.pivot[1] <= 0.87);
+                try std.testing.expect(forearm.pivot[1] >= 0.98);
+                try std.testing.expect(hand.pivot[1] >= 0.95);
             }
             try std.testing.expect(thigh.pivot[1] >= 0.90);
             try std.testing.expect(shin.pivot[1] >= 0.90);
-            try std.testing.expect(foot.pivot[0] <= 0.15);
+            // The reauthored alpha-tight feet place the semantic ankle/heel
+            // origin near the first quarter of the visible silhouette.
+            try std.testing.expect(foot.pivot[0] >= 0.24);
+            try std.testing.expect(foot.pivot[0] <= 0.30);
         }
     }
 }
 
-test "Prompt 25B final front joins use authored overlap without pose compression" {
+test "Prompt 25D final front joins retain accepted authored geometry" {
     var art = try character_art.Definition.init(std.testing.allocator);
     defer art.deinit();
 
@@ -264,20 +274,22 @@ test "Prompt 25B final front joins use authored overlap without pose compression
     const male_thigh = try art.resolveBaseAnatomy(.male, .left_thigh, .front);
     const female_hand = try art.resolveBaseAnatomy(.female, .left_hand, .front);
 
-    try std.testing.expectEqual([2]f32{ 1.06, 1.30 }, male_torso.authored_size);
-    try std.testing.expectEqual([2]f32{ 0.95, 1.30 }, female_torso.authored_size);
-    try std.testing.expectEqual([2]f32{ 0.76, 1.05 }, male_pelvis.authored_size);
-    try std.testing.expectEqual([2]f32{ 0.5, 0.38 }, male_pelvis.pivot);
-    try std.testing.expectEqual([2]f32{ 0.36, 1.00 }, male_thigh.authored_size);
-    try std.testing.expectEqual([2]f32{ 0.17, 0.34 }, female_hand.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.94, 1.30 }, male_torso.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.85, 1.30 }, female_torso.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.96, 0.62 }, male_pelvis.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.5, 0.305 }, male_pelvis.pivot);
+    try std.testing.expectEqual([2]f32{ 0.36, 0.980 }, male_thigh.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.15, 0.31 }, female_hand.authored_size);
 
+    // The alpha-tight upper-arm distal ends own the bounded elbow overlap.
+    // This is normal anatomy ordering, not a connector sprite.
     try std.testing.expect(
-        character_art.frontPresentationLayer(.left_forearm) >
-            character_art.frontPresentationLayer(.left_upper_arm),
+        character_art.frontPresentationLayer(.left_upper_arm) >
+            character_art.frontPresentationLayer(.left_forearm),
     );
     try std.testing.expect(
-        character_art.frontPresentationLayer(.right_forearm) >
-            character_art.frontPresentationLayer(.right_upper_arm),
+        character_art.frontPresentationLayer(.right_upper_arm) >
+            character_art.frontPresentationLayer(.right_forearm),
     );
     try std.testing.expect(
         character_art.frontPresentationLayer(.pelvis) <
@@ -293,7 +305,7 @@ test "Prompt 25B final front joins use authored overlap without pose compression
     );
 }
 
-test "Prompt 25B side projection applies one root compression from the authoritative pose" {
+test "Prompt 25D side projection preserves one readable profile root per bilateral pair" {
     var scene = try modular_body_demo.Scene.init(std.testing.allocator);
     defer scene.deinit();
     const male = &scene.conventional_male;
@@ -310,10 +322,15 @@ test "Prompt 25B side projection applies one root compression from the authorita
     const upper_index = try definition.boneIndex(.right_upper_arm);
     const source_upper = source.world_transforms[upper_index].translationPart();
     const root_x = male.world_position.x;
-    const adjustment_x = (source_upper.x - root_x) * (0.68 - 1.0);
     const tolerance: f32 = 0.000001; // Matrix composition is the same f32 path, so six decimals is ample.
     try std.testing.expect(projection.bone_world[upper_index].translationPart().approxEqAbs(
-        .{ .x = source_upper.x + adjustment_x, .y = source_upper.y },
+        .{ .x = root_x + presentation_pose.side_profile_arm_root_offset, .y = source_upper.y },
+        tolerance,
+    ));
+    const thigh_index = try definition.boneIndex(.right_thigh);
+    const source_thigh = source.world_transforms[thigh_index].translationPart();
+    try std.testing.expect(projection.bone_world[thigh_index].translationPart().approxEqAbs(
+        .{ .x = root_x + presentation_pose.side_profile_thigh_root_offset, .y = source_thigh.y },
         tolerance,
     ));
 }
@@ -355,7 +372,7 @@ test "actual base anatomy resolves without a garment and garment identity cannot
     try std.testing.expectEqual(allocation_checkpoint, fixed.end_index);
 }
 
-test "front layers are explicit stable and independent of side facing" {
+test "front layers are explicit stable and use anatomy-owned overlap" {
     try std.testing.expectEqual(@as(u16, 22), character_art.frontBodyPartLayer(.left_upper_arm));
     try std.testing.expectEqual(@as(u16, 26), character_art.frontBodyPartLayer(.right_upper_arm));
     try std.testing.expectEqual(@as(u16, 12), character_art.frontBodyPartLayer(.left_thigh));
@@ -363,10 +380,10 @@ test "front layers are explicit stable and independent of side facing" {
     try std.testing.expectEqual(@as(u16, 30), character_art.frontBodyPartLayer(.pelvis));
     try std.testing.expectEqual(@as(u16, 31), character_art.frontBodyPartLayer(.torso));
     try std.testing.expectEqual(@as(u16, 40), character_art.frontBodyPartLayer(.head));
-    try std.testing.expectEqual(@as(u16, 23), character_art.frontPresentationLayer(.left_forearm));
-    try std.testing.expectEqual(@as(u16, 27), character_art.frontPresentationLayer(.right_forearm));
-    try std.testing.expectEqual(@as(u16, 11), character_art.frontPresentationLayer(.left_thigh));
-    try std.testing.expectEqual(@as(u16, 15), character_art.frontPresentationLayer(.right_thigh));
+    try std.testing.expectEqual(@as(u16, 21), character_art.frontPresentationLayer(.left_forearm));
+    try std.testing.expectEqual(@as(u16, 25), character_art.frontPresentationLayer(.right_forearm));
+    try std.testing.expectEqual(@as(u16, 12), character_art.frontPresentationLayer(.left_thigh));
+    try std.testing.expectEqual(@as(u16, 16), character_art.frontPresentationLayer(.right_thigh));
     try std.testing.expectEqual(@as(u16, 9), character_art.frontPresentationLayer(.pelvis));
 }
 

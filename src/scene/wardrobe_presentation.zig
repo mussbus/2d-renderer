@@ -10,6 +10,7 @@ const render_queue = @import("render_queue");
 const sprite = @import("sprite_batch");
 const wardrobe_art = @import("wardrobe_art");
 const wardrobe_catalog = @import("wardrobe_catalog");
+const visual_geometry = @import("visual_geometry");
 
 pub const mesh_definition_count: usize = 2;
 
@@ -125,6 +126,15 @@ pub const Presentation = struct {
         instance: *character.CharacterInstance,
         queue: *render_queue.UnifiedRenderQueue,
     ) !u32 {
+        return presentation.submitTraced(instance, queue, null);
+    }
+
+    pub fn submitTraced(
+        presentation: *Presentation,
+        instance: *character.CharacterInstance,
+        queue: *render_queue.UnifiedRenderQueue,
+        trace: ?*visual_geometry.Trace,
+    ) !u32 {
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
         const anatomy_definition = instance.definition.anatomy_definition orelse
             return error.CharacterHasNoAnatomy;
@@ -140,13 +150,24 @@ pub const Presentation = struct {
 
         const view = instance.presentationView();
         const projection = switch (view) {
-            .front => try presentation_pose.FrontProjection.init(
-                &instance.definition.skeleton_definition,
-                instance.character.local_and_world_pose,
-                instance.definition.visual_definition,
-                instance.character.appearance_runtime,
-                instance.world_position,
-            ),
+            .front => projection: {
+                var front = try presentation_pose.FrontProjection.init(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                );
+                try front.applyFrontShoulderMorphology(
+                    &instance.definition.skeleton_definition,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    anatomy_definition,
+                    anatomy_runtime.*,
+                    instance.world_position.x,
+                );
+                break :projection front;
+            },
             .side => try presentation_pose.FrontProjection.initSide(
                 &instance.definition.skeleton_definition,
                 instance.character.local_and_world_pose,
@@ -176,6 +197,8 @@ pub const Presentation = struct {
             const binding = presentation.bindings[component.id.index()];
             if (!binding.active) return error.MissingWardrobePresentationBinding;
             const selected = if (view == .front) binding.views.front else binding.views.side;
+            const spec = specForSemantic(component.presentation_semantic.?) orelse
+                return error.UnknownWardrobeSemantic;
             const resolved = try projectedEquipmentTransform(
                 instance,
                 visual_index,
@@ -195,28 +218,159 @@ pub const Presentation = struct {
                     presentation.front_skirt_mesh.view()
                 else
                     presentation.side_skirt_mesh.view();
-                const composed_deformation = try resolved.composedDeformation();
+                var composed_deformation = try resolved.composedDeformation();
+                const effective_pivot_y = effectivePivotY(
+                    spec,
+                    selected.pivot[1],
+                    bodyStyle(instance),
+                    view,
+                );
+                const pivot_offset_y = selected.authored_size[1] *
+                    (selected.pivot[1] - effective_pivot_y);
+                var mesh_binding_world = resolved.binding_world.mul(
+                    math.Mat3.translation(.{ .x = 0, .y = pivot_offset_y }),
+                );
+                const mesh_fit_x = if (std.mem.eql(u8, bodyStyle(instance), "male"))
+                    (if (view == .front)
+                        spec.fit.male_front_scale_x
+                    else
+                        spec.fit.male_side_scale_x)
+                else if (view == .front)
+                    spec.fit.female_front_scale_x
+                else
+                    spec.fit.female_side_scale_x;
+                mesh_binding_world = mesh_binding_world.mul(
+                    math.Mat3.nonuniformScale(.{ .x = mesh_fit_x, .y = 1 }),
+                );
+                if (std.mem.eql(u8, bodyStyle(instance), "male")) {
+                    if (view == .front) {
+                        composed_deformation.scale.y *= spec.fit.male_front_scale_y;
+                    } else {
+                        composed_deformation.scale.y *= spec.fit.male_side_scale_y;
+                    }
+                }
                 try loadout.resolved_visuals[visual_index].mesh_state.update(
                     instance.id.raw(),
                     resolved.bound_identity,
-                    resolved.binding_world,
+                    mesh_binding_world,
                     composed_deformation,
                 );
                 _ = try queue.submitMesh(.{
                     .definition = definition,
-                    .binding_world = resolved.binding_world,
+                    .binding_world = mesh_binding_world,
                     .resolved_deformation = composed_deformation,
                     .owning_character = instance.id.raw(),
                     .bound_identity = resolved.bound_identity,
                     .order = order,
                 });
+                if (trace) |sink| {
+                    const source = sourceForWardrobeRegion(selected.region_id) orelse
+                        return error.MissingWardrobeGeometrySource;
+                    const role = visual_geometry.roleForAnchor(binding.anchor);
+                    var traced_vertices: [visual_geometry.mesh_vertex_capacity]visual_geometry.MeshVertex = undefined;
+                    if (definition.vertices.len > traced_vertices.len or
+                        definition.indices.len > visual_geometry.mesh_index_capacity)
+                    {
+                        return error.VisualGeometryMeshCapacityExceeded;
+                    }
+                    for (definition.vertices, 0..) |vertex, index| {
+                        const local = try mesh.deformedLocalPoint(vertex, composed_deformation);
+                        traced_vertices[index] = .{
+                            .world = mesh_binding_world.transformPoint(local),
+                            .uv = vertex.uv,
+                        };
+                    }
+                    const top_left = traced_vertices[0].world;
+                    const top_right = traced_vertices[1].world;
+                    const middle_left = traced_vertices[2].world;
+                    const middle_right = traced_vertices[3].world;
+                    const bottom_left = traced_vertices[4].world;
+                    const bottom_right = traced_vertices[5].world;
+                    const request = sprite.SpriteRequest{
+                        .world_position = .{
+                            mesh_binding_world.values[6],
+                            mesh_binding_world.values[7],
+                        },
+                        .rotation = 0,
+                        .scale = .{ 1, 1 },
+                        .pivot = .{ 0, 0 },
+                        .uv_rect = selected.uv_rect,
+                        .tint = .{ 1, 1, 1, 1 },
+                        .texture_page = presentation.renderer_page_offset + selected.texture_page,
+                        .order = order,
+                    };
+                    try sink.append(.{
+                        .character_id = instance.id.raw(),
+                        .style = bodyStyle(instance),
+                        .view = geometryView(view, instance.facing),
+                        .owner = ownerForRole(role),
+                        .role = role,
+                        .side = semanticSide(visual, anatomy_definition),
+                        .semantic_id = @intFromEnum(selected.semantic_id),
+                        .component_id = @intCast(component.id.index()),
+                        .bound_identity = boundIdentityRaw(visual),
+                        .stable_id = spec.stable_id,
+                        .region_id = @intFromEnum(selected.region_id),
+                        .source = .{
+                            .x = source.x,
+                            .y = source.y,
+                            .width = source.width,
+                            .height = source.height,
+                        },
+                        .request = request,
+                        .geometry = visual_geometry.attachmentGeometry(
+                            spec.stable_id,
+                            role,
+                            geometryView(view, instance.facing),
+                        ),
+                        .fit = spec.fit,
+                        .world_geometry = visual_geometry.WorldGeometry.init(&.{
+                            .{ .kind = .waist_left, .world = top_left },
+                            .{ .kind = .waist_right, .world = top_right },
+                            .{ .kind = .hip, .world = middle_left },
+                            .{ .kind = .proximal, .world = middle_right },
+                            .{ .kind = .leg_opening_left, .world = bottom_left },
+                            .{ .kind = .leg_opening_right, .world = bottom_right },
+                            .{ .kind = .hem, .world = bottom_left.add(bottom_right).scale(0.5) },
+                        }),
+                        .mesh = visual_geometry.MeshTrace.init(
+                            traced_vertices[0..definition.vertices.len],
+                            definition.indices,
+                        ),
+                    });
+                }
             } else {
                 const sprite_transform = try humanoid.spriteTransform(try resolved.world());
-                var world_size = sprite_transform.signed_scale.componentMul(.{
+                const rest_rotation = restRotation(binding.anchor, view, instance.facing);
+                var world_size = presentation_view.spriteMorphologyScale(
+                    sprite_transform.signed_scale,
+                    rest_rotation,
+                ).componentMul(.{
                     .x = selected.authored_size[0],
                     .y = selected.authored_size[1],
                 });
+                if (std.mem.eql(u8, bodyStyle(instance), "male")) {
+                    if (view == .front) {
+                        world_size.x *= spec.fit.male_front_scale_x;
+                        world_size.y *= spec.fit.male_front_scale_y;
+                    } else {
+                        world_size.x *= spec.fit.male_side_scale_x;
+                        world_size.y *= spec.fit.male_side_scale_y;
+                    }
+                } else if (view == .front) {
+                    world_size.x *= spec.fit.female_front_scale_x;
+                } else {
+                    world_size.x *= spec.fit.female_side_scale_x;
+                }
                 var pivot = selected.pivot;
+                pivot[1] = effectivePivotY(spec, pivot[1], bodyStyle(instance), view);
+                if (view == .side and binding.anchor == .foot) {
+                    // Both authored side shoes point texture-left while the
+                    // authoritative side feet point along the presentation
+                    // facing direction. Invert the equipment source axis; the
+                    // projected anatomy transform already supplies facing.
+                    world_size.x = -world_size.x;
+                }
                 if (view == .front) {
                     const bound_to_left_part = switch (visual.source) {
                         .anatomy_part => |part_id| std.mem.startsWith(
@@ -226,28 +380,145 @@ pub const Presentation = struct {
                         ),
                         .attachment_point => false,
                     };
-                    if (bound_to_left_part) {
+                    // The production shoe source points texture-left. Front
+                    // anatomy feet point away from the body center, so its
+                    // mirror polarity is intentionally the inverse of the
+                    // vertically-authored limb garments.
+                    const mirror = if (binding.anchor == .foot)
+                        !bound_to_left_part
+                    else
+                        bound_to_left_part;
+                    if (mirror) {
                         world_size.x = -world_size.x;
-                        pivot[0] = 1.0 - pivot[0];
+                        if (binding.anchor != .foot) {
+                            pivot[0] = 1.0 - pivot[0];
+                        }
                     }
                 }
-                _ = try queue.submitSprite(.{
-                    .world_position = sprite_transform.world_position.toArray(),
-                    .rotation = sprite_transform.rotation_radians +
-                        restRotation(binding.anchor, view, instance.facing),
+                var world_position = sprite_transform.world_position;
+                const morphology_factor = @abs(world_size.y) /
+                    @max(selected.authored_size[1], std.math.floatEps(f32));
+                const morphology_fit_y = spec.fit.morphology_fit_y_per_scale *
+                    (morphology_factor - 1.0) + spec.fit.morphology_fit_y_bias;
+                if (@abs(morphology_fit_y) > std.math.floatEps(f32)) {
+                    const fit_rotation = sprite_transform.rotation_radians + rest_rotation;
+                    world_position.x -= @sin(fit_rotation) * morphology_fit_y;
+                    world_position.y += @cos(fit_rotation) * morphology_fit_y;
+                }
+                const request = sprite.SpriteRequest{
+                    .world_position = world_position.toArray(),
+                    .rotation = sprite_transform.rotation_radians + rest_rotation,
                     .scale = world_size.toArray(),
                     .pivot = pivot,
                     .uv_rect = selected.uv_rect,
                     .tint = .{ 1, 1, 1, 1 },
                     .texture_page = presentation.renderer_page_offset + selected.texture_page,
                     .order = order,
-                });
+                };
+                _ = try queue.submitSprite(request);
+                if (trace) |sink| {
+                    const source = sourceForWardrobeRegion(selected.region_id) orelse
+                        return error.MissingWardrobeGeometrySource;
+                    const role = visual_geometry.roleForAnchor(binding.anchor);
+                    try sink.append(.{
+                        .character_id = instance.id.raw(),
+                        .style = bodyStyle(instance),
+                        .view = geometryView(view, instance.facing),
+                        .owner = ownerForRole(role),
+                        .role = role,
+                        .side = semanticSide(visual, anatomy_definition),
+                        .semantic_id = @intFromEnum(selected.semantic_id),
+                        .component_id = @intCast(component.id.index()),
+                        .bound_identity = boundIdentityRaw(visual),
+                        .stable_id = spec.stable_id,
+                        .region_id = @intFromEnum(selected.region_id),
+                        .source = .{
+                            .x = source.x,
+                            .y = source.y,
+                            .width = source.width,
+                            .height = source.height,
+                        },
+                        .request = request,
+                        .geometry = visual_geometry.attachmentGeometry(
+                            spec.stable_id,
+                            role,
+                            geometryView(view, instance.facing),
+                        ),
+                        .fit = spec.fit,
+                    });
+                }
             }
             submitted += 1;
         }
         return submitted;
     }
 };
+
+fn sourceForWardrobeRegion(id: @import("art_pack").AtlasRegionId) ?@import("art_pack").PixelRect {
+    for (wardrobe_art.region_inputs) |region| {
+        if (region.id == id) return region.source;
+    }
+    return null;
+}
+
+fn geometryView(view: presentation_view.View, facing: humanoid.Facing) visual_geometry.View {
+    return switch (view) {
+        .front => .front,
+        .side => if (facing == .left) .side_left else .side_right,
+    };
+}
+
+fn effectivePivotY(
+    spec: wardrobe_catalog.VisualSpec,
+    fallback: f32,
+    style: []const u8,
+    view: presentation_view.View,
+) f32 {
+    const male = std.mem.eql(u8, style, "male");
+    return if (view == .front)
+        (if (male) spec.male_front_pivot_y else spec.female_front_pivot_y) orelse fallback
+    else
+        (if (male) spec.male_side_pivot_y else spec.female_side_pivot_y) orelse fallback;
+}
+
+fn ownerForRole(role: visual_geometry.Role) visual_geometry.Owner {
+    return switch (role) {
+        .torso_garment, .lower_garment, .sleeve, .glove, .legwear => .clothing,
+        .shoe => .equipment,
+        else => .accessory,
+    };
+}
+
+fn bodyStyle(instance: *const character.CharacterInstance) []const u8 {
+    const anatomy_definition = instance.definition.anatomy_definition orelse return "unknown";
+    const anatomy_runtime = instance.character.anatomy_runtime orelse return "unknown";
+    const preset = anatomy_definition.body_presets[anatomy_runtime.selected_body_preset.index()];
+    if (std.mem.indexOf(u8, preset.stable_id.slice(), "female") != null) return "female";
+    if (std.mem.indexOf(u8, preset.stable_id.slice(), "male") != null) return "male";
+    return preset.stable_id.slice();
+}
+
+fn semanticSide(
+    visual: equipment.ResolvedVisualInstance,
+    anatomy_definition: @import("anatomy").DefinitionView,
+) visual_geometry.Side {
+    return switch (visual.source) {
+        .anatomy_part => |part_id| blk: {
+            const name = anatomy_definition.part_instances[part_id.index()].stable_id.slice();
+            if (std.mem.startsWith(u8, name, "left_")) break :blk .left;
+            if (std.mem.startsWith(u8, name, "right_")) break :blk .right;
+            break :blk .none;
+        },
+        .attachment_point => .none,
+    };
+}
+
+fn boundIdentityRaw(visual: equipment.ResolvedVisualInstance) u32 {
+    return switch (visual.source) {
+        .anatomy_part => |part_id| @intCast(@intFromEnum(part_id)),
+        .attachment_point => |point_id| @intCast(@intFromEnum(point_id)),
+    };
+}
 
 fn semantic(raw: u32) equipment.PresentationSemanticId {
     return @enumFromInt(raw);
@@ -327,13 +598,16 @@ fn initSkirtMesh(
 ) !mesh.Definition {
     const uv = visual.uv_rect;
     const middle_v = (uv[1] + uv[3]) * 0.5;
+    // Mesh vertices use the same authored-pivot convention as SpriteRequest:
+    // the resolved binding is at the visual pivot, not at its top edge.
+    const top_y = visual.authored_size[1] * (1.0 - visual.pivot[1]);
     const vertices = [_]mesh.VertexInput{
-        .{ .local_position = .{ .x = -0.62, .y = 0.0 }, .uv = .{ uv[0], uv[1] }, .deformation_weight = 0.15 },
-        .{ .local_position = .{ .x = 0.62, .y = 0.0 }, .uv = .{ uv[2], uv[1] }, .deformation_weight = 0.15 },
-        .{ .local_position = .{ .x = -0.70, .y = -0.84 }, .uv = .{ uv[0], middle_v }, .deformation_weight = 0.62 },
-        .{ .local_position = .{ .x = 0.70, .y = -0.84 }, .uv = .{ uv[2], middle_v }, .deformation_weight = 0.62 },
-        .{ .local_position = .{ .x = -0.76, .y = -1.68 }, .uv = .{ uv[0], uv[3] }, .deformation_weight = 1.0 },
-        .{ .local_position = .{ .x = 0.76, .y = -1.68 }, .uv = .{ uv[2], uv[3] }, .deformation_weight = 1.0 },
+        .{ .local_position = .{ .x = -0.396, .y = top_y }, .uv = .{ uv[0], uv[1] }, .deformation_weight = 0.15 },
+        .{ .local_position = .{ .x = 0.396, .y = top_y }, .uv = .{ uv[2], uv[1] }, .deformation_weight = 0.15 },
+        .{ .local_position = .{ .x = -0.362, .y = top_y - 0.84 }, .uv = .{ uv[0], middle_v }, .deformation_weight = 0.62 },
+        .{ .local_position = .{ .x = 0.362, .y = top_y - 0.84 }, .uv = .{ uv[2], middle_v }, .deformation_weight = 0.62 },
+        .{ .local_position = .{ .x = -0.55, .y = top_y - 1.68 }, .uv = .{ uv[0], uv[3] }, .deformation_weight = 1.0 },
+        .{ .local_position = .{ .x = 0.55, .y = top_y - 1.68 }, .uv = .{ uv[2], uv[3] }, .deformation_weight = 1.0 },
     };
     const indices = [_]u16{ 0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4 };
     return mesh.Definition.init(allocator, .{

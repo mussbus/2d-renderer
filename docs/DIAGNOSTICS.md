@@ -53,7 +53,7 @@ The optional command is:
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2400 --demo integrated --scripted-input --debug-visualization
 ```
 
-`debug_draw.CommandBuffer` contains 256 inline sprite requests. Overflow increments `overflow_count` and returns `error.DebugCommandCapacityExceeded`; it never grows. Lines, markers, and AABB edges visualize physics/visual roots, collider bounds, ground queries/hits, locked foot targets, pre/post-leg-IK movement, arm segments, the shared hand target, and the participant link. Debug submission creates no GPU object and uses texture page zero in the authoritative global sprite batch.
+`debug_draw.CommandBuffer` contains 512 inline sprite requests. Overflow increments `overflow_count` and returns `error.DebugCommandCapacityExceeded`; it never grows. Lines, markers, and AABB edges visualize physics/visual roots, collider bounds, ground queries/hits, locked foot targets, pre/post-leg-IK movement, arm segments, the shared hand target, the participant link, and Prompt 25C semantic visual geometry. Debug submission creates no GPU object and uses texture page zero in the authoritative global sprite batch.
 
 Because ordinary and debug sprites are compatible, the current route retains one texture range and one actual indexed-instanced draw. Accounting reports ordinary sprite count and debug primitive count separately, with `debug_draw_calls = 0`, `sprite_draw_calls = 1`, and total actual draws equal to one. If compatibility changes later, those counters must expose the additional range/draw rather than folding it into the sprite count.
 

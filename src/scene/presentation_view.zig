@@ -5,6 +5,22 @@ pub const View = enum(u8) {
     front,
 };
 
+pub fn spriteMorphologyScale(source: anytype, rest_rotation: f32) @TypeOf(source) {
+    const quarter_turn =
+        @abs(@abs(rest_rotation) - std.math.pi / 2.0) <= 0.0001;
+    if (!quarter_turn) return source;
+
+    // Morphology is authored in bone-local axes. A quarter-turn source maps
+    // bone-local Y thickness to sprite-local X and bone-local X length to
+    // sprite-local Y. Preserve the determinant sign on X so a reflected
+    // presentation remains a horizontal mirror rather than a vertical flip.
+    const determinant_sign: f32 = if (source.x * source.y < 0) -1 else 1;
+    return @TypeOf(source){
+        .x = determinant_sign * @abs(source.y),
+        .y = @abs(source.x),
+    };
+}
+
 pub const DebugOverride = enum(u8) {
     automatic,
     force_side,
@@ -106,4 +122,19 @@ pub fn automaticView(input: AutomaticInput) View {
         .idle => .front,
         .walking, .dashing, .jumping, .rising, .falling, .landing => .side,
     };
+}
+
+test "quarter-turn sprite morphology maps bone length and thickness once" {
+    const TestVec2 = struct { x: f32, y: f32 };
+    const positive = spriteMorphologyScale(TestVec2{ .x = 1.25, .y = 0.75 }, std.math.pi / 2.0);
+    try std.testing.expectApproxEqAbs(@as(f32, 0.75), positive.x, 0.000001);
+    try std.testing.expectApproxEqAbs(@as(f32, 1.25), positive.y, 0.000001);
+
+    const reflected = spriteMorphologyScale(TestVec2{ .x = -1.25, .y = 0.75 }, -std.math.pi / 2.0);
+    try std.testing.expectApproxEqAbs(@as(f32, -0.75), reflected.x, 0.000001);
+    try std.testing.expectApproxEqAbs(@as(f32, 1.25), reflected.y, 0.000001);
+
+    const unrotated = spriteMorphologyScale(TestVec2{ .x = 1.25, .y = 0.75 }, 0);
+    try std.testing.expectApproxEqAbs(@as(f32, 1.25), unrotated.x, 0.000001);
+    try std.testing.expectApproxEqAbs(@as(f32, 0.75), unrotated.y, 0.000001);
 }

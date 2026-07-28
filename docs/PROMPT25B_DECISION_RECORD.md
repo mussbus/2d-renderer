@@ -50,7 +50,9 @@ Examples proving that the production bindings no longer alias unsuitable art:
 - female front forearm: `(364,845,24,102)`;
 - female front hand: `(624,864,31,64)`;
 - female front thigh: `(855,819,82,154)`;
-- female front shin: `(1126,823,51,145)`;
+- female front shin: `(1126,817,51,151)`; Prompt 25D retains six
+  transparent proximal rows so the thigh-owned knee cap does not stack with
+  the independently articulated lower leg;
 - female front foot: `(1379,868,58,56)`.
 
 Every one of those regions has its own atlas rectangle and region ID. The
@@ -66,10 +68,11 @@ legs, and feet. The same rule is applied to equipment bound to a left anatomy
 part, so shoes, sleeves, gloves, and legwear agree with the body beneath them.
 Side presentation retains the established single character-root reflection.
 
-`FrontProjection.initSide` now starts from a copy of the authoritative local
-pose, applies the projected arm rest once, evaluates the hierarchy once,
-applies one side root compression, and rebuilds derived attachment/module
-worlds. It does not invoke front initialization. Front presentation no longer
+`FrontProjection.initSide` starts from a copy of the authoritative local pose,
+applies the projected arm rest once, evaluates the hierarchy once, projects
+bilateral arm and leg roots onto the strict profile centerline, and rebuilds
+derived attachment/module worlds. Semantic side identity and ordering remain
+distinct. It does not invoke front initialization. Front presentation never
 compresses shoulder roots.
 
 The torso art now owns the front deltoid silhouette. The accepted front
@@ -152,9 +155,10 @@ stride, jump-rise, and jump-fall frames from the same prepared global queue.
   rig-length/pivot compatibility, single side-root compression, deterministic
   front mirroring, anatomy/equipment identity separation, and steady-state
   allocation behavior.
-- Wardrobe tests verify that bilateral front equipment follows anatomy
-  mirroring and that the existing topology, joint registration, preset,
-  secondary-motion, and allocation contracts remain intact.
+- Wardrobe tests verify bilateral front equipment mirrored submission metadata
+  and retain the existing topology, coarse joint registration, preset,
+  secondary-motion, and allocation contracts. Prompt 25C establishes that
+  this does not prove visual registration, orientation, fit, or coverage.
 
 ## F. Remaining limitations and milestone boundary
 

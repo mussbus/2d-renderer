@@ -125,9 +125,9 @@ fn createIdle(allocator: std.mem.Allocator, definition: *const skeleton.Skeleton
         translationKey(2, 0, 0.90, smooth),
     };
     const torso_rotation = [_]clip.RotationKeyInput{
-        rotationKey(0, -0.02, smooth),
-        rotationKey(1, 0.02, smooth),
-        rotationKey(2, -0.02, smooth),
+        rotationKey(0, 0, smooth),
+        rotationKey(1, 0, smooth),
+        rotationKey(2, 0, smooth),
     };
     const torso_scale = [_]clip.ScaleKeyInput{
         scaleKey(0, 1, 1, smooth),
@@ -135,14 +135,14 @@ fn createIdle(allocator: std.mem.Allocator, definition: *const skeleton.Skeleton
         scaleKey(2, 1, 1, smooth),
     };
     const left_arm = [_]clip.RotationKeyInput{
-        rotationKey(0, std.math.pi + 0.04, smooth),
-        rotationKey(1, std.math.pi - 0.04, smooth),
-        rotationKey(2, std.math.pi + 0.04, smooth),
+        rotationKey(0, std.math.pi, smooth),
+        rotationKey(1, std.math.pi, smooth),
+        rotationKey(2, std.math.pi, smooth),
     };
     const right_arm = [_]clip.RotationKeyInput{
-        rotationKey(0, -0.04, smooth),
-        rotationKey(1, 0.04, smooth),
-        rotationKey(2, -0.04, smooth),
+        rotationKey(0, 0, smooth),
+        rotationKey(1, 0, smooth),
+        rotationKey(2, 0, smooth),
     };
     const tracks = [_]clip.TrackInput{
         .{ .target_semantic = semantic(.pelvis), .translation_keys = &pelvis_translation },

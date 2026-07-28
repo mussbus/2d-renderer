@@ -288,3 +288,19 @@ The wardrobe catalog is immutable definition data layered onto the existing equi
 Long garments reuse Prompt 19 deformable meshes and Prompt 20 bounded secondary state. Two tiny immutable skirt topologies represent the paired atlas views and are uploaded at startup. Equipment lifecycle rebuild owns mesh/spring cleanup. This is not a general cloth simulation.
 
 The full content/authoring contract is in `WARDROBE.md`; engineering decisions are in `WARDROBE_DECISION_RECORD.md`.
+
+## Prompt 25C semantic visual geometry
+
+Semantic visual geometry is bounded authoring metadata evaluated against the
+existing authoritative character and the exact submitted production
+`SpriteRequest`. It does not add a skeleton, character representation,
+renderer, pose correction, or per-character draw path. Typed local landmarks
+resolve through alpha-visible atlas bounds, the production pivot/signed
+scale/rotation transform, and the acceptance camera. Wardrobe fit contracts
+then measure registration, orientation, relative size, alpha coverage, joint
+continuity, and optional profile symmetry.
+
+Test/audit-time alpha processing may allocate. Trace collection and debug
+submission are fixed-capacity and leave ordinary steady-state behavior
+unchanged. `docs/VISUAL_GEOMETRY.md` records the detailed contracts, coordinate
+spaces, bounds, diagnostics, and engineering decisions.

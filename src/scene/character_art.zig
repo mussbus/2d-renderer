@@ -8,6 +8,7 @@ const presentation_pose = @import("presentation_pose");
 const presentation_view = @import("presentation_view");
 const render_queue = @import("render_queue");
 const sprite = @import("sprite_batch");
+const visual_geometry = @import("visual_geometry");
 
 pub const male_page_id: art_pack.TexturePageId = @enumFromInt(41);
 pub const female_page_id: art_pack.TexturePageId = @enumFromInt(42);
@@ -314,18 +315,42 @@ pub const Presentation = struct {
         instance: *character.CharacterInstance,
         queue: *render_queue.UnifiedRenderQueue,
     ) !u32 {
+        return presentation.submitTraced(instance, queue, null);
+    }
+
+    pub fn submitTraced(
+        presentation: Presentation,
+        instance: *character.CharacterInstance,
+        queue: *render_queue.UnifiedRenderQueue,
+        trace: ?*visual_geometry.Trace,
+    ) !u32 {
         if (presentation.attachment_count != instance.definition.attachments.len) {
             return error.PresentationDefinitionMismatch;
         }
         const view = instance.presentationView();
         const projection = switch (view) {
-            .front => try presentation_pose.FrontProjection.init(
-                &instance.definition.skeleton_definition,
-                instance.character.local_and_world_pose,
-                instance.definition.visual_definition,
-                instance.character.appearance_runtime,
-                instance.world_position,
-            ),
+            .front => projection: {
+                var front = try presentation_pose.FrontProjection.init(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                );
+                const anatomy_definition = instance.definition.anatomy_definition orelse
+                    return error.CharacterHasNoAnatomy;
+                const anatomy_runtime = instance.character.anatomy_runtime orelse
+                    return error.CharacterHasNoAnatomy;
+                try front.applyFrontShoulderMorphology(
+                    &instance.definition.skeleton_definition,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    anatomy_definition,
+                    anatomy_runtime,
+                    instance.world_position.x,
+                );
+                break :projection front;
+            },
             .side => try presentation_pose.FrontProjection.initSide(
                 &instance.definition.skeleton_definition,
                 instance.character.local_and_world_pose,
@@ -360,7 +385,17 @@ pub const Presentation = struct {
                 projection,
             );
             const sprite_transform = try humanoid.spriteTransform(world);
-            var world_size = sprite_transform.signed_scale.componentMul(.{
+            const rest_rotation = presentationRestRotation(
+                selected.rest_rotation,
+                binding.slot,
+                view,
+                instance.facing,
+            );
+            const morphology_scale = presentation_view.spriteMorphologyScale(
+                sprite_transform.signed_scale,
+                rest_rotation,
+            );
+            var world_size = morphology_scale.componentMul(.{
                 .x = selected.visual.authored_size[0],
                 .y = selected.visual.authored_size[1],
             });
@@ -368,22 +403,55 @@ pub const Presentation = struct {
                 world_size.x = -world_size.x;
             }
             const order = presentationOrder(instance, attachment, binding.slot, presentation.style, view);
-            const key = try queue.submitSprite(.{
+            const request = sprite.SpriteRequest{
                 .world_position = sprite_transform.world_position.toArray(),
-                .rotation = sprite_transform.rotation_radians +
-                    presentationRestRotation(
-                        selected.rest_rotation,
-                        binding.slot,
-                        view,
-                        instance.facing,
-                    ),
+                .rotation = sprite_transform.rotation_radians + rest_rotation,
                 .scale = world_size.toArray(),
                 .pivot = selected.visual.pivot,
                 .uv_rect = selected.visual.uv_rect,
                 .tint = .{ 1, 1, 1, 1 },
                 .texture_page = presentation.renderer_page_offset + selected.visual.texture_page,
                 .order = order,
-            });
+            };
+            const key = try queue.submitSprite(request);
+            if (trace) |sink| {
+                const region_source = sourceForRegion(selected.visual.region_id) orelse
+                    return error.MissingCharacterGeometrySource;
+                try sink.append(.{
+                    .character_id = instance.id.raw(),
+                    .style = @tagName(presentation.style),
+                    .view = geometryView(view, instance.facing),
+                    .owner = ownerForSlot(binding.slot),
+                    .role = geometryRole(binding.slot),
+                    .side = geometrySide(binding.slot),
+                    .semantic_id = @intFromEnum(selected.visual.semantic_id),
+                    .component_id = @intCast(attachment.id.index()),
+                    .bound_identity = boundIdentityForSlot(instance, binding.slot, attachment),
+                    .stable_id = @tagName(binding.slot),
+                    .region_id = @intFromEnum(selected.visual.region_id),
+                    .source = .{
+                        .x = region_source.x,
+                        .y = region_source.y,
+                        .width = region_source.width,
+                        .height = region_source.height,
+                    },
+                    .request = request,
+                    .geometry = visual_geometry.anatomyGeometry(
+                        @tagName(presentation.style),
+                        geometryRole(binding.slot),
+                        geometryView(view, instance.facing),
+                    ),
+                    .world_geometry = try anatomyRootWorldGeometry(
+                        instance,
+                        binding.slot,
+                        projection,
+                    ),
+                    .morphology_length_scale = @abs(if (view == .front)
+                        morphology_scale.y
+                    else
+                        morphology_scale.x),
+                });
+            }
             if (attachment.canonical_semantic) |raw_semantic| {
                 instance.last_submitted_keys[raw_semantic] = key;
             }
@@ -392,6 +460,116 @@ pub const Presentation = struct {
         return submitted;
     }
 };
+
+fn anatomyRootWorldGeometry(
+    instance: *const character.CharacterInstance,
+    slot: Slot,
+    projection: presentation_pose.FrontProjection,
+) !?visual_geometry.WorldGeometry {
+    const definition = &instance.definition.skeleton_definition;
+    return switch (slot) {
+        .torso => visual_geometry.WorldGeometry.init(&.{
+            .{
+                .kind = .shoulder_left,
+                .world = projection.bone_world[try definition.boneIndex(.left_upper_arm)].translationPart(),
+            },
+            .{
+                .kind = .shoulder_right,
+                .world = projection.bone_world[try definition.boneIndex(.right_upper_arm)].translationPart(),
+            },
+        }),
+        .pelvis => visual_geometry.WorldGeometry.init(&.{
+            .{
+                .kind = .hip_left,
+                .world = projection.bone_world[try definition.boneIndex(.left_thigh)].translationPart(),
+            },
+            .{
+                .kind = .hip_right,
+                .world = projection.bone_world[try definition.boneIndex(.right_thigh)].translationPart(),
+            },
+        }),
+        else => null,
+    };
+}
+
+fn sourceForRegion(id: art_pack.AtlasRegionId) ?art_pack.PixelRect {
+    for (region_inputs) |region| {
+        if (region.id == id) return region.source;
+    }
+    return null;
+}
+
+fn geometryView(view: presentation_view.View, facing: humanoid.Facing) visual_geometry.View {
+    return switch (view) {
+        .front => .front,
+        .side => if (facing == .left) .side_left else .side_right,
+    };
+}
+
+fn geometrySide(slot: Slot) visual_geometry.Side {
+    return switch (slot) {
+        .left_upper_arm,
+        .left_forearm,
+        .left_hand,
+        .left_thigh,
+        .left_shin,
+        .left_foot,
+        .left_eye,
+        .left_ear,
+        => .left,
+        .right_upper_arm,
+        .right_forearm,
+        .right_hand,
+        .right_thigh,
+        .right_shin,
+        .right_foot,
+        .right_eye,
+        .right_ear,
+        => .right,
+        else => .none,
+    };
+}
+
+fn geometryRole(slot: Slot) visual_geometry.Role {
+    return switch (slot) {
+        .head => .head,
+        .torso => .torso,
+        .pelvis => .pelvis,
+        .left_upper_arm, .right_upper_arm => .upper_arm,
+        .left_forearm, .right_forearm => .forearm,
+        .left_hand, .right_hand => .hand,
+        .left_thigh, .right_thigh => .thigh,
+        .left_shin, .right_shin => .shin,
+        .left_foot, .right_foot => .foot,
+        .hair => .hair,
+        else => .face_feature,
+    };
+}
+
+fn ownerForSlot(slot: Slot) visual_geometry.Owner {
+    return switch (slot) {
+        .pelvis, .hair, .left_eye, .right_eye, .eyebrows, .nose, .mouth, .left_ear, .right_ear => .base_presentation,
+        else => .anatomy,
+    };
+}
+
+fn boundIdentityForSlot(
+    instance: *const character.CharacterInstance,
+    slot: Slot,
+    attachment: appearance.VisualAttachment,
+) u32 {
+    if (instance.definition.anatomy_definition) |definition| {
+        for (definition.part_instances) |part| {
+            if (std.mem.eql(u8, part.stable_id.slice(), @tagName(slot))) {
+                return @intCast(@intFromEnum(part.id));
+            }
+        }
+    }
+    return if (attachment.canonical_semantic) |semantic_value|
+        semantic_value
+    else
+        @intCast(attachment.id.index());
+}
 
 fn presentationOrder(
     instance: *const character.CharacterInstance,
@@ -428,16 +606,9 @@ fn connectorLayer(
     authored_layer: u16,
     view: presentation_view.View,
 ) u16 {
+    _ = view;
     return switch (semantic) {
         .pelvis => 9,
-        .left_thigh, .right_thigh => authored_layer - 1,
-        .left_shin, .right_shin => authored_layer + 1,
-        // The front forearm's soft overlap end covers the independently
-        // articulated upper-arm edge without changing either joint transform.
-        .left_forearm, .right_forearm => if (view == .front)
-            authored_layer + 2
-        else
-            authored_layer,
         else => authored_layer,
     };
 }
@@ -566,9 +737,12 @@ fn sideBodyPartLayer(
         .left_foot, .right_foot => if (front) 14 else 10,
         .left_shin, .right_shin => if (front) 15 else 11,
         .left_thigh, .right_thigh => if (front) 16 else 12,
-        .left_hand, .right_hand => if (front) 24 else 20,
-        .left_forearm, .right_forearm => if (front) 25 else 21,
-        .left_upper_arm, .right_upper_arm => if (front) 26 else 22,
+        .left_hand, .right_hand => if (front) 34 else 20,
+        .left_forearm, .right_forearm => if (front) 33 else 21,
+        // The torso owns the visible profile deltoid. Both upper-arm roots
+        // therefore pass behind it; the near forearm and hand retain their
+        // front layers so the hanging arm still reads in profile.
+        .left_upper_arm, .right_upper_arm => 22,
     };
 }
 
@@ -753,21 +927,23 @@ fn authoredSize(style: Style, key: RegionKey) [2]f32 {
     return switch (key) {
         .side_head, .front_head => .{ 0.68, 0.96 },
         .side_torso => if (style == .male) .{ 0.66, 1.30 } else .{ 0.72, 1.30 },
-        .front_torso => if (style == .male) .{ 1.06, 1.30 } else .{ 0.95, 1.30 },
-        .side_pelvis => if (style == .male) .{ 0.88, 0.70 } else .{ 0.98, 0.72 },
-        .front_pelvis => if (style == .male) .{ 0.76, 1.05 } else .{ 1.08, 0.80 },
-        .side_upper_arm => if (style == .male) .{ 0.72, 0.30 } else .{ 0.72, 0.27 },
-        .side_forearm => if (style == .male) .{ 0.62, 0.20 } else .{ 0.62, 0.18 },
+        .front_torso => if (style == .male) .{ 0.94, 1.30 } else .{ 0.85, 1.30 },
+        .side_pelvis => if (style == .male) .{ 0.72, 1.13 } else .{ 0.72, 1.15 },
+        .front_pelvis => if (style == .male) .{ 0.96, 0.62 } else .{ 1.08, 0.63 },
+        .side_upper_arm => if (style == .male) .{ 0.68, 0.30 } else .{ 0.68, 0.29 },
+        .side_forearm => if (style == .male) .{ 0.582, 0.20 } else .{ 0.58, 0.18 },
         .side_hand => if (style == .male) .{ 0.34, 0.20 } else .{ 0.34, 0.18 },
-        .side_thigh => if (style == .male) .{ 0.43, 1.00 } else .{ 0.48, 1.00 },
-        .side_shin => .{ 0.34, 0.94 },
-        .side_foot => .{ 0.44, 0.30 },
-        .front_upper_arm => if (style == .male) .{ 0.255, 0.70 } else .{ 0.18, 0.72 },
-        .front_forearm => if (style == .male) .{ 0.20, 0.64 } else .{ 0.141, 0.64 },
-        .front_hand => if (style == .male) .{ 0.22, 0.40 } else .{ 0.17, 0.34 },
-        .front_thigh => if (style == .male) .{ 0.36, 1.00 } else .{ 0.46, 1.00 },
-        .front_shin => if (style == .male) .{ 0.34, 0.92 } else .{ 0.31, 0.94 },
-        .front_foot => if (style == .male) .{ 0.42, 0.31 } else .{ 0.36, 0.34 },
+        .side_thigh => if (style == .male) .{ 0.415, 0.93 } else .{ 0.38, 0.919 },
+        .side_shin => if (style == .male) .{ 0.28, 0.88 } else .{ 0.28, 0.875 },
+        .side_foot => .{ 0.44, 0.167 },
+        .front_upper_arm => if (style == .male) .{ 0.255, 0.801 } else .{ 0.25, 0.783 },
+        // Both visible forearm spans now resolve to the authoritative
+        // elbow-to-wrist distance independently of thickness morphology.
+        .front_forearm => if (style == .male) .{ 0.20, 0.568 } else .{ 0.19, 0.568 },
+        .front_hand => if (style == .male) .{ 0.20, 0.36 } else .{ 0.15, 0.31 },
+        .front_thigh => if (style == .male) .{ 0.36, 0.980 } else .{ 0.46, 1.026 },
+        .front_shin => if (style == .male) .{ 0.34, 0.883 } else .{ 0.31, 0.882 },
+        .front_foot => if (style == .male) .{ 0.42, 0.172 } else .{ 0.36, 0.190 },
         .side_eye => .{ 0.14, 0.09 },
         .front_left_eye, .front_right_eye => .{ 0.13, 0.085 },
         .side_brow => .{ 0.16, 0.045 },
@@ -786,18 +962,28 @@ fn authoredSize(style: Style, key: RegionKey) [2]f32 {
 
 fn pivotFor(style: Style, key: RegionKey) [2]f32 {
     return switch (key) {
-        .side_pelvis => .{ 0.5, 0.3 },
-        // The taller male base-presentation bridge begins behind the lower
-        // torso and ends behind the thighs, hiding both independent edges.
-        .front_pelvis => if (style == .male) .{ 0.5, 0.38 } else .{ 0.5, 0.5 },
-        .side_upper_arm => .{ 0, 0.5 },
-        .side_forearm, .side_hand => .{ 0.09, 0.5 },
-        .side_thigh, .side_shin, .front_thigh, .front_shin => .{ 0.5, 0.93 },
-        // The torso owns the deltoid silhouette and draws over this narrow,
-        // domed overlap end. No pose-space shoulder compression is required.
-        .front_upper_arm => .{ 0.5, 1 },
-        .front_forearm, .front_hand => .{ 0.5, 0.93 },
-        .side_foot, .front_foot => .{ 0.12, 0.55 },
+        // The authored profile bridge overlaps the lower torso above its
+        // semantic waist while leaving its tapered lower column behind the
+        // independently articulated thigh.
+        .side_pelvis => .{ 0.5, 0.403 },
+        // Extend the base-presentation bridge behind the upper thighs while
+        // preserving its torso-side edge at the authored waist.
+        .front_pelvis => if (style == .male) .{ 0.5, 0.305 } else .{ 0.5, 0.362 },
+        .side_upper_arm => .{ 0.022, 0.5 },
+        .side_forearm => .{ 0.026, 0.5 },
+        .side_hand => .{ 0.045, 0.5 },
+        .side_thigh => .{ 0.5, 0.984 },
+        .side_shin => .{ 0.5, 0.983 },
+        // Pivots are the alpha-derived proximal semantic landmarks, so
+        // morphology scales about the authoritative joint instead of pulling
+        // the visible limb away from it.
+        .front_upper_arm => if (style == .male) .{ 0.5, 0.856 } else .{ 0.5, 0.865 },
+        .front_forearm => .{ 0.5, 0.981 },
+        .front_hand => .{ 0.5, 0.960016 },
+        .front_thigh => if (style == .male) .{ 0.5, 0.951154 } else .{ 0.5, 0.945065 },
+        .front_shin => .{ 0.5, 0.985 },
+        .side_foot => if (style == .male) .{ 0.261357, 0.948980 } else .{ 0.248357, 0.947917 },
+        .front_foot => if (style == .male) .{ 0.258478, 0.950980 } else .{ 0.287086, 0.955357 },
         .side_hair, .front_hair => if (style == .male) .{ 0.5, 0.15 } else .{ 0.5, 0.76 },
         else => .{ 0.5, 0.5 },
     };
@@ -945,37 +1131,37 @@ fn isComponentRegion(key: RegionKey) bool {
 fn componentSourceRect(style: Style, key: RegionKey) ?art_pack.PixelRect {
     return switch (style) {
         .male => switch (key) {
-            .side_upper_arm => rect(72, 103, 184, 153),
-            .side_forearm => rect(335, 111, 432, 144),
+            .side_upper_arm => rect(72, 103, 174, 156),
+            .side_forearm => rect(335, 111, 422, 137),
             .side_hand => rect(612, 111, 667, 145),
-            .side_thigh => rect(857, 51, 934, 205),
-            .side_shin => rect(1124, 55, 1179, 200),
+            .side_thigh => rect(857, 51, 917, 206),
+            .side_shin => rect(1124, 55, 1161, 173),
             .side_foot => rect(1373, 103, 1443, 152),
-            .side_pelvis => rect(1596, 67, 1732, 189),
-            .front_upper_arm => rect(209, 317, 251, 441),
-            .front_forearm => rect(364, 334, 397, 436),
+            .side_pelvis => rect(1608, 65, 1671, 163),
+            .front_upper_arm => rect(209, 317, 247, 427),
+            .front_forearm => rect(364, 334, 392, 415),
             .front_hand => rect(623, 352, 656, 416),
-            .front_thigh => rect(869, 306, 923, 462),
-            .front_shin => rect(1123, 313, 1181, 455),
+            .front_thigh => rect(869, 306, 923, 428),
+            .front_shin => rect(1123, 313, 1162, 417),
             .front_foot => rect(1374, 358, 1441, 409),
-            .front_pelvis => rect(1608, 293, 1711, 436),
+            .front_pelvis => rect(1607, 292, 1729, 362),
             else => null,
         },
         .female => switch (key) {
-            .side_upper_arm => rect(72, 617, 184, 662),
-            .side_forearm => rect(335, 624, 432, 655),
+            .side_upper_arm => rect(72, 617, 174, 669),
+            .side_forearm => rect(335, 624, 422, 651),
             .side_hand => rect(612, 624, 667, 655),
-            .side_thigh => rect(854, 563, 938, 717),
-            .side_shin => rect(1125, 567, 1179, 712),
+            .side_thigh => rect(854, 563, 916, 718),
+            .side_shin => rect(1125, 567, 1163, 685),
             .side_foot => rect(1373, 616, 1443, 664),
-            .side_pelvis => rect(1588, 586, 1739, 694),
-            .front_upper_arm => rect(209, 827, 239, 953),
-            .front_forearm => rect(364, 845, 388, 947),
+            .side_pelvis => rect(1606, 580, 1668, 678),
+            .front_upper_arm => rect(209, 827, 246, 937),
+            .front_forearm => rect(364, 845, 392, 926),
             .front_hand => rect(624, 864, 655, 928),
-            .front_thigh => rect(855, 819, 937, 973),
-            .front_shin => rect(1126, 823, 1177, 968),
+            .front_thigh => rect(855, 819, 915, 941),
+            .front_shin => rect(1126, 817, 1166, 921),
             .front_foot => rect(1379, 868, 1437, 924),
-            .front_pelvis => rect(1581, 834, 1747, 958),
+            .front_pelvis => rect(1580, 833, 1708, 899),
             else => null,
         },
     };

@@ -4,7 +4,7 @@ const collider = @import("collider");
 const character = @import("character");
 const sprite = @import("sprite_batch");
 
-pub const command_capacity: usize = 256;
+pub const command_capacity: usize = 512;
 pub const line_thickness_meters: f32 = 2.0 / 82.0;
 pub const marker_size_meters: f32 = 7.0 / 82.0;
 

@@ -22,34 +22,34 @@ try {
     }
 
     $regions = @(
-        [pscustomobject]@{ Name = 'male_side_upper_arm'; X = 72; Y = 103; W = 112; H = 50; AuthW = 0.72; AuthH = 0.30 },
-        [pscustomobject]@{ Name = 'male_side_forearm'; X = 335; Y = 111; W = 97; H = 33; AuthW = 0.62; AuthH = 0.20 },
+        [pscustomobject]@{ Name = 'male_side_upper_arm'; X = 72; Y = 103; W = 102; H = 53; AuthW = 0.68; AuthH = 0.30 },
+        [pscustomobject]@{ Name = 'male_side_forearm'; X = 335; Y = 111; W = 87; H = 26; AuthW = 0.582; AuthH = 0.20 },
         [pscustomobject]@{ Name = 'male_side_hand'; X = 612; Y = 111; W = 55; H = 34; AuthW = 0.34; AuthH = 0.20 },
-        [pscustomobject]@{ Name = 'male_side_thigh'; X = 857; Y = 51; W = 77; H = 154; AuthW = 0.43; AuthH = 1.00 },
-        [pscustomobject]@{ Name = 'male_side_shin'; X = 1124; Y = 55; W = 55; H = 145; AuthW = 0.34; AuthH = 0.94 },
+        [pscustomobject]@{ Name = 'male_side_thigh'; X = 857; Y = 51; W = 60; H = 155; AuthW = 0.415; AuthH = 0.93 },
+        [pscustomobject]@{ Name = 'male_side_shin'; X = 1124; Y = 55; W = 37; H = 118; AuthW = 0.28; AuthH = 0.88 },
         [pscustomobject]@{ Name = 'male_side_foot'; X = 1373; Y = 103; W = 70; H = 49; AuthW = 0.44; AuthH = 0.30 },
-        [pscustomobject]@{ Name = 'male_side_pelvis'; X = 1596; Y = 67; W = 136; H = 122; AuthW = 0.88; AuthH = 0.70 },
-        [pscustomobject]@{ Name = 'male_front_upper_arm'; X = 209; Y = 317; W = 42; H = 124; AuthW = 0.255; AuthH = 0.70 },
-        [pscustomobject]@{ Name = 'male_front_forearm'; X = 364; Y = 334; W = 33; H = 102; AuthW = 0.20; AuthH = 0.64 },
+        [pscustomobject]@{ Name = 'male_side_pelvis'; X = 1608; Y = 65; W = 63; H = 98; AuthW = 0.72; AuthH = 1.13 },
+        [pscustomobject]@{ Name = 'male_front_upper_arm'; X = 209; Y = 317; W = 38; H = 110; AuthW = 0.255; AuthH = 0.801 },
+        [pscustomobject]@{ Name = 'male_front_forearm'; X = 364; Y = 334; W = 28; H = 81; AuthW = 0.20; AuthH = 0.568 },
         [pscustomobject]@{ Name = 'male_front_hand'; X = 623; Y = 352; W = 33; H = 64; AuthW = 0.22; AuthH = 0.40 },
-        [pscustomobject]@{ Name = 'male_front_thigh'; X = 869; Y = 306; W = 54; H = 156; AuthW = 0.36; AuthH = 1.00 },
-        [pscustomobject]@{ Name = 'male_front_shin'; X = 1123; Y = 313; W = 58; H = 142; AuthW = 0.34; AuthH = 0.92 },
+        [pscustomobject]@{ Name = 'male_front_thigh'; X = 869; Y = 306; W = 54; H = 122; AuthW = 0.36; AuthH = 0.98 },
+        [pscustomobject]@{ Name = 'male_front_shin'; X = 1123; Y = 313; W = 39; H = 104; AuthW = 0.34; AuthH = 0.883 },
         [pscustomobject]@{ Name = 'male_front_foot'; X = 1374; Y = 358; W = 67; H = 51; AuthW = 0.42; AuthH = 0.31 },
-        [pscustomobject]@{ Name = 'male_front_pelvis'; X = 1608; Y = 293; W = 103; H = 143; AuthW = 0.76; AuthH = 1.05 },
-        [pscustomobject]@{ Name = 'female_side_upper_arm'; X = 72; Y = 617; W = 112; H = 45; AuthW = 0.72; AuthH = 0.27 },
-        [pscustomobject]@{ Name = 'female_side_forearm'; X = 335; Y = 624; W = 97; H = 31; AuthW = 0.62; AuthH = 0.18 },
+        [pscustomobject]@{ Name = 'male_front_pelvis'; X = 1607; Y = 292; W = 122; H = 70; AuthW = 0.96; AuthH = 0.62 },
+        [pscustomobject]@{ Name = 'female_side_upper_arm'; X = 72; Y = 617; W = 102; H = 52; AuthW = 0.68; AuthH = 0.29 },
+        [pscustomobject]@{ Name = 'female_side_forearm'; X = 335; Y = 624; W = 87; H = 27; AuthW = 0.58; AuthH = 0.18 },
         [pscustomobject]@{ Name = 'female_side_hand'; X = 612; Y = 624; W = 55; H = 31; AuthW = 0.34; AuthH = 0.18 },
-        [pscustomobject]@{ Name = 'female_side_thigh'; X = 854; Y = 563; W = 84; H = 154; AuthW = 0.48; AuthH = 1.00 },
-        [pscustomobject]@{ Name = 'female_side_shin'; X = 1125; Y = 567; W = 54; H = 145; AuthW = 0.34; AuthH = 0.94 },
+        [pscustomobject]@{ Name = 'female_side_thigh'; X = 854; Y = 563; W = 62; H = 155; AuthW = 0.38; AuthH = 0.919 },
+        [pscustomobject]@{ Name = 'female_side_shin'; X = 1125; Y = 567; W = 38; H = 118; AuthW = 0.28; AuthH = 0.875 },
         [pscustomobject]@{ Name = 'female_side_foot'; X = 1373; Y = 616; W = 70; H = 48; AuthW = 0.44; AuthH = 0.30 },
-        [pscustomobject]@{ Name = 'female_side_pelvis'; X = 1588; Y = 586; W = 151; H = 108; AuthW = 0.98; AuthH = 0.72 },
-        [pscustomobject]@{ Name = 'female_front_upper_arm'; X = 209; Y = 827; W = 30; H = 126; AuthW = 0.18; AuthH = 0.72 },
-        [pscustomobject]@{ Name = 'female_front_forearm'; X = 364; Y = 845; W = 24; H = 102; AuthW = 0.141; AuthH = 0.64 },
+        [pscustomobject]@{ Name = 'female_side_pelvis'; X = 1606; Y = 580; W = 62; H = 98; AuthW = 0.72; AuthH = 1.15 },
+        [pscustomobject]@{ Name = 'female_front_upper_arm'; X = 209; Y = 827; W = 37; H = 110; AuthW = 0.25; AuthH = 0.783 },
+        [pscustomobject]@{ Name = 'female_front_forearm'; X = 364; Y = 845; W = 28; H = 81; AuthW = 0.19; AuthH = 0.568 },
         [pscustomobject]@{ Name = 'female_front_hand'; X = 624; Y = 864; W = 31; H = 64; AuthW = 0.17; AuthH = 0.34 },
-        [pscustomobject]@{ Name = 'female_front_thigh'; X = 855; Y = 819; W = 82; H = 154; AuthW = 0.46; AuthH = 1.00 },
-        [pscustomobject]@{ Name = 'female_front_shin'; X = 1126; Y = 823; W = 51; H = 145; AuthW = 0.31; AuthH = 0.94 },
+        [pscustomobject]@{ Name = 'female_front_thigh'; X = 855; Y = 819; W = 60; H = 122; AuthW = 0.46; AuthH = 1.026 },
+        [pscustomobject]@{ Name = 'female_front_shin'; X = 1126; Y = 817; W = 40; H = 104; AuthW = 0.31; AuthH = 0.882 },
         [pscustomobject]@{ Name = 'female_front_foot'; X = 1379; Y = 868; W = 58; H = 56; AuthW = 0.36; AuthH = 0.34 },
-        [pscustomobject]@{ Name = 'female_front_pelvis'; X = 1581; Y = 834; W = 166; H = 124; AuthW = 1.08; AuthH = 0.80 }
+        [pscustomobject]@{ Name = 'female_front_pelvis'; X = 1580; Y = 833; W = 128; H = 66; AuthW = 1.08; AuthH = 0.63 }
     )
 
     $seenRectangles = @{}
@@ -135,7 +135,7 @@ try {
             Y = 430
             W = 150
             H = 182
-            AuthW = 1.06
+            AuthW = 0.94
             AuthH = 1.30
         },
         [pscustomobject]@{
@@ -147,7 +147,7 @@ try {
             Y = 446
             W = 124
             H = 182
-            AuthW = 0.95
+            AuthW = 0.85
             AuthH = 1.30
         }
     )

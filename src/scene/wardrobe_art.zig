@@ -114,32 +114,52 @@ fn regionId(index: usize, front: bool) art_pack.AtlasRegionId {
 }
 
 fn sourceRect(index: usize, front: bool) art_pack.PixelRect {
-    // These two production components need alpha-tight extraction rather than
-    // the generic 256 px authoring cell. The fixed cells contain substantial
-    // transparent padding that made the shoe read as detached toe trim and
-    // held the front blouse sleeve away from its shoulder anchor.
-    if (index == 11) {
-        return if (front)
-            .{ .x = 1288, .y = 811, .width = 172, .height = 151 }
-        else
-            .{ .x = 1041, .y = 826, .width = 186, .height = 124 };
-    }
-    if (index == 17) {
-        return if (front)
-            .{ .x = 1281, .y = 307, .width = 120, .height = 205 }
-        else
-            .{ .x = 1054, .y = 256, .width = 133, .height = 256 };
-    }
-    const page_index = index % 12;
-    const row = page_index / 3;
-    const pair_column = page_index % 3;
-    return .{
-        .x = @intCast((pair_column * 2 + @intFromBool(front)) * 256),
-        .y = @intCast(row * 256),
-        .width = 256,
-        .height = 256,
-    };
+    return alpha_tight_source_bounds[index][@intFromBool(front)];
 }
+
+// Deterministically derived at alpha >= 8 from the production atlases, with
+// two source pixels of bounded sampling guard where cell bounds permit it.
+// Authored sizes therefore describe visible garments rather than transparent
+// 256 px authoring cells. The old padded cells were the root cause of clothing
+// that rendered half-size and visibly off-center.
+const alpha_tight_source_bounds = [_][2]art_pack.PixelRect{
+    .{ .{ .x = 29, .y = 110, .width = 227, .height = 135 }, .{ .x = 256, .y = 116, .width = 256, .height = 131 } },
+    .{ .{ .x = 512, .y = 24, .width = 191, .height = 232 }, .{ .x = 781, .y = 20, .width = 167, .height = 236 } },
+    .{ .{ .x = 1086, .y = 102, .width = 116, .height = 154 }, .{ .x = 1301, .y = 101, .width = 143, .height = 155 } },
+    .{ .{ .x = 79, .y = 353, .width = 141, .height = 95 }, .{ .x = 324, .y = 354, .width = 148, .height = 104 } },
+    .{ .{ .x = 592, .y = 256, .width = 129, .height = 232 }, .{ .x = 799, .y = 256, .width = 131, .height = 233 } },
+    .{ .{ .x = 1073, .y = 256, .width = 123, .height = 231 }, .{ .x = 1301, .y = 256, .width = 138, .height = 231 } },
+    .{ .{ .x = 75, .y = 557, .width = 153, .height = 147 }, .{ .x = 324, .y = 559, .width = 147, .height = 153 } },
+    .{ .{ .x = 598, .y = 531, .width = 115, .height = 172 }, .{ .x = 804, .y = 535, .width = 126, .height = 172 } },
+    .{ .{ .x = 1059, .y = 523, .width = 132, .height = 200 }, .{ .x = 1290, .y = 524, .width = 154, .height = 205 } },
+    .{ .{ .x = 79, .y = 775, .width = 127, .height = 181 }, .{ .x = 312, .y = 780, .width = 143, .height = 180 } },
+    .{ .{ .x = 588, .y = 773, .width = 113, .height = 172 }, .{ .x = 796, .y = 771, .width = 127, .height = 178 } },
+    .{ .{ .x = 1041, .y = 826, .width = 186, .height = 124 }, .{ .x = 1288, .y = 811, .width = 172, .height = 151 } },
+    .{ .{ .x = 70, .y = 38, .width = 152, .height = 215 }, .{ .x = 256, .y = 38, .width = 228, .height = 215 } },
+    .{ .{ .x = 582, .y = 50, .width = 130, .height = 206 }, .{ .x = 795, .y = 48, .width = 166, .height = 208 } },
+    .{ .{ .x = 1052, .y = 38, .width = 228, .height = 218 }, .{ .x = 1280, .y = 35, .width = 174, .height = 221 } },
+    .{ .{ .x = 93, .y = 302, .width = 137, .height = 197 }, .{ .x = 298, .y = 303, .width = 142, .height = 200 } },
+    .{ .{ .x = 613, .y = 290, .width = 99, .height = 222 }, .{ .x = 846, .y = 289, .width = 69, .height = 223 } },
+    .{ .{ .x = 1054, .y = 256, .width = 133, .height = 256 }, .{ .x = 1281, .y = 307, .width = 120, .height = 205 } },
+    .{ .{ .x = 89, .y = 531, .width = 124, .height = 221 }, .{ .x = 298, .y = 536, .width = 133, .height = 213 } },
+    .{ .{ .x = 608, .y = 512, .width = 88, .height = 245 }, .{ .x = 850, .y = 512, .width = 61, .height = 246 } },
+    .{ .{ .x = 1060, .y = 512, .width = 118, .height = 250 }, .{ .x = 1304, .y = 512, .width = 72, .height = 252 } },
+    .{ .{ .x = 88, .y = 821, .width = 118, .height = 120 }, .{ .x = 295, .y = 822, .width = 139, .height = 125 } },
+    .{ .{ .x = 555, .y = 809, .width = 158, .height = 167 }, .{ .x = 780, .y = 813, .width = 185, .height = 160 } },
+    .{ .{ .x = 1036, .y = 829, .width = 244, .height = 101 }, .{ .x = 1280, .y = 826, .width = 175, .height = 115 } },
+    .{ .{ .x = 60, .y = 39, .width = 150, .height = 171 }, .{ .x = 260, .y = 37, .width = 203, .height = 172 } },
+    .{ .{ .x = 555, .y = 43, .width = 213, .height = 167 }, .{ .x = 768, .y = 49, .width = 179, .height = 163 } },
+    .{ .{ .x = 1039, .y = 30, .width = 241, .height = 226 }, .{ .x = 1280, .y = 29, .width = 149, .height = 227 } },
+    .{ .{ .x = 59, .y = 262, .width = 147, .height = 231 }, .{ .x = 262, .y = 263, .width = 196, .height = 233 } },
+    .{ .{ .x = 545, .y = 275, .width = 223, .height = 174 }, .{ .x = 768, .y = 284, .width = 177, .height = 168 } },
+    .{ .{ .x = 1077, .y = 256, .width = 203, .height = 248 }, .{ .x = 1280, .y = 256, .width = 112, .height = 248 } },
+    .{ .{ .x = 91, .y = 521, .width = 97, .height = 237 }, .{ .x = 278, .y = 520, .width = 123, .height = 238 } },
+    .{ .{ .x = 555, .y = 539, .width = 213, .height = 180 }, .{ .x = 768, .y = 546, .width = 256, .height = 218 } },
+    .{ .{ .x = 1024, .y = 524, .width = 256, .height = 244 }, .{ .x = 1280, .y = 525, .width = 147, .height = 243 } },
+    .{ .{ .x = 98, .y = 771, .width = 93, .height = 218 }, .{ .x = 295, .y = 773, .width = 85, .height = 217 } },
+    .{ .{ .x = 588, .y = 769, .width = 97, .height = 220 }, .{ .x = 789, .y = 772, .width = 88, .height = 218 } },
+    .{ .{ .x = 1070, .y = 778, .width = 210, .height = 212 }, .{ .x = 1280, .y = 768, .width = 117, .height = 222 } },
+};
 
 fn makeRegionInputs() [region_count]art_pack.AtlasRegionInput {
     @setEvalBranchQuota(20_000);
@@ -150,16 +170,16 @@ fn makeRegionInputs() [region_count]art_pack.AtlasRegionInput {
             .stable_name = std.fmt.comptimePrint("{s}_side", .{spec.stable_id}),
             .page_id = pageFor(index),
             .source = sourceRect(index, false),
-            .authored_size = spec.authored_size,
-            .pivot = spec.pivot,
+            .authored_size = spec.side_authored_size orelse spec.authored_size,
+            .pivot = spec.side_pivot orelse spec.pivot,
         };
         result[index * 2 + 1] = .{
             .id = regionId(index, true),
             .stable_name = std.fmt.comptimePrint("{s}_front", .{spec.stable_id}),
             .page_id = pageFor(index),
             .source = sourceRect(index, true),
-            .authored_size = spec.authored_size,
-            .pivot = spec.pivot,
+            .authored_size = spec.front_authored_size orelse spec.authored_size,
+            .pivot = spec.front_pivot orelse spec.pivot,
         };
     }
     return result;

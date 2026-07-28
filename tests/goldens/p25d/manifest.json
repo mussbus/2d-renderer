@@ -1,0 +1,133 @@
+{
+  "schema": "prompt25d.d3d12-goldens.v1",
+  "approved": true,
+  "approval_date": "2026-07-27",
+  "backend": "direct3d12",
+  "shader_format": "DXIL",
+  "width": 640,
+  "height": 480,
+  "capture_command": "$env:SDL_GPU_DRIVER='direct3d12'; .\\zig-out\\bin\\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input",
+  "debug_capture_command": "$env:SDL_GPU_DRIVER='direct3d12'; .\\zig-out\\bin\\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input --debug-visualization",
+  "captures": [
+    {
+      "path": "tests/goldens/p25d/clean/01_base_front.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/01_base_front.ppm",
+      "sha256": "e4ffa9c24b8076d4237ce3a51239925362edbe62208ce97af511707e6326a219",
+      "frame": 30,
+      "view": "front",
+      "male_preset": "base_only",
+      "female_preset": "base_only",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/02_base_side.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/02_base_side.ppm",
+      "sha256": "473714f92851564d65d1b59fba4eafa404ab009d9de97a59b638016024f333ac",
+      "frame": 90,
+      "view": "side_left",
+      "male_preset": "base_only",
+      "female_preset": "base_only",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/03_wide_brim_and_male_outfit_front.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/03_wide_brim_and_male_outfit_front.ppm",
+      "sha256": "a6bdca2c4215d147a8c42923e27364bb14b95419c02a5842b26d0ee09cdd1f75",
+      "frame": 150,
+      "view": "front",
+      "male_preset": "scarlet_sport",
+      "female_preset": "wide_brim_crimson",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/04_wide_brim_and_male_outfit_side.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/04_wide_brim_and_male_outfit_side.ppm",
+      "sha256": "d7911e5eb2fa233820a4562f6e78fb12565b9ffadbddf7b6731dd53db297d3d5",
+      "frame": 210,
+      "view": "side_left",
+      "male_preset": "scarlet_sport",
+      "female_preset": "wide_brim_crimson",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/05_ivory_blouse_front.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/05_ivory_blouse_front.ppm",
+      "sha256": "1639087d19bec59582ec4c8e8c1788101824a6dbefcb9881adebb304eb2539e0",
+      "frame": 270,
+      "view": "front",
+      "male_preset": "scarlet_sport",
+      "female_preset": "ivory_blouse_red_shorts",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/06_ivory_blouse_side.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/06_ivory_blouse_side.ppm",
+      "sha256": "713caca03895415ab48a31794a807b80948dad5fd7eaf74f2be67fdc44b37a8c",
+      "frame": 330,
+      "view": "side_left",
+      "male_preset": "scarlet_sport",
+      "female_preset": "ivory_blouse_red_shorts",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/07_layered_custom_front.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/07_layered_custom_front.ppm",
+      "sha256": "b406723fd7151f68fd14ecfc447a6c4b6517fcb53b31ed1c0275ecf2c594877a",
+      "frame": 390,
+      "view": "front",
+      "male_preset": "scarlet_sport",
+      "female_preset": "custom_outfit",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/08_layered_custom_side.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/08_layered_custom_side.ppm",
+      "sha256": "aae89fc320f468d82d14d9cb2a9d8b679f553ab1c43b7551ccef42673f857221",
+      "frame": 450,
+      "view": "side_left",
+      "male_preset": "scarlet_sport",
+      "female_preset": "custom_outfit",
+      "pose": "neutral"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/09_locomotion_stride.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/09_locomotion_stride.ppm",
+      "sha256": "c54aa3fd087ee3d32a77ebb952a4574cd35c8482b849471f0a426d012bb3099c",
+      "frame": 510,
+      "view": "side_left",
+      "male_preset": "scarlet_sport",
+      "female_preset": "custom_outfit",
+      "pose": "locomotion_stride"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/10_jump_rise.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/10_jump_rise.ppm",
+      "sha256": "b109b7d957d468652b80d9f3f6495386aa6a65ecdcf5889b0e263706d26833c7",
+      "frame": 550,
+      "view": "side_right",
+      "male_preset": "scarlet_sport",
+      "female_preset": "custom_outfit",
+      "pose": "jump_rise"
+    },
+    {
+      "path": "tests/goldens/p25d/clean/11_jump_fall.ppm",
+      "latest_path": "zig-out/p25a_visual_gpu/11_jump_fall.ppm",
+      "sha256": "4ec7b33b2be1a2150095281151c6137c128adb783452f4687dcfc893de11e837",
+      "frame": 575,
+      "view": "side_right",
+      "male_preset": "scarlet_sport",
+      "female_preset": "custom_outfit",
+      "pose": "jump_fall"
+    },
+    {
+      "path": "tests/goldens/p25d/debug/03_wide_brim_front_geometry.ppm",
+      "latest_path": "zig-out/p25c_visual_geometry_debug/03_wide_brim_front_geometry.ppm",
+      "sha256": "3c38a18da621dcff3d4a2bb248fbee93b46de85bd67de9bc9eb2cede1504e0bf",
+      "frame": 150,
+      "view": "front",
+      "male_preset": "scarlet_sport",
+      "female_preset": "wide_brim_crimson",
+      "pose": "neutral_geometry_debug"
+    }
+  ]
+}

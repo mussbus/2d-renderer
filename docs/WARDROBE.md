@@ -28,6 +28,13 @@ For example, `ivory_blouse` occupies `torso` and `sleeves`, covers torso and bot
 
 All Prompt 25 items declare zero attribute modifiers and zero capability grants. A hat, dress, shoe, or glove cannot implicitly grant armor, speed, jump, dash, or double jump.
 
+Prompt 25C adds a semantic `FitContract` to each visual specification. This is
+authoring/validation metadata for landmark registration, directional axes,
+anatomy-relative spans, and alpha-visible coverage. It does not move an item,
+change its equipment ownership, grant gameplay behavior, or create another
+render path. Current contracts intentionally reject the unchanged Prompt 25B
+visuals; see `VISUAL_GEOMETRY.md`.
+
 ## View and topology resolution
 
 `wardrobe_presentation.Presentation` resolves both art views for every component during initialization. At submission it selects the already-resolved side or front record from the character's current presentation view. Changing view never changes the equipped item ID and performs no string lookup, image decode, allocation, or GPU-resource creation.

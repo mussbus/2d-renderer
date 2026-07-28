@@ -31,6 +31,40 @@ pub const SpriteRequest = struct {
     order: OrderInput,
 };
 
+/// Applies the same local-quad transform as `VSMain` in sprite.hlsl.
+/// Semantic visual-geometry validation calls this production helper so pivot,
+/// signed mirroring, scale, and rotation cannot drift from sprite submission.
+pub fn localPointToWorld(request: SpriteRequest, local_point: [2]f32) [2]f32 {
+    const pivoted_x = (local_point[0] - request.pivot[0]) * request.scale[0];
+    const pivoted_y = (local_point[1] - request.pivot[1]) * request.scale[1];
+    const sine_value = @sin(request.rotation);
+    const cosine_value = @cos(request.rotation);
+    return .{
+        cosine_value * pivoted_x - sine_value * pivoted_y + request.world_position[0],
+        sine_value * pivoted_x + cosine_value * pivoted_y + request.world_position[1],
+    };
+}
+
+/// Inverse of `localPointToWorld`; used by bounded audit-time alpha-mask
+/// sampling. A zero-sized submitted quad is not invertible.
+pub fn worldPointToLocal(request: SpriteRequest, world_point: [2]f32) ![2]f32 {
+    if (@abs(request.scale[0]) <= std.math.floatEps(f32) or
+        @abs(request.scale[1]) <= std.math.floatEps(f32))
+    {
+        return error.NonInvertibleSpriteTransform;
+    }
+    const translated_x = world_point[0] - request.world_position[0];
+    const translated_y = world_point[1] - request.world_position[1];
+    const sine_value = @sin(request.rotation);
+    const cosine_value = @cos(request.rotation);
+    const pivoted_x = cosine_value * translated_x + sine_value * translated_y;
+    const pivoted_y = -sine_value * translated_x + cosine_value * translated_y;
+    return .{
+        pivoted_x / request.scale[0] + request.pivot[0],
+        pivoted_y / request.scale[1] + request.pivot[1],
+    };
+}
+
 pub const SpriteSubmission = extern struct {
     world_position: [2]f32,
     rotation: f32,

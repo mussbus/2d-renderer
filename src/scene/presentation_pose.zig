@@ -5,7 +5,13 @@ const pose = @import("pose");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
 
-const side_arm_x_compression: f32 = 0.68;
+// A strict profile projects each bilateral pair onto one shared screen-space
+// root. The arm root sits slightly toward the visible profile edge so the
+// front arm remains readable instead of disappearing beneath the torso. Both
+// semantic sides use the same target; draw order, not a fake lateral spread,
+// determines which articulated chain is visible.
+pub const side_profile_arm_root_offset: f32 = 0.240;
+pub const side_profile_thigh_root_offset: f32 = 0.0;
 
 pub const FrontProjection = struct {
     bone_world: [skeleton.maximum_bones]math.Mat3 = [_]math.Mat3{math.Mat3.identity()} ** skeleton.maximum_bones,
@@ -126,6 +132,73 @@ pub const FrontProjection = struct {
         }
     }
 
+    /// Applies the authoritative anatomy shoulder-width channel to the
+    /// front-presentation arm roots, then rebuilds all dependent attachment
+    /// points. The simulation pose remains unchanged; anatomy and equipment
+    /// consume this same bounded presentation projection.
+    pub fn applyFrontShoulderMorphology(
+        projection: *FrontProjection,
+        skeleton_definition: *const skeleton.SkeletonDefinition,
+        appearance_definition: appearance.DefinitionView,
+        appearance_runtime: appearance.Runtime,
+        anatomy_definition: anatomy.DefinitionView,
+        anatomy_runtime: anatomy.Runtime,
+        character_x: f32,
+    ) !void {
+        const shoulder_channel = try anatomy_definition.morphologyChannelId(
+            "shoulder_width",
+        );
+        const torso_channel = try anatomy_definition.morphologyChannelId(
+            "torso_width",
+        );
+        const shoulder_scale = try anatomy_runtime.resolvedChannel(
+            anatomy_definition,
+            shoulder_channel,
+        ) / try anatomy_runtime.nominalChannel(
+            anatomy_definition,
+            shoulder_channel,
+        );
+        const torso_scale = try anatomy_runtime.resolvedChannel(
+            anatomy_definition,
+            torso_channel,
+        ) / try anatomy_runtime.nominalChannel(
+            anatomy_definition,
+            torso_channel,
+        );
+        const half_span_scale = shoulder_scale * torso_scale;
+        const body_preset = anatomy_definition.body_presets[
+            anatomy_runtime.selected_body_preset.index()
+        ];
+        if (!std.math.isFinite(half_span_scale) or half_span_scale <= 0) {
+            return error.InvalidShoulderMorphologyScale;
+        }
+        for ([_]skeleton.BoneSemantic{
+            .left_upper_arm,
+            .right_upper_arm,
+        }) |semantic| {
+            const arm_root = try skeleton_definition.boneIndex(semantic);
+            const shoulder_x = projection.bone_world[arm_root].translationPart().x;
+            const side_sign: f32 = if (shoulder_x < character_x) -1 else 1;
+            const target_x = character_x + side_sign *
+                body_preset.front_shoulder_half_span_metres *
+                half_span_scale;
+            const adjustment = math.Mat3.translation(.{
+                .x = target_x - shoulder_x,
+                .y = 0,
+            });
+            for (skeleton_definition.bones, 0..) |_, bone_index| {
+                if (isDescendantOf(skeleton_definition, bone_index, arm_root)) {
+                    projection.bone_world[bone_index] =
+                        adjustment.mul(projection.bone_world[bone_index]);
+                }
+            }
+        }
+        try projection.rebuildDerivedWorlds(
+            appearance_definition,
+            appearance_runtime,
+        );
+    }
+
     pub fn initSide(
         skeleton_definition: *const skeleton.SkeletonDefinition,
         source_pose: pose.Pose,
@@ -154,11 +227,10 @@ pub const FrontProjection = struct {
             world_position,
             &authoritative_locals,
         );
-        try compressArmRoots(
+        try projectBilateralRoots(
             &projection,
             skeleton_definition,
             world_position.x,
-            side_arm_x_compression,
         );
         try projection.rebuildDerivedWorlds(
             appearance_definition,
@@ -291,11 +363,15 @@ fn remapProjectedArmRest(
     definition: *const skeleton.SkeletonDefinition,
     locals: *[skeleton.maximum_bones]math.Transform2D,
 ) !void {
-    try remapArm(definition, locals, .left_upper_arm, -std.math.pi / 2.0, true);
+    // Authored bilateral clips already carry opposite signed deltas around
+    // their respective canonical rests (left rest = pi, right rest = 0).
+    // Reflecting the left delta a second time made both front-projected arm
+    // centerlines lean in the same screen direction.
+    try remapArm(definition, locals, .left_upper_arm, -std.math.pi / 2.0, false);
     try remapArm(definition, locals, .right_upper_arm, -std.math.pi / 2.0, false);
-    try remapArm(definition, locals, .left_forearm, 0, true);
+    try remapArm(definition, locals, .left_forearm, 0, false);
     try remapArm(definition, locals, .right_forearm, 0, false);
-    try remapArm(definition, locals, .left_hand, 0, true);
+    try remapArm(definition, locals, .left_hand, 0, false);
     try remapArm(definition, locals, .right_hand, 0, false);
 }
 
@@ -315,16 +391,25 @@ fn remapArm(
     locals[index].rotation_radians = front_rest_rotation + if (mirror_delta) -delta else delta;
 }
 
-fn compressArmRoots(
+fn projectBilateralRoots(
     projection: *FrontProjection,
     definition: *const skeleton.SkeletonDefinition,
     root_x: f32,
-    factor: f32,
 ) !void {
-    for ([_]skeleton.BoneSemantic{ .left_upper_arm, .right_upper_arm }) |semantic| {
+    for ([_]skeleton.BoneSemantic{
+        .left_upper_arm,
+        .right_upper_arm,
+        .left_thigh,
+        .right_thigh,
+    }) |semantic| {
         const arm_root = try definition.boneIndex(semantic);
         const shoulder_x = projection.bone_world[arm_root].translationPart().x;
-        const delta_x = (shoulder_x - root_x) * (factor - 1);
+        const profile_offset = switch (semantic) {
+            .left_upper_arm, .right_upper_arm => side_profile_arm_root_offset,
+            .left_thigh, .right_thigh => side_profile_thigh_root_offset,
+            else => unreachable, // The loop above is exhaustively limited to these four roots.
+        };
+        const delta_x = root_x + profile_offset - shoulder_x;
         const adjustment = math.Mat3.translation(.{ .x = delta_x, .y = 0 });
         for (definition.bones, 0..) |_, bone_index| {
             if (isDescendantOf(definition, bone_index, arm_root)) {

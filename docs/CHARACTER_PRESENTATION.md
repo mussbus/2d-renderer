@@ -53,7 +53,9 @@ Each style resolves side and front head, torso, pelvis, segmented arms/hands, se
 
 Prompt 25B removes front shoulder-root compression, mirrors anatomical left
 components in front view, and derives side projection directly from the
-authoritative pose before one view-specific arm remap and one root compression.
+authoritative pose before one view-specific arm remap. Prompt 25D projects
+bilateral roots onto the strict profile centerline while preserving their
+semantic identities and front/back draw order.
 The final front torsos use compact rounded torso-owned deltoids without
 sleeve-like arm stubs. Narrow curved-end upper-arm art is registered beneath
 them through transparent atlas lead-in rather than a second shoulder bulb,

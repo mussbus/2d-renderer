@@ -13,6 +13,7 @@ const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_art = @import("wardrobe_art");
 const wardrobe_presentation = @import("wardrobe_presentation");
 const render_queue = @import("render_queue");
+const visual_geometry = @import("visual_geometry");
 
 pub const required_frames: u32 = 600;
 pub const visual_quality_required_frames: u32 = 600;
@@ -320,13 +321,21 @@ pub const Scene = struct {
     }
 
     pub fn submit(scene: *Scene, queue: *render_queue.UnifiedRenderQueue) !u32 {
-        var submitted = try scene.male_art.submit(&scene.male, queue);
-        submitted += try scene.female_art.submit(&scene.female, queue);
+        return scene.submitTraced(queue, null);
+    }
+
+    pub fn submitTraced(
+        scene: *Scene,
+        queue: *render_queue.UnifiedRenderQueue,
+        trace: ?*visual_geometry.Trace,
+    ) !u32 {
+        var submitted = try scene.male_art.submitTraced(&scene.male, queue, trace);
+        submitted += try scene.female_art.submitTraced(&scene.female, queue, trace);
         const meshes_before = queue.frame_metrics.submitted_meshes;
         if (scene.male.equipment_loadout != null) {
-            submitted += try scene.wardrobe.submit(&scene.male, queue);
+            submitted += try scene.wardrobe.submitTraced(&scene.male, queue, trace);
         }
-        submitted += try scene.wardrobe.submit(&scene.female, queue);
+        submitted += try scene.wardrobe.submitTraced(&scene.female, queue, trace);
         scene.evidence.long_garment_mesh = scene.evidence.long_garment_mesh or
             queue.frame_metrics.submitted_meshes > meshes_before;
         return submitted;
