@@ -1,5 +1,15 @@
 # Testing Strategy
 
+## Documentation contract audit
+
+Prompt 25E adds a bounded PowerShell audit for the consolidated project, prompt-history, decision, and report trees:
+
+```powershell
+& '.\tools\check_documentation.ps1'
+```
+
+It verifies required files, local Markdown targets, prompt navigation, report links, and practical orphan detection. Verbatim historical report files are excluded from link lint because their original local evidence paths are intentionally preserved rather than rewritten.
+
 ## Prompt 25D focused visual geometry
 
 `zig build test-visual-geometry -j1` is the fast character-art iteration gate.

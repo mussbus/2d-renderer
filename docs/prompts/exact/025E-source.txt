@@ -1,0 +1,1235 @@
+Codex implementation prompt
+
+Continue from the completed Prompt 25D repository state.
+
+Read and obey AGENTS.md.
+
+Treat all completed Prompt 0–25D behavior, tests, production geometry reports, approved goldens, and D3D12 routes as regression-protected.
+
+Do not begin Prompt 26.
+
+Do not implement environment themes.
+
+Do not implement a character editor, wardrobe editor, level editor, or mission editor.
+
+Do not broadly redesign the renderer, animation system, anatomy system, or equipment system.
+
+This milestone is primarily:
+
+repository inspection;
+documentation;
+architecture reconciliation;
+prompt-history preservation;
+authoring-contract definition;
+bounded validation;
+minimal generalized corrections where an identified contract is not currently representable.
+Before making changes
+Require exactly Zig 0.16.0.
+Record current HEAD.
+Record complete working-tree status.
+Do not reset, clean, restore, overwrite, discard, stage, or commit user changes.
+Inspect the actual current repository rather than relying on an earlier prompt description.
+Inspect:
+AGENTS.md;
+current architecture documentation;
+Prompt 23–25D documentation and decision records;
+implementation reports;
+Git history where accessible;
+build routes;
+production character and wardrobe definitions;
+presentation-view logic;
+semantic visual geometry;
+unified render ordering;
+approved Prompt 25D captures and goldens.
+Distinguish exact historical prompt text from reconstructed milestone summaries.
+Never present reconstructed historical wording as the original exact prompt.
+Run the appropriate Prompt 25D baseline before source changes.
+If this milestone remains documentation-only, do not run irrelevant expensive acceptance routes merely to create impressive command output.
+Part I — Durable project documentation
+1. Create a coherent documentation structure
+
+Create and populate a durable structure equivalent to:
+
+docs/
+├── project/
+│   ├── MASTER_ROADMAP.md
+│   ├── CURRENT_STATE.md
+│   ├── ARCHITECTURE_MAP.md
+│   ├── AUTHORING_CONTRACTS.md
+│   ├── SCOPE_BOUNDARIES.md
+│   └── KNOWN_GAPS.md
+│
+├── prompts/
+│   ├── INDEX.md
+│   ├── 000-*.md
+│   ├── ...
+│   ├── 023-real-art-pipeline.md
+│   ├── 024-character-presentation.md
+│   ├── 025-wardrobe.md
+│   ├── 025A-*.md
+│   ├── 025B-*.md
+│   ├── 025C-*.md
+│   ├── 025D-*.md
+│   ├── 025E-consolidation.md
+│   ├── 026-environments.md
+│   └── 027-integrated-foundation.md
+│
+├── decisions/
+│   ├── README.md
+│   └── ADR-*.md
+│
+└── reports/
+    ├── README.md
+    └── prompt-implementation-reports/
+
+The exact filenames may follow established repository conventions, but the resulting organization must provide equivalent discoverability.
+
+Do not duplicate existing documents unnecessarily.
+
+Where an existing document already owns a topic:
+
+preserve it;
+link to it;
+clarify its authority;
+migrate only where consolidation provides a concrete benefit.
+2. Master roadmap
+
+Create MASTER_ROADMAP.md describing the actual project phases.
+
+At minimum distinguish:
+
+Phase 1 — Renderer and deterministic runtime foundation
+SDL/GPU initialization;
+D3D12 path;
+sprite batching;
+deterministic fixed-step execution;
+camera;
+animation;
+physics;
+interactions.
+Phase 2 — Modular character foundation
+semantic anatomy;
+optional modules;
+multiple characters;
+morphology;
+equipment;
+deformation;
+mesh visuals;
+secondary motion;
+character properties and capabilities.
+Phase 3 — Production presentation
+real image assets;
+art packs;
+front/side character views;
+character art;
+wardrobe;
+visual-geometry validation;
+Prompt 25D production corrections.
+Phase 4 — Environment and integrated presentation
+Prompt 26;
+Prompt 27.
+Phase 5 — Narrow gameplay vertical slice
+
+A bounded playable loop with:
+
+a beginning;
+movement/traversal;
+at least one meaningful interaction or objective;
+a completion condition;
+reset/replay.
+Phase 6 — Authoring tools
+
+Only after runtime schemas and validation contracts are stable:
+
+character/body authoring;
+garment/outfit authoring;
+level authoring;
+later mission/objective authoring.
+
+Do not describe the project as a finished general-purpose game engine.
+
+Define the present project target as:
+
+A modular 2D character and world runtime capable of supporting one polished side-scrolling gameplay vertical slice, with stable validated data contracts suitable for future authoring tools.
+
+3. Current-state document
+
+Create CURRENT_STATE.md.
+
+It must answer without requiring source inspection:
+
+What production systems currently exist?
+What focused demonstrations exist?
+What is considered accepted?
+What remains provisional?
+What Prompt 25D changed?
+What Prompt 26 is intended to add?
+What Prompt 27 is intended to prove?
+What editors do not yet exist?
+What gameplay loop does not yet exist?
+What is the next authorized milestone?
+What known architecture or authoring gaps remain?
+
+Use explicit status labels equivalent to:
+
+complete;
+complete but visually provisional;
+partially implemented;
+documented only;
+deferred;
+not started.
+
+Do not mark a system complete merely because an extension point exists.
+
+4. Prompt ledger
+
+Create docs/prompts/INDEX.md.
+
+For every milestone that can be identified, record:
+
+prompt ID;
+title;
+status;
+exact or reconstructed source status;
+original objective;
+major systems added;
+major source files;
+tests/evidence routes;
+implementation-report location;
+relevant commit where identifiable;
+downstream dependencies;
+known limitations;
+superseding prompts or corrections.
+
+For exact prompt text available in repository or provided roadmap material:
+
+preserve the exact text.
+
+For prompts whose exact historical text is unavailable:
+
+create a clearly labeled reconstructed milestone summary;
+identify the evidence used;
+do not fabricate acceptance wording.
+
+Prompts 25A–25D must be individually represented rather than collapsed into one generic Prompt 25 entry.
+
+Prompt 25E must document itself.
+
+Prompt 26 and Prompt 27 must be represented as planned future milestones and must not be described as implemented.
+
+5. Implementation-report archive
+
+Create or organize an implementation-report archive.
+
+For each available report, preserve:
+
+completion status;
+scope;
+files created;
+files modified;
+commands;
+acceptance results;
+known limitations;
+unresolved failures;
+no-placeholder audit.
+
+The prompt ledger must link to the corresponding implementation report.
+
+Do not modify historical reports to make them appear cleaner than they were.
+
+Corrections or later superseding evidence should be linked separately.
+
+Part II — Current architecture map
+6. Document the real production data flow
+
+Create ARCHITECTURE_MAP.md.
+
+Document the actual current flow, using real module names and links.
+
+The character path should be described conceptually as:
+
+Character Definition
++ Anatomy Definition
++ Morphology / Body Preset
++ Equipment / Outfit Definitions
++ Art Pack
+        ↓
+Character Runtime
+        ↓
+Controller / Animation / Interaction
+        ↓
+Presentation View Resolution
+        ↓
+Semantic Body + Equipment Visual Resolution
+        ↓
+View / Facing / Reflection Policy
+        ↓
+Deformation + Secondary Motion + IK
+        ↓
+Body-Relative Visual Ordering
+        ↓
+Unified Sprite + Mesh Render Queue
+        ↓
+Atlas-Backed GPU Rendering
+
+Document which modules currently own each stage.
+
+Also document the world path anticipated by Prompt 26 without claiming it exists:
+
+World / Collision Definition
++ Environment Theme
+        ↓
+Layered World Presentation
+
+Explicitly identify authoritative boundaries:
+
+gameplay Facing;
+presentation view;
+anatomy identity;
+equipment identity;
+atlas-region identity;
+physics/collision;
+visual fit geometry;
+render ordering;
+interaction ownership.
+7. Distinguish gameplay geometry from visual-authoring geometry
+
+Document that these are not interchangeable:
+
+Gameplay geometry
+physics collider;
+collision bounds;
+support/grounding surfaces;
+interaction eligibility geometry.
+Visual-authoring geometry
+visible torso contour;
+neck base;
+collar region;
+clavicle line;
+left/right shoulder slope;
+shoulder root;
+armhole;
+garment waist;
+hip contour;
+hem;
+limb visual extents;
+semantic attachment landmarks.
+
+A physics torso collider must not become the garment-fitting contour merely because it is rectangular and easy to query.
+
+Do not allow future tools to infer clothing fit solely from:
+
+a square collider;
+a raw sprite rectangle;
+opaque bounds;
+atlas dimensions.
+
+These may be useful inputs, but they are not sufficient semantic fit geometry.
+
+Part III — Unified authoring contracts
+8. Create the unified authoring-contract document
+
+Create AUTHORING_CONTRACTS.md.
+
+Document the exact current and required contract for authoring:
+
+texture pages;
+atlas regions;
+presentation views;
+anatomy components;
+body presets;
+morphology channels;
+hair;
+faces;
+equipment items;
+garments;
+outfit presets;
+sprite visuals;
+deformable-mesh visuals;
+secondary-motion visuals;
+interaction presentation metadata where already applicable.
+
+For every authored entity, distinguish:
+
+stable logical identity;
+runtime typed identity;
+atlas-region identity;
+view;
+facing/reflection behavior;
+anatomy binding;
+equipment occupancy;
+semantic coverage;
+visual fragments;
+ordering;
+pivot;
+landmarks;
+deformation;
+secondary motion;
+gameplay effects;
+validation requirements.
+9. Define a garment as a logical item with visual recipes
+
+A garment must remain one logical reusable equipment item.
+
+It may resolve to a bounded set of presentation fragments.
+
+Conceptually:
+
+Logical Garment
+    ├── occupancy claims
+    ├── anatomy compatibility
+    ├── coverage declaration
+    ├── gameplay effects, usually none
+    └── view-specific visual recipe
+            ├── fragment A
+            ├── fragment B
+            └── fragment N
+
+Do not equate:
+
+one garment;
+one atlas rectangle;
+one sprite;
+one render layer.
+
+A new outfit must not require a new monolithic full-body texture.
+
+Part IV — Layered garment-fragment contract
+10. Formalize bounded multi-fragment garments
+
+One logical garment may resolve to multiple bounded visual fragments per presentation view.
+
+Each fragment must support concepts equivalent to:
+
+stable fragment ID;
+owning logical garment;
+presentation view;
+facing/reflection policy;
+semantic anatomy binding;
+pivot or anchor;
+semantic landmarks;
+body-relative depth relationship;
+coverage contribution;
+deformation response;
+optional mesh use;
+optional secondary-motion use;
+deterministic ordering.
+
+Do not require every garment to use multiple fragments.
+
+Simple garments may continue to use one fragment where visually correct.
+
+Do not impose exactly two fragments as a universal rule.
+
+11. Body-relative depth relationships
+
+Document and, where currently supported, formalize ordering concepts equivalent to:
+
+behind entire body;
+behind torso;
+behind neck/head;
+behind a specific limb;
+between far and near limbs;
+in front of torso;
+in front of neck/chest;
+in front of a specific limb;
+foreground accessory.
+
+The exact representation must fit the existing unified ordering architecture.
+
+Do not create a second clothing renderer.
+
+Do not use item-name-specific conditions.
+
+Do not rely solely on arbitrary numeric layer constants in content definitions when semantic body-relative ordering is required.
+
+Numeric layers may remain an internal resolved representation.
+
+12. Required layered-garment examples
+
+Document how the architecture represents at least these examples:
+
+Skirt — front presentation
+rear/back panel behind pelvis and legs;
+front panel in front of pelvis and appropriate leg portions;
+waistband placed according to the waist contract;
+optional deformable hem.
+Skirt — side presentation
+far-side fabric behind the far leg;
+central body/waist fragment;
+near-side fabric in front of the near leg;
+deterministic behavior when facing changes.
+Blouse or halter
+torso fabric in front of chest;
+rear collar or strap behind the neck where appropriate;
+front collar trim in front of the lower neck/upper chest;
+sleeves bound independently to arms.
+Jacket
+back panel;
+torso panel;
+lapel/front trim;
+sleeves;
+optional rear tail or secondary-motion element.
+Hair with headwear
+back hair;
+headwear;
+front hair or facial framing;
+no item-specific hat/hair branch.
+
+These examples must describe reusable contracts rather than one-off production-item hacks.
+
+Part V — Directional side presentation
+13. Explicit reflection policy
+
+Not every side-view visual is valid under generic reflection.
+
+Define and document side-presentation policies equivalent to:
+
+Mirror-safe
+
+One canonical side visual may be reflected when gameplay facing changes.
+
+Appropriate for visually symmetric or reflection-safe content.
+
+Authored directional variants
+
+The logical item provides separate side-left and side-right presentations.
+
+Appropriate when front/back garment construction or asymmetric details make reflection visibly incorrect.
+
+Mixed-fragment directional composition
+
+Some fragments may reflect while others resolve to direction-specific art.
+
+Appropriate for garments with:
+
+a reusable mirrored body panel;
+directional placket;
+directional wrap;
+one-sided bow;
+asymmetric trim;
+front/back-specific side detail.
+
+Do not force separate left/right artwork for every garment.
+
+Do not assume that body reflection automatically makes all equipment reflection correct.
+
+14. Preserve semantic identity across facing changes
+
+Changing gameplay facing must not:
+
+change equipment identity;
+swap outfit preset;
+recreate equipment runtime state;
+decode images;
+create GPU resources;
+reset deformation;
+reset secondary motion;
+swap anatomical left/right identity incorrectly.
+
+Only the resolved presentation fragments and transforms may change.
+
+Anatomical left/right identity must remain stable.
+
+15. Backwards-blouse production proof
+
+Use at least one existing blouse or similarly directional upper garment as a production proof.
+
+Inspect and document:
+
+front idle;
+side facing left;
+side facing right;
+left-to-right turn;
+right-to-left turn;
+return to front idle.
+
+The garment must not appear:
+
+backwards;
+inside out;
+front/rear inverted;
+incorrectly reflected;
+directionally inconsistent with the body.
+
+If the current runtime cannot represent this without incorrect reflection, implement the smallest generalized directional-presentation extension necessary.
+
+Do not implement a blouse-name-specific renderer branch.
+
+Part VI — Neck and collar coverage
+16. Neck/collar coverage is first-class semantic coverage
+
+Upper garments must not be limited to a generic torso rectangle.
+
+Define semantic upper-body visual regions equivalent to:
+
+torso core;
+upper chest;
+clavicle;
+neck base;
+collar band;
+left shoulder transition;
+right shoulder transition;
+armhole regions.
+
+A garment may declare intended coverage for any relevant subset.
+
+Examples include:
+
+halter top;
+high-neck blouse;
+collared shirt;
+jacket collar;
+scarf;
+choker or neck accessory;
+hood opening.
+
+Do not infer neck coverage merely because the sprite happens to overlap neck pixels.
+
+Coverage must be intentional and data-defined.
+
+17. Collar depth composition
+
+A collar or neckline may require multiple fragments.
+
+For example:
+
+rear collar loop
+    → behind neck
+
+torso fabric
+    → in front of torso
+
+front collar edge
+    → in front of lower neck / upper chest
+
+Document how the current ordering system resolves this without:
+
+painting a fake neck hole over the body;
+covering the entire neck incorrectly;
+clipping the collar at the torso boundary;
+forcing the whole garment either in front of or behind the character.
+18. Neck-coverage validation
+
+Validation must distinguish between:
+
+a garment intentionally leaving the neck exposed;
+a garment intended to cover the neck/collar region.
+
+For garments declaring neck or collar coverage, validate at minimum:
+
+registration to the neck-base landmark;
+appropriate width/span;
+intended coverage;
+off-target coverage;
+body-relative ordering;
+front/behind-neck composition where used.
+
+A declared high-neck or collared garment must not visually terminate at the torso while leaving the intended neck zone uncovered.
+
+Do not require ordinary low-neck tops to cover the neck.
+
+Part VII — Shoulder-slope-aware garment fit
+19. Do not use a square torso hitbox as the shoulder contour
+
+The physics collider is not the visual shoulder boundary.
+
+Upper-garment fit must not assume:
+
+flat horizontal shoulders;
+square upper torso;
+sleeves beginning at rectangular torso corners;
+neck centered over a box with horizontal top edges.
+
+Human shoulders slope downward from the neck toward the shoulder roots.
+
+The character’s visual geometry must represent that fact.
+
+20. Semantic shoulder geometry
+
+Document and, where needed, expose visual-authoring landmarks equivalent to:
+
+neck-base center;
+left neck base;
+right neck base;
+left clavicle/upper-chest transition;
+right clavicle/upper-chest transition;
+left shoulder seam point;
+right shoulder seam point;
+left shoulder root;
+right shoulder root;
+left armhole reference;
+right armhole reference.
+
+A compact contour representation may be used, such as:
+
+landmark polyline;
+bounded sampled contour;
+semantic span plus slope;
+another deterministic representation fitting the existing validator.
+
+Do not introduce an unbounded arbitrary vector path system merely for this milestone.
+
+21. Shoulder-slope fit contract
+
+Upper garments such as:
+
+blouses;
+shirts;
+jackets;
+dresses;
+bodices;
+one-piece garments;
+armor tops;
+
+must be validated against the actual visual shoulder geometry.
+
+Validation should cover concepts equivalent to:
+
+neckline registration;
+shoulder seam registration;
+left/right shoulder slope agreement;
+armhole registration;
+upper-chest span;
+torso waist span;
+intended coverage;
+clearance appropriate to fitted or loose design.
+
+A garment must not pass solely because its axis-aligned rectangle covers the torso bounds.
+
+22. Sleeves and shoulder transition
+
+Sleeves remain topology-aware repeated visuals.
+
+However, the torso garment and sleeve must agree at the shoulder/armhole transition.
+
+Validate:
+
+torso shoulder seam to anatomical shoulder;
+sleeve proximal opening to shoulder/upper-arm region;
+no large gap;
+no excessive overlap blob;
+correct body-relative ordering;
+front and side presentation;
+both gameplay facings where relevant;
+morphology extremes.
+
+Do not solve shoulder fit by making every sleeve or torso piece an oversized opaque patch.
+
+23. Morphology-aware shoulder fit
+
+Shoulder fit must remain valid across the bounded production morphology matrix.
+
+At minimum inspect relevant extremes for:
+
+shoulder width;
+torso width;
+chest depth;
+global build;
+upper-arm thickness.
+
+The shoulder socket and garment shoulder geometry must respond only to semantically relevant morphology channels.
+
+Do not move shoulder roots based on unrelated torso dimensions merely because they share a generic scale.
+
+Do not require one sprite for every possible 0–100 morphology value.
+
+Use the established landmark/deformation/fit-response architecture.
+
+Part VIII — Runtime schema and editor boundary
+24. Define the future editor output contract
+
+Document that future editors produce the same validated runtime definitions used today.
+
+A future garment editor must not maintain a second independent model for:
+
+anatomy;
+fit;
+layering;
+reflection;
+morphology;
+collision;
+atlas identity;
+deformation;
+validation.
+
+The editor is a user interface over the production schema.
+
+25. Future garment-authoring workflow
+
+Document an expected workflow equivalent to:
+
+Create or import original garment artwork
+        ↓
+Assign stable logical garment identity
+        ↓
+Declare occupancy and compatible anatomy
+        ↓
+Declare semantic coverage
+        ↓
+Add required presentation views
+        ↓
+Choose side reflection policy
+        ↓
+Split into bounded visual fragments where necessary
+        ↓
+Bind fragments to anatomy landmarks
+        ↓
+Assign body-relative depth relationships
+        ↓
+Place pivots and semantic landmarks
+        ↓
+Define morphology/deformation response
+        ↓
+Preview required poses, views, facings, and body extremes
+        ↓
+Run production validator
+        ↓
+Export normal runtime definitions and atlas resources
+
+The eventual editor must export ordinary production content.
+
+It must not generate item-specific Zig code for routine garments.
+
+26. Editor validation matrix
+
+Document the minimum future preview matrix for a garment.
+
+At minimum:
+
+Views and facing
+front;
+side-left;
+side-right.
+Poses
+neutral idle;
+walk stride phases;
+jump rise;
+jump fall;
+deep knee bend where relevant.
+Morphology
+nominal;
+relevant low/high body extremes.
+Layer checks
+body-only;
+garment fragments highlighted;
+depth/order visualization;
+coverage visualization;
+semantic landmarks;
+collider overlay kept visually distinct from garment-fit geometry.
+Composition
+with compatible hair/headwear;
+with adjacent garments;
+custom recombined outfit.
+
+The editor should invoke the same validator used by tests/CI.
+
+Part IX — Audit the current production wardrobe against the contract
+27. Current wardrobe architecture audit
+
+Inspect every current production garment definition.
+
+Record for each garment:
+
+logical item ID;
+slot/occupancy;
+anatomy bindings;
+required views;
+current side reflection behavior;
+number of visual fragments;
+body-relative layers;
+declared coverage;
+fit contract;
+morphology response;
+deformation/mesh use;
+secondary-motion use;
+known visual limitations.
+
+Do not manually rewrite every garment solely to make the table uniform.
+
+Use the audit to identify actual gaps.
+
+28. Required focused production inspections
+
+At minimum inspect:
+
+A blouse or upper garment that visibly appeared backwards during left/right locomotion.
+A collar or halter garment whose neck opening or collar did not correctly cover/wrap the neck.
+A fitted upper garment whose shoulders were aligned to a rectangular torso extent rather than the visible shoulder slope.
+A skirt or dress that should have front/behind-body composition.
+Long hair combined with headwear.
+A simple mirror-safe garment as a control case.
+
+For each, document:
+
+current representation;
+whether the new contract can represent it;
+whether source changes are required;
+whether the gap is deferred;
+the smallest proper correction.
+Part X — Minimal generalized implementation corrections
+29. Change source only where the contract cannot currently be expressed
+
+Documentation alone is acceptable where the current runtime already supports the contract.
+
+Where the audit proves that the runtime cannot represent a required generalized concept, implement only the smallest bounded extension.
+
+Permitted examples include:
+
+explicit side reflection policy;
+directional side presentation variants;
+additional visual fragments in an existing recipe;
+semantic body-relative ordering relation;
+neck/collar coverage landmarks;
+shoulder-slope landmarks or compact contour data;
+validator support for the new declarations.
+
+Do not:
+
+rewrite the equipment system;
+create a second renderer;
+create a female-only clothing path;
+create item-name branches;
+begin Prompt 26;
+build editor UI;
+implement broad cloth simulation;
+regenerate the entire wardrobe without evidence.
+30. Preserve unified rendering
+
+All garment fragments must continue through the established production path:
+
+semantic resolution;
+sprite or mesh visual preparation;
+deformation;
+secondary motion where applicable;
+unified ordering;
+atlas-backed GPU rendering.
+
+Do not introduce:
+
+a second clothing renderer;
+immediate-mode item drawing;
+arbitrary renderer callbacks stored in garment definitions;
+one draw call per fragment as a design requirement;
+per-frame string lookup.
+31. Resource and performance invariants
+
+Any schema extension must preserve:
+
+no image decoding during view or facing changes;
+no filesystem access during steady-state rendering;
+no GPU texture creation during outfit/view/facing changes;
+no unbounded fragment collections;
+no unexpected steady-state heap allocation;
+deterministic fragment ordering;
+bounded recipe resolution;
+clean lifecycle on equip, unequip, reset, and view change.
+Part XI — Tests and evidence
+32. Documentation verification
+
+Validate:
+
+internal links;
+referenced file paths;
+prompt-index navigation;
+architecture links;
+implementation-report links;
+no orphaned new documents where practical.
+
+If the repository has no documentation-lint route, perform a bounded link/path audit script or equivalent check.
+
+33. Required tests if source changes occur
+
+Add focused tests for any implemented generalized extension.
+
+At minimum, where corresponding source support is added, cover:
+
+Fragment recipes
+one logical item resolving to multiple fragments;
+deterministic fragment ordering;
+fragment cleanup;
+fragment count bounds;
+no duplicate fragment IDs;
+missing binding rejection.
+Directional garments
+mirror-safe item reuses canonical side visual;
+directional item resolves left/right variants correctly;
+mixed-fragment item mirrors only declared fragments;
+equipment identity remains unchanged;
+no resource creation on facing change;
+left/right transition does not leave stale fragments.
+Neck/collar coverage
+declared collar coverage resolves neck landmarks;
+rear collar fragment orders behind neck;
+front collar fragment orders ahead of lower neck/chest;
+low-neck garment is not incorrectly required to cover neck;
+invalid declared neck coverage is rejected.
+Shoulder slope
+shoulder landmarks validate;
+fitted upper garment follows slope rather than rectangular bounds;
+sleeve/armhole registration;
+controlled flat/square bad fixture fails;
+controlled displaced shoulder seam fails;
+morphology extremes remain within contract.
+Existing invariants
+outfit hot swapping;
+front/side switching;
+left/right facing;
+hair/headwear;
+deformation;
+secondary motion;
+no steady-state allocation;
+no GPU-resource creation.
+34. Manual visual evidence if source changes occur
+
+If production rendering changes, capture and inspect at minimum:
+
+Front idle with directional blouse.
+Side-left locomotion.
+Side-right locomotion.
+Left-to-right turn.
+Right-to-left turn.
+Front return.
+Collar/neck garment with fragment/order visualization.
+Shoulder-slope garment close-up.
+Skirt/dress front/back or near/far composition.
+Hair plus headwear.
+Neutral/debug inspection view.
+
+Manual acceptance must explicitly answer:
+
+Does the blouse still look backwards in either direction?
+Does the collar actually wrap/cover its declared neck region?
+Does the garment shoulder follow the sloped shoulder silhouette?
+Are front/back garment fragments ordered correctly?
+Are there new gaps, blobs, or stale fragments?
+
+Do not approve goldens merely because the validator passes.
+
+35. Baseline and regression policy
+
+If no runtime source changes are made:
+
+run documentation verification;
+run only the focused baseline needed to ensure the repository remains healthy.
+
+If runtime or production art changes are made:
+
+run affected focused suites;
+run the visual-geometry report;
+run relevant D3D12 visual evidence;
+run aggregate regression where required by the breadth of the change;
+compare against Prompt 25D invariants honestly.
+
+Do not silently update Prompt 25D goldens to hide a regression.
+
+If accepted presentation intentionally changes, record why and preserve reviewable before/after evidence.
+
+Part XII — Scope boundary and future direction
+36. Scope boundaries
+
+Create SCOPE_BOUNDARIES.md.
+
+Explicitly distinguish:
+
+Current production scope
+modular 2D characters;
+front/side presentation;
+body morphology;
+modular equipment and outfits;
+image-backed art;
+deterministic animation/physics/interactions;
+production validation.
+Immediate future scope
+Prompt 26 environment themes;
+Prompt 27 integrated visual/gameplay foundation;
+one narrow gameplay vertical slice.
+Later tools
+character/body editor;
+wardrobe editor;
+level editor;
+mission/objective editor.
+Deferred general-engine features
+runtime 3D;
+arbitrary 360-degree character rotation;
+general cloth simulation;
+arbitrary full-body paired-pose solving;
+universal game-editor suite;
+unrestricted scripting ecosystem;
+broad combat/enemy framework;
+save-game platform;
+networking.
+
+Do not let future extensibility requirements silently become current implementation requirements.
+
+37. Known gaps
+
+Create KNOWN_GAPS.md.
+
+Record remaining gaps honestly.
+
+Potential categories include:
+
+unresolved garment art requiring manual authoring;
+views not yet authored;
+directional variants missing from individual production garments;
+editor schema defined but no GUI;
+environment not started;
+gameplay loop not complete;
+interaction presentation limitations;
+manual art-quality limitations.
+
+Every gap should identify:
+
+impact;
+current workaround, if any;
+intended milestone;
+whether it blocks Prompt 26;
+whether it blocks a future editor.
+Explicitly out of scope
+
+Do not implement:
+
+Prompt 26 environments;
+Prompt 27 integration;
+a character editor;
+a wardrobe editor;
+a level editor;
+a mission editor;
+runtime 3D;
+3D-to-2D generation;
+general cloth simulation;
+clothing collision;
+inventory economy;
+combat;
+enemies;
+dialogue;
+save games;
+weather/liquids;
+arbitrary new interactions;
+broad gameplay systems.
+
+Do not use consolidation as permission to redesign completed architecture without a demonstrated contract failure.
+
+Completion requirements
+
+Prompt 25E is complete only when:
+
+the prompt history is navigable from the repository;
+exact versus reconstructed prompt sources are clearly distinguished;
+the current architecture is documented using actual source ownership;
+current production status and scope are understandable without chat history;
+the authoring contract is explicit;
+multi-fragment garments are formally represented;
+directional side-reflection policy is explicit;
+backwards-blouse behavior is audited and resolved or recorded as a precise blocker;
+neck/collar coverage is explicitly represented;
+shoulder-slope-aware fit is distinguished from square collider/rectangle fit;
+the future editor boundary is documented;
+current wardrobe definitions are audited against the contract;
+any required runtime extension is generalized and tested;
+Prompt 25D regressions remain protected;
+Prompt 26 has not begun.
+
+End with the exact required IMPLEMENTATION REPORT.
+
+Required IMPLEMENTATION REPORT content
+
+The final report must include:
+
+Scope completed
+
+Clearly distinguish:
+
+documentation work;
+architecture reconciliation;
+prompt ledger;
+authoring-contract work;
+source/runtime changes;
+production-art changes;
+validation changes.
+Files created
+
+List every created document, source file, test, tool, and generated persistent artifact.
+
+Do not list ordinary disposable build outputs as committed files.
+
+Files modified
+
+Group by:
+
+documentation;
+runtime;
+content/art;
+tests;
+tools/audits.
+Architecture confirmed
+
+Record which existing boundaries were verified from source.
+
+Architecture discrepancies found
+
+Record where documentation, assumptions, and implementation differed.
+
+Garment contract findings
+
+Explicitly report:
+
+fragment support;
+reflection policy;
+directional blouse result;
+neck/collar coverage result;
+shoulder-slope result;
+skirt/dress layering result.
+Commands executed
+
+For each command include:
+
+exact command;
+exit code;
+relevant output;
+whether it was initial failure, retry, or final acceptance.
+Acceptance criteria
+
+Report individual [PASS], [FAIL], or [BLOCKED] results.
+
+Do not collapse blocked manual visual acceptance into an automated pass.
+
+Test/resource evidence
+
+Where source changed, report:
+
+test totals;
+geometry metrics;
+D3D12 route;
+allocations;
+GPU-resource delta;
+fragment/submission bounds.
+Known limitations
+
+State remaining architectural, authoring, tooling, and art limitations.
+
+Unresolved failures
+
+List every unresolved failure.
+
+Use None only if there genuinely are none.
+
+No-placeholder audit
+
+Report:
+
+TODO matches;
+FIXME matches;
+stubs;
+placeholder implementations;
+disabled/skipped tests.
+Prompt 26 status
+
+Explicitly state:
+
+Prompt 26 was not started;
+whether Prompt 25E considers the repository ready for Prompt 26;
+any blocker that should be resolved first.
+
+Do not begin Prompt 26.

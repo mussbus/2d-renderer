@@ -1,0 +1,1043 @@
+PROMPT 25C — BUILD THE VISUAL GEOMETRY VALIDATOR BEFORE TOUCHING THE ART
+
+Prompt 25B is NOT visually accepted.
+
+Do NOT start Prompt 26.
+
+Do NOT continue adjusting character art, clothing art, pivots, authored sizes,
+shoe transforms, pose projection, or wardrobe placement yet.
+
+The next task is not another visual correction pass.
+
+The next task is to build a rigorous, reusable SEMANTIC VISUAL GEOMETRY
+VALIDATION SYSTEM that can mathematically detect the visible errors that still
+exist in the current production character.
+
+The current Prompt-25B production output is the deliberately failing baseline.
+
+The validator is not complete unless the existing production character fails
+for the same classes of problems that are plainly visible to a human reviewer.
+
+=====================================================================
+1. WHY THIS PROMPT EXISTS
+=====================================================================
+
+The current test suite proves many useful implementation properties, including:
+
+- anatomy/equipment ownership;
+- deterministic bindings;
+- valid atlas rectangles;
+- bounded authored/source aspect distortion;
+- rough limb-size ranges;
+- approximate joint registration;
+- left/right equipment binding;
+- mirrored sprite scale/pivot;
+- allocation/resource stability;
+- render-queue correctness.
+
+Those tests remain valuable.
+
+However, they do NOT prove that the visible presentation is geometrically
+correct.
+
+Current production output still visibly contains failures including:
+
+- clothing that is incorrectly scaled relative to the body;
+- footwear that does not visually fit the corresponding foot;
+- shoe orientation that disagrees with foot orientation;
+- shoe angle/sole direction that disagrees with the underlying foot;
+- incorrect visible footwear placement despite semantic foot binding;
+- remaining body-part proportion and articulation inconsistencies.
+
+A test that says:
+    "two mirrored shoe quads exist"
+is NOT sufficient.
+
+A test must be able to say:
+    "the left shoe heel is 8.2 px from the left foot heel: FAIL"
+    "the right shoe forward axis differs from the foot by 19.4 degrees: FAIL"
+    "the torso garment shoulder span is only 78% of its required anatomy span: FAIL"
+
+Prompt 25C builds that capability.
+
+=====================================================================
+2. HARD SCOPE BOUNDARY
+=====================================================================
+
+FOR THIS PROMPT, BUILD THE VALIDATION SYSTEM FIRST.
+
+Do NOT repair the current production art or presentation merely to make the
+new tests pass.
+
+The required sequence is:
+
+PHASE A
+Build the validator.
+
+PHASE B
+Run it against the CURRENT Prompt-25B production output.
+
+PHASE C
+Demonstrate that the current bad output fails quantitatively.
+
+PHASE D
+Stop and report those failures.
+
+Do not proceed to correcting those failures as part of Prompt 25C unless a
+tiny change is strictly necessary to expose/query semantic geometry for the
+validator itself.
+
+Prompt 25C succeeds when we have a trustworthy system telling us exactly WHY
+the current character is wrong.
+
+Prompt 25C does NOT succeed merely because the existing 316 tests continue to
+pass.
+
+=====================================================================
+3. CORE CONCEPT: SEMANTIC VISUAL GEOMETRY
+=====================================================================
+
+Add a bounded, data-driven description of meaningful visual geometry.
+
+A rendered sprite is not adequately described for validation by only:
+
+- source rectangle;
+- authored size;
+- pivot;
+- final quad.
+
+Transparent pixels and arbitrary rectangle centers do not define anatomy.
+
+Each relevant visual region must be able to expose semantic landmarks and/or
+axes appropriate to its role.
+
+Examples follow.
+
+BODY FOOT:
+- ankle landmark;
+- heel landmark;
+- toe-tip landmark;
+- sole endpoints or sole axis;
+- forward axis;
+- visible/opaque bounds.
+
+SHOE:
+- ankle/opening landmark;
+- heel landmark;
+- toe-tip landmark;
+- sole endpoints or sole axis;
+- forward axis;
+- expected foot-coverage region.
+
+UPPER ARM:
+- shoulder/proximal landmark;
+- elbow/distal landmark;
+- centerline;
+- proximal visible width;
+- distal visible width.
+
+FOREARM:
+- elbow/proximal landmark;
+- wrist/distal landmark;
+- centerline;
+- proximal/distal widths.
+
+HAND:
+- wrist landmark;
+- palm center;
+- fingertip/distal landmark;
+- orientation axis.
+
+THIGH:
+- hip/proximal landmark;
+- knee/distal landmark;
+- centerline;
+- proximal/distal widths.
+
+SHIN:
+- knee/proximal landmark;
+- ankle/distal landmark;
+- centerline;
+- calf width;
+- ankle width.
+
+TORSO:
+- neck center;
+- left/right shoulder landmarks;
+- waist center;
+- left/right waist boundaries;
+- hip/pelvis interface;
+- visible bounds.
+
+TORSO GARMENT:
+- neckline/neck center;
+- left/right shoulder fit landmarks;
+- left/right waist fit landmarks;
+- hem;
+- intended anatomy coverage.
+
+SHORTS/PANTS/SKIRT:
+- waist landmarks;
+- left/right hip boundaries;
+- left/right leg openings where applicable;
+- hem boundaries;
+- intended coverage region.
+
+SLEEVE:
+- proximal shoulder/arm landmark;
+- distal sleeve landmark;
+- centerline;
+- required arm-clearance width.
+
+GLOVE:
+- wrist opening;
+- hand/finger direction;
+- distal extent.
+
+HEADWEAR:
+- head center;
+- left/right fit boundaries;
+- orientation axis.
+
+Do not force every semantic type to have every possible landmark.
+
+Use typed/validated geometry appropriate to the semantic component.
+
+=====================================================================
+4. LANDMARK COORDINATE SPACE
+=====================================================================
+
+Landmarks must be defined in stable LOCAL VISUAL SPACE.
+
+They must then be transformed through the SAME production transform path used
+by the actual rendered sprite.
+
+There must not be a parallel fake transform implementation used only by tests.
+
+For a rendered component, validation must be able to resolve:
+
+local semantic landmark
+    -> authored sprite space
+    -> pivot
+    -> signed scale / mirroring
+    -> rotation
+    -> binding transform
+    -> presentation projection
+    -> character world transform
+    -> final world position
+    -> acceptance-camera pixel position where needed.
+
+This transformation must agree with the actual submitted production sprite.
+
+=====================================================================
+5. ALPHA/VISIBLE-GEOMETRY METADATA
+=====================================================================
+
+The validator must reason about VISIBLE pixels, not merely texture quads.
+
+Extend the production-art audit tooling so each relevant atlas region can
+provide or deterministically derive:
+
+- opaque alpha bounding box;
+- opaque width;
+- opaque height;
+- alpha centroid;
+- relevant edge/extent measurements;
+- semantic landmarks expressed relative to the visible region.
+
+Do not treat transparent padding as visible anatomy/equipment.
+
+The existing alpha-tight work should be preserved, but Prompt 25C must make
+visible-pixel geometry queryable by tests.
+
+The implementation must remain deterministic and bounded.
+
+=====================================================================
+6. ATTACHMENT REGISTRATION TESTS
+=====================================================================
+
+Implement semantic landmark-to-landmark registration tests.
+
+For every supported attachment relationship, test the correct semantic
+relationship, not a proxy.
+
+At minimum implement:
+
+FOOTWEAR:
+    shoe ankle/opening  vs corresponding foot ankle
+    shoe heel           vs corresponding foot heel
+    shoe toe            vs corresponding foot toe
+    shoe sole           vs corresponding foot sole
+
+SLEEVES:
+    sleeve proximal landmark vs corresponding upper-arm/shoulder landmark
+    sleeve centerline         vs corresponding arm centerline
+
+GLOVES/CUFFS:
+    opening vs corresponding wrist
+
+LEGWEAR:
+    proximal/distal landmarks vs corresponding leg geometry as applicable
+
+TORSO GARMENTS:
+    neck/shoulders/waist vs corresponding torso landmarks
+
+LOWER-BODY GARMENTS:
+    waist/hip/leg-opening landmarks vs pelvis/thigh geometry
+
+HEADWEAR:
+    head anchor and orientation vs head geometry
+
+LEFT AND RIGHT MUST BE VALIDATED INDEPENDENTLY.
+
+Do not infer "left shoe" from scale sign after submission.
+
+Trace the actual semantic source/binding identity and compare the transformed
+landmarks belonging to that semantic side.
+
+=====================================================================
+7. ORIENTATION AND ANGLE TESTS
+=====================================================================
+
+Implement explicit orientation validation.
+
+For any semantic component with a directional axis, calculate its transformed
+world-space direction.
+
+Examples:
+
+foot_forward = normalize(foot.toe - foot.heel)
+shoe_forward = normalize(shoe.toe - shoe.heel)
+
+Compare the actual angle between them.
+
+At minimum validate:
+
+- shoe forward axis vs corresponding foot forward axis;
+- shoe sole angle vs corresponding foot sole angle;
+- sleeves vs corresponding arm axis;
+- gloves vs hand axis where meaningful;
+- legwear vs corresponding limb axis;
+- torso garments vs torso orientation;
+- headwear vs head orientation where meaningful.
+
+Mirroring must naturally transform the landmarks/axis.
+
+Do not use scale-sign checks as the proof of correct orientation.
+
+A backwards shoe MUST fail numerically.
+
+An incorrectly angled shoe MUST fail numerically.
+
+=====================================================================
+8. RELATIVE SIZE AND PROPORTION VALIDATION
+=====================================================================
+
+Stop validating important presentation dimensions primarily as unrelated
+absolute ranges.
+
+Add data-driven RELATIVE proportion tests.
+
+Body presentation must derive expected geometry from the actual active:
+
+- skeleton;
+- body preset;
+- morphology channels;
+- presentation profile;
+- semantic bone/attachment geometry.
+
+Examples:
+
+rendered upper-arm semantic span / shoulder-to-elbow semantic span
+
+rendered forearm semantic span / elbow-to-wrist semantic span
+
+rendered thigh semantic span / hip-to-knee semantic span
+
+rendered shin semantic span / knee-to-ankle semantic span
+
+rendered foot length / semantic foot length
+
+Also support body-wide declared ratios where appropriate, such as:
+
+- visible shoulder span relative to torso/presentation geometry;
+- hip span relative to selected morphology;
+- hand length relative to forearm;
+- foot length relative to lower leg;
+- limb thickness relative to active morphology channel.
+
+IMPORTANT:
+
+Do NOT create one global "correct human proportions" table.
+
+The expected geometry belongs to the active character definition /
+presentation profile / morphology contract.
+
+A broad character, slim character, four-armed humanoid, creature, etc. must be
+able to define different valid relationships later.
+
+=====================================================================
+9. CLOTHING FIT CONTRACTS
+=====================================================================
+
+This is mandatory.
+
+A piece of clothing must not be accepted merely because:
+
+- its component exists;
+- its pivot is valid;
+- it is bound to the correct anatomy part.
+
+Add explicit FIT CONTRACTS between equipment and target anatomy.
+
+Examples:
+
+TORSO GARMENT:
+- shoulder span must match intended torso shoulder span within tolerance;
+- neckline must lie near intended neck/chest landmark;
+- waist must align with intended waist;
+- visible garment width must cover the required torso region;
+- garment may exceed anatomy by declared clothing clearance but must not
+  undersize unintentionally.
+
+SHORTS:
+- waist aligns with pelvis waist;
+- left/right sides cover intended pelvis/hip region;
+- each leg opening corresponds to the correct thigh;
+- hem vertical placement matches the declared garment design.
+
+PANTS / LEGWEAR:
+- leg axis follows corresponding limb;
+- width provides declared clearance/coverage;
+- proximal and distal endpoints land at declared semantic positions.
+
+SHOES:
+- visible length ratio relative to foot is within declared fit range;
+- heel/toe registration is valid;
+- foot coverage is valid;
+- orientation is valid;
+- sole alignment is valid.
+
+Do NOT hard-code every garment to fit identically.
+
+Allow each visual/equipment definition to declare a bounded semantic fit
+contract.
+
+=====================================================================
+10. VISIBLE COVERAGE TESTS
+=====================================================================
+
+Where clothing is intended to cover body geometry, validate actual VISIBLE
+coverage.
+
+For footwear, for example, a mathematically correct pivot is insufficient.
+
+At authored/acceptance scale, evaluate whether the visible shoe region covers
+the declared portion of the visible foot.
+
+At minimum detect:
+
+- exposed foot pixels that should be inside the shoe;
+- shoe pixels displaced substantially off the foot;
+- shoe crossing onto the opposite semantic foot;
+- excessive unintended overlap between left/right footwear.
+
+Do the same conceptually for:
+
+- torso garments;
+- shorts/pants;
+- sleeves;
+- gloves;
+- legwear.
+
+Coverage tests may use deterministic alpha masks / transformed silhouette
+sampling.
+
+Do not require expensive general-purpose collision geometry.
+
+Use bounded test/audit-time calculations.
+
+=====================================================================
+11. JOINT CONTINUITY VALIDATION
+=====================================================================
+
+Keep semantic joint registration tests, but add a stricter VISUAL continuity
+layer.
+
+For each articulated pair:
+
+- upper arm -> forearm;
+- forearm -> hand;
+- thigh -> shin;
+- shin -> foot;
+
+validate both:
+
+A. semantic endpoint registration in world space;
+
+AND
+
+B. visible silhouette continuity at the acceptance camera.
+
+The visible test must detect:
+
+- transparent gaps;
+- excessive separation;
+- obviously excessive overlap;
+- exposed crop edges around the articulation.
+
+Express visible acceptance primarily in pixels at the deterministic acceptance
+camera.
+
+The current meter-space tolerance alone is not sufficient.
+
+The test should report values such as:
+
+    elbow semantic error: 0.013 m
+    elbow visible gap: 4 px FAIL
+    elbow overlap: 1 px PASS
+
+Do not eliminate intentional bounded articulation overlap.
+
+=====================================================================
+12. SYMMETRY CONTRACTS
+=====================================================================
+
+Add optional presentation symmetry contracts.
+
+For the current neutral conventional front profiles, validate appropriate
+left/right symmetry around the character centerline.
+
+Examples:
+
+- shoulder offsets;
+- elbow offsets;
+- wrist offsets;
+- hip offsets;
+- knee offsets;
+- ankle offsets;
+- visible limb lengths;
+- corresponding equipment placement.
+
+Do not make symmetry universal.
+
+A character/profile may explicitly declare asymmetry.
+
+The current conventional neutral male/female profile should be able to declare
+that corresponding bilateral structures are expected to be symmetric within
+tolerance.
+
+=====================================================================
+13. POSE-SWEEP VALIDATION
+=====================================================================
+
+Do not validate geometry only in one neutral pose.
+
+Create a deterministic visual-geometry pose matrix.
+
+At minimum cover:
+
+NEUTRAL:
+- front;
+- side facing right;
+- side facing left.
+
+ARMS:
+- representative shoulder rotation;
+- representative elbow bend;
+- a larger elbow bend.
+
+LEGS:
+- representative hip motion;
+- moderate knee bend;
+- deep knee bend.
+
+PRODUCTION MOTION STATES:
+- multiple deterministic walk-cycle phases;
+- jump compression;
+- jump rise;
+- jump/fall state;
+- landing where applicable.
+
+Run relevant geometry contracts across this matrix.
+
+The goal is to catch errors that appear only during articulation.
+
+Example:
+
+    neutral shoe alignment PASS
+    walk phase 25% shoe angle FAIL
+
+That must be possible.
+
+=====================================================================
+14. MORPHOLOGY / BODY-PRESET SWEEP
+=====================================================================
+
+At minimum validate the current conventional male and conventional female
+through representative morphology values.
+
+Include enough variation to prove that the validator is not tuned to one
+specific screenshot.
+
+Where practical, exercise:
+
+- low / nominal / high global build;
+- relevant shoulder width;
+- hip width;
+- limb thickness;
+- hand scale;
+- foot scale;
+
+within supported production bounds.
+
+The expected geometry must derive from the active morphology state.
+
+Do not hard-code one set of world coordinates for one character.
+
+=====================================================================
+15. DIAGNOSTIC FAILURE OUTPUT
+=====================================================================
+
+THIS IS A REQUIRED DELIVERABLE.
+
+Failures must be actionable.
+
+Do not emit only:
+
+    expected condition failed
+
+or:
+
+    visual geometry invalid
+
+Produce structured diagnostics identifying:
+
+- character/style;
+- view;
+- pose/frame;
+- semantic component;
+- side;
+- metric;
+- actual value;
+- allowed value/tolerance;
+- PASS/FAIL.
+
+Example:
+
+female/front/neutral/left_shoe
+
+    ankle_error_px       = 0.8     PASS <= 2.0
+    heel_error_px        = 7.1     FAIL <= 2.0
+    toe_error_px         = 12.6    FAIL <= 2.0
+    axis_error_deg       = 21.4    FAIL <= 5.0
+    sole_error_deg       = 18.9    FAIL <= 5.0
+    length_ratio         = 1.27    FAIL 0.95..1.15
+    opposite_foot_cross  = 9 px    FAIL <= 0
+
+female/front/neutral/crimson_halter_top
+
+    shoulder_fit_ratio   = 0.79    FAIL 0.96..1.08
+    neck_error_px        = 4.4     FAIL <= 2
+    waist_error_px       = 1.2     PASS <= 2
+    required_coverage    = 91%     FAIL >= configured threshold
+
+The exact thresholds must be defined/documented from the semantic contract,
+not reverse-engineered merely to reject the current screenshot.
+
+=====================================================================
+16. VISUAL DEBUG OVERLAY
+=====================================================================
+
+Add a deterministic diagnostic capture mode using the existing rendering /
+readback infrastructure.
+
+Do NOT create a second renderer.
+
+The overlay/evidence must make semantic geometry visible.
+
+At minimum be able to display:
+
+- skeleton joints;
+- semantic bone/attachment centerlines;
+- sprite pivots;
+- visible alpha bounds;
+- semantic landmarks;
+- equipment landmarks;
+- forward axes;
+- sole axes where applicable;
+- coverage/fit regions;
+- failing landmark-to-landmark lines;
+- labels or an accompanying structured diagnostic report.
+
+Produce both:
+
+A. clean production capture;
+
+B. corresponding geometry-debug capture.
+
+This is for human inspection and for Codex to diagnose failures.
+
+=====================================================================
+17. GOLDEN IMAGE REGRESSION SUPPORT
+=====================================================================
+
+Preserve and formalize the existing real-D3D12 readback capture capability.
+
+Add support for approved visual baselines/goldens, but do NOT use golden-image
+comparison as the primary definition of correctness.
+
+Golden images answer:
+
+    "Did the visual output change?"
+
+Semantic geometry answers:
+
+    "What is wrong?"
+
+The geometry validator is authoritative for measurable relationships.
+
+Goldens are the final regression layer after a frame has been genuinely
+accepted.
+
+Do not approve the current Prompt-25B output as the new golden.
+
+=====================================================================
+18. CURRENT BAD OUTPUT MUST FAIL
+=====================================================================
+
+This is the most important acceptance requirement in Prompt 25C.
+
+Before making visual corrections, run the completed validator against the
+CURRENT Prompt-25B production character.
+
+The current state MUST produce meaningful failures for visible problems.
+
+At minimum, demonstrate quantitative detection of these current categories:
+
+1. FOOTWEAR ORIENTATION
+   The existing shoes visibly disagree with the underlying foot direction /
+   orientation.
+
+2. FOOTWEAR ANGLE / REGISTRATION
+   The shoes do not visually align cleanly with their corresponding feet.
+
+3. FOOTWEAR FIT / COVERAGE
+   Visible shoe geometry does not correctly enclose/cover the intended foot.
+
+4. CLOTHING SCALE / FIT
+   At least one currently ill-fitting garment must be rejected by semantic
+   anatomy-vs-garment fit metrics rather than subjective review.
+
+5. BODY / ARTICULATION GEOMETRY
+   Remaining incorrect proportion/joint-continuity conditions visible in the
+   current presentation must be surfaced where the new contracts apply.
+
+Do NOT write special-case code saying:
+
+    if Prompt25B then fail
+
+Do NOT hard-code the current screenshot coordinates.
+
+The failures must emerge naturally from reusable semantic geometry contracts.
+
+If the validator says the current visibly incorrect shoes and clothing are
+correct, the validator is incomplete.
+
+Continue improving THE VALIDATOR, not the art, until it detects these classes
+of error.
+
+=====================================================================
+19. EXISTING TESTS
+=====================================================================
+
+Do NOT delete the existing tests simply because they are weaker than this new
+system.
+
+Preserve tests for:
+
+- ownership;
+- topology;
+- deterministic bindings;
+- atlas bounds;
+- alpha validity;
+- authored/source distortion;
+- presentation rules;
+- resource/allocation behavior;
+- queue behavior;
+- existing Prompt 0–25B functionality.
+
+Where an existing test overstates what it proves, rename/reword/document it so
+its guarantee is precise.
+
+Example:
+
+Do not describe:
+    "bilateral footwear is correctly registered"
+
+when the test only establishes:
+    "bilateral footwear receives mirrored submission metadata."
+
+Add the stronger semantic geometry test separately.
+
+=====================================================================
+20. ARCHITECTURE REQUIREMENTS
+=====================================================================
+
+Preserve:
+
+- authoritative skeleton;
+- active morphology system;
+- existing anatomy definitions;
+- .character anatomy ownership;
+- .equipment clothing/equipment ownership;
+- permanent base_presentation modesty layer;
+- Prompt 25 wardrobe semantics;
+- fixed-tick animation/physics/IK;
+- existing presentation views;
+- UnifiedRenderQueue;
+- existing production D3D12 rendering path;
+- bounded steady-state behavior.
+
+The validation system may use richer metadata and test/audit-time processing.
+
+Do not introduce:
+
+- a second skeleton;
+- a second character representation;
+- a second renderer;
+- a per-character renderer;
+- hidden production pose corrections solely for validation;
+- unbounded runtime allocations;
+- screenshot-specific hacks.
+
+Semantic visual geometry should be content/authoring metadata evaluated against
+the existing authoritative character.
+
+=====================================================================
+21. DATA-DRIVEN FUTURE USE
+=====================================================================
+
+Design the geometry metadata so it is not limited to the current two humanoids.
+
+It must be extensible to future:
+
+- different body proportions;
+- morphology presets;
+- four-armed humanoids;
+- creatures;
+- animals;
+- tails;
+- wings;
+- horns;
+- armor;
+- weapons;
+- necklaces/amulets;
+- backpacks;
+- additional clothing topologies.
+
+Do not require every future component to pretend it is a standard human limb.
+
+The system should support typed semantic geometry appropriate to the component.
+
+=====================================================================
+22. TEST/AUDIT COMMANDS
+=====================================================================
+
+Create a focused Prompt-25C validation command that is fast enough to run
+during character-art iteration.
+
+For example conceptually:
+
+    zig build test-visual-geometry
+
+or equivalent.
+
+It should NOT require the entire Prompt 0–25B regression suite for each art
+iteration.
+
+Provide separate stages:
+
+FAST:
+- metadata validation;
+- landmark transforms;
+- proportions;
+- orientation;
+- fit;
+- pose matrix;
+- alpha/silhouette geometry.
+
+VISUAL:
+- deterministic D3D12 clean/debug captures.
+
+FINAL REGRESSION:
+- full aggregate test/build/audit only when the validator implementation itself
+  is complete.
+
+=====================================================================
+23. REQUIRED EVIDENCE
+=====================================================================
+
+Prompt 25C completion must include evidence from the CURRENT uncorrected
+Prompt-25B visuals.
+
+Provide a machine-readable and human-readable report showing failures.
+
+At minimum report:
+
+BODY:
+- relevant joint registration;
+- visible joint continuity;
+- relevant proportional metrics.
+
+CLOTHING:
+- torso garment fit;
+- lower garment fit where applicable;
+- sleeve/legwear fit where applicable.
+
+FOOTWEAR:
+- left and right semantic binding IDs;
+- ankle landmark errors;
+- heel landmark errors;
+- toe landmark errors;
+- forward-axis angular errors;
+- sole angular errors;
+- visible foot/shoe size ratio;
+- visible coverage;
+- opposite-side crossing/overlap where applicable.
+
+Provide clean and debug-overlay captures for the same deterministic poses.
+
+=====================================================================
+24. COMPLETION GATE
+=====================================================================
+
+Prompt 25C is complete ONLY if all of these are true:
+
+[ ] Semantic visual landmarks exist for required anatomy/equipment categories.
+
+[ ] Visible alpha geometry is queryable deterministically.
+
+[ ] Landmarks are transformed through the real production transformation path.
+
+[ ] Left/right components are tracked by semantic identity, not inferred from
+    final scale signs.
+
+[ ] Attachment registration tests compare meaningful landmarks.
+
+[ ] Orientation tests compare semantic axes and angles.
+
+[ ] Relative-size validation derives from skeleton/morphology contracts.
+
+[ ] Clothing has explicit anatomy-relative fit contracts.
+
+[ ] Visible coverage is tested where equipment is meant to enclose/cover anatomy.
+
+[ ] Joint continuity has both semantic and pixel-space validation.
+
+[ ] A deterministic pose sweep exists.
+
+[ ] Representative morphology variation is exercised.
+
+[ ] Failures emit quantitative actionable diagnostics.
+
+[ ] Clean + geometry-debug D3D12 evidence can be produced.
+
+[ ] Golden regression support exists but is not used to bless the current bad
+    output.
+
+[ ] The CURRENT Prompt-25B character FAILS the new validator for actual visible
+    footwear/clothing/geometry defects.
+
+[ ] Those failures emerge from reusable contracts, not screenshot-specific hacks.
+
+[ ] No production character-art correction was performed merely to turn the new
+    tests green.
+
+[ ] Existing Prompt 0–25B architectural contracts remain intact.
+
+[ ] Prompt 26 was not started.
+
+=====================================================================
+25. REQUIRED FINAL REPORT
+=====================================================================
+
+When complete, report exactly:
+
+A. VALIDATION ARCHITECTURE
+
+Explain the semantic geometry representation, coordinate spaces, alpha geometry,
+fit contracts, and production-transform integration.
+
+B. NEW TESTS / AUDITS
+
+List each new validation category and what it genuinely proves.
+
+C. CURRENT PROMPT-25B FAILURES
+
+List every meaningful failure detected in the current production character with
+numeric measurements.
+
+Do not soften these failures.
+
+D. DEBUG EVIDENCE
+
+List clean/debug captures produced and what the overlays show.
+
+E. FALSE-POSITIVE / FALSE-NEGATIVE CONTROLS
+
+Explain how you proved that the validator is neither trivially failing everything
+nor accepting obviously incorrect geometry.
+
+At minimum include controlled good/bad synthetic or fixture cases for key
+landmark/orientation/fit calculations.
+
+F. PERFORMANCE / BOUNDS
+
+Report initialization/test allocations and confirm production steady-state
+rendering behavior is unchanged.
+
+G. REGRESSION STATUS
+
+Run the final existing aggregate suite/build/audit only after the validator is
+complete and report the result.
+
+H. PRODUCTION ART CHANGES
+
+This should normally say:
+
+    None; Prompt 25C intentionally built validation before visual correction.
+
+If anything changed, justify why it was strictly necessary to expose semantic
+geometry rather than to make the character prettier.
+
+I. PROMPT 26
+
+Explicitly confirm Prompt 26 was not started.
+
+=====================================================================
+26. HARD HONESTY RULE
+=====================================================================
+
+DO NOT CLAIM PROMPT 25C PASSED BECAUSE THE TEST SUITE IS GREEN.
+
+The desired Prompt-25C outcome is intentionally unusual:
+
+- the validator implementation tests should pass;
+- architectural regressions should pass;
+- the CURRENT visual content should produce documented visual-geometry
+  validation FAILURES.
+
+That is success.
+
+The purpose of Prompt 25C is to construct a trustworthy measuring instrument.
+
+We will fix the measured defects only after the instrument demonstrates that it
+can see them.
+
+If the current shoes, clothing scale, and visible attachment errors still pass
+the new semantic geometry validator, Prompt 25C is NOT COMPLETE.
+
+Continue improving the validation system until it detects them correctly.
+
+DO NOT START PROMPT 26.

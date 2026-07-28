@@ -1,0 +1,534 @@
+# Prompt 23 — Real 2D Art Asset Pipeline, Atlas Resources, and Style-Independent Presentation Definitions
+
+## Engineering brief
+
+### What we're building
+
+Prompts 15–22 established a substantial runtime foundation:
+
+- modular anatomy;
+- male/female and nonstandard body configurations;
+- semantic equipment;
+- topology-aware clothing;
+- body/clothing deformation;
+- sprite and mesh visuals;
+- secondary motion;
+- character properties/capabilities;
+- integrated character/world gameplay.
+
+The renderer is now substantially more advanced than the actual artwork it displays.
+
+Prompt 23 fixes the underlying content problem.
+
+The current renderer must gain a real production-oriented 2D image pipeline:
+
+source image assets
+
+→ image decoding
+
+→ validated texture pages / atlases
+
+→ stable semantic sprite-region definitions
+
+→ GPU resources
+
+→ existing sprite / mesh rendering
+
+The first real artwork will use a pixel-art aesthetic.
+
+However, pixel art must not become a permanent renderer assumption.
+
+The long-term architecture should support:
+
+same character/gameplay definition
+
++ different art pack
+
+→ pixel presentation
+
+or later:
+
+→ higher-resolution illustrated / Hollow-Knight-like presentation
+
+without replacing the character, animation, equipment, interaction, or physics architecture.
+
+### Future 3D authoring direction
+
+A future character editor may eventually use a 3D source model as the authoring source of truth.
+
+Conceptually:
+
+3D character/body/equipment source
+
+→ render side/front/back/3/4 views
+
+→ optional pixelization/stylization
+
+→ atlas + presentation metadata
+
+→ existing 2D runtime
+
+Prompt 23 does not implement 3D.
+
+It establishes the 2D runtime boundary that such a tool could generate later.
+
+### Critical concepts
+
+1. An atlas coordinate is not character identity.
+2. Art style is presentation data, not gameplay architecture.
+3. Texture resources are initialized and owned explicitly.
+4. Stable visual semantics survive atlas repacking or future asset regeneration.
+5. Future authoring tools should output the same validated definitions the runtime consumes today.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 22 repository state.
+
+Read and obey `AGENTS.md`.
+
+Before making changes:
+
+1. Require exactly Zig 0.16.0.
+2. Record current HEAD and working-tree status.
+3. Do not reset, clean, restore, overwrite, or discard user changes.
+4. Run the complete existing baseline.
+5. Run normal application/GPU verification if the host permits it.
+6. Treat all Prompt 0–22 behavior as regression-protected.
+7. Inspect the actual current repository rather than assuming it exactly matches an earlier prompt.
+8. If a host/toolchain/ACL problem prevents verification, distinguish source/test acceptance from runtime/GPU acceptance honestly.
+
+Implement the first real image/atlas asset pipeline and a style-independent 2D presentation-definition layer.
+
+Do not implement final character artwork yet.
+
+Do not implement outfit artwork yet.
+
+Do not implement environment themes yet.
+
+Do not implement a 3D editor.
+
+Do not begin Prompt 24.
+
+---
+
+## 1. Preserve existing architecture
+
+Do not replace:
+
+- `SpriteBatch`;
+- unified sprite/mesh ordering;
+- character definitions;
+- anatomy;
+- equipment;
+- deformation;
+- secondary motion;
+- controller;
+- interactions;
+- IK;
+- physics;
+- camera.
+
+This prompt extends the resource/presentation side of the current engine.
+
+Do not create a second renderer for "real art."
+
+---
+
+## 2. Real image decoding
+
+Implement a production-quality path for loading committed 2D image assets.
+
+At minimum support PNG with alpha.
+
+Do not write a custom PNG decoder.
+
+Use the smallest appropriate dependency or existing platform capability after inspecting the repository and installed toolchain.
+
+Any external dependency must:
+
+- be pinned to an exact release/commit/hash;
+- obey the dependency rules in `AGENTS.md`;
+- have its license documented;
+- have deterministic acquisition/bootstrap instructions;
+- not pull in an unrelated game/rendering framework.
+
+The runtime must validate image decoding and report meaningful errors.
+
+Reject:
+
+- missing files;
+- malformed files;
+- unsupported formats;
+- unsupported pixel layout;
+- zero dimensions;
+- integer overflow;
+- impossible upload sizes.
+
+No silent fallback texture for required production content.
+
+---
+
+## 3. Texture-page ownership
+
+Replace the assumption that the final game will forever use one procedural sampled texture.
+
+Create explicit bounded ownership for multiple image-backed texture pages.
+
+Each texture page must have:
+
+- stable typed/runtime ID;
+- decoded dimensions;
+- GPU texture;
+- sampling policy;
+- explicit destruction path;
+- validated lifetime.
+
+Partial initialization failure must clean up all previously acquired CPU/GPU resources.
+
+No GPU texture may be recreated each frame.
+
+No texture may be created merely because a character changes:
+
+- body;
+- view;
+- outfit;
+- environment theme.
+
+---
+
+## 4. Sampling policy
+
+The first art pack will use nearest-neighbor filtering.
+
+Do not encode this as:
+
+the renderer always uses nearest-neighbor because this is a pixel-art game
+
+Instead, sampling/presentation configuration must allow a future art pack to request a smooth filtering mode where appropriate.
+
+At minimum the architecture should distinguish presentation policy equivalent to:
+
+- nearest;
+- linear.
+
+Only implement additional modes if actually required.
+
+Do not overabstract speculative material systems.
+
+---
+
+## 5. Atlas-region definitions
+
+Create validated immutable atlas-region definitions.
+
+Each region should contain the minimum real metadata required for reusable visuals, including concepts equivalent to:
+
+- stable semantic ID;
+- texture page;
+- pixel rectangle or validated source rectangle;
+- normalized UV result;
+- authored dimensions;
+- pivot/anchor information where appropriate.
+
+Do not make raw UV values the externally meaningful identity.
+
+A future atlas repack must be able to move an image while keeping the same stable region ID.
+
+Validate:
+
+- duplicate IDs;
+- nonexistent pages;
+- rectangle bounds;
+- zero-sized regions;
+- overflow;
+- invalid pivots;
+- invalid normalized UV output.
+
+No per-frame string lookup.
+
+Names may be used only while definitions are constructed/resolved.
+
+---
+
+## 6. Art-pack definition
+
+Introduce the smallest useful immutable definition describing one visual-content pack.
+
+The art pack should be capable of referencing:
+
+- texture pages;
+- atlas regions;
+- character presentation assets;
+- equipment presentation assets;
+- environment presentation assets;
+- view-specific variants;
+- necessary sampling metadata.
+
+Do not force every future art pack to contain exactly the same atlas dimensions or pixel density.
+
+Do not put gameplay statistics in the art pack.
+
+Do not put physics/collision data in the art pack.
+
+---
+
+## 7. Stable semantic visual identity
+
+A character body part should conceptually request something like:
+
+male / torso / side
+
+rather than:
+
+page 0 / UV 0.25–0.5
+
+The exact implementation should fit the repository's current typed-ID architecture.
+
+Likewise equipment should conceptually be able to request:
+
+red_hat / front
+
+without knowing where that image lives in an atlas.
+
+The runtime may resolve these definitions to compact IDs during initialization.
+
+Per-frame semantic string resolution is prohibited.
+
+---
+
+## 8. View extensibility foundation
+
+Prompt 24 will introduce production side/front character artwork.
+
+Prompt 23 should establish the definition capability required for view-dependent assets.
+
+Do not hardcode an array of exactly two views.
+
+Do not ship fake back-view artwork.
+
+Do not create empty `backView()` stubs.
+
+The definition/lookup architecture should allow a future data definition to introduce:
+
+- side;
+- front;
+- back;
+- front-three-quarter;
+- back-three-quarter;
+- interaction-specific cinematic views;
+
+without redesigning the renderer.
+
+A synthetic test-only third view may be used to prove extensibility.
+
+---
+
+## 9. Future 3D-to-2D authoring boundary
+
+Document an explicit future authoring boundary.
+
+The runtime consumes:
+
+- 2D images;
+- stable atlas-region IDs;
+- presentation/view metadata;
+- pivots;
+- semantic bindings.
+
+It must not care whether those were created by:
+
+- a human pixel artist;
+- an image editor;
+- an offline procedural tool;
+- a future 3D character editor;
+- a future rendering pipeline.
+
+Do not implement 3D in this prompt.
+
+Do not make atlas layout authoritative identity.
+
+A future regenerated atlas must be replaceable without rewriting gameplay definitions.
+
+---
+
+## 10. Build/install/runtime asset handling
+
+Integrate required runtime image assets into the build/install path cleanly.
+
+Do not assume execution always occurs from the repository root.
+
+Document where installed assets are expected.
+
+Do not scatter hardcoded absolute Windows paths through the runtime.
+
+Do not load local `reference/` material as production content.
+
+---
+
+## 11. Reference-media policy
+
+The user may provide local visual references in a gitignored `reference/` directory.
+
+This material may include:
+
+- male proportion reference;
+- female outfit reference;
+- Hollow-Knight-like environment reference;
+- outfit/interaction video;
+- extracted contact sheets.
+
+These are visual references only.
+
+Do not:
+
+- commit them;
+- package them;
+- trace/copy their pixels into shipped assets;
+- use source-game logos/text;
+- extract source-game sprite sheets.
+
+Committed artwork must be newly authored project content.
+
+Ensure `reference/` is ignored if appropriate and not already covered.
+
+---
+
+## 12. Real production proof asset
+
+Do not satisfy this milestone using only the existing 4×4 diagnostic texture.
+
+Create at least one small original nontrivial committed image atlas specifically to prove:
+
+- alpha;
+- multiple regions;
+- real decoded image data;
+- different pivots/sizes;
+- at least two texture pages or another real multi-page proof.
+
+This may be simple technical artwork.
+
+It must not merely duplicate the existing red/green/blue/yellow quadrants into PNG files.
+
+The actual character art comes in Prompt 24.
+
+---
+
+## 13. GPU integration
+
+The existing `texture_page` concept must become real.
+
+Prepared sprite ranges referencing different texture pages must cause the correct page to be bound before the corresponding draw.
+
+Preserve semantic ordering.
+
+Do not issue one draw call per sprite.
+
+Do not create one GPU pipeline per atlas region.
+
+Do not silently claim "one draw call" if page transitions legitimately require multiple ranges/draws.
+
+Report honest metrics.
+
+---
+
+## 14. Mesh compatibility
+
+Existing deformable mesh visuals also reference texture/material information.
+
+Do not create a separate incompatible texture-management universe for mesh visuals.
+
+Use the minimum common resource identity necessary so sprite and mesh paths may consume the same art-pack resource ownership model.
+
+Do not rewrite Prompt 19 unnecessarily.
+
+---
+
+## 15. CPU/runtime performance
+
+After initialization/stabilization:
+
+- no filesystem access;
+- no PNG decoding;
+- no atlas string lookup;
+- no texture creation;
+- no texture destruction;
+- no unexpected heap allocation caused by ordinary rendering.
+
+Keep collections bounded.
+
+---
+
+## 16. Failure behavior
+
+Initialization failures must be explicit and recoverable.
+
+Test at minimum:
+
+- missing file;
+- corrupted file;
+- invalid page;
+- invalid atlas region;
+- duplicate semantic ID;
+- allocation failure where existing injection architecture permits;
+- GPU texture creation/upload failure where practical.
+
+Do not swallow SDL errors.
+
+---
+
+## Demonstration
+
+Create a focused art-asset demonstration showing:
+
+- actual PNG-backed texture data;
+- multiple atlas regions;
+- multiple texture pages;
+- alpha transparency;
+- nearest sampling;
+- semantic region lookup resolved during initialization;
+- sprite rendering;
+- mesh/material compatibility where practical;
+- deterministic ordering;
+- correct cleanup.
+
+No final humanoid redesign is required yet.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- texture-page definition validation;
+- duplicate page IDs;
+- image metadata validation;
+- atlas bounds;
+- normalized UV conversion;
+- duplicate region IDs;
+- missing region;
+- invalid page reference;
+- synthetic third view extensibility;
+- atlas repack stability where stable semantic IDs stay unchanged;
+- multiple texture-page range generation;
+- resource cleanup;
+- steady-state allocation invariants;
+- regression of existing sprite batching;
+- regression of existing mesh rendering.
+
+Run all existing tests/checks.
+
+Update:
+
+- architecture;
+- dependencies;
+- rendering;
+- testing;
+- build/runtime asset documentation.
+
+Add an art-pipeline document if appropriate.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 24.

@@ -1,0 +1,161 @@
+PROMPT 25B — FIX THE CHARACTER ART, NOT THE TESTS
+
+Prompt 25A is NOT visually accepted.
+
+The attached/current front-view result is improved, but the characters still visibly look assembled from independent sprites. Do not start Prompt 26.
+
+Do not begin by running the full test suite. Do not spend another hour proving that the current system passes tests. I have already reviewed the GitHub implementation and there are concrete visual problems in the production code.
+
+FIRST investigate and correct these specific issues:
+
+1. LEFT/RIGHT LIMBS SHARE ONE UNMIRRORED REGION
+
+In character_art.zig, keyForSlot() maps both left and right upper arms, forearms, hands, thighs, shins, and feet to the same front/side regions.
+
+At front rest there is no corresponding left/right texture reflection.
+
+This is especially suspicious for:
+- feet,
+- hands,
+- shoulder/upper-arm contours,
+- asymmetric shading.
+
+The current male feet visibly look like duplicated orientations.
+
+Fix this correctly. Use separate authored left/right regions or deterministic mirroring where appropriate. Do not keep rendering asymmetric anatomy identically on both sides.
+
+2. STOP USING THE WRONG BODY PART AS A SUBSTITUTE
+
+Current production bindings knowingly do this:
+
+- male side forearm reuses male side upper-arm art;
+- female side shin reuses female side thigh art;
+- female front shin reuses female front thigh art.
+
+These substitutions are not visually acceptable.
+
+Generate/re-author real forearm and real shin/calf assets with correct silhouettes, taper, joint overlap and shading.
+
+Do not compensate for bad source art with scaling or masks.
+
+3. AUDIT SOURCE-ASPECT VS AUTHORED-ASPECT
+
+Some atlas regions are being heavily distorted by authored_size.
+
+Example: female front hand source is approximately 162×68 pixels but is rendered into an authored 0.24×0.38 rectangle. That is an extreme aspect-ratio change.
+
+Female front foot is also stretched substantially wider than its source proportions.
+
+Audit EVERY base anatomy region:
+
+source alpha bounds
+→ source aspect ratio
+→ authored_size
+→ semantic bone length
+→ pivot.
+
+Do not allow arbitrary anisotropic stretching to manufacture body parts.
+
+Re-author or correct authored dimensions instead.
+
+4. FIX THE SHOULDERS AT THE ACTUAL CAUSE
+
+FrontProjection compresses shoulder roots inward using front_arm_x_compression = 0.90.
+
+Front body ordering then draws both upper arms below the torso.
+
+That combination appears to be creating the rectangular/socketed shoulder transition visible in the current result.
+
+Do not simply add another flesh-colored patch.
+
+Determine whether:
+- arm-root compression is necessary,
+- shoulder placement is correct,
+- torso/upper-arm ordering is correct,
+- the torso and upper-arm alpha silhouettes are actually designed to overlap.
+
+The shoulder must visually look like one anatomical form.
+
+5. INSPECT initSide()
+
+initSide() currently begins with FrontProjection.init(), which already performs front arm remapping/compression, and then performs side compression again.
+
+Verify that side placement is intentional rather than accidentally receiving both front and side compression.
+
+Side presentation must be derived cleanly from the authoritative pose, not become an accumulated correction stack.
+
+6. ART COHERENCE
+
+The male torso/head have substantially more anatomical detail than the limbs.
+
+Re-author the weak components as necessary so torso, pelvis, arms, hands, thighs, shins and feet share:
+- silhouette language,
+- shading density,
+- outline weight,
+- anatomy detail,
+- joint construction,
+- pixel/detail density.
+
+“No transparent gap” is NOT acceptance.
+
+The question is:
+
+“Would someone who does not know this uses segmented sprites immediately notice where the body was cut into sprites?”
+
+If yes, keep working.
+
+HARD CONSTRAINTS
+
+Preserve:
+- .character anatomy
+- .equipment clothing
+- base_presentation modesty surface
+- Prompt 25 wardrobe semantics
+- existing authoritative skeleton/animation/IK/physics
+- UnifiedRenderQueue
+- bounded steady-state behavior
+
+Do not:
+- create a second renderer;
+- create a replacement skeleton;
+- hide the problem with a pile of connector patches;
+- start Prompt 26;
+- accept the work because unit tests pass.
+
+WORKFLOW
+
+1. Inspect the code/issues above.
+2. Inspect the actual atlas cells involved.
+3. Fix bindings/projection where they are genuinely wrong.
+4. Re-author bad anatomy art where the source itself is wrong.
+5. Render the exact front/side neutral views.
+6. Inspect them visually.
+7. Iterate until the characters read as continuous illustrated bodies.
+8. Then verify representative clothing + locomotion/jump.
+9. ONLY AFTER visual acceptance, run the necessary regression/build checks once.
+
+Do not repeatedly run the full 311-test suite during visual iteration.
+
+REQUIRED BEFORE/AFTER
+
+Produce a direct Prompt-25A vs Prompt-25B comparison at the same scale and pose.
+
+I should be able to see meaningful improvement in:
+- shoulders,
+- elbows,
+- wrists/hands,
+- thighs/knees,
+- calf/shin shape,
+- ankles/feet,
+- left/right limb correctness,
+- whole-character consistency.
+
+If the final result is merely “better, not great,” Prompt 25B is not complete.
+
+Report:
+A. actual causes found
+B. exact code/art corrections
+C. before/after images
+D. remaining visual defects
+E. final verification
+F. confirmation Prompt 26 was not started

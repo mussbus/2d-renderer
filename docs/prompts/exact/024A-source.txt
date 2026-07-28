@@ -1,0 +1,96 @@
+Before beginning Prompt 25, make one narrowly scoped correction to the Prompt 24 character-art boundary.
+
+Prompt 24 produced male and female character atlases whose anatomy regions currently include visually baked-in clothing. That must NOT become the architectural model for future character customization.
+
+REQUIRED BOUNDARY
+
+Base anatomy and removable clothing/equipment must be independently addressable visual assets.
+
+Do not represent a body region as inherently wearing a removable garment. In particular, do not make concepts equivalent to:
+
+- torso_wearing_shirt
+- arm_with_sleeve
+- leg_with_pants
+- foot_with_shoe
+
+the canonical base anatomy representation.
+
+The conceptual composition must instead remain:
+
+base anatomy
+    -> clothing layer(s)
+    -> equipment/accessory layer(s)
+
+For example:
+
+upper_arm_body
+    -> sweatshirt_sleeve
+    -> armor/accessory
+
+This separation is semantic and architectural. It does NOT require every category to occupy a separate PNG or GPU texture page. The art packer may colocate body, clothing, and equipment regions when appropriate for batching. Texture packing must never define semantic ownership.
+
+ART REQUIREMENT
+
+Correct the Prompt 24 production character art as necessary so that the male and female characters have independently usable non-sexual base-body anatomy underneath removable clothing.
+
+Do not generate erotic or sexually posed artwork. Explicit anatomical detail is unnecessary.
+
+Where detailed nudity is unnecessary or inappropriate, use neutral/featureless anatomical treatment while preserving:
+
+- the underlying body silhouette,
+- male/female morphology required by the character design,
+- joints and overlap regions,
+- attachment boundaries,
+- deformation boundaries,
+- front/side presentation compatibility,
+- and the ability to layer arbitrary clothing over the body later.
+
+A neutral permanent modesty treatment is acceptable only if it is explicitly classified as part of base presentation rather than as an equipped garment and does not interfere with clothing layering.
+
+Hair may remain independently addressable character presentation as established by Prompt 24.
+
+DO NOT redesign the Prompt 23 art pipeline, Prompt 24 presentation system, animation, physics, IK, interactions, or renderer merely to accomplish this correction.
+
+VERIFY THE BOUNDARY
+
+Add or update automated tests/audits that prove at minimum:
+
+1. Base anatomy resolves without requiring an equipped garment.
+2. Clothing/equipment visual identity is distinct from anatomy identity.
+3. Removing/replacing a garment cannot remove or replace the underlying anatomy definition.
+4. Anatomy and clothing may share a texture page without becoming the same semantic asset.
+5. Existing front/side presentation remains deterministic.
+6. Existing Prompt 0-24 regression tests continue to pass.
+7. No new per-frame allocation or per-character rendering path is introduced.
+
+Visually inspect the corrected male and female side/front presentations through the real D3D12 route.
+
+Do not claim this requirement is satisfied merely because the data structures could theoretically support separate clothing. Verify that the actual Prompt 24 character assets and bindings obey the boundary.
+
+IMPLEMENTATION DECISION RECORD
+
+Record concise engineering rationale for any significant decisions or deviations encountered while making this correction. Record conclusions and rationale useful to a future maintainer, not private chain-of-thought.
+
+MILESTONE GATE
+
+Complete this correction, tests, visual verification, audits, and documentation first.
+
+Only after all of the above passes may Prompt 25 begin.
+
+Then proceed with the previously supplied Prompt 25 exactly as scoped. Do not silently weaken, reinterpret, or skip Prompt 25 requirements because of this correction.
+
+In the final implementation report, provide separate sections:
+
+A. Prompt 24A anatomy/clothing correction
+B. Prompt 25 implementation
+
+For section A, explicitly report:
+- what was baked together before,
+- what is separate afterward,
+- which actual atlas regions/bindings demonstrate the separation,
+- how base anatomy behaves with no removable clothing equipped,
+- whether any neutral permanent modesty treatment remains and exactly how it is classified,
+- automated evidence proving the boundary,
+- visual verification performed.
+
+If this separation cannot actually be achieved because of image-generation/tooling limitations, STOP before Prompt 25 and report the blocker rather than silently reverting to baked-in clothing.

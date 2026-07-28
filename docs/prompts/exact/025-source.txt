@@ -1,0 +1,528 @@
+# Prompt 25 — Modular Visual Wardrobe Catalog, View-Aware Equipment Art, and Outfit Presets
+
+## Engineering brief
+
+### What we're building
+
+Prompt 17 proved the topology-aware equipment architecture.
+
+Prompt 25 now gives that architecture a serious visual stress test.
+
+The supplied reference video contains many distinct garments and outfit combinations.
+
+The goal is not to copy those game assets.
+
+The goal is to use the wardrobe variety as a checklist for whether our modular equipment system can express real clothing.
+
+Instead of:
+
+Outfit #7 = one full-body sprite
+
+we want:
+
+hat
+
++ blouse
+
++ shorts
+
++ stockings
+
++ shoes
+
++ accessories
+
+→ outfit preset
+
+Each item remains independently reusable.
+
+### Why implement many outfits now?
+
+Because variety exposes bad abstractions.
+
+A clothing system that works only for:
+
+- shirt;
+- boots;
+- armor;
+
+is not yet a general character equipment system.
+
+The reference wardrobe forces the engine to handle concepts such as:
+
+- hats;
+- crop tops;
+- blouses;
+- dresses;
+- one-pieces;
+- long sleeves;
+- shorts;
+- pants;
+- stockings;
+- thigh accessories;
+- belts;
+- footwear;
+- layered accessories.
+
+### View-aware clothing
+
+Every visible garment must resolve correctly in:
+
+- front idle;
+- side locomotion.
+
+A front-facing body wearing a side-view hat is unacceptable.
+
+### Outfit preset concept
+
+An outfit preset is only a convenience grouping.
+
+It does not replace equipment.
+
+Conceptually:
+
+red_hat_outfit
+
+contains:
+
+- red wide-brim hat;
+- red upper garment;
+- red lower garment;
+- red thigh-high legwear;
+- red heels.
+
+The parts remain reusable.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 24 repository state.
+
+Implement a broad modular visual wardrobe catalog using original artwork inspired by the garment categories shown in the supplied local reference video/contact sheets.
+
+Preserve all Prompt 0–24 behavior.
+
+Do not copy source-game pixels.
+
+Do not implement inventory economy.
+
+Do not begin Prompt 26.
+
+---
+
+## 1. Inspect and inventory the references first
+
+Before implementing wardrobe definitions, inspect the locally supplied reference material.
+
+The useful outfit-selection segment is approximately the first 26 seconds.
+
+Also inspect the provided outfit contact sheets if present.
+
+Create/update project documentation recording a concise wardrobe inventory.
+
+For each visually distinct reference cluster, record:
+
+- approximate timestamp;
+- garment categories;
+- likely reusable components;
+- likely equipment/body-region bindings;
+- proposed original project-local stable IDs.
+
+At minimum inspect approximately:
+
+- 0–2 s;
+- 3–4 s;
+- 5–9 s;
+- 10–11 s;
+- 12 s;
+- 13 s;
+- 14 s;
+- 15 s;
+- 16 s;
+- 17–18 s;
+- 19 s;
+- 20 s;
+- 21 s;
+- 22–23 s;
+- 24–26 s.
+
+Do not invent a separate item merely because the source game showed a color variation if an existing reusable piece plus palette/material choice is the better architecture.
+
+---
+
+## 2. Original artwork only
+
+Use reference footage only to understand:
+
+- garment category;
+- silhouette;
+- layering;
+- proportion;
+- color-family concept.
+
+Do not:
+
+- copy;
+- trace;
+- crop;
+- embed;
+- recolor extracted source sprites.
+
+All committed artwork must be original.
+
+Do not preserve recognizable source-game logos/text/symbols.
+
+---
+
+## 3. Expand equipment semantics only where required
+
+Prompt 17 already established:
+
+- logical slots;
+- anatomy roles;
+- coverage;
+- visual layers;
+- visual recipes.
+
+Extend them only where the real wardrobe proves a genuine missing concept.
+
+Likely required categories may include concepts equivalent to:
+
+- headwear;
+- upper underlayer;
+- upper garment;
+- outerwear;
+- sleeve layer;
+- one-piece garment;
+- lower garment;
+- waist/belt;
+- legwear;
+- thigh accessory;
+- hand accessory;
+- footwear;
+- neck accessory;
+- back accessory.
+
+Do not create one giant enum of every garment ever imagined.
+
+Use the established data-extensible typed-ID approach.
+
+---
+
+## 4. Layering must be independent from slot occupancy
+
+Do not make every torso garment mutually exclusive merely because they overlap visually.
+
+Support legitimate combinations such as:
+
+body
+
+→ underlayer
+
+→ blouse/shirt
+
+→ jacket
+
+→ outer armor/accessory
+
+Likewise:
+
+leg
+
+→ body
+
+→ stockings
+
+→ shorts/skirt
+
+→ accessory
+
+Slot occupancy controls incompatible equipment choices.
+
+Visual layer controls draw order.
+
+Coverage records semantic region coverage.
+
+Keep all three distinct.
+
+---
+
+## 5. Side/front presentation variants
+
+Every visible wardrobe component used by a production outfit preset must have valid presentation for:
+
+- side;
+- front.
+
+The runtime must resolve the correct visual automatically using the character's current presentation view.
+
+Do not switch equipment identity when view changes.
+
+For example:
+
+wide_brim_hat
+
+remains one item.
+
+Its presentation may resolve:
+
+front → hat_front
+
+side → hat_side
+
+---
+
+## 6. Topology-aware garments remain topology-aware
+
+Do not regress Prompt 17.
+
+Sleeves, gloves, boots, etc. must still bind through compatible semantic anatomy.
+
+Do not manually author:
+
+- `female_left_sleeve`;
+- `female_right_sleeve`;
+
+as the only architecture if one reusable sleeve component can correctly bind to each arm.
+
+View-specific artwork does not invalidate anatomy-aware repeated visual recipes.
+
+---
+
+## 7. Outfit catalog
+
+Create data-defined outfit presets representing the useful distinct combinations from the first ~26 seconds of the reference video.
+
+At minimum include original interpretations of:
+
+### Red wide-brim ensemble
+
+Approximately 0–2 / 24–26 seconds:
+
+- wide-brim red hat;
+- red upper garment;
+- red lower garment;
+- red thigh-high legwear;
+- red heels.
+
+### White blouse + red shorts
+
+Approximately 14 seconds:
+
+- white blouse;
+- red shorts;
+- compatible footwear/accessories based on the reference.
+
+Also include the other useful distinct wardrobe combinations identified during the required inventory.
+
+Do not arbitrarily omit most references because implementing two outfits is easier.
+
+The purpose of this prompt is variety.
+
+---
+
+## 8. Reuse before duplication
+
+When several outfit presets share a visually compatible garment component, reuse the same item definition.
+
+Do not create:
+
+`RedOutfitHat`
+
+and:
+
+`OtherOutfitSameHat`
+
+unless they genuinely differ.
+
+Tests/documentation should show which pieces appear in multiple presets.
+
+---
+
+## 9. Custom outfit composition
+
+Provide a data/runtime route proving that a character can equip a new combination made from components that were not originally grouped into one preset.
+
+For example, combine:
+
+- headwear from preset A;
+- upper garment from preset B;
+- lower garment from preset C;
+- footwear from preset D.
+
+The system must not require creating a new monolithic texture for this combination.
+
+This is important future character-editor evidence.
+
+---
+
+## 10. Outfit hot swapping
+
+Add an unused customization control to cycle complete outfit presets.
+
+Also provide a deterministic test/programmatic route for selecting an explicit preset by typed ID.
+
+Cycling must:
+
+- be transactional;
+- preserve body;
+- preserve character Facing;
+- preserve current view;
+- preserve controller state;
+- preserve animation time;
+- preserve camera;
+- preserve physics;
+- preserve unrelated gameplay properties.
+
+No image decoding.
+
+No GPU resource creation.
+
+---
+
+## 11. Cosmetic properties
+
+Reference fashion items should be cosmetic unless deliberately defined otherwise.
+
+Do not accidentally grant:
+
+- armor;
+- movement speed;
+- jump strength;
+- dash;
+- double jump;
+
+because an older representative equipment item used the same logical slot.
+
+Gameplay effect declarations remain explicit.
+
+---
+
+## 12. Hair + headwear composition
+
+Ensure long female hair and headwear can coexist correctly where appropriate.
+
+Define intended ordering.
+
+Do not:
+
+- render the hat behind the entire head;
+- render front hair over every portion of the hat;
+- permanently remove the hair definition because a hat is equipped.
+
+If useful, split a hairstyle's presentation into bounded back/front visual components using existing generalized visual hierarchy rather than implementing item-specific hacks.
+
+---
+
+## 13. Long garments / skirts / dresses
+
+Where a reference garment extends significantly below the pelvis, use the most appropriate existing visual primitive:
+
+- segmented sprites;
+- deformable mesh;
+- secondary motion where already supported.
+
+Do not force all dresses into rigid torso rectangles.
+
+Do not implement general cloth simulation.
+
+Use existing Prompt 19/20 systems.
+
+---
+
+## 14. Footwear
+
+Footwear must remain bound to semantic feet.
+
+Heels/boots/etc. must preserve:
+
+- foot planting;
+- facing;
+- front/side view;
+- locomotion.
+
+Visual footwear must not alter canonical foot-socket geometry unless explicit future gameplay architecture permits that.
+
+---
+
+## 15. Wardrobe extensibility
+
+Document exact steps for adding:
+
+- a new garment;
+- a new view-specific visual;
+- a new equipment slot;
+- a new outfit preset.
+
+Ordinary new garments should not require editing the equipment core algorithm.
+
+This is a critical future editor requirement.
+
+---
+
+## Demonstration
+
+Create a wardrobe-focused demonstration or extend the production foundation route to show:
+
+- female front idle;
+- side locomotion;
+- rapid preset cycling;
+- the red ensemble;
+- white-blouse/red-shorts;
+- every other outfit preset;
+- long garment;
+- headwear/hair;
+- legwear;
+- footwear;
+- custom recombined outfit;
+- body breathing through appropriate fitted clothing;
+- secondary motion where applicable;
+- male unaffected by female loadout changes;
+- no GPU resource creation while cycling.
+
+Include an easy way to pause/force view for inspection.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- all outfit definitions validate;
+- all referenced garment IDs exist;
+- all production garments have required side/front visuals;
+- duplicate slots;
+- layering;
+- coverage;
+- repeated sleeve/foot binding;
+- view switching;
+- hair/headwear composition;
+- transactional preset selection;
+- custom recombination;
+- independent garment reuse;
+- cosmetic property invariance;
+- two-character isolation;
+- equip/unequip lifecycle;
+- mesh state cleanup;
+- secondary-motion state cleanup;
+- reset;
+- no steady-state allocation;
+- no hot-swap GPU-resource creation.
+
+Manual visual acceptance must inspect every preset.
+
+Do not declare completion simply because all metadata validates.
+
+Update:
+
+- equipment;
+- anatomy;
+- art pipeline;
+- controls;
+- testing;
+- future authoring documentation.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 26.

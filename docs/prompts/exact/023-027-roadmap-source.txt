@@ -1,0 +1,2809 @@
+MULTI-PROMPT EXECUTION CONTRACT
+
+The following message contains Prompts 23 through 27.
+
+They are provided together only so that you have the complete architectural roadmap and can understand where the current milestone is leading.
+
+DO NOT implement more than one prompt at a time.
+
+Execution rules:
+
+1. Begin with Prompt 23 only.
+2. Treat Prompts 24–27 as future context, not current implementation requirements.
+3. Complete every requirement, test, verification step, documentation update, audit, and IMPLEMENTATION REPORT required by Prompt 23.
+4. Do not begin Prompt 24, partially implement Prompt 24, create speculative Prompt 24 systems, or "get ahead" by implementing later-prompt functionality.
+5. After completing Prompt 23, STOP.
+6. Wait for my explicit instruction to continue.
+7. When I say "continue to Prompt 24" or equivalent, re-read Prompt 24 and execute Prompt 24 only.
+8. Repeat this stop-and-wait boundary after Prompts 24, 25, and 26.
+9. Prompt 27 may begin only after I explicitly authorize it.
+10. Later prompts may inform extension points and architectural decisions, but they are not permission to prematurely implement later milestones.
+11. If an earlier prompt discovers that a later architectural assumption is invalid, report it rather than silently redesigning later milestones.
+12. Do not weaken, skip, reinterpret, or combine milestone acceptance criteria merely because the later prompts are already available in context.
+
+The required workflow is:
+
+Prompt 23
+→ implementation
+→ tests / verification
+→ IMPLEMENTATION REPORT
+→ STOP AND WAIT
+
+Prompt 24
+→ implementation
+→ tests / verification
+→ IMPLEMENTATION REPORT
+→ STOP AND WAIT
+
+Prompt 25
+→ implementation
+→ tests / verification
+→ IMPLEMENTATION REPORT
+→ STOP AND WAIT
+
+Prompt 26
+→ implementation
+→ tests / verification
+→ IMPLEMENTATION REPORT
+→ STOP AND WAIT
+
+Prompt 27
+→ implementation
+→ tests / verification
+→ IMPLEMENTATION REPORT
+→ STOP
+
+Begin Prompt 23 only.
+
+# Prompt 23 — Real 2D Art Asset Pipeline, Atlas Resources, and Style-Independent Presentation Definitions
+
+## Engineering brief
+
+### What we're building
+
+Prompts 15–22 established a substantial runtime foundation:
+
+- modular anatomy;
+- male/female and nonstandard body configurations;
+- semantic equipment;
+- topology-aware clothing;
+- body/clothing deformation;
+- sprite and mesh visuals;
+- secondary motion;
+- character properties/capabilities;
+- integrated character/world gameplay.
+
+The renderer is now substantially more advanced than the actual artwork it displays.
+
+Prompt 23 fixes the underlying content problem.
+
+The current renderer must gain a real production-oriented 2D image pipeline:
+
+source image assets
+
+→ image decoding
+
+→ validated texture pages / atlases
+
+→ stable semantic sprite-region definitions
+
+→ GPU resources
+
+→ existing sprite / mesh rendering
+
+The first real artwork will use a pixel-art aesthetic.
+
+However, pixel art must not become a permanent renderer assumption.
+
+The long-term architecture should support:
+
+same character/gameplay definition
+
++ different art pack
+
+→ pixel presentation
+
+or later:
+
+→ higher-resolution illustrated / Hollow-Knight-like presentation
+
+without replacing the character, animation, equipment, interaction, or physics architecture.
+
+### Future 3D authoring direction
+
+A future character editor may eventually use a 3D source model as the authoring source of truth.
+
+Conceptually:
+
+3D character/body/equipment source
+
+→ render side/front/back/3/4 views
+
+→ optional pixelization/stylization
+
+→ atlas + presentation metadata
+
+→ existing 2D runtime
+
+Prompt 23 does not implement 3D.
+
+It establishes the 2D runtime boundary that such a tool could generate later.
+
+### Critical concepts
+
+1. An atlas coordinate is not character identity.
+2. Art style is presentation data, not gameplay architecture.
+3. Texture resources are initialized and owned explicitly.
+4. Stable visual semantics survive atlas repacking or future asset regeneration.
+5. Future authoring tools should output the same validated definitions the runtime consumes today.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 22 repository state.
+
+Read and obey `AGENTS.md`.
+
+Before making changes:
+
+1. Require exactly Zig 0.16.0.
+2. Record current HEAD and working-tree status.
+3. Do not reset, clean, restore, overwrite, or discard user changes.
+4. Run the complete existing baseline.
+5. Run normal application/GPU verification if the host permits it.
+6. Treat all Prompt 0–22 behavior as regression-protected.
+7. Inspect the actual current repository rather than assuming it exactly matches an earlier prompt.
+8. If a host/toolchain/ACL problem prevents verification, distinguish source/test acceptance from runtime/GPU acceptance honestly.
+
+Implement the first real image/atlas asset pipeline and a style-independent 2D presentation-definition layer.
+
+Do not implement final character artwork yet.
+
+Do not implement outfit artwork yet.
+
+Do not implement environment themes yet.
+
+Do not implement a 3D editor.
+
+Do not begin Prompt 24.
+
+---
+
+## 1. Preserve existing architecture
+
+Do not replace:
+
+- `SpriteBatch`;
+- unified sprite/mesh ordering;
+- character definitions;
+- anatomy;
+- equipment;
+- deformation;
+- secondary motion;
+- controller;
+- interactions;
+- IK;
+- physics;
+- camera.
+
+This prompt extends the resource/presentation side of the current engine.
+
+Do not create a second renderer for "real art."
+
+---
+
+## 2. Real image decoding
+
+Implement a production-quality path for loading committed 2D image assets.
+
+At minimum support PNG with alpha.
+
+Do not write a custom PNG decoder.
+
+Use the smallest appropriate dependency or existing platform capability after inspecting the repository and installed toolchain.
+
+Any external dependency must:
+
+- be pinned to an exact release/commit/hash;
+- obey the dependency rules in `AGENTS.md`;
+- have its license documented;
+- have deterministic acquisition/bootstrap instructions;
+- not pull in an unrelated game/rendering framework.
+
+The runtime must validate image decoding and report meaningful errors.
+
+Reject:
+
+- missing files;
+- malformed files;
+- unsupported formats;
+- unsupported pixel layout;
+- zero dimensions;
+- integer overflow;
+- impossible upload sizes.
+
+No silent fallback texture for required production content.
+
+---
+
+## 3. Texture-page ownership
+
+Replace the assumption that the final game will forever use one procedural sampled texture.
+
+Create explicit bounded ownership for multiple image-backed texture pages.
+
+Each texture page must have:
+
+- stable typed/runtime ID;
+- decoded dimensions;
+- GPU texture;
+- sampling policy;
+- explicit destruction path;
+- validated lifetime.
+
+Partial initialization failure must clean up all previously acquired CPU/GPU resources.
+
+No GPU texture may be recreated each frame.
+
+No texture may be created merely because a character changes:
+
+- body;
+- view;
+- outfit;
+- environment theme.
+
+---
+
+## 4. Sampling policy
+
+The first art pack will use nearest-neighbor filtering.
+
+Do not encode this as:
+
+the renderer always uses nearest-neighbor because this is a pixel-art game
+
+Instead, sampling/presentation configuration must allow a future art pack to request a smooth filtering mode where appropriate.
+
+At minimum the architecture should distinguish presentation policy equivalent to:
+
+- nearest;
+- linear.
+
+Only implement additional modes if actually required.
+
+Do not overabstract speculative material systems.
+
+---
+
+## 5. Atlas-region definitions
+
+Create validated immutable atlas-region definitions.
+
+Each region should contain the minimum real metadata required for reusable visuals, including concepts equivalent to:
+
+- stable semantic ID;
+- texture page;
+- pixel rectangle or validated source rectangle;
+- normalized UV result;
+- authored dimensions;
+- pivot/anchor information where appropriate.
+
+Do not make raw UV values the externally meaningful identity.
+
+A future atlas repack must be able to move an image while keeping the same stable region ID.
+
+Validate:
+
+- duplicate IDs;
+- nonexistent pages;
+- rectangle bounds;
+- zero-sized regions;
+- overflow;
+- invalid pivots;
+- invalid normalized UV output.
+
+No per-frame string lookup.
+
+Names may be used only while definitions are constructed/resolved.
+
+---
+
+## 6. Art-pack definition
+
+Introduce the smallest useful immutable definition describing one visual-content pack.
+
+The art pack should be capable of referencing:
+
+- texture pages;
+- atlas regions;
+- character presentation assets;
+- equipment presentation assets;
+- environment presentation assets;
+- view-specific variants;
+- necessary sampling metadata.
+
+Do not force every future art pack to contain exactly the same atlas dimensions or pixel density.
+
+Do not put gameplay statistics in the art pack.
+
+Do not put physics/collision data in the art pack.
+
+---
+
+## 7. Stable semantic visual identity
+
+A character body part should conceptually request something like:
+
+male / torso / side
+
+rather than:
+
+page 0 / UV 0.25–0.5
+
+The exact implementation should fit the repository's current typed-ID architecture.
+
+Likewise equipment should conceptually be able to request:
+
+red_hat / front
+
+without knowing where that image lives in an atlas.
+
+The runtime may resolve these definitions to compact IDs during initialization.
+
+Per-frame semantic string resolution is prohibited.
+
+---
+
+## 8. View extensibility foundation
+
+Prompt 24 will introduce production side/front character artwork.
+
+Prompt 23 should establish the definition capability required for view-dependent assets.
+
+Do not hardcode an array of exactly two views.
+
+Do not ship fake back-view artwork.
+
+Do not create empty `backView()` stubs.
+
+The definition/lookup architecture should allow a future data definition to introduce:
+
+- side;
+- front;
+- back;
+- front-three-quarter;
+- back-three-quarter;
+- interaction-specific cinematic views;
+
+without redesigning the renderer.
+
+A synthetic test-only third view may be used to prove extensibility.
+
+---
+
+## 9. Future 3D-to-2D authoring boundary
+
+Document an explicit future authoring boundary.
+
+The runtime consumes:
+
+- 2D images;
+- stable atlas-region IDs;
+- presentation/view metadata;
+- pivots;
+- semantic bindings.
+
+It must not care whether those were created by:
+
+- a human pixel artist;
+- an image editor;
+- an offline procedural tool;
+- a future 3D character editor;
+- a future rendering pipeline.
+
+Do not implement 3D in this prompt.
+
+Do not make atlas layout authoritative identity.
+
+A future regenerated atlas must be replaceable without rewriting gameplay definitions.
+
+---
+
+## 10. Build/install/runtime asset handling
+
+Integrate required runtime image assets into the build/install path cleanly.
+
+Do not assume execution always occurs from the repository root.
+
+Document where installed assets are expected.
+
+Do not scatter hardcoded absolute Windows paths through the runtime.
+
+Do not load local `reference/` material as production content.
+
+---
+
+## 11. Reference-media policy
+
+The user may provide local visual references in a gitignored `reference/` directory.
+
+This material may include:
+
+- male proportion reference;
+- female outfit reference;
+- Hollow-Knight-like environment reference;
+- outfit/interaction video;
+- extracted contact sheets.
+
+These are visual references only.
+
+Do not:
+
+- commit them;
+- package them;
+- trace/copy their pixels into shipped assets;
+- use source-game logos/text;
+- extract source-game sprite sheets.
+
+Committed artwork must be newly authored project content.
+
+Ensure `reference/` is ignored if appropriate and not already covered.
+
+---
+
+## 12. Real production proof asset
+
+Do not satisfy this milestone using only the existing 4×4 diagnostic texture.
+
+Create at least one small original nontrivial committed image atlas specifically to prove:
+
+- alpha;
+- multiple regions;
+- real decoded image data;
+- different pivots/sizes;
+- at least two texture pages or another real multi-page proof.
+
+This may be simple technical artwork.
+
+It must not merely duplicate the existing red/green/blue/yellow quadrants into PNG files.
+
+The actual character art comes in Prompt 24.
+
+---
+
+## 13. GPU integration
+
+The existing `texture_page` concept must become real.
+
+Prepared sprite ranges referencing different texture pages must cause the correct page to be bound before the corresponding draw.
+
+Preserve semantic ordering.
+
+Do not issue one draw call per sprite.
+
+Do not create one GPU pipeline per atlas region.
+
+Do not silently claim "one draw call" if page transitions legitimately require multiple ranges/draws.
+
+Report honest metrics.
+
+---
+
+## 14. Mesh compatibility
+
+Existing deformable mesh visuals also reference texture/material information.
+
+Do not create a separate incompatible texture-management universe for mesh visuals.
+
+Use the minimum common resource identity necessary so sprite and mesh paths may consume the same art-pack resource ownership model.
+
+Do not rewrite Prompt 19 unnecessarily.
+
+---
+
+## 15. CPU/runtime performance
+
+After initialization/stabilization:
+
+- no filesystem access;
+- no PNG decoding;
+- no atlas string lookup;
+- no texture creation;
+- no texture destruction;
+- no unexpected heap allocation caused by ordinary rendering.
+
+Keep collections bounded.
+
+---
+
+## 16. Failure behavior
+
+Initialization failures must be explicit and recoverable.
+
+Test at minimum:
+
+- missing file;
+- corrupted file;
+- invalid page;
+- invalid atlas region;
+- duplicate semantic ID;
+- allocation failure where existing injection architecture permits;
+- GPU texture creation/upload failure where practical.
+
+Do not swallow SDL errors.
+
+---
+
+## Demonstration
+
+Create a focused art-asset demonstration showing:
+
+- actual PNG-backed texture data;
+- multiple atlas regions;
+- multiple texture pages;
+- alpha transparency;
+- nearest sampling;
+- semantic region lookup resolved during initialization;
+- sprite rendering;
+- mesh/material compatibility where practical;
+- deterministic ordering;
+- correct cleanup.
+
+No final humanoid redesign is required yet.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- texture-page definition validation;
+- duplicate page IDs;
+- image metadata validation;
+- atlas bounds;
+- normalized UV conversion;
+- duplicate region IDs;
+- missing region;
+- invalid page reference;
+- synthetic third view extensibility;
+- atlas repack stability where stable semantic IDs stay unchanged;
+- multiple texture-page range generation;
+- resource cleanup;
+- steady-state allocation invariants;
+- regression of existing sprite batching;
+- regression of existing mesh rendering.
+
+Run all existing tests/checks.
+
+Update:
+
+- architecture;
+- dependencies;
+- rendering;
+- testing;
+- build/runtime asset documentation.
+
+Add an art-pipeline document if appropriate.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 24.
+
+# Prompt 24 — Side + Front Character Presentation, Original Pixel Character Art, and View-Aware Animation
+
+## Engineering brief
+
+### What we're building
+
+Prompt 23 gives the renderer real image assets.
+
+Prompt 24 gives the characters their first actual visual identity.
+
+Until now, the segmented humanoids have primarily been engineering visualization.
+
+This milestone should make the project look like the beginning of an actual game.
+
+Create original pixel-art interpretations of:
+
+### Male
+
+- adult;
+- lean/athletic;
+- relatively long-limbed;
+- proportions inspired by the supplied male reference;
+- bald option;
+- buzz-cut option.
+
+### Female
+
+- adult;
+- curvy silhouette;
+- long hair;
+- proportions inspired by the supplied female references.
+
+Both use:
+
+- the existing anatomy;
+- the existing skeleton;
+- existing animation;
+- existing deformation;
+- existing secondary motion;
+- existing IK;
+- existing equipment architecture.
+
+They are not monolithic frame-by-frame sprite-sheet characters.
+
+### View architecture
+
+The major architectural distinction is:
+
+Facing
+
+is not the same thing as:
+
+Presentation View
+
+Gameplay still remembers:
+
+- left;
+- right.
+
+Visual presentation may be:
+
+- side;
+- front;
+- future orientations.
+
+Initial behavior:
+
+grounded idle → front
+
+movement / airborne gameplay → side
+
+Existing handshake:
+
+→ side
+
+This allows the game to look more characterful while preserving side-scrolling movement.
+
+### Why this matters for future interactions
+
+More complex interactions may eventually choose their own authored view.
+
+For example:
+
+interaction definition
+
+→ presentation view
+
+→ role animations
+
+→ IK/contact correction
+
+→ occlusion profile
+
+Prompt 24 establishes the first half of that concept without attempting all future interactions.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 23 repository state.
+
+Implement production side/front character presentation and original pixel-art character assets.
+
+Preserve all Prompt 0–23 behavior.
+
+Do not replace the segmented skeletal character.
+
+Do not begin the wardrobe catalog yet.
+
+Do not implement back or 3/4 artwork.
+
+Do not begin Prompt 25.
+
+---
+
+## 1. Facing and presentation view are separate
+
+Preserve the existing authoritative gameplay-facing concept.
+
+It continues to mean:
+
+- left;
+- right.
+
+Add a distinct presentation-view concept through the data-oriented architecture established in Prompt 23.
+
+Production views in this milestone:
+
+- side;
+- front.
+
+Do not add `front` to the existing `Facing` enum merely for convenience.
+
+A stationary front-facing character must still remember the last meaningful gameplay left/right facing.
+
+---
+
+## 2. Automatic view policy
+
+Implement deterministic view selection equivalent to:
+
+### Front
+
+Use front view when the ordinary character is:
+
+- grounded;
+- idle;
+- not owned by an interaction requiring another view.
+
+### Side
+
+Use side view when:
+
+- walking;
+- dashing;
+- jumping;
+- rising;
+- falling;
+- landing;
+- participating in the existing handshake.
+
+Do not infer this from render-frame delta.
+
+Use authoritative state.
+
+---
+
+## 3. View changes are presentation-only
+
+Switching side/front must not alter:
+
+- world position;
+- physics root;
+- controller velocity;
+- collider;
+- grounding;
+- support;
+- jump counters;
+- dash state;
+- character properties;
+- equipment;
+- interaction lock;
+- animation clock;
+- anatomy topology.
+
+No teleport.
+
+No physics correction merely because visual orientation changes.
+
+---
+
+## 4. Interaction view authority
+
+An active interaction must be capable of overriding automatic view selection.
+
+For the existing handshake, require side view for both participants.
+
+Do not let one participant switch to front halfway through the handshake because a generic locomotion state appears idle.
+
+Interaction view ownership must release cleanly at completion/cancellation.
+
+Ordinary automatic view policy resumes afterward.
+
+This is an important future interaction extension point.
+
+---
+
+## 5. Original male art
+
+Create original project artwork.
+
+Use the supplied male image only for approximate:
+
+- adult proportions;
+- build;
+- limb length;
+- body silhouette.
+
+Do not trace/copy source pixels.
+
+Provide coherent side and front segmented visuals.
+
+At minimum visually resolve:
+
+- head;
+- torso;
+- pelvis;
+- upper arms;
+- forearms;
+- hands;
+- thighs;
+- shins;
+- feet;
+- appropriate visible facial treatment.
+
+Preserve existing optional anatomy architecture.
+
+Do not collapse body anatomy into one giant sprite.
+
+---
+
+## 6. Male hair
+
+Provide:
+
+- bald;
+- buzz cut.
+
+Bald should correspond to no visible hair component where that cleanly matches existing anatomy semantics.
+
+Buzz cut should be a real original side/front hair asset.
+
+Do not invent a special `bald_hair.png` simply to paint skin over the scalp if no visual is cleaner.
+
+---
+
+## 7. Original female art
+
+Create original side/front female body artwork based on the supplied references for:
+
+- curvy silhouette;
+- hip/waist/chest relationship;
+- adult proportions;
+- long hair.
+
+Do not trace/copy source pixels.
+
+The female must remain built from the same reusable anatomy/presentation architecture.
+
+Do not create:
+
+- `FemaleRenderer`;
+- female-only animation code;
+- female-only physics.
+
+---
+
+## 8. Faces
+
+Use the existing face architecture.
+
+Create side/front-compatible face visuals sufficient to make the characters look intentional rather than diagnostic.
+
+Do not implement a full facial-expression system.
+
+At minimum:
+
+- eyes;
+- brows where appropriate;
+- nose indication;
+- mouth;
+- readable silhouette.
+
+Front and side need not reuse identical pixels.
+
+---
+
+## 9. Pixel-art visual standard
+
+This milestone is specifically intended to establish a credible visual target.
+
+Do not satisfy it with:
+
+- colored rectangles;
+- ellipses;
+- flat geometric capsules;
+- one-color body pieces;
+- obviously temporary programmer art described as complete.
+
+The artwork does not need to match a professional commercial game.
+
+It does need to visibly establish:
+
+- coherent outlines;
+- deliberate silhouettes;
+- several tones where useful;
+- recognizable limbs;
+- joints that visually overlap;
+- intentional hair shapes;
+- readable male/female distinction;
+- consistent scale;
+- consistent lighting direction.
+
+If the implementation cannot produce credible visual artwork, report that manual/art acceptance remains incomplete instead of claiming success.
+
+---
+
+## 10. Pixel aesthetic must remain content-level
+
+Do not add engine rules that prevent a later smooth illustrated art pack.
+
+The new artwork may use nearest sampling.
+
+The character system must not assume:
+
+- every future asset has the same texel density;
+- every future art pack uses hard pixel edges.
+
+---
+
+## 11. Side-view reflection
+
+Preserve the established single-root side-view reflection model.
+
+Do not author redundant left-facing side atlases unless there is a demonstrated technical necessity.
+
+Anatomical left/right identity remains stable.
+
+Do not double mirror:
+
+- attachments;
+- sockets;
+- IK targets;
+- equipment;
+- mesh state.
+
+---
+
+## 12. Front-view anatomy semantics
+
+A front-view character still has:
+
+- anatomical left arm;
+- anatomical right arm;
+- left leg;
+- right leg.
+
+Do not swap anatomical semantics based on screen position.
+
+Define deterministic front-view body-part ordering.
+
+For example, front-view limb overlap must not accidentally rely on submission order alone.
+
+Use explicit semantic layers.
+
+---
+
+## 13. Deformation integration
+
+The new body visuals must consume the existing Prompt 18 deformation path.
+
+Breathing must remain visibly detectable on appropriate body regions.
+
+Do not replace body deformation with alternate front-only animation tricks.
+
+Side and front visuals may have view-specific response strengths if legitimate and data-defined.
+
+---
+
+## 14. Secondary motion integration
+
+Long female hair must remain capable of using the existing secondary-motion architecture.
+
+View changes must not:
+
+- explode spring state;
+- generate NaNs;
+- incorrectly mirror stored displacement;
+- leave a side-view hair visual active over front-view body art.
+
+Define and test deterministic remap/reset behavior.
+
+---
+
+## 15. Animation integration
+
+Do not create separate gameplay animation state machines for front and side.
+
+The authoritative animation state remains shared.
+
+Presentation visuals interpret the pose appropriately.
+
+Where a front idle needs view-specific rest offsets to look correct, express them as presentation data rather than creating a second player simulation.
+
+---
+
+## 16. Joint quality
+
+Because the project uses segmented limbs, intentionally tune:
+
+- pivots;
+- overlap margins;
+- layer order;
+- sprite proportions.
+
+Inspect:
+
+- shoulders;
+- elbows;
+- wrists;
+- hips;
+- knees;
+- ankles;
+- neck.
+
+Avoid obvious gaps during normal animation ranges.
+
+Do not solve this by making every piece an enormous overlapping blob.
+
+---
+
+## 17. Debug/manual view override
+
+Add a bounded customization/debug mode equivalent to:
+
+- automatic;
+- force side;
+- force front.
+
+Use an unused control after inspecting existing mappings.
+
+Do not overwrite established controls.
+
+The override is visual/debug-only.
+
+It must not change gameplay Facing.
+
+This is useful for validating every visual component later in Prompt 25.
+
+---
+
+## Demonstration
+
+Create or extend a focused character-presentation route demonstrating:
+
+1. male front idle;
+2. male side left movement;
+3. front idle while preserving left Facing;
+4. side right movement;
+5. jump/fall/land;
+6. bald/buzz-cut switching;
+7. female front idle;
+8. female side movement;
+9. breathing;
+10. long-hair secondary motion;
+11. forced front/side debug inspection;
+12. existing handshake using side view;
+13. return to front idle after interaction.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- view-definition validation;
+- automatic view policy;
+- Facing preserved across view changes;
+- side reflection;
+- front view no unwanted reflection;
+- view override;
+- interaction-owned side view;
+- interaction cancellation cleanup;
+- male bald;
+- male buzz cut;
+- female long hair;
+- front/side required-region completeness;
+- deterministic layer resolution;
+- body deformation;
+- secondary-motion view transition;
+- IK regression;
+- foot-planting regression;
+- two-character independence;
+- reset;
+- no resource creation during view switching;
+- no steady-state allocation.
+
+Manual acceptance is required.
+
+Do not declare visual acceptance based solely on tests.
+
+Update:
+
+- character documentation;
+- anatomy documentation;
+- animation;
+- art pipeline;
+- controls;
+- testing.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 25.
+
+# Prompt 25 — Modular Visual Wardrobe Catalog, View-Aware Equipment Art, and Outfit Presets
+
+## Engineering brief
+
+### What we're building
+
+Prompt 17 proved the topology-aware equipment architecture.
+
+Prompt 25 now gives that architecture a serious visual stress test.
+
+The supplied reference video contains many distinct garments and outfit combinations.
+
+The goal is not to copy those game assets.
+
+The goal is to use the wardrobe variety as a checklist for whether our modular equipment system can express real clothing.
+
+Instead of:
+
+Outfit #7 = one full-body sprite
+
+we want:
+
+hat
+
++ blouse
+
++ shorts
+
++ stockings
+
++ shoes
+
++ accessories
+
+→ outfit preset
+
+Each item remains independently reusable.
+
+### Why implement many outfits now?
+
+Because variety exposes bad abstractions.
+
+A clothing system that works only for:
+
+- shirt;
+- boots;
+- armor;
+
+is not yet a general character equipment system.
+
+The reference wardrobe forces the engine to handle concepts such as:
+
+- hats;
+- crop tops;
+- blouses;
+- dresses;
+- one-pieces;
+- long sleeves;
+- shorts;
+- pants;
+- stockings;
+- thigh accessories;
+- belts;
+- footwear;
+- layered accessories.
+
+### View-aware clothing
+
+Every visible garment must resolve correctly in:
+
+- front idle;
+- side locomotion.
+
+A front-facing body wearing a side-view hat is unacceptable.
+
+### Outfit preset concept
+
+An outfit preset is only a convenience grouping.
+
+It does not replace equipment.
+
+Conceptually:
+
+red_hat_outfit
+
+contains:
+
+- red wide-brim hat;
+- red upper garment;
+- red lower garment;
+- red thigh-high legwear;
+- red heels.
+
+The parts remain reusable.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 24 repository state.
+
+Implement a broad modular visual wardrobe catalog using original artwork inspired by the garment categories shown in the supplied local reference video/contact sheets.
+
+Preserve all Prompt 0–24 behavior.
+
+Do not copy source-game pixels.
+
+Do not implement inventory economy.
+
+Do not begin Prompt 26.
+
+---
+
+## 1. Inspect and inventory the references first
+
+Before implementing wardrobe definitions, inspect the locally supplied reference material.
+
+The useful outfit-selection segment is approximately the first 26 seconds.
+
+Also inspect the provided outfit contact sheets if present.
+
+Create/update project documentation recording a concise wardrobe inventory.
+
+For each visually distinct reference cluster, record:
+
+- approximate timestamp;
+- garment categories;
+- likely reusable components;
+- likely equipment/body-region bindings;
+- proposed original project-local stable IDs.
+
+At minimum inspect approximately:
+
+- 0–2 s;
+- 3–4 s;
+- 5–9 s;
+- 10–11 s;
+- 12 s;
+- 13 s;
+- 14 s;
+- 15 s;
+- 16 s;
+- 17–18 s;
+- 19 s;
+- 20 s;
+- 21 s;
+- 22–23 s;
+- 24–26 s.
+
+Do not invent a separate item merely because the source game showed a color variation if an existing reusable piece plus palette/material choice is the better architecture.
+
+---
+
+## 2. Original artwork only
+
+Use reference footage only to understand:
+
+- garment category;
+- silhouette;
+- layering;
+- proportion;
+- color-family concept.
+
+Do not:
+
+- copy;
+- trace;
+- crop;
+- embed;
+- recolor extracted source sprites.
+
+All committed artwork must be original.
+
+Do not preserve recognizable source-game logos/text/symbols.
+
+---
+
+## 3. Expand equipment semantics only where required
+
+Prompt 17 already established:
+
+- logical slots;
+- anatomy roles;
+- coverage;
+- visual layers;
+- visual recipes.
+
+Extend them only where the real wardrobe proves a genuine missing concept.
+
+Likely required categories may include concepts equivalent to:
+
+- headwear;
+- upper underlayer;
+- upper garment;
+- outerwear;
+- sleeve layer;
+- one-piece garment;
+- lower garment;
+- waist/belt;
+- legwear;
+- thigh accessory;
+- hand accessory;
+- footwear;
+- neck accessory;
+- back accessory.
+
+Do not create one giant enum of every garment ever imagined.
+
+Use the established data-extensible typed-ID approach.
+
+---
+
+## 4. Layering must be independent from slot occupancy
+
+Do not make every torso garment mutually exclusive merely because they overlap visually.
+
+Support legitimate combinations such as:
+
+body
+
+→ underlayer
+
+→ blouse/shirt
+
+→ jacket
+
+→ outer armor/accessory
+
+Likewise:
+
+leg
+
+→ body
+
+→ stockings
+
+→ shorts/skirt
+
+→ accessory
+
+Slot occupancy controls incompatible equipment choices.
+
+Visual layer controls draw order.
+
+Coverage records semantic region coverage.
+
+Keep all three distinct.
+
+---
+
+## 5. Side/front presentation variants
+
+Every visible wardrobe component used by a production outfit preset must have valid presentation for:
+
+- side;
+- front.
+
+The runtime must resolve the correct visual automatically using the character's current presentation view.
+
+Do not switch equipment identity when view changes.
+
+For example:
+
+wide_brim_hat
+
+remains one item.
+
+Its presentation may resolve:
+
+front → hat_front
+
+side → hat_side
+
+---
+
+## 6. Topology-aware garments remain topology-aware
+
+Do not regress Prompt 17.
+
+Sleeves, gloves, boots, etc. must still bind through compatible semantic anatomy.
+
+Do not manually author:
+
+- `female_left_sleeve`;
+- `female_right_sleeve`;
+
+as the only architecture if one reusable sleeve component can correctly bind to each arm.
+
+View-specific artwork does not invalidate anatomy-aware repeated visual recipes.
+
+---
+
+## 7. Outfit catalog
+
+Create data-defined outfit presets representing the useful distinct combinations from the first ~26 seconds of the reference video.
+
+At minimum include original interpretations of:
+
+### Red wide-brim ensemble
+
+Approximately 0–2 / 24–26 seconds:
+
+- wide-brim red hat;
+- red upper garment;
+- red lower garment;
+- red thigh-high legwear;
+- red heels.
+
+### White blouse + red shorts
+
+Approximately 14 seconds:
+
+- white blouse;
+- red shorts;
+- compatible footwear/accessories based on the reference.
+
+Also include the other useful distinct wardrobe combinations identified during the required inventory.
+
+Do not arbitrarily omit most references because implementing two outfits is easier.
+
+The purpose of this prompt is variety.
+
+---
+
+## 8. Reuse before duplication
+
+When several outfit presets share a visually compatible garment component, reuse the same item definition.
+
+Do not create:
+
+`RedOutfitHat`
+
+and:
+
+`OtherOutfitSameHat`
+
+unless they genuinely differ.
+
+Tests/documentation should show which pieces appear in multiple presets.
+
+---
+
+## 9. Custom outfit composition
+
+Provide a data/runtime route proving that a character can equip a new combination made from components that were not originally grouped into one preset.
+
+For example, combine:
+
+- headwear from preset A;
+- upper garment from preset B;
+- lower garment from preset C;
+- footwear from preset D.
+
+The system must not require creating a new monolithic texture for this combination.
+
+This is important future character-editor evidence.
+
+---
+
+## 10. Outfit hot swapping
+
+Add an unused customization control to cycle complete outfit presets.
+
+Also provide a deterministic test/programmatic route for selecting an explicit preset by typed ID.
+
+Cycling must:
+
+- be transactional;
+- preserve body;
+- preserve character Facing;
+- preserve current view;
+- preserve controller state;
+- preserve animation time;
+- preserve camera;
+- preserve physics;
+- preserve unrelated gameplay properties.
+
+No image decoding.
+
+No GPU resource creation.
+
+---
+
+## 11. Cosmetic properties
+
+Reference fashion items should be cosmetic unless deliberately defined otherwise.
+
+Do not accidentally grant:
+
+- armor;
+- movement speed;
+- jump strength;
+- dash;
+- double jump;
+
+because an older representative equipment item used the same logical slot.
+
+Gameplay effect declarations remain explicit.
+
+---
+
+## 12. Hair + headwear composition
+
+Ensure long female hair and headwear can coexist correctly where appropriate.
+
+Define intended ordering.
+
+Do not:
+
+- render the hat behind the entire head;
+- render front hair over every portion of the hat;
+- permanently remove the hair definition because a hat is equipped.
+
+If useful, split a hairstyle's presentation into bounded back/front visual components using existing generalized visual hierarchy rather than implementing item-specific hacks.
+
+---
+
+## 13. Long garments / skirts / dresses
+
+Where a reference garment extends significantly below the pelvis, use the most appropriate existing visual primitive:
+
+- segmented sprites;
+- deformable mesh;
+- secondary motion where already supported.
+
+Do not force all dresses into rigid torso rectangles.
+
+Do not implement general cloth simulation.
+
+Use existing Prompt 19/20 systems.
+
+---
+
+## 14. Footwear
+
+Footwear must remain bound to semantic feet.
+
+Heels/boots/etc. must preserve:
+
+- foot planting;
+- facing;
+- front/side view;
+- locomotion.
+
+Visual footwear must not alter canonical foot-socket geometry unless explicit future gameplay architecture permits that.
+
+---
+
+## 15. Wardrobe extensibility
+
+Document exact steps for adding:
+
+- a new garment;
+- a new view-specific visual;
+- a new equipment slot;
+- a new outfit preset.
+
+Ordinary new garments should not require editing the equipment core algorithm.
+
+This is a critical future editor requirement.
+
+---
+
+## Demonstration
+
+Create a wardrobe-focused demonstration or extend the production foundation route to show:
+
+- female front idle;
+- side locomotion;
+- rapid preset cycling;
+- the red ensemble;
+- white-blouse/red-shorts;
+- every other outfit preset;
+- long garment;
+- headwear/hair;
+- legwear;
+- footwear;
+- custom recombined outfit;
+- body breathing through appropriate fitted clothing;
+- secondary motion where applicable;
+- male unaffected by female loadout changes;
+- no GPU resource creation while cycling.
+
+Include an easy way to pause/force view for inspection.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- all outfit definitions validate;
+- all referenced garment IDs exist;
+- all production garments have required side/front visuals;
+- duplicate slots;
+- layering;
+- coverage;
+- repeated sleeve/foot binding;
+- view switching;
+- hair/headwear composition;
+- transactional preset selection;
+- custom recombination;
+- independent garment reuse;
+- cosmetic property invariance;
+- two-character isolation;
+- equip/unequip lifecycle;
+- mesh state cleanup;
+- secondary-motion state cleanup;
+- reset;
+- no steady-state allocation;
+- no hot-swap GPU-resource creation.
+
+Manual visual acceptance must inspect every preset.
+
+Do not declare completion simply because all metadata validates.
+
+Update:
+
+- equipment;
+- anatomy;
+- art pipeline;
+- controls;
+- testing;
+- future authoring documentation.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 26.
+
+# Prompt 26 — Layered Environment Art, Hot-Swappable Themes, and Collision-Derived Gameplay Readability
+
+## Engineering brief
+
+### What we're building
+
+The characters now have real art and real clothing.
+
+Prompt 26 brings the environment to the same standard.
+
+The current foundation already has the underlying concepts needed for a strong side-scrolling world:
+
+- gameplay collision;
+- camera;
+- parallax;
+- scene layering;
+- foreground/background separation.
+
+Now those systems need coherent visual presentation.
+
+Create two environment themes using the same authoritative gameplay geometry.
+
+### Theme 1 — Violet crystal ruin
+
+The visual inspiration is the mood and composition of Hollow Knight:
+
+- atmospheric depth;
+- dramatic silhouettes;
+- foreground framing;
+- distant structures;
+- focal lighting;
+- strong character readability.
+
+The actual project art must be original and use the initial pixel-art pack.
+
+### Theme 2 — Neutral debug world
+
+This exists specifically for engineering inspection.
+
+It should make it extremely easy to see:
+
+- limbs;
+- clothing;
+- IK;
+- feet;
+- hair;
+- cape;
+- occlusion.
+
+### Traversable-surface language
+
+A simple visual rule:
+
+white top edge
+
+means:
+
+this is a real standable foreground collision surface
+
+The white line must derive from collision metadata.
+
+It is not painted manually into the level art.
+
+Therefore it remains truthful even when the background theme changes.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 25 repository state.
+
+Implement layered original environment artwork, environment-theme hot swapping, and collision-derived traversable-surface visualization.
+
+Preserve all Prompt 0–25 behavior.
+
+Do not implement a level editor.
+
+Do not create separate physics worlds for each visual theme.
+
+Do not begin Prompt 27.
+
+---
+
+## 1. Environment-theme definitions
+
+Create a declarative validated environment-theme definition using the Prompt 23 art-pipeline architecture.
+
+A theme should describe the visual content required for the current world, including concepts such as:
+
+- distant background;
+- parallax layers;
+- midground;
+- world/terrain visual surfaces;
+- foreground framing;
+- decorative structures;
+- optional restrained atmospheric decoration.
+
+Do not place authoritative collision in the art-theme definition.
+
+---
+
+## 2. Same world, multiple presentations
+
+Both production themes must use the same authoritative:
+
+- collision;
+- platform layout;
+- spawn;
+- interaction positions;
+- camera/world coordinates.
+
+Switching environment theme must not change gameplay.
+
+Conceptually:
+
+WorldDefinition
+
+remains constant.
+
+EnvironmentTheme
+
+changes.
+
+This is the same separation we want between:
+
+Character
+
+and:
+
+ArtPack.
+
+---
+
+## 3. Violet crystal / ruined cavern
+
+Create an original pixel-art environment inspired by the supplied Hollow Knight reference's:
+
+- atmosphere;
+- depth composition;
+- large-scale silhouettes;
+- luminous focal elements;
+- foreground framing.
+
+Do not copy Hollow Knight assets.
+
+Use an original combination of:
+
+- violet/indigo cave space;
+- crystal formations;
+- ruined or scaffold-like structures;
+- distant silhouettes;
+- atmospheric layers;
+- readable foreground platforms.
+
+The visual result must establish a credible direction for what this game could look like.
+
+Do not satisfy this with several flat purple rectangles.
+
+---
+
+## 4. Layer depth
+
+Use existing scene layers/parallax properly.
+
+At minimum provide visually distinct:
+
+- far/distant;
+- mid-distance;
+- gameplay terrain;
+- foreground.
+
+The same landmark should not simply be duplicated at different scales.
+
+Create deliberate composition.
+
+---
+
+## 5. Character contrast
+
+The male/female pixel characters must remain readable against the cavern.
+
+Avoid background detail/noise directly behind gameplay silhouettes where it destroys readability.
+
+Use contrast intentionally.
+
+Do not solve readability by drawing an opaque rectangle behind every character.
+
+---
+
+## 6. Neutral debug theme
+
+Create a second real theme optimized for debugging.
+
+It should:
+
+- minimize clutter;
+- make body outlines obvious;
+- make clothing layers obvious;
+- make white collision edges obvious;
+- make debug overlays readable.
+
+It can be aesthetically simple.
+
+It must not look like a missing-asset fallback.
+
+---
+
+## 7. Environment hot swapping
+
+Add an unused customization/debug action to cycle:
+
+- violet cavern;
+- neutral debug.
+
+Switching must preserve:
+
+- character position;
+- velocity;
+- grounded/support state;
+- current animation;
+- view;
+- Facing;
+- outfit;
+- body/hair;
+- interaction state;
+- fixed-step clock;
+- camera center;
+- pending gameplay input.
+
+No GPU resources may be created merely because the theme changes.
+
+Initialize required resources before steady-state use.
+
+---
+
+## 8. White traversable-surface overlay
+
+Generate a thin white top-edge visual for every static collision surface that authoritative ground/support logic regards as standable.
+
+Do not paint these edges manually into the background atlas.
+
+The presentation must derive from collision truth.
+
+The overlay should conceptually mean:
+
+white horizontal edge = physically valid standable surface
+
+Do not add a white line to:
+
+- background-only geometry;
+- decorative ledges;
+- nonstandable vertical walls;
+- ceilings.
+
+---
+
+## 9. Surface geometry fidelity
+
+Generated top-edge endpoints must correspond to actual collider bounds within a documented tolerance.
+
+Do not create a separate manually maintained "visual collision map."
+
+The collider remains authoritative.
+
+---
+
+## 10. Draw ordering
+
+White surface lines should appear:
+
+- over the terrain art enough to be obvious;
+- behind characters where appropriate;
+- below debug-overlay visualization.
+
+Do not let them cover feet/characters unnaturally because of a high foreground layer.
+
+---
+
+## 11. Debug-toggle relationship
+
+The white surface readability overlay is not the same thing as full collider debug drawing.
+
+Keep the existing detailed collision/debug overlay.
+
+The white line may remain part of the normal art/debug-friendly presentation according to the intended product behavior.
+
+Document the distinction.
+
+---
+
+## 12. Theme extensibility
+
+Adding a future:
+
+- forest;
+- city;
+- interior;
+- snow biome;
+- Art Deco room;
+
+must be primarily a new data/theme definition plus assets.
+
+Do not require editing camera or collision algorithms for a simple visual theme.
+
+This is a direct precursor to the future level editor.
+
+---
+
+## 13. Future level editor compatibility
+
+Do not build the editor.
+
+Document the eventual boundary:
+
+Level geometry / object definitions
+
++ Environment theme / art references
+
+→ validated world
+
+A future editor may choose/change visual themes independently from collision geometry.
+
+Do not make the editor necessary for runtime.
+
+---
+
+## 14. Asset/resource lifecycle
+
+All environment art uses Prompt 23 resources.
+
+Theme switching:
+
+- no decoding;
+- no file I/O;
+- no texture creation;
+- no texture destruction.
+
+Do not introduce separate ad-hoc SDL texture ownership in the environment scene.
+
+---
+
+## Demonstration
+
+The environment evidence route must visibly show:
+
+1. front-idle character in cavern;
+2. side movement through cave;
+3. parallax;
+4. raised platforms;
+5. white standable edges;
+6. decorative noncollidable ledges without white edges;
+7. theme switch in-place;
+8. identical character position after switch;
+9. neutral debug environment;
+10. switch back;
+11. jump/platform landing;
+12. camera resize;
+13. unchanged collision behavior.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- environment definition validation;
+- missing atlas references;
+- both themes;
+- same collision fingerprint across themes;
+- same spawn;
+- theme switching;
+- player-state invariance;
+- camera invariance;
+- interaction-state invariance;
+- eligible surface enumeration;
+- exact white-segment count;
+- white-segment coordinates;
+- noneligible geometry exclusion;
+- deterministic ordering;
+- reset;
+- no steady-state allocation;
+- no theme-switch GPU-resource creation.
+
+Manual visual inspection must confirm the cavern provides meaningful visual depth.
+
+Update:
+
+- architecture;
+- world/scene docs;
+- camera/parallax docs;
+- controls;
+- art pipeline;
+- testing;
+- future level-editor direction.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 27.
+
+# Prompt 27 — Integrated Visual Foundation, View-Aware Interaction Presentation, and Final Art/Gameplay Acceptance
+
+## Engineering brief
+
+### Purpose
+
+Prompts 23–26 establish:
+
+- real art assets;
+- side/front character views;
+- actual male/female visual identity;
+- a large modular wardrobe;
+- environment art;
+- environment themes;
+- clear collision readability.
+
+Prompt 27 proves that these systems work together as a game rather than as isolated rendering demos.
+
+This should become the new:
+
+"show me what this game could become"
+
+playground.
+
+The milestone must give a useful first answer to two questions:
+
+### What can the game look like?
+
+We should be able to see:
+
+- a coherent male character;
+- a coherent female character;
+- front idle;
+- side locomotion;
+- multiple real outfits;
+- breathing;
+- hair/cape motion;
+- atmospheric world art;
+- clear platforms;
+- layered parallax.
+
+### How do character interactions look/work?
+
+The existing handshake must now be presented through the real art system.
+
+Prompt 27 should also make interaction presentation a first-class concept:
+
+interaction
+
+→ role animation
+
+→ required character view
+
+→ IK/contact correction
+
+→ participant/body-part occlusion
+
+→ cleanup
+
+This is the foundation for later:
+
+- hugs;
+- carrying;
+- sitting;
+- furniture interactions;
+- front-facing cinematic interactions;
+- other paired poses.
+
+Do not implement all of those now.
+
+The architecture must not make them impossible.
+
+### Critical scalability principle
+
+Simulation and presentation remain separated.
+
+A future interaction may choose:
+
+- side;
+- front;
+- back;
+- 3/4;
+- a special authored view.
+
+The existing interaction manager should not become hardcoded to:
+
+handshake == side forever
+
+Instead, presentation requirements should be declarative interaction data where appropriate.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 26 repository state.
+
+Build the integrated visual-foundation acceptance route and strengthen the existing interaction presentation boundary so real character art, view selection, clothing, occlusion, IK, environments, and gameplay all operate correctly together.
+
+Preserve all Prompt 0–26 behavior.
+
+This is an integration and presentation-foundation milestone.
+
+Do not implement a broad new gameplay genre.
+
+Do not implement explicit sexual interactions.
+
+Do not implement a 3D engine.
+
+Do not begin the next future phase.
+
+---
+
+## 1. Primary foundation playground
+
+The Prompt 22 integrated foundation playground remains the production integration route.
+
+Extend it rather than creating a competing second "real art" application.
+
+It should now demonstrate:
+
+- real image-backed rendering;
+- male/female character art;
+- side/front views;
+- hair;
+- breathing;
+- equipment;
+- wardrobe;
+- deformable garments;
+- secondary motion;
+- character properties;
+- camera/parallax;
+- themed environments;
+- white platform surfaces;
+- interactions.
+
+Focused earlier demos remain regression routes.
+
+---
+
+## 2. Character lineup
+
+At minimum maintain two normal adult character participants suitable for locomotion/interaction evidence:
+
+### Male
+
+- reference-inspired lean/athletic build;
+- bald or buzz-cut selection;
+- coherent outfit.
+
+### Female
+
+- curvy body configuration;
+- long hair;
+- selectable wardrobe presets.
+
+Do not hardwire interaction eligibility to sex/body type.
+
+Interaction roles remain semantic participants/entities.
+
+---
+
+## 3. Automatic view behavior
+
+Prove in the actual integrated route:
+
+grounded idle → front
+
+walk left → side left
+
+stop → front while Facing remains left
+
+walk right → side right
+
+jump/fall/land → side
+
+return idle → front
+
+No one-frame missing art.
+
+No visible stale side garment over a front body.
+
+---
+
+## 4. Interaction presentation definition
+
+Extend the existing interaction definition architecture with the smallest real declarative presentation metadata required to express concepts equivalent to:
+
+- required participant view;
+- participant-relative visual ordering profile;
+- role-specific body-part overrides if needed;
+- whether automatic view policy is suppressed for the interaction.
+
+Do not put renderer callbacks or arbitrary bespoke functions into ordinary interaction definitions.
+
+Use typed IDs/data.
+
+The existing handshake should declare that it requires the side presentation.
+
+---
+
+## 5. Existing handshake with real artwork
+
+The handshake must continue using:
+
+- existing interaction manager;
+- shared authoritative timing;
+- actual right-hand sockets;
+- existing IK;
+- established physics isolation;
+- participant-qualified layer overrides.
+
+Now prove it with:
+
+- real male/female art;
+- real clothing;
+- real environment;
+- actual side presentation.
+
+Hands must visually meet.
+
+Arms must not obviously pass incorrectly behind/through the wrong participant merely because old colored rectangles hid the issue.
+
+---
+
+## 6. Interaction occlusion inspection
+
+Use the real artwork to inspect existing interaction ordering.
+
+Confirm at contact that:
+
+- participant hand ordering reads correctly;
+- forearm ordering reads correctly;
+- torsos retain intended order;
+- clothing/equipment participates consistently.
+
+Do not create item-specific handshake hacks.
+
+If the existing eight temporary override slots are sufficient for the handshake, preserve them.
+
+Do not silently generalize capacity solely for speculative future interactions.
+
+Document that more complex full-body interactions may require richer bounded data-defined occlusion profiles later.
+
+---
+
+## 7. Interaction-view cleanup
+
+On:
+
+- completion;
+- cancellation;
+- reset;
+
+release interaction presentation ownership.
+
+Restore:
+
+- ordinary automatic view selection;
+- temporary draw overrides;
+- IK ownership;
+- interaction locks.
+
+No stale side-view lock may survive and prevent front idle afterward.
+
+---
+
+## 8. Future interaction architecture documentation
+
+Without implementing the mechanics, document how the current architecture could expand to future interaction classes.
+
+### Multiple body contacts
+
+Future paired animation may define multiple semantic targets:
+
+- hand-to-hand;
+- hand-to-shoulder;
+- hand-to-torso;
+- etc.
+
+Authored animation should remain primary.
+
+IK should provide corrective alignment rather than inventing entire complex poses.
+
+### Root-relative interactions
+
+Future carrying/lifting poses may require a bounded participant-relative root constraint.
+
+Do not implement it now.
+
+Document why the current fixed-root handshake does not provide that behavior.
+
+### Prop/world-anchor interactions
+
+Future:
+
+- chairs;
+- beds;
+- ledges;
+- doors;
+
+may expose semantic interaction anchors.
+
+Do not implement that system now.
+
+Document the likely boundary.
+
+### View-specific/cinematic interactions
+
+Future interactions may request:
+
+- front;
+- back;
+- 3/4;
+- custom authored viewpoint.
+
+The view system implemented in Prompt 24 must remain capable of supporting this.
+
+Do not implement those production assets now.
+
+---
+
+## 9. Front-facing interaction proof
+
+Add one small nonsexual visual interaction/presentation proof only if it can reuse the established interaction architecture without introducing root constraints or an entirely new subsystem.
+
+A suitable example is a simple front-facing greeting/acknowledgement between two grounded participants.
+
+Its purpose is to prove:
+
+interaction presentation view is data
+
+rather than:
+
+all interactions are permanently side view.
+
+Requirements if implemented:
+
+- shared fixed-tick interaction timing;
+- front-view presentation;
+- no new physics movement;
+- no root teleport;
+- bounded participant locks;
+- deterministic completion;
+- normal idle restoration.
+
+It does not need complex IK.
+
+If a truthful implementation would require substantial unrelated interaction architecture, do not fake it.
+
+Instead provide a deterministic interaction-definition test proving a synthetic interaction can select `front`, and leave the visible production interaction as handshake only.
+
+Report which path was used.
+
+---
+
+## 10. Outfit + interaction compatibility
+
+Cycle several female outfit presets and prove handshake remains visually/semantically functional.
+
+At minimum include:
+
+- red wide-brim outfit;
+- white-blouse/red-shorts;
+- one long-garment outfit where practical.
+
+Equipment must not modify interaction sockets merely because the appearance changes.
+
+Do not create separate handshake clips for each outfit.
+
+---
+
+## 11. Hair/secondary-motion interaction behavior
+
+During interaction:
+
+- hair/secondary state remains finite;
+- secondary motion does not alter authoritative contact geometry;
+- presentation remains stable.
+
+Define whether secondary motion continues, dampens, or otherwise uses its existing behavior during the interaction.
+
+Do not special-case individual outfit names.
+
+---
+
+## 12. Environment interaction readability
+
+Demonstrate the handshake in:
+
+- violet cavern;
+- neutral debug environment.
+
+The world theme must not change:
+
+- eligibility;
+- contact;
+- timing;
+- socket positions;
+- interaction outcome.
+
+This proves environment art remains presentation-only.
+
+---
+
+## 13. White surface lines + interaction
+
+Collision-derived white lines must remain correct around the interaction.
+
+They must not:
+
+- alter participant eligibility;
+- become interaction anchors;
+- cover characters incorrectly.
+
+---
+
+## 14. Outfit creation/debug workflow
+
+Provide an efficient interactive inspection workflow using existing/new controls:
+
+- cycle body;
+- cycle build;
+- cycle hair;
+- cycle outfit;
+- cycle environment;
+- force view;
+- move;
+- jump;
+- dash;
+- interact;
+- timing controls;
+- detailed debug visualization.
+
+Do not overwrite existing controls.
+
+Update the documented binding table clearly.
+
+---
+
+## 15. Visual-quality acceptance
+
+Prompt 27 is not complete merely because the renderer runs.
+
+Manual visual acceptance must evaluate:
+
+### Characters
+
+- male/female silhouettes are clear;
+- characters no longer look like debugging primitives;
+- front/side views read immediately;
+- joint overlaps are reasonable;
+- hair looks intentionally attached;
+- breathing remains visible but restrained.
+
+### Clothing
+
+- outfit layers look deliberate;
+- front and side variants correspond;
+- hats/headwear align;
+- sleeves follow arms;
+- stockings/footwear follow legs;
+- long garments do not visibly detach during ordinary motion.
+
+### World
+
+- cavern reads as an atmospheric layered place;
+- parallax depth is visible;
+- characters remain readable;
+- debug theme is useful;
+- standable surfaces are immediately identifiable.
+
+### Interaction
+
+- participant approach is understandable;
+- handshake start/contact/release are visually legible;
+- hands align;
+- limbs use correct foreground/background ordering;
+- outfits do not break contact;
+- completion cleanly returns characters to ordinary presentation.
+
+Do not claim `[PASS]` on manual visual acceptance if these were not actually inspected.
+
+---
+
+## 16. Automated integrated evidence route
+
+Create one bounded deterministic route that exercises at minimum:
+
+1. initial front idle;
+2. bald/buzz-cut change;
+3. female outfit selection;
+4. environment theme selection;
+5. movement left;
+6. stop/front restoration;
+7. movement right;
+8. short jump;
+9. full jump;
+10. raised-platform landing;
+11. breathing;
+12. outfit change while idle;
+13. outfit change while moving where supported;
+14. dash;
+15. double jump;
+16. camera follow;
+17. parallax;
+18. environment hot swap;
+19. white surface verification;
+20. approach interaction partner;
+21. interaction side-view acquisition;
+22. handshake;
+23. IK contact;
+24. interaction completion;
+25. front-idle restoration;
+26. viewport resize;
+27. reset;
+28. stable final state.
+
+The script must assert state.
+
+Do not merely print that a milestone happened.
+
+---
+
+## 17. Deterministic interaction evidence
+
+Explicitly record:
+
+- interaction ID/type;
+- participant IDs;
+- requested view;
+- contact/release/complete ticks;
+- pre/post-IK hand separation;
+- participant view during interaction;
+- view after cleanup;
+- relevant ordering evidence.
+
+Do not rely only on screenshots.
+
+---
+
+## 18. Performance/resource evidence
+
+After initialization/stabilization verify:
+
+- no image decoding;
+- no filesystem reads;
+- no new texture resources;
+- no uncontrolled clothing instance growth;
+- no steady-state simulation allocation;
+- bounded visual submissions;
+- bounded interaction data;
+- bounded outfit/theme/view state.
+
+Report:
+
+- texture-page count;
+- active sprite counts;
+- mesh counts;
+- draw ranges;
+- draw calls;
+- upload bytes;
+- GPU resource counts.
+
+Do not manipulate the scene merely to preserve an obsolete one-draw number if the real multi-page architecture legitimately requires additional ranges.
+
+Optimize obvious unnecessary page switching where it can be done without breaking semantic ordering.
+
+---
+
+## 19. Reset contract
+
+The integrated reset must restore the documented defaults for:
+
+- spawn;
+- controller;
+- jump state;
+- dash;
+- interaction;
+- IK;
+- foot locks;
+- animation;
+- body;
+- build;
+- hair;
+- presentation view mode;
+- outfit preset;
+- equipment runtime state;
+- attributes/capabilities;
+- breathing;
+- secondary motion;
+- environment theme;
+- camera;
+- pending input.
+
+No stale:
+
+- interaction view override;
+- body-part override;
+- clothing visual;
+- mesh state;
+- secondary state;
+- equipment claim;
+- GPU resource;
+
+may survive incorrectly.
+
+---
+
+## 20. Future scalability documentation
+
+Update the architecture documentation with a clear final presentation/gameplay flow.
+
+Conceptually:
+
+Character / Anatomy Definition
+
++ Equipment / Outfit Definitions
+
++ Art Pack
+
+↓
+
+Character Runtime
+
+↓
+
+Animation / Controller / Interaction
+
+↓
+
+Presentation View Resolution
+
+↓
+
+Semantic Body + Equipment Visual Resolution
+
+↓
+
+Deformation + Secondary Motion + Interaction IK
+
+↓
+
+Unified Sprite/Mesh Render Ordering
+
+↓
+
+Atlas-backed GPU Rendering
+
+And separately:
+
+World / Collision
+
++ Environment Theme
+
+↓
+
+Layered World Presentation
+
+Also document the future offline authoring direction:
+
+3D source character
+
+→ generate multiple 2D presentation views
+
+→ atlas + metadata
+
+→ same Art Pack/runtime
+
+The current runtime must remain independent from that future editor.
+
+---
+
+## 21. Explicitly out of scope
+
+Do not implement:
+
+- explicit sexual interactions;
+- the interactions shown in the adult reference video;
+- arbitrary full-body paired pose solving;
+- carrying/lifting;
+- participant root parenting;
+- furniture interactions;
+- bed/chair anchors;
+- arbitrary camera-depth simulation;
+- arbitrary 360-degree character rotation;
+- runtime 3D;
+- 3D modeling;
+- character editor;
+- level editor;
+- mission editor;
+- general cloth collision;
+- combat;
+- enemies;
+- dialogue system;
+- save-game system;
+- weather/liquids.
+
+The reference interaction footage exists to inform future scalability and visual understanding.
+
+It is not an instruction to copy or implement those scenes now.
+
+---
+
+## 22. Regression requirements
+
+All prior focused routes remain meaningful.
+
+Do not weaken earlier tests because the art system changed.
+
+Explicitly verify regression of:
+
+- sprite batching;
+- multi-character rendering;
+- handshake;
+- handshake IK;
+- foot planting;
+- modular anatomy;
+- equipment;
+- breathing;
+- deformable meshes;
+- secondary motion;
+- properties/capabilities;
+- Prompt 22 integrated gameplay.
+
+---
+
+## 23. Completion requirements
+
+Do not declare Prompt 27 complete unless all required acceptance routes genuinely pass.
+
+At minimum report:
+
+- baseline HEAD;
+- total tests;
+- Debug tests;
+- ReleaseFast tests;
+- `zig build check`;
+- Debug application build;
+- optimized build;
+- GPU smoke;
+- integrated visual foundation scripted route;
+- interactive/manual visual route where the host permits;
+- atlas page count;
+- wardrobe item count;
+- outfit preset count;
+- environment theme count;
+- production character view count;
+- collision white-line segment count;
+- interaction timing/contact evidence;
+- allocation/resource metrics;
+- draw/range metrics;
+- final Git status.
+
+If managed-host limitations prevent manual/GPU verification, separate clearly:
+
+- source acceptance;
+- automated deterministic acceptance;
+- GPU acceptance;
+- manual visual acceptance.
+
+Do not report blocked acceptance as passed.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin a later milestone or adversarial audit.

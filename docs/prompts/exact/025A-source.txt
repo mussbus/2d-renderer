@@ -1,0 +1,569 @@
+CODEX PROMPT — PROMPT 25A: VISUAL QUALITY CORRECTION AND HARD ACCEPTANCE GATE
+
+Prompt 25's architecture is accepted. Its rendered visual quality is rejected.
+
+Do not begin Prompt 26.
+
+This task is a mandatory corrective pass over Prompt 24A/25 character presentation and wardrobe rendering.
+
+The current rendered output is technically functional but visually unacceptable. It exposes the implementation as disconnected sprite pieces rather than presenting a coherent finished character.
+
+The previous implementation report stated:
+
+"Every preset was visually inspected in front and side through the real D3D12 route."
+
+That standard was insufficient.
+
+For this task, "it rendered," "all expected regions appeared," "the bindings were correct," "the D3D12 route passed," and "the test suite passed" DO NOT constitute visual acceptance.
+
+You must judge the actual rendered image as character artwork.
+
+If the output still obviously looks broken, you are not permitted to declare this task complete.
+
+1. CURRENT OUTPUT IS A FAILURE
+
+Treat the current Prompt 25 rendered character output as a failed visual baseline, not as an acceptable reference to preserve.
+
+Observed failures include, but are not limited to:
+
+obvious gaps between body segments;
+detached-looking upper arms, forearms, hands, thighs, lower legs, and feet;
+floating feet;
+highly visible shoulder, elbow, hip, knee, and ankle segmentation;
+limbs that visually resemble sticks or disconnected paper-doll pieces;
+inconsistent anatomical proportions between head, torso, arms, pelvis, and legs;
+poor transitions between torso and pelvis;
+poor transitions between pelvis and legs;
+poor transitions between limbs and joints;
+clothing that looks pasted onto independent body pieces rather than worn by a continuous body;
+inconsistent silhouette quality;
+awkward component overlaps;
+exposed implementation seams;
+inconsistent apparent pixel/detail density between body regions;
+permanent modesty/base-presentation regions that read as crude censor rectangles or placeholders;
+rigid presentation that unnecessarily emphasizes segmentation;
+generally unfinished character-art quality.
+
+Do not rationalize these defects as consequences of a modular renderer.
+
+The purpose of the renderer is to hide those implementation details in the final composition.
+
+2. NON-NEGOTIABLE VISUAL PRINCIPLE
+
+The required invariant is:
+
+MODULAR INTERNALLY. CONTINUOUS EXTERNALLY.
+
+An arm may consist internally of shoulder/upper-arm/forearm/hand components.
+
+The rendered character must still look like one arm.
+
+A leg may consist internally of thigh/lower-leg/foot components.
+
+The rendered character must still look like one leg.
+
+An outfit may consist internally of torso pieces, repeated sleeves, legwear, footwear, accessories, and outer layers.
+
+The rendered character must still look like one person wearing one coherent outfit.
+
+At intended gameplay presentation scale, a viewer who knows nothing about the implementation should not be able to identify the component boundaries merely by looking at the character.
+
+3. DO NOT "FIX" THIS BY DESTROYING THE ARCHITECTURE
+
+The following shortcuts are forbidden.
+
+Do NOT:
+
+bake clothing permanently into anatomy;
+restore Prompt 24's clothing-baked base-character design;
+replace reusable wardrobe components with monolithic outfit sprites merely to hide seams;
+create a second character renderer;
+create a second animation system;
+create outfit-specific skeletons unless the existing architecture explicitly requires a bounded semantic extension;
+bypass semantic anatomy;
+bypass equipment/loadout resolution;
+special-case the mandatory outfits through hard-coded draw paths;
+hide broken joints behind oversized clothing;
+crop problematic limbs out of the presentation;
+make all characters wear garments that conceal every articulation point;
+reduce modularity simply to make screenshots pass;
+declare seams "intentional pixel-art styling" when they visibly read as disconnected anatomy.
+
+Prompt 24A's anatomy/equipment separation and Prompt 25's reusable wardrobe architecture are requirements.
+
+Fix the visual integration of that architecture.
+
+4. INVESTIGATE ROOT CAUSE BEFORE REGENERATING ART
+
+Do not assume image generation alone is responsible.
+
+Before modifying production assets, inspect the complete character-composition path and determine where each visible defect originates.
+
+Audit at minimum:
+
+anatomy proportions;
+semantic joint locations;
+sprite/component pivots;
+attachment anchors;
+region bounds;
+source-image padding;
+per-region origin;
+presentation transforms;
+scale relationships;
+parent-child transforms;
+joint overlap;
+sprite overlap margins;
+rotation behavior;
+front projection;
+side projection;
+clothing/body registration;
+clothing component anchors;
+equipment layering;
+hair layering;
+footwear registration;
+deformable-mesh integration;
+atlas extraction;
+alpha boundaries;
+sampling behavior.
+
+For every major visual defect, determine whether it is primarily:
+
+source artwork;
+atlas extraction;
+pivot/anchor placement;
+anatomical proportions;
+transform/composition;
+layering;
+insufficient overlap around articulation;
+presentation-pose design;
+or a combination.
+
+Do not repeatedly regenerate images while leaving incorrect composition mathematics untouched.
+
+Document the root causes you find.
+
+5. CHARACTER PROPORTIONS MUST BE COHERENT
+
+Re-author or correct the male and female base character art as necessary.
+
+Both characters must read as intentional adult humanoids with coherent stylized proportions.
+
+They do not need photorealistic anatomy.
+
+They do need internally consistent anatomy.
+
+Specifically inspect:
+
+head-to-body scale;
+shoulder width;
+torso length;
+arm length;
+forearm length;
+hand scale;
+pelvis width;
+thigh thickness;
+lower-leg thickness;
+knee placement;
+ankle width;
+foot size;
+overall limb taper;
+male/female silhouette differentiation.
+
+Do not allow detailed heads sitting on crude stick-like bodies.
+
+Do not allow legs to collapse into lines merely because the rig uses narrow sprite regions.
+
+6. ARTICULATION MUST USE INTENTIONAL OVERLAP
+
+Segmented characters generally require controlled visual overlap around joints.
+
+Implement sufficient overlap and/or concealed articulation around:
+
+shoulder;
+elbow;
+wrist;
+hip;
+knee;
+ankle.
+
+Adjacent components must remain visually connected throughout the existing supported pose ranges.
+
+A joint boundary may exist internally.
+
+It must not become a large background-colored gap in ordinary poses.
+
+Rotation must not immediately expose holes between components.
+
+If necessary, extend sprite geometry beyond the semantic joint so neighboring pieces overlap while preserving the correct pivot.
+
+Do this deliberately and consistently.
+
+7. FRONT AND SIDE ART MUST EACH BE AUTHORED FOR THEIR VIEW
+
+Do not treat the front view as a mechanically rearranged side sprite.
+
+Do not treat the side view as a compressed front sprite.
+
+Preserve Prompt 24's distinct presentation-view architecture and author each view so that:
+
+silhouette makes sense from that view;
+limbs connect naturally;
+clothing wraps convincingly;
+hands and feet have appropriate view-specific shapes;
+head/neck/shoulder relationships make sense;
+pelvis/leg transitions make sense.
+
+Both views must independently pass visual acceptance.
+
+8. CLOTHING MUST LOOK WORN, NOT ATTACHED
+
+Prompt 25's wardrobe architecture remains authoritative.
+
+Improve the production wardrobe artwork and registration so clothing appears to conform to the character.
+
+Inspect especially:
+
+necklines;
+shoulders;
+sleeve openings;
+cuffs;
+waistlines;
+hems;
+shorts/trouser transitions;
+gloves;
+shoes/boots;
+hats/headwear;
+outer-layer relationships.
+
+The existing blouse-under-cardigan case must continue to prove independent occupancy/layer/coverage semantics, but it must now also look visually coherent.
+
+A technically correct stack of visible sprites that looks like pieces floating over a body is a failure.
+
+9. BASE PRESENTATION / MODESTY SURFACE
+
+Preserve the Prompt 24A requirement that anatomy does not depend upon removable clothing.
+
+The permanent opaque base_presentation modesty treatment may remain.
+
+However:
+
+It must not look like a censor bar, arbitrary rectangle, debugging block, or accidental missing texture.
+
+Integrate it into the base character design as a neutral, featureless presentation surface that follows the character's anatomy and silhouette.
+
+It remains:
+
+permanent;
+non-equipment;
+non-removable;
+independent from wardrobe;
+featureless;
+suitable for the established non-explicit character-art boundary.
+
+Do not introduce explicit nudity or anatomical sexual detail.
+
+10. PIXEL-ART COHERENCE
+
+Establish a consistent visual language across the complete character.
+
+The following should feel intentionally related:
+
+head;
+hair;
+torso;
+pelvis;
+arms;
+hands;
+legs;
+feet;
+clothing;
+accessories.
+
+Avoid situations where one component looks like detailed generated pixel art while another resembles a crude programmer placeholder.
+
+Maintain coherent:
+
+apparent pixel scale;
+outline treatment;
+shading density;
+detail density;
+perspective;
+edge treatment.
+
+Do not solve this with runtime blur.
+
+11. IMAGE GENERATION
+
+You may and should use the available image-generation workflow to re-author production art where necessary.
+
+Generated art is source material, not automatically accepted production material.
+
+You must inspect its integration after segmentation and rendering.
+
+If generated source art:
+
+has incorrect proportions;
+cannot be segmented cleanly;
+has incompatible perspective;
+produces bad joint boundaries;
+cannot support the required semantic components;
+bakes garments into anatomy;
+or otherwise violates the architecture,
+
+reject it and regenerate/rework it.
+
+Do not install generated output merely because image generation succeeded.
+
+Multiple iterations are expected if necessary.
+
+12. NORMAL POSES MUST NOT EXPOSE THE RIG
+
+Exercise the character through representative existing poses, not merely the neutral standing pose.
+
+At minimum inspect poses involving meaningful:
+
+shoulder rotation;
+elbow bending;
+hip rotation;
+knee bending;
+locomotion;
+existing breathing/deformation;
+existing secondary motion where applicable.
+
+The modular construction must remain visually convincing through normal supported motion.
+
+Extreme poses may reveal minor pixel-art compromises.
+
+Ordinary locomotion and presentation poses may not reveal major gaps or detached anatomy.
+
+13. VISUAL ACCEPTANCE IS NOW A FIRST-CLASS TEST
+
+Create a documented visual acceptance checklist.
+
+For every required rendered capture, explicitly inspect:
+
+ no floating body parts;
+ no large background-colored joint gaps;
+ no obviously detached feet;
+ no obviously detached hands;
+ shoulders read as connected;
+ elbows read as connected;
+ hips read as connected;
+ knees read as connected;
+ ankles read as connected;
+ proportions are coherent;
+ silhouette reads as one character;
+ clothing appears worn by the body;
+ wardrobe layers register correctly;
+ hair/headwear register correctly;
+ modesty surface does not resemble a censor/debug rectangle;
+ pixel/detail scale is coherent;
+ front view looks intentionally authored;
+ side view looks intentionally authored;
+ segmentation is not conspicuous at normal presentation scale.
+
+Do not mark a checkbox PASS merely because the corresponding region exists.
+
+Judge the pixels in the final composed image.
+
+14. CAPTURE REQUIREMENTS
+
+Produce final D3D12 captures sufficient to inspect the actual result.
+
+At minimum capture:
+
+male base presentation — front;
+male base presentation — side;
+female base presentation — front;
+female base presentation — side;
+male wearing a representative multi-component outfit — front and side;
+female wearing a representative multi-component outfit — front and side;
+wide_brim_crimson — required relevant views;
+ivory_blouse_red_shorts — required relevant views;
+the custom ivory_blouse + crimson_cardigan layered recombination — front and side;
+representative locomotion/bent-joint frames.
+
+Also produce contact sheets where useful.
+
+Inspect the images at:
+
+nearest-neighbor enlarged scale for seam diagnosis; and
+intended normal presentation scale for actual visual acceptance.
+
+Both matter.
+
+15. ITERATE UNTIL THE OUTPUT ACTUALLY LOOKS GOOD
+
+This requirement is intentionally stronger than previous prompts.
+
+Your workflow should be:
+
+render → capture → inspect → identify defects → correct → render again
+
+Repeat as necessary.
+
+One generation pass is not sufficient merely because tests pass.
+
+One render pass is not sufficient merely because all components appear.
+
+If the character still resembles:
+
+a paper doll;
+a collection of detached sprites;
+a debug visualization;
+a skeletal segmentation demonstration;
+programmer art;
+or obviously broken generated artwork,
+
+continue working.
+
+Do not declare completion.
+
+16. PRESERVE TECHNICAL INVARIANTS
+
+All existing Prompt 0–25 architectural requirements remain in force unless this correction explicitly modifies a visual assumption.
+
+Preserve:
+
+Zig 0.16 compatibility;
+deterministic fixed-tick behavior;
+shared authoritative character state;
+existing locomotion/animation;
+existing IK/foot planting;
+existing interaction behavior;
+existing presentation-view behavior;
+semantic anatomy;
+topology-aware equipment;
+reusable wardrobe items;
+independent occupancy/layer/coverage;
+transactional loadout replacement;
+cosmetic items having zero gameplay modifiers/capabilities;
+global ordered rendering;
+bounded/fixed-capacity runtime structures where currently required;
+no steady-state allocations in established allocation-free paths;
+existing GPU resource invariants;
+existing Prompt 23 art pipeline;
+existing Prompt 24/24A presentation architecture;
+existing Prompt 25 wardrobe architecture.
+
+Do not trade architectural correctness for prettier screenshots.
+
+We require both.
+
+17. TESTING
+
+Add focused tests for any mathematical or data corrections introduced by this task.
+
+Where applicable, test:
+
+pivot consistency;
+attachment consistency;
+region bounds;
+required articulation overlap;
+side/front binding completeness;
+anatomy/equipment separation;
+wardrobe registration;
+topology repetition;
+deterministic presentation;
+absence of invalid zero-sized/disconnected required regions.
+
+Automated tests cannot prove that artwork looks good.
+
+Therefore:
+
+Automated tests passing is necessary but explicitly insufficient for Prompt 25A acceptance.
+
+Run the complete existing Prompt 0–25 verification suite after corrections.
+
+Do not weaken tests to accommodate the new assets.
+
+18. DO NOT START PROMPT 26
+
+Prompt 26 is explicitly out of scope.
+
+Do not create scaffolding for it.
+
+Do not opportunistically implement pieces of it.
+
+Prompt 25A must be independently complete and accepted first.
+
+19. FINAL IMPLEMENTATION REPORT
+
+Your final report must clearly separate:
+
+A. Root causes
+
+Explain why the previous rendered characters looked broken.
+
+Identify which problems were caused by:
+
+artwork;
+pivots/anchors;
+transforms;
+proportions;
+overlap;
+layering;
+or other mechanisms.
+B. Corrections
+
+List exactly what changed.
+
+C. Architecture preservation
+
+Demonstrate that anatomy/clothing separation and reusable wardrobe semantics remain intact.
+
+D. Automated verification
+
+Provide commands, exit codes, test counts, builds, audits, and runtime evidence.
+
+E. Visual verification
+
+For every required capture, state what was inspected.
+
+Do not simply write:
+
+"Visually inspected: PASS."
+
+State concrete observations such as:
+
+shoulder remained continuous;
+elbow overlap concealed articulation;
+feet remained attached;
+waist transition was coherent;
+cardigan registered over blouse;
+silhouette remained continuous.
+F. Before/after comparison
+
+Preserve a capture of the rejected Prompt 25 baseline and compare it directly with the final Prompt 25A output.
+
+The improvement must be obvious.
+
+G. Remaining limitations
+
+Report any visual defect that remains.
+
+Do not hide minor failures behind a generic PASS.
+
+FINAL ACCEPTANCE RULE
+
+Do not declare Prompt 25A complete solely because the code is correct.
+
+Do not declare Prompt 25A complete solely because the tests pass.
+
+Do not declare Prompt 25A complete solely because the GPU route runs.
+
+Do not declare Prompt 25A complete solely because every expected sprite is visible.
+
+Prompt 25A is complete only when:
+
+the existing architecture remains correct;
+the automated verification remains green;
+the rendered characters no longer visibly resemble disconnected component assemblies;
+front and side views read as coherent intentional characters;
+clothing reads as clothing worn by those characters;
+ordinary articulation does not expose major seams or gaps;
+the final captures represent a substantial and obvious visual improvement over the rejected Prompt 25 baseline.
+
+If those conditions are not simultaneously true:
+
+KEEP ITERATING. DO NOT START PROMPT 26.

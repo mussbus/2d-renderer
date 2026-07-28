@@ -1,0 +1,1078 @@
+PROMPT 25D — MAKE THE PRODUCTION CHARACTER ACTUALLY PASS VISUAL GEOMETRY
+
+Prompt 25C built the semantic visual-geometry measuring system.
+
+Now use it.
+
+Prompt 26 MUST NOT be started.
+
+The current Prompt-25B-derived production visuals remain visibly unacceptable.
+Prompt 25D is complete only when the real production anatomy, clothing, and
+equipment satisfy the hardened Prompt-25C semantic geometry contracts AND the
+real D3D12 captures are visually acceptable.
+
+This is not another "make it look somewhat better" pass.
+
+This is closure.
+
+=====================================================================
+0. NON-NEGOTIABLE FINAL STANDARD
+=====================================================================
+
+The final production result must satisfy BOTH:
+
+1. QUANTITATIVE ACCEPTANCE
+   All production visual-geometry metrics pass across the required matrix.
+
+2. HUMAN VISUAL ACCEPTANCE
+   The resulting characters actually look correct at intended presentation
+   scale.
+
+A green test suite is not sufficient if the captures still visibly show:
+
+- incorrectly scaled clothing;
+- backwards footwear;
+- incorrectly angled footwear;
+- shoes displaced from feet;
+- exposed feet that should be inside footwear;
+- incorrect shoulder/elbow/wrist/knee/ankle transitions;
+- obviously incorrect body proportions;
+- clothing floating away from or clipping incorrectly into anatomy;
+- obvious segmented-sprite construction.
+
+Do not declare success while any of those remain.
+
+=====================================================================
+1. TEST COUNT / REGRESSION REQUIREMENT
+=====================================================================
+
+The current focused Prompt-25C gate contains 129 tests in this worktree.
+
+THE FINAL FOCUSED GATE MUST HAVE AT LEAST 129 TESTS AND ZERO FAILURES.
+
+Required:
+
+    zig build test-visual-geometry -j1
+
+must report:
+
+    129/129 PASS
+
+or a larger passing total if legitimate tests are added.
+
+ABSOLUTELY DO NOT:
+
+- delete tests to reduce the count;
+- disable tests;
+- skip tests;
+- rename/remove tests so they stop running;
+- remove imports that reduce test discovery;
+- convert assertions into logging;
+- swallow errors;
+- weaken tests solely because production currently fails them.
+
+If the final count is below 129, Prompt 25D FAILS.
+
+If additional tests are added, every added test must also pass.
+
+=====================================================================
+2. IMPORTANT: PROMPT 25C CURRENTLY EXPECTS PRODUCTION TO FAIL
+=====================================================================
+
+Prompt 25C deliberately contains a test/report that proves the old production
+content is bad.
+
+That was correct for Prompt 25C.
+
+It is NOT the final Prompt-25D acceptance behavior.
+
+Transition the system cleanly:
+
+OLD 25C:
+
+    validator implementation PASS
+    current production visual content FAIL intentionally
+
+NEW 25D:
+
+    validator implementation PASS
+    controlled bad fixtures FAIL as expected
+    current production visual content PASS
+
+Do NOT delete the negative calibration tests.
+
+Preserve synthetic/controlled cases proving that the validator still rejects:
+
+- backwards axes;
+- incorrect angles;
+- undersized garments;
+- bad registration;
+- invalid coverage;
+- excessive joint gaps/overlap.
+
+Replace the test:
+
+    "current Prompt 25B production content yields actionable geometry failures"
+
+with an equivalent production-acceptance test whose contract is:
+
+    "current Prompt 25D production content satisfies visual geometry"
+
+The production acceptance test must require ZERO failing production metrics.
+
+Likewise, change visual_geometry_report from an
+"intentional failures must exist" report into a real acceptance report.
+
+A successful Prompt-25D production report must mean:
+
+    production geometry evaluated successfully
+    production_failure_count = 0
+
+Retain the historical Prompt-25B failure evidence separately.
+
+=====================================================================
+3. HARDEN THE VALIDATOR BEFORE MODIFYING ART
+=====================================================================
+
+Before attempting to make production pass, audit the Prompt-25C validator
+itself.
+
+Several parts of the current implementation are intentionally broad first-pass
+contracts and MUST NOT be treated blindly as immutable truth.
+
+Specifically inspect:
+
+A. GENERIC ANATOMY LANDMARKS
+
+`anatomyGeometry(role, view)` currently uses role/view templates.
+
+Verify every landmark against the actual visible production pixels.
+
+Male and female art must not be forced to use an inaccurate shared landmark
+simply because both are feet, torsos, hands, etc.
+
+Where the real art requires it, support data-driven geometry by:
+
+    style
+    + view
+    + semantic region
+
+rather than only:
+
+    role
+    + view.
+
+The landmark must describe the actual semantic point visible in the art.
+
+Examples:
+
+- actual ankle;
+- actual heel;
+- actual toe tip;
+- actual sole endpoints;
+- actual shoulder interface;
+- actual elbow;
+- actual wrist;
+- actual hip;
+- actual knee.
+
+B. GENERIC EQUIPMENT LANDMARKS
+
+Verify attachmentGeometry against actual production pixels.
+
+Do not assume that a semantic point sits at a generic percentage of every
+source region if the artwork says otherwise.
+
+C. FIT CONTRACT DEFAULTS
+
+The current FitContract defaults are useful baseline values but they MUST NOT
+silently define the design of every garment.
+
+Different garments have different intended geometry.
+
+Examples:
+
+A halter top is not supposed to cover the same torso area as a cardigan.
+
+A miniskirt is not supposed to cover the same pelvis/thigh region as pants.
+
+A strappy shoe is not supposed to cover the same visible alpha area as a boot.
+
+A puff sleeve may intentionally extend substantially beyond the arm silhouette.
+
+A wide-brim hat must intentionally extend far outside the head alpha.
+
+Therefore create explicit DATA-DRIVEN fit contracts where required.
+
+Do NOT merely loosen all global defaults.
+
+D. COVERAGE SEMANTICS
+
+Do not interpret:
+
+    minimum_coverage = 0.90
+
+as:
+
+    garment must overlap 90% of every visible anatomy pixel
+
+unless that is genuinely the design contract.
+
+Coverage must refer to the garment's INTENDED TARGET REGION.
+
+Add/extend bounded coverage-zone metadata if necessary.
+
+Examples:
+
+shoe:
+    sole/heel/toe/enclosure fit region
+
+halter top:
+    intended chest/torso region
+
+shorts:
+    waist/pelvis and declared upper-thigh region
+
+glove:
+    intended hand/wrist region
+
+sleeve:
+    intended arm span
+
+The validator must reject incorrect fit WITHOUT forcing every garment to become
+a full-coverage garment.
+
+E. MULTIPLE/LAYERED COMPONENTS
+
+The current audit frequently resolves the first record matching a role.
+
+That is insufficient for layered wardrobes.
+
+Every submitted equipment visual that declares a fit contract must be validated
+independently using:
+
+- actual semantic component identity;
+- actual bound anatomy identity;
+- actual side;
+- actual view.
+
+Do not validate only the first torso garment, sleeve, lower garment, etc.
+
+Layered outfits must validate every applicable component.
+
+F. MALE + FEMALE DEBUG EVIDENCE
+
+The debug geometry route must be capable of showing relevant geometry for both
+production characters, not only the female character.
+
+=====================================================================
+4. VALIDATOR CHANGES MAY NOT BE USED TO GAME ACCEPTANCE
+=====================================================================
+
+This rule is absolute.
+
+Do NOT solve a failure by doing this:
+
+    heel tolerance 2 px -> 15 px
+
+Do NOT solve a failure by moving a landmark merely to wherever the incorrect
+sprite currently happens to be.
+
+Do NOT solve a clothing-scale failure by changing:
+
+    valid ratio 0.96..1.08
+to
+    valid ratio 0.60..1.40
+
+unless there is a legitimate authored garment-design reason and that reason is
+represented as a specific semantic fit contract.
+
+Any modification to:
+
+- landmark position;
+- fit range;
+- coverage zone;
+- orientation tolerance;
+- gap/overlap tolerance;
+- proportion range;
+
+must have an explicit engineering justification.
+
+For each such change report:
+
+    previous contract
+    new contract
+    why previous contract was semantically wrong
+    evidence from visible pixels/design intent
+    controlled fixture proving the corrected validator still rejects bad data
+
+The validator is the ruler.
+
+Do not shorten the ruler because the object is wrong.
+
+=====================================================================
+5. ESTABLISH THE TRUE BASELINE
+=====================================================================
+
+After validator hardening, BEFORE production correction:
+
+Run the current production content.
+
+Produce the quantitative failure report.
+
+Record every production failure by:
+
+- character/style;
+- view;
+- pose;
+- equipment/part;
+- side;
+- metric;
+- actual value;
+- required range.
+
+Save this as the Prompt-25D pre-correction baseline.
+
+Do not overwrite it later.
+
+The baseline should expose the visible problems we already know exist,
+including applicable failures in:
+
+- footwear orientation;
+- footwear sole angle;
+- heel registration;
+- toe registration;
+- ankle/opening registration;
+- footwear size;
+- footwear intended coverage;
+- garment shoulder/waist fit;
+- garment scale;
+- articulation continuity;
+- proportion relationships.
+
+=====================================================================
+6. CORRECT ROOT CAUSES, NOT TEST OUTPUT
+=====================================================================
+
+Once the validator is trustworthy, fix production.
+
+For each failure determine whether the cause is:
+
+A. SOURCE ART
+B. SOURCE RECTANGLE / ALPHA BOUNDS
+C. AUTHORED SIZE
+D. PIVOT
+E. LOCAL-TO-BINDING TRANSFORM
+F. REST ROTATION
+G. MIRRORING
+H. DRAW ORDER / INTENTIONAL OVERLAP
+I. SEMANTIC BINDING
+J. PRESENTATION PROJECTION
+K. ACTUAL ANATOMY / MORPHOLOGY DEFINITION
+
+Fix the lowest correct layer.
+
+Prefer content corrections over simulation changes.
+
+=====================================================================
+7. FOOTWEAR — MUST BE FULLY CORRECT
+=====================================================================
+
+The current footwear is visibly wrong.
+
+This is a hard acceptance area.
+
+For EACH semantic shoe, EACH required view, and representative poses:
+
+The shoe must:
+
+- bind to the correct semantic foot;
+- point in the same forward direction as that foot;
+- have heel aligned to heel;
+- have toe aligned to toe;
+- have sole axis aligned to the foot's sole axis;
+- have an appropriate length relative to the foot;
+- have an appropriate width;
+- cover/enclose the declared footwear-fit region;
+- not incorrectly cover the opposite foot;
+- not pile toward character center;
+- not require global skeleton distortion to appear correct.
+
+A shoe whose sprite is facing the opposite direction from the foot is an
+automatic failure.
+
+A shoe whose sole has visibly different rotation from the foot is an automatic
+failure.
+
+Do NOT fix a backwards source shoe by rotating the actual foot.
+
+Correct:
+
+- source orientation;
+- mirrored orientation;
+- authored pivot;
+- appropriate view-specific rest rotation;
+- or local equipment transform,
+
+whichever is actually wrong.
+
+Front and side artwork may require distinct semantic geometry.
+
+=====================================================================
+8. CLOTHING SCALE AND FIT — MUST BE FIXED
+=====================================================================
+
+Current clothing visibly does not consistently fit the body.
+
+Every current wearable visual must be evaluated through its design-specific
+fit contract.
+
+Do not validate only the `wide_brim_crimson` preset.
+
+Exercise every current preset and the custom outfit.
+
+For each garment validate applicable:
+
+- neckline registration;
+- shoulder registration;
+- shoulder span;
+- waist registration;
+- waist span;
+- hip span;
+- leg-opening registration;
+- sleeve axis;
+- sleeve length;
+- glove/wrist registration;
+- legwear axis;
+- headwear fit;
+- intended coverage region;
+- intentional clearance/overhang.
+
+A garment must maintain its DESIGN.
+
+Do not make a halter top enormous merely to satisfy a generic torso coverage
+percentage.
+
+Do not shrink puff sleeves to anatomy width merely to satisfy generic
+off-target limits.
+
+Instead give each garment an honest semantic design contract and then make its
+art/transform satisfy that contract.
+
+=====================================================================
+9. BODY PROPORTIONS
+=====================================================================
+
+Use the active skeleton/morphology/presentation contract as the body authority.
+
+Correct visible anatomy whose rendered proportions do not agree with the
+authoritative body.
+
+Required categories include:
+
+- upper arm;
+- forearm;
+- hand;
+- thigh;
+- shin;
+- foot;
+- shoulder span;
+- hip/pelvis relationship.
+
+Do not invent a universal human-proportion table.
+
+The male and female presentation may legitimately differ.
+
+The important relationship is:
+
+    selected character morphology
+        ->
+    semantic body geometry
+        ->
+    rendered visible anatomy
+
+Those must agree.
+
+=====================================================================
+10. ARTICULATION CONTINUITY
+=====================================================================
+
+Correct every measured visible joint failure at:
+
+- shoulders where applicable;
+- elbows;
+- wrists;
+- hips/pelvis interfaces;
+- knees;
+- ankles.
+
+The final result must satisfy BOTH:
+
+semantic endpoint registration
+
+AND
+
+pixel-space visible continuity.
+
+Do not rely on giant overlapping patches.
+
+Do not hide crop boundaries with arbitrary skin-colored connector sprites.
+
+Use correctly authored proximal/distal shapes, bounded overlap, correct pivots,
+and correct ordering.
+
+At intended scale the segmentation should not be the viewer's primary visual
+impression.
+
+=====================================================================
+11. ALL PRESETS MUST BE VALIDATED
+=====================================================================
+
+The current wardrobe contains multiple presets and layered combinations.
+
+The final acceptance matrix must exercise:
+
+- every current preset;
+- the custom outfit;
+- front view;
+- side-right;
+- side-left where applicable.
+
+Each submitted visual with a relevant semantic fit contract must be evaluated.
+
+The validator must not stop after finding the first component of a role.
+
+For example, a layered outfit containing:
+
+    blouse
+    cardigan
+    sleeves
+    belt
+    shorts
+    shoes
+
+must validate each relevant visual individually.
+
+=====================================================================
+12. POSE / MOTION MATRIX
+=====================================================================
+
+A neutral-front pass is insufficient.
+
+The final production content must pass across the Prompt-25C deterministic
+matrix, including:
+
+- neutral front;
+- side right;
+- side left;
+- walk phase 0%;
+- walk phase 25%;
+- walk phase 50%;
+- walk phase 75%;
+- deep knee bend;
+- jump compression;
+- jump rise;
+- jump fall;
+- landing.
+
+Where the semantic contract applies during a pose, it must pass.
+
+If the shoe is correct standing but turns backwards during walking, Prompt 25D
+fails.
+
+=====================================================================
+13. MORPHOLOGY MATRIX
+=====================================================================
+
+Retain the Prompt-25C morphology sweep.
+
+At minimum keep the currently established representative checks for:
+
+- global build low / nominal / high;
+- shoulder width;
+- hip width;
+- upper-arm thickness;
+- thigh thickness;
+- hand scale;
+- foot scale.
+
+Do not tune the artwork to only the nominal body.
+
+If an item cannot reasonably support the declared morphology range using its
+current representation, fix the representation/fit behavior rather than
+excluding the morphology test.
+
+=====================================================================
+14. VISUAL-GEOMETRY REPORT MUST BECOME A TRUE ACCEPTANCE REPORT
+=====================================================================
+
+Create final reports such as:
+
+    zig-out/p25d_visual_geometry/final_report.txt
+    zig-out/p25d_visual_geometry/final_report.json
+
+The final report must show:
+
+    failure_count = 0
+
+for the required production acceptance matrix.
+
+Do not simply omit failing metrics from the report.
+
+Also preserve:
+
+    pre_correction_report.txt
+    pre_correction_report.json
+
+showing the original Prompt-25B-derived failures.
+
+This provides quantitative before/after evidence.
+
+=====================================================================
+15. DEBUG OVERLAY
+=====================================================================
+
+Use the Prompt-25C overlay aggressively during diagnosis.
+
+It must be possible to inspect at minimum:
+
+- male anatomy;
+- female anatomy;
+- footwear;
+- torso garments;
+- lower garments;
+- sleeves;
+- relevant landmarks;
+- alpha bounds;
+- pivots;
+- forward axes;
+- sole axes;
+- attachment-error lines.
+
+Correct the root cause indicated by the overlay.
+
+Do not treat the debug overlay itself as production content.
+
+=====================================================================
+16. D3D12 VISUAL ACCEPTANCE
+=====================================================================
+
+After the quantitative production report reaches zero failures:
+
+Run the real D3D12 visual route.
+
+Produce clean captures for representative:
+
+- male neutral front;
+- female neutral front;
+- male side;
+- female side;
+- footwear;
+- fitted torso garment;
+- fitted lower garment;
+- layered outfit;
+- walk;
+- jump.
+
+Also produce corresponding debug captures where useful.
+
+THEN LOOK AT THEM.
+
+Do not assume zero metrics means the art looks good.
+
+The following human question remains mandatory:
+
+    "Would a normal viewer who does not know this character is constructed
+     from segmented sprites immediately identify incorrect attachment,
+     scale, direction, or joint construction?"
+
+If yes, continue working.
+
+=====================================================================
+17. GOLDEN APPROVAL
+=====================================================================
+
+Only after:
+
+- quantitative failure_count == 0;
+- focused tests pass;
+- actual D3D12 captures are visually accepted;
+
+may Prompt-25D captures become approved goldens.
+
+Do not bless the old Prompt-25B captures.
+
+Record the hashes and exact acceptance pose/view/preset.
+
+=====================================================================
+18. REQUIRED TEST ORDER DURING ITERATION
+=====================================================================
+
+Do NOT rerun the complete repository regression after every art edit.
+
+During correction use:
+
+1. focused affected visual-geometry test;
+2. `zig build test-visual-geometry -j1`;
+3. focused D3D capture when needed.
+
+Only after production reaches zero visual-geometry failures run the complete
+final regression gate.
+
+=====================================================================
+19. FINAL TEST GATE — ABSOLUTE
+=====================================================================
+
+Before Prompt 25D may be declared complete:
+
+A. Focused visual geometry:
+
+    zig build test-visual-geometry -j1
+
+MUST pass every discovered test.
+
+The current baseline is 129 tests.
+
+Required result:
+
+    129/129 passing
+
+or more than 129 if new tests were legitimately added.
+
+ZERO failures.
+ZERO skipped tests.
+ZERO disabled tests.
+
+B. Visual geometry report:
+
+    production failure_count = 0
+
+C. Relevant focused presentation tests:
+
+    all pass
+
+D. Wardrobe tests:
+
+    all pass
+
+E. Repository audit:
+
+    pass
+
+F. Debug build:
+
+    pass
+
+G. ReleaseSafe:
+
+    pass
+
+H. ReleaseFast:
+
+    pass
+
+I. D3D12/DXIL GPU smoke:
+
+    pass
+
+J. Required clean/debug visual captures:
+
+    produced and visually inspected
+
+K. Full aggregate Prompt 0–25D regression:
+
+    all tests pass
+
+Do not reduce test counts to achieve this.
+
+=====================================================================
+20. NO TEST GAMING AUDIT
+=====================================================================
+
+Before completion, audit the Prompt-25C/25D validator diff.
+
+Report every change made to:
+
+- landmarks;
+- fit-contract values;
+- coverage definitions;
+- tolerance values;
+- accepted ratio ranges;
+- pose/morphology test matrix;
+- component-selection logic.
+
+For each, classify it as:
+
+    VALIDATOR CORRECTION
+or
+    PRODUCTION CONTENT CORRECTION
+
+There must be no undocumented relaxation.
+
+Search explicitly for:
+
+- increased tolerances;
+- removed assertions;
+- skipped tests;
+- disabled tests;
+- early returns bypassing metrics;
+- stable-ID exceptions;
+- Prompt25D-only pass branches;
+- screenshot-coordinate hacks.
+
+Any such acceptance hack is a Prompt-25D failure.
+
+=====================================================================
+21. ARCHITECTURE PRESERVATION
+=====================================================================
+
+Preserve:
+
+- one authoritative skeleton;
+- existing anatomy system;
+- existing morphology system;
+- .character anatomy ownership;
+- .equipment clothing/equipment ownership;
+- permanent base_presentation modesty surface;
+- Prompt-25 wardrobe topology/coverage/equipment semantics;
+- fixed-tick animation;
+- physics;
+- IK;
+- interactions;
+- presentation-view authority;
+- UnifiedRenderQueue;
+- normal D3D12 production renderer;
+- bounded steady-state behavior.
+
+Do not create:
+
+- a replacement skeleton;
+- a second renderer;
+- a per-character renderer;
+- a second animation system;
+- visual-only production bone hacks;
+- unbounded steady-state allocations.
+
+=====================================================================
+22. ART REAUTHORING IS ALLOWED
+=====================================================================
+
+Re-author production assets when the source artwork is actually the problem.
+
+Do not preserve bad artwork merely because changing it is inconvenient.
+
+Re-author as necessary for:
+
+- foot direction;
+- shoe silhouette;
+- shoe sole angle;
+- shoulder construction;
+- elbow/wrist/knee/ankle ends;
+- garment fit;
+- garment proportions;
+- proper front/side orientation;
+- consistent anatomy detail.
+
+After re-authoring:
+
+- maintain semantic identity;
+- use alpha-tight production regions;
+- update source rectangles;
+- update landmarks to the actual new semantic pixels;
+- rerun the validator.
+
+Do not change landmarks merely to follow an incorrectly positioned image.
+
+The image and semantic landmark must both represent the intended object.
+
+=====================================================================
+23. REQUIRED BEFORE / AFTER EVIDENCE
+=====================================================================
+
+Provide direct same-scale comparisons.
+
+At minimum:
+
+1. Prompt-25B-derived neutral front
+   vs
+   Prompt-25D neutral front
+
+2. footwear close-up before/after
+
+3. torso-garment fit before/after
+
+4. articulation/joint before/after
+
+For each comparison include quantitative before/after metrics.
+
+Example:
+
+    female/front/left_shoe
+
+    BEFORE
+    heel error:       8.4 px FAIL
+    toe error:       13.1 px FAIL
+    forward error:  178.0° FAIL
+    sole error:      16.2° FAIL
+
+    AFTER
+    heel error:       0.9 px PASS
+    toe error:        1.2 px PASS
+    forward error:    1.1° PASS
+    sole error:       1.8° PASS
+
+=====================================================================
+24. FINAL REPORT FORMAT
+=====================================================================
+
+Report:
+
+A. VALIDATOR HARDENING
+
+List every deficiency found in Prompt 25C and how it was corrected.
+
+B. ORIGINAL PRODUCTION FAILURES
+
+Give the pre-correction quantitative report.
+
+C. ROOT CAUSES
+
+For every major failure category identify whether it was:
+
+- art;
+- pivot;
+- size;
+- binding;
+- rotation;
+- mirror;
+- source bounds;
+- ordering;
+- projection;
+- other.
+
+D. PRODUCTION CORRECTIONS
+
+List exact code/art changes.
+
+E. FINAL VISUAL-GEOMETRY RESULT
+
+Report:
+
+    focused tests: X/X passed
+    production metrics: X total
+    production failures: 0
+
+Explicitly state whether the focused gate retained at least the original
+129 tests.
+
+F. VISUAL EVIDENCE
+
+Describe the accepted clean/debug D3D12 captures.
+
+G. TEST-INTEGRITY AUDIT
+
+Confirm:
+
+- no tests deleted to obtain green;
+- no tests skipped;
+- no global tolerance loosening to accommodate bad art;
+- no screenshot-specific exceptions;
+- no failing metrics suppressed.
+
+H. ARCHITECTURE / PERFORMANCE
+
+Confirm existing ownership, renderer, simulation, and steady-state contracts.
+
+I. FULL REGRESSION
+
+List every final test/build/audit command and result.
+
+J. PROMPT 26
+
+Explicitly state:
+
+    Prompt 26 was not started.
+
+=====================================================================
+25. COMPLETION CHECKLIST
+=====================================================================
+
+Prompt 25D is complete ONLY if:
+
+[ ] Prompt-25C validator weaknesses were audited first.
+
+[ ] Generic contracts were made design-specific where genuinely required.
+
+[ ] Every validator relaxation/change is independently justified.
+
+[ ] Every current applicable wardrobe visual is actually evaluated.
+
+[ ] Footwear faces the same direction as its corresponding foot.
+
+[ ] Footwear sole angle agrees with its corresponding foot.
+
+[ ] Heel/toe/ankle registration passes.
+
+[ ] Footwear intended-fit coverage passes.
+
+[ ] Garment scale/fit passes.
+
+[ ] Anatomy proportions pass.
+
+[ ] Joint semantic registration passes.
+
+[ ] Joint visible continuity passes.
+
+[ ] Front/side pose matrix passes.
+
+[ ] Walk/jump/landing matrix passes.
+
+[ ] Morphology sweep passes.
+
+[ ] Production semantic visual geometry failure_count = 0.
+
+[ ] `zig build test-visual-geometry -j1` passes AT LEAST 129 tests.
+
+[ ] Test count was not reduced.
+
+[ ] No tests are disabled/skipped.
+
+[ ] Clean D3D12 captures look visually correct.
+
+[ ] Approved goldens were created only after true acceptance.
+
+[ ] Full aggregate regression passes.
+
+[ ] Prompt 26 was not started.
+
+=====================================================================
+26. HARD HONESTY RULE
+=====================================================================
+
+DO NOT DECLARE SUCCESS BECAUSE YOU FOUND A WAY TO MAKE THE TESTS GREEN.
+
+The tests are intended to describe correct visual geometry.
+
+The production content must satisfy the tests because the production content
+became correct.
+
+Where the Prompt-25C measuring instrument is genuinely wrong, correct the
+instrument first and prove why.
+
+Where the production content is wrong, correct the production content.
+
+At completion there must be agreement between:
+
+    semantic geometry
+    +
+    quantitative validation
+    +
+    production D3D12 pixels
+    +
+    human visual inspection.
+
+ALL FOUR must say the character is correct.
+
+Anything less is Prompt 25D incomplete.
+
+DO NOT START PROMPT 26.

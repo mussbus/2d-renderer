@@ -2,6 +2,13 @@
 
 This repository contains the reproducible Prompt 1 build foundation for Zig 0.16.0, Windows 11 x64, SDL 3.4.10, the SDL3 GPU API with an explicit Direct3D 12 backend, and offline DXIL compilation with DXC v1.9.2602.24.
 
+Project navigation:
+
+- [roadmap, current state, architecture, scope, and authoring contracts](docs/project/README.md);
+- [prompt ledger and exact/reconstructed source status](docs/prompts/INDEX.md);
+- [architecture decisions](docs/decisions/README.md);
+- [implementation-report archive](docs/reports/README.md).
+
 Bootstrap the exact dependencies once from PowerShell, then normal build operations are offline:
 
 ```powershell

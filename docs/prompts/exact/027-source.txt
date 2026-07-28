@@ -1,0 +1,765 @@
+# Prompt 27 — Integrated Visual Foundation, View-Aware Interaction Presentation, and Final Art/Gameplay Acceptance
+
+## Engineering brief
+
+### Purpose
+
+Prompts 23–26 establish:
+
+- real art assets;
+- side/front character views;
+- actual male/female visual identity;
+- a large modular wardrobe;
+- environment art;
+- environment themes;
+- clear collision readability.
+
+Prompt 27 proves that these systems work together as a game rather than as isolated rendering demos.
+
+This should become the new:
+
+"show me what this game could become"
+
+playground.
+
+The milestone must give a useful first answer to two questions:
+
+### What can the game look like?
+
+We should be able to see:
+
+- a coherent male character;
+- a coherent female character;
+- front idle;
+- side locomotion;
+- multiple real outfits;
+- breathing;
+- hair/cape motion;
+- atmospheric world art;
+- clear platforms;
+- layered parallax.
+
+### How do character interactions look/work?
+
+The existing handshake must now be presented through the real art system.
+
+Prompt 27 should also make interaction presentation a first-class concept:
+
+interaction
+
+→ role animation
+
+→ required character view
+
+→ IK/contact correction
+
+→ participant/body-part occlusion
+
+→ cleanup
+
+This is the foundation for later:
+
+- hugs;
+- carrying;
+- sitting;
+- furniture interactions;
+- front-facing cinematic interactions;
+- other paired poses.
+
+Do not implement all of those now.
+
+The architecture must not make them impossible.
+
+### Critical scalability principle
+
+Simulation and presentation remain separated.
+
+A future interaction may choose:
+
+- side;
+- front;
+- back;
+- 3/4;
+- a special authored view.
+
+The existing interaction manager should not become hardcoded to:
+
+handshake == side forever
+
+Instead, presentation requirements should be declarative interaction data where appropriate.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 26 repository state.
+
+Build the integrated visual-foundation acceptance route and strengthen the existing interaction presentation boundary so real character art, view selection, clothing, occlusion, IK, environments, and gameplay all operate correctly together.
+
+Preserve all Prompt 0–26 behavior.
+
+This is an integration and presentation-foundation milestone.
+
+Do not implement a broad new gameplay genre.
+
+Do not implement explicit sexual interactions.
+
+Do not implement a 3D engine.
+
+Do not begin the next future phase.
+
+---
+
+## 1. Primary foundation playground
+
+The Prompt 22 integrated foundation playground remains the production integration route.
+
+Extend it rather than creating a competing second "real art" application.
+
+It should now demonstrate:
+
+- real image-backed rendering;
+- male/female character art;
+- side/front views;
+- hair;
+- breathing;
+- equipment;
+- wardrobe;
+- deformable garments;
+- secondary motion;
+- character properties;
+- camera/parallax;
+- themed environments;
+- white platform surfaces;
+- interactions.
+
+Focused earlier demos remain regression routes.
+
+---
+
+## 2. Character lineup
+
+At minimum maintain two normal adult character participants suitable for locomotion/interaction evidence:
+
+### Male
+
+- reference-inspired lean/athletic build;
+- bald or buzz-cut selection;
+- coherent outfit.
+
+### Female
+
+- curvy body configuration;
+- long hair;
+- selectable wardrobe presets.
+
+Do not hardwire interaction eligibility to sex/body type.
+
+Interaction roles remain semantic participants/entities.
+
+---
+
+## 3. Automatic view behavior
+
+Prove in the actual integrated route:
+
+grounded idle → front
+
+walk left → side left
+
+stop → front while Facing remains left
+
+walk right → side right
+
+jump/fall/land → side
+
+return idle → front
+
+No one-frame missing art.
+
+No visible stale side garment over a front body.
+
+---
+
+## 4. Interaction presentation definition
+
+Extend the existing interaction definition architecture with the smallest real declarative presentation metadata required to express concepts equivalent to:
+
+- required participant view;
+- participant-relative visual ordering profile;
+- role-specific body-part overrides if needed;
+- whether automatic view policy is suppressed for the interaction.
+
+Do not put renderer callbacks or arbitrary bespoke functions into ordinary interaction definitions.
+
+Use typed IDs/data.
+
+The existing handshake should declare that it requires the side presentation.
+
+---
+
+## 5. Existing handshake with real artwork
+
+The handshake must continue using:
+
+- existing interaction manager;
+- shared authoritative timing;
+- actual right-hand sockets;
+- existing IK;
+- established physics isolation;
+- participant-qualified layer overrides.
+
+Now prove it with:
+
+- real male/female art;
+- real clothing;
+- real environment;
+- actual side presentation.
+
+Hands must visually meet.
+
+Arms must not obviously pass incorrectly behind/through the wrong participant merely because old colored rectangles hid the issue.
+
+---
+
+## 6. Interaction occlusion inspection
+
+Use the real artwork to inspect existing interaction ordering.
+
+Confirm at contact that:
+
+- participant hand ordering reads correctly;
+- forearm ordering reads correctly;
+- torsos retain intended order;
+- clothing/equipment participates consistently.
+
+Do not create item-specific handshake hacks.
+
+If the existing eight temporary override slots are sufficient for the handshake, preserve them.
+
+Do not silently generalize capacity solely for speculative future interactions.
+
+Document that more complex full-body interactions may require richer bounded data-defined occlusion profiles later.
+
+---
+
+## 7. Interaction-view cleanup
+
+On:
+
+- completion;
+- cancellation;
+- reset;
+
+release interaction presentation ownership.
+
+Restore:
+
+- ordinary automatic view selection;
+- temporary draw overrides;
+- IK ownership;
+- interaction locks.
+
+No stale side-view lock may survive and prevent front idle afterward.
+
+---
+
+## 8. Future interaction architecture documentation
+
+Without implementing the mechanics, document how the current architecture could expand to future interaction classes.
+
+### Multiple body contacts
+
+Future paired animation may define multiple semantic targets:
+
+- hand-to-hand;
+- hand-to-shoulder;
+- hand-to-torso;
+- etc.
+
+Authored animation should remain primary.
+
+IK should provide corrective alignment rather than inventing entire complex poses.
+
+### Root-relative interactions
+
+Future carrying/lifting poses may require a bounded participant-relative root constraint.
+
+Do not implement it now.
+
+Document why the current fixed-root handshake does not provide that behavior.
+
+### Prop/world-anchor interactions
+
+Future:
+
+- chairs;
+- beds;
+- ledges;
+- doors;
+
+may expose semantic interaction anchors.
+
+Do not implement that system now.
+
+Document the likely boundary.
+
+### View-specific/cinematic interactions
+
+Future interactions may request:
+
+- front;
+- back;
+- 3/4;
+- custom authored viewpoint.
+
+The view system implemented in Prompt 24 must remain capable of supporting this.
+
+Do not implement those production assets now.
+
+---
+
+## 9. Front-facing interaction proof
+
+Add one small nonsexual visual interaction/presentation proof only if it can reuse the established interaction architecture without introducing root constraints or an entirely new subsystem.
+
+A suitable example is a simple front-facing greeting/acknowledgement between two grounded participants.
+
+Its purpose is to prove:
+
+interaction presentation view is data
+
+rather than:
+
+all interactions are permanently side view.
+
+Requirements if implemented:
+
+- shared fixed-tick interaction timing;
+- front-view presentation;
+- no new physics movement;
+- no root teleport;
+- bounded participant locks;
+- deterministic completion;
+- normal idle restoration.
+
+It does not need complex IK.
+
+If a truthful implementation would require substantial unrelated interaction architecture, do not fake it.
+
+Instead provide a deterministic interaction-definition test proving a synthetic interaction can select `front`, and leave the visible production interaction as handshake only.
+
+Report which path was used.
+
+---
+
+## 10. Outfit + interaction compatibility
+
+Cycle several female outfit presets and prove handshake remains visually/semantically functional.
+
+At minimum include:
+
+- red wide-brim outfit;
+- white-blouse/red-shorts;
+- one long-garment outfit where practical.
+
+Equipment must not modify interaction sockets merely because the appearance changes.
+
+Do not create separate handshake clips for each outfit.
+
+---
+
+## 11. Hair/secondary-motion interaction behavior
+
+During interaction:
+
+- hair/secondary state remains finite;
+- secondary motion does not alter authoritative contact geometry;
+- presentation remains stable.
+
+Define whether secondary motion continues, dampens, or otherwise uses its existing behavior during the interaction.
+
+Do not special-case individual outfit names.
+
+---
+
+## 12. Environment interaction readability
+
+Demonstrate the handshake in:
+
+- violet cavern;
+- neutral debug environment.
+
+The world theme must not change:
+
+- eligibility;
+- contact;
+- timing;
+- socket positions;
+- interaction outcome.
+
+This proves environment art remains presentation-only.
+
+---
+
+## 13. White surface lines + interaction
+
+Collision-derived white lines must remain correct around the interaction.
+
+They must not:
+
+- alter participant eligibility;
+- become interaction anchors;
+- cover characters incorrectly.
+
+---
+
+## 14. Outfit creation/debug workflow
+
+Provide an efficient interactive inspection workflow using existing/new controls:
+
+- cycle body;
+- cycle build;
+- cycle hair;
+- cycle outfit;
+- cycle environment;
+- force view;
+- move;
+- jump;
+- dash;
+- interact;
+- timing controls;
+- detailed debug visualization.
+
+Do not overwrite existing controls.
+
+Update the documented binding table clearly.
+
+---
+
+## 15. Visual-quality acceptance
+
+Prompt 27 is not complete merely because the renderer runs.
+
+Manual visual acceptance must evaluate:
+
+### Characters
+
+- male/female silhouettes are clear;
+- characters no longer look like debugging primitives;
+- front/side views read immediately;
+- joint overlaps are reasonable;
+- hair looks intentionally attached;
+- breathing remains visible but restrained.
+
+### Clothing
+
+- outfit layers look deliberate;
+- front and side variants correspond;
+- hats/headwear align;
+- sleeves follow arms;
+- stockings/footwear follow legs;
+- long garments do not visibly detach during ordinary motion.
+
+### World
+
+- cavern reads as an atmospheric layered place;
+- parallax depth is visible;
+- characters remain readable;
+- debug theme is useful;
+- standable surfaces are immediately identifiable.
+
+### Interaction
+
+- participant approach is understandable;
+- handshake start/contact/release are visually legible;
+- hands align;
+- limbs use correct foreground/background ordering;
+- outfits do not break contact;
+- completion cleanly returns characters to ordinary presentation.
+
+Do not claim `[PASS]` on manual visual acceptance if these were not actually inspected.
+
+---
+
+## 16. Automated integrated evidence route
+
+Create one bounded deterministic route that exercises at minimum:
+
+1. initial front idle;
+2. bald/buzz-cut change;
+3. female outfit selection;
+4. environment theme selection;
+5. movement left;
+6. stop/front restoration;
+7. movement right;
+8. short jump;
+9. full jump;
+10. raised-platform landing;
+11. breathing;
+12. outfit change while idle;
+13. outfit change while moving where supported;
+14. dash;
+15. double jump;
+16. camera follow;
+17. parallax;
+18. environment hot swap;
+19. white surface verification;
+20. approach interaction partner;
+21. interaction side-view acquisition;
+22. handshake;
+23. IK contact;
+24. interaction completion;
+25. front-idle restoration;
+26. viewport resize;
+27. reset;
+28. stable final state.
+
+The script must assert state.
+
+Do not merely print that a milestone happened.
+
+---
+
+## 17. Deterministic interaction evidence
+
+Explicitly record:
+
+- interaction ID/type;
+- participant IDs;
+- requested view;
+- contact/release/complete ticks;
+- pre/post-IK hand separation;
+- participant view during interaction;
+- view after cleanup;
+- relevant ordering evidence.
+
+Do not rely only on screenshots.
+
+---
+
+## 18. Performance/resource evidence
+
+After initialization/stabilization verify:
+
+- no image decoding;
+- no filesystem reads;
+- no new texture resources;
+- no uncontrolled clothing instance growth;
+- no steady-state simulation allocation;
+- bounded visual submissions;
+- bounded interaction data;
+- bounded outfit/theme/view state.
+
+Report:
+
+- texture-page count;
+- active sprite counts;
+- mesh counts;
+- draw ranges;
+- draw calls;
+- upload bytes;
+- GPU resource counts.
+
+Do not manipulate the scene merely to preserve an obsolete one-draw number if the real multi-page architecture legitimately requires additional ranges.
+
+Optimize obvious unnecessary page switching where it can be done without breaking semantic ordering.
+
+---
+
+## 19. Reset contract
+
+The integrated reset must restore the documented defaults for:
+
+- spawn;
+- controller;
+- jump state;
+- dash;
+- interaction;
+- IK;
+- foot locks;
+- animation;
+- body;
+- build;
+- hair;
+- presentation view mode;
+- outfit preset;
+- equipment runtime state;
+- attributes/capabilities;
+- breathing;
+- secondary motion;
+- environment theme;
+- camera;
+- pending input.
+
+No stale:
+
+- interaction view override;
+- body-part override;
+- clothing visual;
+- mesh state;
+- secondary state;
+- equipment claim;
+- GPU resource;
+
+may survive incorrectly.
+
+---
+
+## 20. Future scalability documentation
+
+Update the architecture documentation with a clear final presentation/gameplay flow.
+
+Conceptually:
+
+Character / Anatomy Definition
+
++ Equipment / Outfit Definitions
+
++ Art Pack
+
+↓
+
+Character Runtime
+
+↓
+
+Animation / Controller / Interaction
+
+↓
+
+Presentation View Resolution
+
+↓
+
+Semantic Body + Equipment Visual Resolution
+
+↓
+
+Deformation + Secondary Motion + Interaction IK
+
+↓
+
+Unified Sprite/Mesh Render Ordering
+
+↓
+
+Atlas-backed GPU Rendering
+
+And separately:
+
+World / Collision
+
++ Environment Theme
+
+↓
+
+Layered World Presentation
+
+Also document the future offline authoring direction:
+
+3D source character
+
+→ generate multiple 2D presentation views
+
+→ atlas + metadata
+
+→ same Art Pack/runtime
+
+The current runtime must remain independent from that future editor.
+
+---
+
+## 21. Explicitly out of scope
+
+Do not implement:
+
+- explicit sexual interactions;
+- the interactions shown in the adult reference video;
+- arbitrary full-body paired pose solving;
+- carrying/lifting;
+- participant root parenting;
+- furniture interactions;
+- bed/chair anchors;
+- arbitrary camera-depth simulation;
+- arbitrary 360-degree character rotation;
+- runtime 3D;
+- 3D modeling;
+- character editor;
+- level editor;
+- mission editor;
+- general cloth collision;
+- combat;
+- enemies;
+- dialogue system;
+- save-game system;
+- weather/liquids.
+
+The reference interaction footage exists to inform future scalability and visual understanding.
+
+It is not an instruction to copy or implement those scenes now.
+
+---
+
+## 22. Regression requirements
+
+All prior focused routes remain meaningful.
+
+Do not weaken earlier tests because the art system changed.
+
+Explicitly verify regression of:
+
+- sprite batching;
+- multi-character rendering;
+- handshake;
+- handshake IK;
+- foot planting;
+- modular anatomy;
+- equipment;
+- breathing;
+- deformable meshes;
+- secondary motion;
+- properties/capabilities;
+- Prompt 22 integrated gameplay.
+
+---
+
+## 23. Completion requirements
+
+Do not declare Prompt 27 complete unless all required acceptance routes genuinely pass.
+
+At minimum report:
+
+- baseline HEAD;
+- total tests;
+- Debug tests;
+- ReleaseFast tests;
+- `zig build check`;
+- Debug application build;
+- optimized build;
+- GPU smoke;
+- integrated visual foundation scripted route;
+- interactive/manual visual route where the host permits;
+- atlas page count;
+- wardrobe item count;
+- outfit preset count;
+- environment theme count;
+- production character view count;
+- collision white-line segment count;
+- interaction timing/contact evidence;
+- allocation/resource metrics;
+- draw/range metrics;
+- final Git status.
+
+If managed-host limitations prevent manual/GPU verification, separate clearly:
+
+- source acceptance;
+- automated deterministic acceptance;
+- GPU acceptance;
+- manual visual acceptance.
+
+Do not report blocked acceptance as passed.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin a later milestone or adversarial audit.

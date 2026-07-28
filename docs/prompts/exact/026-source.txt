@@ -1,0 +1,398 @@
+# Prompt 26 — Layered Environment Art, Hot-Swappable Themes, and Collision-Derived Gameplay Readability
+
+## Engineering brief
+
+### What we're building
+
+The characters now have real art and real clothing.
+
+Prompt 26 brings the environment to the same standard.
+
+The current foundation already has the underlying concepts needed for a strong side-scrolling world:
+
+- gameplay collision;
+- camera;
+- parallax;
+- scene layering;
+- foreground/background separation.
+
+Now those systems need coherent visual presentation.
+
+Create two environment themes using the same authoritative gameplay geometry.
+
+### Theme 1 — Violet crystal ruin
+
+The visual inspiration is the mood and composition of Hollow Knight:
+
+- atmospheric depth;
+- dramatic silhouettes;
+- foreground framing;
+- distant structures;
+- focal lighting;
+- strong character readability.
+
+The actual project art must be original and use the initial pixel-art pack.
+
+### Theme 2 — Neutral debug world
+
+This exists specifically for engineering inspection.
+
+It should make it extremely easy to see:
+
+- limbs;
+- clothing;
+- IK;
+- feet;
+- hair;
+- cape;
+- occlusion.
+
+### Traversable-surface language
+
+A simple visual rule:
+
+white top edge
+
+means:
+
+this is a real standable foreground collision surface
+
+The white line must derive from collision metadata.
+
+It is not painted manually into the level art.
+
+Therefore it remains truthful even when the background theme changes.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 25 repository state.
+
+Implement layered original environment artwork, environment-theme hot swapping, and collision-derived traversable-surface visualization.
+
+Preserve all Prompt 0–25 behavior.
+
+Do not implement a level editor.
+
+Do not create separate physics worlds for each visual theme.
+
+Do not begin Prompt 27.
+
+---
+
+## 1. Environment-theme definitions
+
+Create a declarative validated environment-theme definition using the Prompt 23 art-pipeline architecture.
+
+A theme should describe the visual content required for the current world, including concepts such as:
+
+- distant background;
+- parallax layers;
+- midground;
+- world/terrain visual surfaces;
+- foreground framing;
+- decorative structures;
+- optional restrained atmospheric decoration.
+
+Do not place authoritative collision in the art-theme definition.
+
+---
+
+## 2. Same world, multiple presentations
+
+Both production themes must use the same authoritative:
+
+- collision;
+- platform layout;
+- spawn;
+- interaction positions;
+- camera/world coordinates.
+
+Switching environment theme must not change gameplay.
+
+Conceptually:
+
+WorldDefinition
+
+remains constant.
+
+EnvironmentTheme
+
+changes.
+
+This is the same separation we want between:
+
+Character
+
+and:
+
+ArtPack.
+
+---
+
+## 3. Violet crystal / ruined cavern
+
+Create an original pixel-art environment inspired by the supplied Hollow Knight reference's:
+
+- atmosphere;
+- depth composition;
+- large-scale silhouettes;
+- luminous focal elements;
+- foreground framing.
+
+Do not copy Hollow Knight assets.
+
+Use an original combination of:
+
+- violet/indigo cave space;
+- crystal formations;
+- ruined or scaffold-like structures;
+- distant silhouettes;
+- atmospheric layers;
+- readable foreground platforms.
+
+The visual result must establish a credible direction for what this game could look like.
+
+Do not satisfy this with several flat purple rectangles.
+
+---
+
+## 4. Layer depth
+
+Use existing scene layers/parallax properly.
+
+At minimum provide visually distinct:
+
+- far/distant;
+- mid-distance;
+- gameplay terrain;
+- foreground.
+
+The same landmark should not simply be duplicated at different scales.
+
+Create deliberate composition.
+
+---
+
+## 5. Character contrast
+
+The male/female pixel characters must remain readable against the cavern.
+
+Avoid background detail/noise directly behind gameplay silhouettes where it destroys readability.
+
+Use contrast intentionally.
+
+Do not solve readability by drawing an opaque rectangle behind every character.
+
+---
+
+## 6. Neutral debug theme
+
+Create a second real theme optimized for debugging.
+
+It should:
+
+- minimize clutter;
+- make body outlines obvious;
+- make clothing layers obvious;
+- make white collision edges obvious;
+- make debug overlays readable.
+
+It can be aesthetically simple.
+
+It must not look like a missing-asset fallback.
+
+---
+
+## 7. Environment hot swapping
+
+Add an unused customization/debug action to cycle:
+
+- violet cavern;
+- neutral debug.
+
+Switching must preserve:
+
+- character position;
+- velocity;
+- grounded/support state;
+- current animation;
+- view;
+- Facing;
+- outfit;
+- body/hair;
+- interaction state;
+- fixed-step clock;
+- camera center;
+- pending gameplay input.
+
+No GPU resources may be created merely because the theme changes.
+
+Initialize required resources before steady-state use.
+
+---
+
+## 8. White traversable-surface overlay
+
+Generate a thin white top-edge visual for every static collision surface that authoritative ground/support logic regards as standable.
+
+Do not paint these edges manually into the background atlas.
+
+The presentation must derive from collision truth.
+
+The overlay should conceptually mean:
+
+white horizontal edge = physically valid standable surface
+
+Do not add a white line to:
+
+- background-only geometry;
+- decorative ledges;
+- nonstandable vertical walls;
+- ceilings.
+
+---
+
+## 9. Surface geometry fidelity
+
+Generated top-edge endpoints must correspond to actual collider bounds within a documented tolerance.
+
+Do not create a separate manually maintained "visual collision map."
+
+The collider remains authoritative.
+
+---
+
+## 10. Draw ordering
+
+White surface lines should appear:
+
+- over the terrain art enough to be obvious;
+- behind characters where appropriate;
+- below debug-overlay visualization.
+
+Do not let them cover feet/characters unnaturally because of a high foreground layer.
+
+---
+
+## 11. Debug-toggle relationship
+
+The white surface readability overlay is not the same thing as full collider debug drawing.
+
+Keep the existing detailed collision/debug overlay.
+
+The white line may remain part of the normal art/debug-friendly presentation according to the intended product behavior.
+
+Document the distinction.
+
+---
+
+## 12. Theme extensibility
+
+Adding a future:
+
+- forest;
+- city;
+- interior;
+- snow biome;
+- Art Deco room;
+
+must be primarily a new data/theme definition plus assets.
+
+Do not require editing camera or collision algorithms for a simple visual theme.
+
+This is a direct precursor to the future level editor.
+
+---
+
+## 13. Future level editor compatibility
+
+Do not build the editor.
+
+Document the eventual boundary:
+
+Level geometry / object definitions
+
++ Environment theme / art references
+
+→ validated world
+
+A future editor may choose/change visual themes independently from collision geometry.
+
+Do not make the editor necessary for runtime.
+
+---
+
+## 14. Asset/resource lifecycle
+
+All environment art uses Prompt 23 resources.
+
+Theme switching:
+
+- no decoding;
+- no file I/O;
+- no texture creation;
+- no texture destruction.
+
+Do not introduce separate ad-hoc SDL texture ownership in the environment scene.
+
+---
+
+## Demonstration
+
+The environment evidence route must visibly show:
+
+1. front-idle character in cavern;
+2. side movement through cave;
+3. parallax;
+4. raised platforms;
+5. white standable edges;
+6. decorative noncollidable ledges without white edges;
+7. theme switch in-place;
+8. identical character position after switch;
+9. neutral debug environment;
+10. switch back;
+11. jump/platform landing;
+12. camera resize;
+13. unchanged collision behavior.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- environment definition validation;
+- missing atlas references;
+- both themes;
+- same collision fingerprint across themes;
+- same spawn;
+- theme switching;
+- player-state invariance;
+- camera invariance;
+- interaction-state invariance;
+- eligible surface enumeration;
+- exact white-segment count;
+- white-segment coordinates;
+- noneligible geometry exclusion;
+- deterministic ordering;
+- reset;
+- no steady-state allocation;
+- no theme-switch GPU-resource creation.
+
+Manual visual inspection must confirm the cavern provides meaningful visual depth.
+
+Update:
+
+- architecture;
+- world/scene docs;
+- camera/parallax docs;
+- controls;
+- art pipeline;
+- testing;
+- future level-editor direction.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 27.

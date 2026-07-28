@@ -1,0 +1,523 @@
+# Prompt 24 — Side + Front Character Presentation, Original Pixel Character Art, and View-Aware Animation
+
+## Engineering brief
+
+### What we're building
+
+Prompt 23 gives the renderer real image assets.
+
+Prompt 24 gives the characters their first actual visual identity.
+
+Until now, the segmented humanoids have primarily been engineering visualization.
+
+This milestone should make the project look like the beginning of an actual game.
+
+Create original pixel-art interpretations of:
+
+### Male
+
+- adult;
+- lean/athletic;
+- relatively long-limbed;
+- proportions inspired by the supplied male reference;
+- bald option;
+- buzz-cut option.
+
+### Female
+
+- adult;
+- curvy silhouette;
+- long hair;
+- proportions inspired by the supplied female references.
+
+Both use:
+
+- the existing anatomy;
+- the existing skeleton;
+- existing animation;
+- existing deformation;
+- existing secondary motion;
+- existing IK;
+- existing equipment architecture.
+
+They are not monolithic frame-by-frame sprite-sheet characters.
+
+### View architecture
+
+The major architectural distinction is:
+
+Facing
+
+is not the same thing as:
+
+Presentation View
+
+Gameplay still remembers:
+
+- left;
+- right.
+
+Visual presentation may be:
+
+- side;
+- front;
+- future orientations.
+
+Initial behavior:
+
+grounded idle → front
+
+movement / airborne gameplay → side
+
+Existing handshake:
+
+→ side
+
+This allows the game to look more characterful while preserving side-scrolling movement.
+
+### Why this matters for future interactions
+
+More complex interactions may eventually choose their own authored view.
+
+For example:
+
+interaction definition
+
+→ presentation view
+
+→ role animations
+
+→ IK/contact correction
+
+→ occlusion profile
+
+Prompt 24 establishes the first half of that concept without attempting all future interactions.
+
+---
+
+## Codex implementation prompt
+
+Continue from the completed Prompt 23 repository state.
+
+Implement production side/front character presentation and original pixel-art character assets.
+
+Preserve all Prompt 0–23 behavior.
+
+Do not replace the segmented skeletal character.
+
+Do not begin the wardrobe catalog yet.
+
+Do not implement back or 3/4 artwork.
+
+Do not begin Prompt 25.
+
+---
+
+## 1. Facing and presentation view are separate
+
+Preserve the existing authoritative gameplay-facing concept.
+
+It continues to mean:
+
+- left;
+- right.
+
+Add a distinct presentation-view concept through the data-oriented architecture established in Prompt 23.
+
+Production views in this milestone:
+
+- side;
+- front.
+
+Do not add `front` to the existing `Facing` enum merely for convenience.
+
+A stationary front-facing character must still remember the last meaningful gameplay left/right facing.
+
+---
+
+## 2. Automatic view policy
+
+Implement deterministic view selection equivalent to:
+
+### Front
+
+Use front view when the ordinary character is:
+
+- grounded;
+- idle;
+- not owned by an interaction requiring another view.
+
+### Side
+
+Use side view when:
+
+- walking;
+- dashing;
+- jumping;
+- rising;
+- falling;
+- landing;
+- participating in the existing handshake.
+
+Do not infer this from render-frame delta.
+
+Use authoritative state.
+
+---
+
+## 3. View changes are presentation-only
+
+Switching side/front must not alter:
+
+- world position;
+- physics root;
+- controller velocity;
+- collider;
+- grounding;
+- support;
+- jump counters;
+- dash state;
+- character properties;
+- equipment;
+- interaction lock;
+- animation clock;
+- anatomy topology.
+
+No teleport.
+
+No physics correction merely because visual orientation changes.
+
+---
+
+## 4. Interaction view authority
+
+An active interaction must be capable of overriding automatic view selection.
+
+For the existing handshake, require side view for both participants.
+
+Do not let one participant switch to front halfway through the handshake because a generic locomotion state appears idle.
+
+Interaction view ownership must release cleanly at completion/cancellation.
+
+Ordinary automatic view policy resumes afterward.
+
+This is an important future interaction extension point.
+
+---
+
+## 5. Original male art
+
+Create original project artwork.
+
+Use the supplied male image only for approximate:
+
+- adult proportions;
+- build;
+- limb length;
+- body silhouette.
+
+Do not trace/copy source pixels.
+
+Provide coherent side and front segmented visuals.
+
+At minimum visually resolve:
+
+- head;
+- torso;
+- pelvis;
+- upper arms;
+- forearms;
+- hands;
+- thighs;
+- shins;
+- feet;
+- appropriate visible facial treatment.
+
+Preserve existing optional anatomy architecture.
+
+Do not collapse body anatomy into one giant sprite.
+
+---
+
+## 6. Male hair
+
+Provide:
+
+- bald;
+- buzz cut.
+
+Bald should correspond to no visible hair component where that cleanly matches existing anatomy semantics.
+
+Buzz cut should be a real original side/front hair asset.
+
+Do not invent a special `bald_hair.png` simply to paint skin over the scalp if no visual is cleaner.
+
+---
+
+## 7. Original female art
+
+Create original side/front female body artwork based on the supplied references for:
+
+- curvy silhouette;
+- hip/waist/chest relationship;
+- adult proportions;
+- long hair.
+
+Do not trace/copy source pixels.
+
+The female must remain built from the same reusable anatomy/presentation architecture.
+
+Do not create:
+
+- `FemaleRenderer`;
+- female-only animation code;
+- female-only physics.
+
+---
+
+## 8. Faces
+
+Use the existing face architecture.
+
+Create side/front-compatible face visuals sufficient to make the characters look intentional rather than diagnostic.
+
+Do not implement a full facial-expression system.
+
+At minimum:
+
+- eyes;
+- brows where appropriate;
+- nose indication;
+- mouth;
+- readable silhouette.
+
+Front and side need not reuse identical pixels.
+
+---
+
+## 9. Pixel-art visual standard
+
+This milestone is specifically intended to establish a credible visual target.
+
+Do not satisfy it with:
+
+- colored rectangles;
+- ellipses;
+- flat geometric capsules;
+- one-color body pieces;
+- obviously temporary programmer art described as complete.
+
+The artwork does not need to match a professional commercial game.
+
+It does need to visibly establish:
+
+- coherent outlines;
+- deliberate silhouettes;
+- several tones where useful;
+- recognizable limbs;
+- joints that visually overlap;
+- intentional hair shapes;
+- readable male/female distinction;
+- consistent scale;
+- consistent lighting direction.
+
+If the implementation cannot produce credible visual artwork, report that manual/art acceptance remains incomplete instead of claiming success.
+
+---
+
+## 10. Pixel aesthetic must remain content-level
+
+Do not add engine rules that prevent a later smooth illustrated art pack.
+
+The new artwork may use nearest sampling.
+
+The character system must not assume:
+
+- every future asset has the same texel density;
+- every future art pack uses hard pixel edges.
+
+---
+
+## 11. Side-view reflection
+
+Preserve the established single-root side-view reflection model.
+
+Do not author redundant left-facing side atlases unless there is a demonstrated technical necessity.
+
+Anatomical left/right identity remains stable.
+
+Do not double mirror:
+
+- attachments;
+- sockets;
+- IK targets;
+- equipment;
+- mesh state.
+
+---
+
+## 12. Front-view anatomy semantics
+
+A front-view character still has:
+
+- anatomical left arm;
+- anatomical right arm;
+- left leg;
+- right leg.
+
+Do not swap anatomical semantics based on screen position.
+
+Define deterministic front-view body-part ordering.
+
+For example, front-view limb overlap must not accidentally rely on submission order alone.
+
+Use explicit semantic layers.
+
+---
+
+## 13. Deformation integration
+
+The new body visuals must consume the existing Prompt 18 deformation path.
+
+Breathing must remain visibly detectable on appropriate body regions.
+
+Do not replace body deformation with alternate front-only animation tricks.
+
+Side and front visuals may have view-specific response strengths if legitimate and data-defined.
+
+---
+
+## 14. Secondary motion integration
+
+Long female hair must remain capable of using the existing secondary-motion architecture.
+
+View changes must not:
+
+- explode spring state;
+- generate NaNs;
+- incorrectly mirror stored displacement;
+- leave a side-view hair visual active over front-view body art.
+
+Define and test deterministic remap/reset behavior.
+
+---
+
+## 15. Animation integration
+
+Do not create separate gameplay animation state machines for front and side.
+
+The authoritative animation state remains shared.
+
+Presentation visuals interpret the pose appropriately.
+
+Where a front idle needs view-specific rest offsets to look correct, express them as presentation data rather than creating a second player simulation.
+
+---
+
+## 16. Joint quality
+
+Because the project uses segmented limbs, intentionally tune:
+
+- pivots;
+- overlap margins;
+- layer order;
+- sprite proportions.
+
+Inspect:
+
+- shoulders;
+- elbows;
+- wrists;
+- hips;
+- knees;
+- ankles;
+- neck.
+
+Avoid obvious gaps during normal animation ranges.
+
+Do not solve this by making every piece an enormous overlapping blob.
+
+---
+
+## 17. Debug/manual view override
+
+Add a bounded customization/debug mode equivalent to:
+
+- automatic;
+- force side;
+- force front.
+
+Use an unused control after inspecting existing mappings.
+
+Do not overwrite established controls.
+
+The override is visual/debug-only.
+
+It must not change gameplay Facing.
+
+This is useful for validating every visual component later in Prompt 25.
+
+---
+
+## Demonstration
+
+Create or extend a focused character-presentation route demonstrating:
+
+1. male front idle;
+2. male side left movement;
+3. front idle while preserving left Facing;
+4. side right movement;
+5. jump/fall/land;
+6. bald/buzz-cut switching;
+7. female front idle;
+8. female side movement;
+9. breathing;
+10. long-hair secondary motion;
+11. forced front/side debug inspection;
+12. existing handshake using side view;
+13. return to front idle after interaction.
+
+---
+
+## Tests
+
+At minimum cover:
+
+- view-definition validation;
+- automatic view policy;
+- Facing preserved across view changes;
+- side reflection;
+- front view no unwanted reflection;
+- view override;
+- interaction-owned side view;
+- interaction cancellation cleanup;
+- male bald;
+- male buzz cut;
+- female long hair;
+- front/side required-region completeness;
+- deterministic layer resolution;
+- body deformation;
+- secondary-motion view transition;
+- IK regression;
+- foot-planting regression;
+- two-character independence;
+- reset;
+- no resource creation during view switching;
+- no steady-state allocation.
+
+Manual acceptance is required.
+
+Do not declare visual acceptance based solely on tests.
+
+Update:
+
+- character documentation;
+- anatomy documentation;
+- animation;
+- art pipeline;
+- controls;
+- testing.
+
+End with the exact required `IMPLEMENTATION REPORT`.
+
+Do not begin Prompt 25.
