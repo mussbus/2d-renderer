@@ -87,8 +87,23 @@ The bounded GPU-backed route is:
 
 It uses the same real unified sprite/mesh queue and SDL GPU resources as Prompt 19. The evidence run requires cape, long hair, ponytail, repeated flexible sleeves, deterministic cape removal/restoration, every scripted motion phase, facing reset, honest grouped draw metrics, zero steady-state CPU allocation, and zero GPU-resource growth after initialization.
 
-## Prompt 22 integrated motion
+## Prompt 22 focused integrated motion
 
-The foundation player and showcase use the same resolved-instance primitive while walking, jumping, double jumping, dashing, reversing, landing, interacting, changing body/hair, and rebuilding loadouts. The cape and every topology-expanded loose sleeve keep independent fixed-capacity state; long hair remains owned by the selected appearance visual. A loadout rebuild clears removed nodes before new topology expansion, and exact reset clears every visual node and mesh instance handle before restored visuals resume.
+The retained `foundation_playground.Scene` player and showcase use the same
+resolved-instance primitive while walking, jumping, double jumping, dashing,
+reversing, landing, interacting, changing body/hair, and rebuilding loadouts.
+The cape and every topology-expanded loose sleeve keep independent
+fixed-capacity state; long hair remains owned by the selected appearance
+visual. A loadout rebuild clears removed nodes before new topology expansion,
+and exact reset clears every visual node and mesh instance handle before
+restored visuals resume.
 
 The bounded route records nonzero cape displacement, two conventional sleeve bindings, four nonstandard sleeve bindings, exact loadout restoration, unchanged handshake roots, and zero fixed-buffer, unified-queue, or GPU-resource growth. It does not add cloth collision, self-collision, wind, rope, soft-body, or authoritative physics.
+
+Prompt 27 exercises the same primitive on the production female long hair and
+long-garment wardrobe while moving, jumping, changing outfits, and completing
+three handshakes. Interaction view ownership may change the downstream
+presentation transform, but it cannot write spring anchors, targets, or
+authoritative contact geometry. All recorded secondary state remains finite,
+outfit replacement clears removed garment state, and the integrated route
+reports zero steady-state update/submission/queue allocation growth.

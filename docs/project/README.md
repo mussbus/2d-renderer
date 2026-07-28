@@ -1,5 +1,9 @@
 # Project Documentation
 
+These live handoff documents describe the implemented repository through
+Prompt 27. Historical prompt/report archives preserve their milestone-time
+claims and are not rewritten as current-state prose.
+
 - [Master roadmap](MASTER_ROADMAP.md)
 - [Current state](CURRENT_STATE.md)
 - [Architecture map](ARCHITECTURE_MAP.md)

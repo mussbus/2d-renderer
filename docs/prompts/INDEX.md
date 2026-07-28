@@ -35,9 +35,9 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 | 25B | Fix character art, not tests | superseded by 25C/25D | exact | [record](025B-character-art-correction.md) · [source](exact/025B-source.txt) | `4937122` |
 | 25C | Semantic visual-geometry validator | complete measuring instrument | exact | [record](025C-visual-geometry-validator.md) · [source](exact/025C-source.txt) | `7ba3687` lineage |
 | 25D | Production geometry closure | complete and accepted | exact | [record](025D-production-geometry-closure.md) · [source](exact/025D-source.txt) | `7ba3687` |
-| 25E | Consolidation and authoring contracts | active in this change | exact | [record](025E-consolidation.md) · [source](exact/025E-source.txt) | uncommitted |
-| 26 | Environment themes | planned; not started | exact roadmap source | [record](026-environments.md) · [source](exact/026-source.txt) | none |
-| 27 | Integrated visual foundation | planned; not started | exact roadmap source | [record](027-integrated-foundation.md) · [source](exact/027-source.txt) | none |
+| 25E | Consolidation and authoring contracts | complete | exact | [record](025E-consolidation.md) · [source](exact/025E-source.txt) | `e328ec0` |
+| 26 | Environment themes | complete | exact roadmap source | [record](026-environments.md) · [source](exact/026-source.txt) | `0dd0f21` |
+| 27 | Integrated visual foundation | complete | exact roadmap source | [record](027-integrated-foundation.md) · [source](exact/027-source.txt) | `1de0d1d` |
 
 ## Evidence and reports
 

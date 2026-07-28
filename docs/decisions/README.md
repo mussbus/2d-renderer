@@ -17,3 +17,5 @@ Related historical decisions:
 - [Prompt 25A](../PROMPT25A_DECISION_RECORD.md)
 - [Prompt 25B](../PROMPT25B_DECISION_RECORD.md)
 - [Prompt 25D](../PROMPT25D_DECISION_RECORD.md)
+- [Prompt 26 environment presentation](../PROMPT26_DECISION_RECORD.md)
+- [Prompt 27 integrated visual foundation](../PROMPT27_DECISION_RECORD.md)

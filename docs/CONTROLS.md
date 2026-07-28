@@ -122,8 +122,11 @@ The feedback-driven script idles, walks with alternating contacts, jumps from a 
 | `C` | Cycle the controlled body preset in the foundation playground |
 | `V` | Cycle global build in the foundation playground |
 | `H` | Cycle short, long, and ponytail hair in the foundation playground |
-| `L` | Cycle speed, stronger-jump/full-plate, and double-jump loadouts in the foundation playground |
-| `Q` | Cycle automatic, force side, and force front in the character-presentation route |
+| `L` | Legacy alias for cycling complete outfit presets in the Prompt 27 foundation route |
+| `O` | Cycle complete outfit presets in wardrobe and foundation routes |
+| `P` | Pause or resume wardrobe/foundation simulation |
+| `T` | Cycle the preloaded environment theme in environment and foundation routes |
+| `Q` | Cycle automatic, force side, and force front where presentation inspection is exposed |
 | Escape | Exit the interactive playground |
 
 Opposing keyboard directions cancel to zero. A keyboard direction has magnitude one and therefore wins an equal-magnitude gamepad tie. Zero input preserves the last meaningful facing direction.
@@ -151,15 +154,24 @@ On keyboard-focus loss, the current keyboard hold state is cleared, pending jump
 
 The bounded Prompt 21 route is `zig build run -- --frames 240 --demo properties`. It synthesizes controller intents only after resolving real equipment declarations, proves denied and allowed dash behavior, and checks wall collision, facing, cooldown state, and restoration without adding a second input path.
 
-The bounded Prompt 22 route is:
+The original Prompt 22 procedural foundation scene is retained as a focused
+1,800-frame regression:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2100 --demo foundation --scripted-input
+& '.\.deps\zig-0.16.0\zig.exe' build test-foundation
 ```
 
-Its `C`, `V`, `H`, and `L` changes originate as `RawInputState.KeyboardState`, become pressed/held/released fields in `FrameInputSnapshot`, and are consumed as frame-level customization commands. Movement, jump, dash, and interaction continue through `PendingInput -> CharacterIntent`; no gameplay or character code polls SDL. The scripted viewport changes call the same platform-neutral camera method as real resize events and assert that pending edge count and authoritative gameplay state are unchanged.
+Its `C`, `V`, `H`, and `L` changes originate as
+`RawInputState.KeyboardState`, become pressed/held/released fields in
+`FrameInputSnapshot`, and are consumed as frame-level customization commands.
+Movement, jump, dash, and interaction continue through
+`PendingInput -> CharacterIntent`; no gameplay or character code polls SDL.
+The scripted viewport changes call the same platform-neutral camera method as
+real resize events and assert that pending edge count and authoritative
+gameplay state are unchanged.
 
-Prompt 27 keeps that CLI and input boundary while using the production
+Prompt 27 keeps that input boundary while replacing the visible `foundation`
+CLI owner with the production
 character, wardrobe, and environment presentations. `L` remains a legacy
 loadout-cycle alias; `O` performs the same complete outfit-preset cycle. `T`
 changes the preloaded environment theme. `Q` cycles automatic/front/side

@@ -72,9 +72,18 @@ The comparator is lexicographic: signed 16-bit scene layer, signed 16-bit intera
 
 Prompt 7's `submitGlobally` orders a fixed maximum of eight characters by stable numeric entity ID before calling `submitWithKey` for their immutable attachment order. The returned key is the exact key stored in the submission and is retained per character for bounded evidence logging. All character parts are therefore globally sortable and can interleave; there is no character-local batch, pass, GPU buffer, or draw call.
 
-Ranges are generated only after semantic sorting. Consecutive equal texture pages form one range; page transitions form new ranges, and returning to an earlier page creates another range rather than reordering through an intervening page. Production currently exposes one page, so any nonzero identifier fails before GPU work and all 1,000 demonstration sprites form one range.
+Ranges are generated only after semantic sorting. Consecutive equal texture
+pages form one range; page transitions form new ranges, and returning to an
+earlier page creates another range rather than reordering through an
+intervening page. The focused Prompt 2 procedural demonstration exposes only
+page zero, so its 1,000 sprites form one range. Current production supports a
+bounded table of atlas pages; Prompt 27 configures nine renderer pages and
+reports every page/primitive transition honestly.
 
-The two-character demonstration adds 30 page-zero humanoid instances to this same rule. Actor and body-part interleaving cannot split the range because every sorted record still names page zero, so character count remains independent from draw-call count.
+The focused Prompt 7 two-character demonstration adds 30 page-zero humanoid
+instances to this same rule. Actor and body-part interleaving cannot split
+that historical route's range because every sorted record still names page
+zero, so character count remains independent from draw-call count.
 
 Prompt 19 preserves that sprite-only contract and adds `UnifiedRenderQueue` only for mixed scenes. Sprites and deformable meshes receive the same lexicographic key and are sorted once. The prepared queue retains semantic range order while compacting sprite records, mesh instance records, and mesh-definition draws into their own bounded buffers. The renderer walks those ranges in semantic order, binding the sprite or mesh pipeline as required. A primitive transition can therefore split work even when the texture page is unchanged; mixed scenes report their actual sprite and mesh ranges/draws separately and make no one-draw claim. See `docs/MESH_ATTACHMENTS.md` for the mesh layouts and persistent-topology contract.
 
@@ -102,3 +111,11 @@ Draw calls are committed only after a command buffer returns a valid submission 
 ## Real texture-page ranges
 
 Prompt 23 makes the existing `texture_page` field authoritative for retained image-backed pages. Prepared sprite and unified sprite/mesh ranges preserve semantic order and split at page transitions. Immediately before each range draw, the renderer binds that page's persistent texture and sampler. This remains range batching, not one independent submission per body part or atlas region; honest draw counts rise when sorted content alternates pages. Sprite and deformable-mesh materials share the same page table. Definition, upload, ownership, and failure details are in `docs/ART_PIPELINE.md`.
+
+Prompt 27's 2,100-frame integrated route peaks at 125 sprites, one active mesh,
+16 sprite ranges/draws, one mesh range/draw, 8,000 sprite upload bytes, and 64
+mesh upload bytes. Those are actual prepared and encoded counts after global
+semantic sorting of environment, surfaces, two characters, wardrobe,
+interaction-qualified equipment, foreground, and optional debug work. The
+route does not claim one draw across incompatible page or primitive
+transitions.

@@ -1,5 +1,9 @@
 # Prompt 25B Decision Record
 
+> Historical milestone note: this record preserves the decisions and scope
+> gate at Prompt 25B. Prompt 26 and Prompt 27 are now complete; see
+> [`project/CURRENT_STATE.md`](project/CURRENT_STATE.md) for current status.
+
 ## A. Actual causes
 
 Prompt 25A passed structural tests but its production pixels and bindings were

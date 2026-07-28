@@ -32,8 +32,9 @@ Prompt 25C adds a semantic `FitContract` to each visual specification. This is
 authoring/validation metadata for landmark registration, directional axes,
 anatomy-relative spans, and alpha-visible coverage. It does not move an item,
 change its equipment ownership, grant gameplay behavior, or create another
-render path. Current contracts intentionally reject the unchanged Prompt 25B
-visuals; see `VISUAL_GEOMETRY.md`.
+render path. The frozen Prompt 25B-derived baseline fails those contracts;
+the corrected Prompt 25D production wardrobe passes the complete required
+matrix with zero failures. See `VISUAL_GEOMETRY.md`.
 
 ## View and topology resolution
 
@@ -115,3 +116,20 @@ For inspection:
 ```
 
 Use O to cycle presets, P to pause simulation, Q to cycle automatic/side/front presentation, and R to reset the character and first preset. Physical keyboard use is a manual acceptance activity; the automated suite tests the platform-neutral mappings and synthetic edge semantics.
+
+## Prompt 27 integrated use
+
+The production `foundation` route exercises
+`wide_brim_crimson`, `garnet_formal`, and
+`ivory_blouse_red_shorts` during three real fixed-root handshakes and retains
+all 15 presets for interactive cycling. All items remain cosmetic; the
+production character definition supplies movement, jump, double-jump, and dash
+independently of outfit.
+
+During interaction contact, every submitted equipment visual keeps its own
+component identity and visual layer while inheriting the interaction layer of
+its actual bound anatomy semantic. This makes gloves and other bound garments
+participate in hand/forearm ordering without outfit-specific logic. The
+2,100-frame route verifies outfit changes at idle and in motion, finite long
+garment state, contact ordering, cleanup, reset, and zero steady-state
+allocation/resource growth.

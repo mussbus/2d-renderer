@@ -4,7 +4,16 @@
 
 Gameplay `Facing` remains the authoritative left/right direction. Prompt 24 adds a separate presentation `View` with `side` and `front` values. A grounded idle character automatically uses front; walking, dashing, jumping, rising, falling, and landing use side. The decision reads fixed-tick controller and animation state, never render delta.
 
-An interaction definition may require a presentation view. The existing handshake requires side for both roles, claims that view when its participant locks are reserved, and releases it on completion, cancellation, or rollback. Interaction authority has precedence over the bounded debug override; the debug override has precedence over automatic policy. A release immediately resumes ordinary policy.
+An interaction definition owns a validated `PresentationDefinition` with one
+optional view per semantic role, an automatic-view suppression flag, and a
+typed occlusion-profile ID. The existing handshake requests side for both
+roles, suppresses ordinary automatic selection while active, and claims those
+views when participant locks are reserved. Completion, cancellation, reset,
+or startup rollback releases them. Interaction authority has precedence over
+the bounded debug override; the debug override has precedence over automatic
+policy. Release immediately resumes ordinary policy. A synthetic definition
+test selects front/front, proving that side view is content data rather than a
+manager constant.
 
 View changes are presentation-only. They do not modify the character root, controller velocity, collider, grounding/support, jump or dash state, resolved properties, equipment, interaction lock, animation clock, or anatomy topology. The last meaningful gameplay facing is retained while a character is shown from the front.
 
@@ -17,6 +26,19 @@ Front presentation is a fixed-capacity projection of the same authoritative loca
 Front projection never applies facing reflection. Its explicit semantic layers place anatomical left limbs behind the trunk and anatomical right limbs in front, independent of submission order. Anatomy names do not change according to screen position.
 
 Every actual view transition clears bounded visual secondary state. The next fixed visual tick initializes springs from the new view's resolved rest configuration. This prevents stale side displacement from being mirrored into front space, avoids one-frame wrong-view hair, and leaves independent characters unchanged.
+
+Prompt 27 adds one interaction-owned side-projection rule: the participating
+right-arm chain preserves the authored animation/IK plane so coincident
+authoritative hand sockets also render as coincident hands. The other arm and
+the legs retain the ordinary readable side-profile remap. This affects only
+presentation matrices after animation and IK; it cannot write canonical pose,
+socket, target, root, physics, or timing state.
+
+Wardrobe visuals retain their authored clothing layer and inherit only the
+interaction layer of the actual bound anatomy semantic. Gloves, sleeves, and
+other bound equipment therefore follow participant-qualified contact ordering
+without outfit-specific branches. Cleanup releases both body and equipment
+effects with the same owned interaction handles.
 
 ## Corrected base-anatomy production art pack
 

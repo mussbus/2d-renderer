@@ -74,3 +74,11 @@ Run the deterministic route with:
 ```
 
 It exits nonzero unless idle/walk contacts, alternating plants, jump clearing, airborne rejection, fresh landing plants, raised-platform adaptation, final stability, exact physics/animation agreement, one draw range, one actual indexed-instanced draw, zero hot-path allocation, and zero foot-created GPU resources are all observed.
+
+Prompt 27 reuses this same ground-query and leg-IK authority in the production
+art `foundation` route. Its deterministic matrix includes walk, short/full/
+double jump, deep airborne states, landing, and a non-floor raised-platform
+landing over the Prompt 26 collision-derived surface presentation. Theme,
+outfit, and interaction-view changes cannot acquire or move a foot lock.
+During handshakes, only already-acquired grounded constraints are reapplied
+after the arm solve, exactly as in the established pipeline.

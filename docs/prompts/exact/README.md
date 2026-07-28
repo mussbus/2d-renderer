@@ -13,7 +13,7 @@ Files in this directory preserve authoritative prompt text. They are evidence, n
 | `025B-source.txt` | user-provided Prompt 25B attachment | `fd57b8ed703816503956cd403bf67a5dcb507ffaf6a07593809b9a4be6ab4029` |
 | `025C-source.txt` | exact user message recovered from the preserved Codex session | `354d810f85c3b20a9f2ba140b2c9e221ad6eddcf2970a8dde62674a94c3607fe` |
 | `025D-source.txt` | exact user message recovered from the preserved Codex session | `8b114d87eb5b3c97c50bbecfd05cdbb7e79a3533d78b74b695f5bf218d05e7fb` |
-| `025E-source.txt` | current user-provided Prompt 25E attachment | `6715311891e09858bbb278d034612e22928d4b4410767a5aa13d6d4066ffd1a5` |
+| `025E-source.txt` | user-provided Prompt 25E attachment | `6715311891e09858bbb278d034612e22928d4b4410767a5aa13d6d4066ffd1a5` |
 | `026-source.txt` | exact Prompt 26 section split from roadmap | `e6e19c484fcd79d0ab8eea1030a1aa037c3a569a44abaf31ece3e3a4d5f1a532` |
 | `027-source.txt` | exact Prompt 27 section split from roadmap | `66ce11018f66dbf004ad6a5723bad2d6c94fabb6f9b15b93b39ab893a5f610dd` |
 

@@ -1,5 +1,12 @@
 # Build and Milestone Plan
 
+> Historical-plan note: this file preserves the original staged build plan and
+> the Prompt 0–12 amendments made while those milestones were implemented.
+> The repository has since completed Prompts 13–27. Current production status
+> and future scope are authoritative in
+> [`project/CURRENT_STATE.md`](project/CURRENT_STATE.md) and
+> [`project/MASTER_ROADMAP.md`](project/MASTER_ROADMAP.md).
+
 ## Inspected baseline
 
 The repository began as an empty Git repository with no commits, source files, build files, dependency manifest, vendored dependencies, or SDL headers. The active compiler was verified as Zig 0.16.0 before the first modification. This plan therefore introduces files only when they gain executable or binding content.
@@ -102,3 +109,22 @@ Exit criteria: every required build command exits zero in its proper environment
 ## File creation discipline
 
 The intended repository tree in `AGENTS.md` is a destination, not a request for empty scaffolding. For example, `sprite_batch.zig` appears with the renderer milestone, `handshake.zig` with interaction, and `metrics.zig` when metrics are recorded. A milestone may split a file earlier only when the new file contains real behavior used by that or the immediately following milestone.
+
+## Implemented extensions after the original plan
+
+Prompts 13–22 completed production input, camera/world presentation, modular
+anatomy and morphology, topology-aware equipment, deformation, deformable
+meshes, attachment secondary motion, generic properties/capabilities, and the
+focused Character + World Foundation Playground.
+
+Prompts 23–25E added image-backed art packs, front/side production character
+presentation, independent base anatomy and removable clothing, a 30-item
+wardrobe, semantic visual-geometry validation, corrected accepted production
+art, D3D12 goldens, and consolidated authoring/history contracts.
+
+Prompt 26 added two layered environment themes and collision-derived standable
+surfaces. Prompt 27 promoted the visible `foundation` route to the real-art
+composition of two production characters, current wardrobe, both themes,
+movement/traversal, three definition-driven fixed-root handshakes,
+interaction-aware view/ordering, reset, bounded diagnostics, and the existing
+SDL3 GPU renderer. No later milestone is authorized by this historical plan.

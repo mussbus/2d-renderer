@@ -58,3 +58,17 @@ Run `zig build run -- --frames 720 --demo handshake-ik --scripted-input`.
 - The mirrored run has the same pre/post separation within `0.00000001 m`, with world bend signs reversed while anatomical right-arm indices remain unchanged.
 - Nominal start/contact/release/complete ticks are `121/265/409/481`; mirrored ticks are `841/985/1129/1201`; perturbed ticks are `1561/1705/1849/1921`.
 - Two characters still submit 30 page-zero sprites through one compatible draw range and one actual indexed-instanced draw. IK creates zero GPU resources and all five IK allocation counters remain zero.
+
+## Prompt 27 presentation agreement
+
+Prompt 27 does not change the analytical solve or its authoritative socket
+measurements. It corrects the downstream interaction-owned side projection so
+the participating right-arm chain preserves the authored animation/IK plane.
+This closes the distinction between coincident post-IK sockets and visibly
+separated profile-art hands without feeding rendered geometry back into IK.
+
+The three production foundation handshakes record pre-IK, post-IK, and
+projected-presentation hand separation independently. Post-IK and projected
+separation are at or effectively below `0.000001 m` in the accepted records,
+while both roots remain fixed. Completion and reset clear the same
+interaction-owned arm-constraint state used by the focused Prompt 9 route.

@@ -1,5 +1,9 @@
 # Prompt 25D Decision Record
 
+> Historical milestone note: this record preserves the decisions and scope
+> gate at Prompt 25D. Prompt 26 and Prompt 27 are now complete; see
+> [`project/CURRENT_STATE.md`](project/CURRENT_STATE.md) for current status.
+
 ## A. Validator hardening
 
 The Prompt 25C ruler was audited before accepting production changes.

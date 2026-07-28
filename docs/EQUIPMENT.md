@@ -119,13 +119,25 @@ It renders conventional and nonstandard characters with fitted garment meshes, e
 ## Intentional limitations
 
 - Compatible roles currently match an exact data-defined anatomy part-type tag. More expressive tag predicates may be added as definition data without changing loadout algorithms.
-- Prompt 19 deformation is affine appearance fitting. Cape/hair/cloth secondary dynamics belong to Prompt 20 and are not started here.
-- Active modifiers are declarations, not a final stacking-resolution policy.
-- Capability grants are declarations; controller consumption belongs to Prompt 21.
+- Prompt 19 deformation remains affine appearance fitting. Prompt 20 owns
+  bounded cape/hair/loose-sleeve secondary dynamics; equipment itself does not
+  own another physics system.
+- Active modifiers remain declarations. Prompt 21 owns deterministic
+  attribute resolution and character-owned recomputation.
+- Capability grants remain declarations. Prompt 21 owns counted capability
+  resolution and controller consumption.
 
-## Prompt 22 integrated loadouts
+## Prompt 22 focused integrated loadouts
 
-The foundation playground uses one validated equipment definition containing a fitted torso mesh, topology-expanded long sleeves, cape, rigid clasp, independent left shoulder/right gauntlet, a three-slot full-plate item, boots, amulet, and backpack. Its default loadout combines layered sprite and mesh visuals with speed, dash, carry-capacity, and armor declarations. The next loadout replaces boots and independent armor with stronger-jump boots and full plate; the third restores bilateral pieces and grants double jump. Cycling once more reconstructs the exact default fingerprint and visual cardinality.
+The retained `foundation_playground.Scene` uses one validated equipment
+definition containing a fitted torso mesh, topology-expanded long sleeves,
+cape, rigid clasp, independent left shoulder/right gauntlet, a three-slot
+full-plate item, boots, amulet, and backpack. Its default loadout combines
+layered sprite and mesh visuals with speed, dash, carry-capacity, and armor
+declarations. The next loadout replaces boots and independent armor with
+stronger-jump boots and full plate; the third restores bilateral pieces and
+grants double jump. Cycling once more reconstructs the exact default
+fingerprint and visual cardinality.
 
 Every replacement is the existing transactional `Loadout` operation. Rebuild clears removed mesh and secondary state before topology expansion, then character-owned property resolution rebuilds the separate gameplay branch. The integrated route observes two conventional sleeves, four nonstandard sleeves, a bounded maximum resolved-visual count, exact restoration, armor and damage-reduction values, and no stale visual, modifier, or capability source after reset.
 
@@ -161,3 +173,19 @@ The wardrobe makes the three independent equipment axes concrete:
 Sleeves, gloves, legwear, and footwear retain `every_compatible` topology expansion. Shoes bind to semantic foot instances and cannot change canonical foot sockets or foot-planting authority. Every fashion item has zero modifiers and capabilities.
 
 See `WARDROBE.md` for the complete catalog, authoring steps, view resolution, long-garment route, and controls.
+
+## Prompt 27 production integration
+
+The visible `--demo foundation` route uses the production Prompt 25 wardrobe,
+not the older Prompt 22 evidence loadouts. All 30 current items remain
+cosmetic: they declare zero numeric modifiers and zero capability grants.
+Movement speed `4.5`, jump strength `9.0`, double jump, and dash are base
+character properties in the production definition, so cycling an outfit
+cannot change gameplay behavior.
+
+During interaction contact, each submitted equipment visual keeps its authored
+garment layer and inherits the interaction layer of its actual bound anatomy
+semantic. A right-hand glove follows the right hand and a sleeve follows its
+bound arm without matching item names, colors, or preset IDs. Every applicable
+visual still enters `UnifiedRenderQueue`; no equipment renderer or
+interaction-specific visual copy exists.

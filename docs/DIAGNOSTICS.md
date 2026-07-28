@@ -55,10 +55,46 @@ The optional command is:
 
 `debug_draw.CommandBuffer` contains 512 inline sprite requests. Overflow increments `overflow_count` and returns `error.DebugCommandCapacityExceeded`; it never grows. Lines, markers, and AABB edges visualize physics/visual roots, collider bounds, ground queries/hits, locked foot targets, pre/post-leg-IK movement, arm segments, the shared hand target, the participant link, and Prompt 25C semantic visual geometry. Debug submission creates no GPU object and uses texture page zero in the authoritative global sprite batch.
 
-Because ordinary and debug sprites are compatible, the current route retains one texture range and one actual indexed-instanced draw. Accounting reports ordinary sprite count and debug primitive count separately, with `debug_draw_calls = 0`, `sprite_draw_calls = 1`, and total actual draws equal to one. If compatibility changes later, those counters must expose the additional range/draw rather than folding it into the sprite count.
+Because ordinary and debug sprites are compatible, the Prompt 11
+`integrated` route retains one texture range and one actual
+indexed-instanced draw. Accounting reports ordinary sprite count and debug
+primitive count separately, with `debug_draw_calls = 0`,
+`sprite_draw_calls = 1`, and total actual draws equal to one. If compatibility
+changes later, those counters must expose the additional range/draw rather
+than folding it into the sprite count.
 
 ## Invariance and resource gates
 
 Deterministic tests compare authoritative results with debug visualization off/on and with diagnostics unread/read every tick. They compare phase and interaction event ticks, controller state, animator state/time, foot lifecycle ticks and targets, the shared hand target, final locks, override/constraint counts, interaction ID use, and allocation totals.
 
 The renderer reports only resources it owns: two textures, five GPU buffers, two pipelines (fixed readback and swapchain format), one sampler, two shaders, and three upload transfer buffers after initialization. Fence acquisition/release and lifetime creation totals remain separate renderer metrics. The integrated route records initial/final CPU fixed-buffer usage, the live tracked GPU-resource count, and creations during the run; it rejects growth during ordinary frames. CPU timings are not an acceptance gate. Headless stress executes 100,000 fixed ticks, repeatedly completing and resetting the integrated route while checking finite controller, spring, and foot states plus interaction/override cleanup.
+
+## Prompt 27 integrated diagnostics
+
+The current visible `--demo foundation` route is a separate production
+composition from the historical Prompt 11 `integrated` route. Its
+`visual_foundation.Scene` records fixed-capacity evidence for:
+
+- body, build, hair, outfit, view, and theme changes;
+- movement, short/full/double jump, dash, raised-platform landing, and camera
+  parallax;
+- six collision-derived white standable segments;
+- three fixed-root handshakes with role views, preset/theme IDs,
+  start/contact/release/complete ticks, pre/post-IK socket separation,
+  projected hand separation, ordering proof, and root invariance;
+- interaction view/override/IK cleanup, exact reset, and final front
+  presentation;
+- peak sprites, meshes, ranges, draws, upload bytes, fixed-buffer use, queue
+  allocation, decoded-page ownership, and GPU-resource delta.
+
+The 2,100-frame D3D12 route writes nine scheduled captures under
+`zig-out/p27_visual_foundation`. The recorded peak is 125 sprites, one mesh,
+16 sprite ranges/draws, one mesh range/draw, 8,000 sprite upload bytes, and 64
+mesh upload bytes. Initialized and final fixed-buffer usage are both 131,216
+bytes; update, submission, and queue allocation deltas and GPU-resource delta
+are zero.
+
+`F1` still appends detailed collider/debug evidence through the one global
+queue. Persistent white standable tops are ordinary product presentation,
+while cyan/orange collider outlines remain optional diagnostics. Debug
+observation does not become collision, interaction, or renderer authority.

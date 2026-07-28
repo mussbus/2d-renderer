@@ -91,12 +91,23 @@ Exact report: [`exact/025D-implementation-report.md`](exact/025D-implementation-
 
 ### Prompt 25E
 
-Current report: [`025E-implementation-report.md`](025E-implementation-report.md).
+Historical report: [`025E-implementation-report.md`](025E-implementation-report.md).
+It records the milestone boundary before Prompt 26/27 were authorized.
 
 ### Prompt 26
 
-Not started; no implementation report exists.
+Implemented at commit `0dd0f21`; no verbatim completion report was recovered
+for this archive. Use the
+[prompt record](../../prompts/026-environments.md),
+[decision record](../../PROMPT26_DECISION_RECORD.md),
+[environment contract](../../ENVIRONMENT_THEMES.md), and
+[test evidence](../../TESTING.md#prompt-26-environment-validation).
 
 ### Prompt 27
 
-Not started; no implementation report exists.
+Implemented at commit `1de0d1d`; no verbatim completion report was recovered
+for this archive. Use the
+[prompt record](../../prompts/027-integrated-foundation.md),
+[decision record](../../PROMPT27_DECISION_RECORD.md),
+[current state](../../project/CURRENT_STATE.md), and
+[test evidence](../../TESTING.md#prompt-27-integrated-visual-foundation).

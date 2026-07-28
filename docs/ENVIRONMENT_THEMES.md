@@ -167,3 +167,19 @@ editor-only renderer or collision copy is outside this boundary.
   procedural page.
 - No steady-state CPU allocation, GPU resource creation, file I/O, decode, or
   topology upload.
+
+## Prompt 27 production integration
+
+`visual_foundation.Scene` composes this environment scene directly; it does
+not copy the world, collision, surface overlay, camera, theme catalog, or
+character instances. The visible `--demo foundation` route therefore uses the
+same eight colliders, six derived white surface segments, two preloaded themes,
+parallax factors, theme switch, reset, and global queue as the focused Prompt
+26 route.
+
+The 2,100-frame acceptance matrix changes themes around movement, outfit
+changes, jumps, raised-platform traversal, and three handshakes. Each
+handshake record retains its active theme ID, and the route proves that a
+theme change cannot alter interaction participants, role views, roots, contact
+ticks, wardrobe identity, or collision fingerprints. Nine real D3D12 captures
+under `zig-out/p27_visual_foundation` include both themes and detailed debug.

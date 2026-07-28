@@ -131,6 +131,13 @@ zig build run -- --frames 240 --demo modular-body
 
 Three characters share one canonical skeleton and animation library. They select conventional male, conventional female, and nonstandard presets, use global builds 15/50/85, apply a hip-width channel override and tail instance override, render `conventional_face` and `angular_face` side by side, use different hair content, and switch presentation profiles at deterministic frames. The route verifies distinct face-part and visual selection, materially different eye transform/size data, one sprite range/draw call, unchanged topology, no steady-state fixed-buffer movement, and no GPU-resource creation.
 
+This is the focused `modular-body` evidence scene, not the current Prompt 27
+production lineup. The production `foundation` route uses two characters: an
+athletic conventional male with buzz/short hair and a curvy conventional
+female with long hair and selectable wardrobe presets. They still use the same
+canonical skeleton, typed anatomy, morphology, appearance, and submission
+paths; Prompt 27 adds no character-specific rig.
+
 Current limitations are intentional:
 
 - morphology does not alter canonical bone lengths or physics colliders;
@@ -148,3 +155,17 @@ Wardrobe visuals consume anatomy roles without changing anatomy ownership. One `
 Front presentation uses the bounded `FrontAnatomyProjection` of the same active anatomy instances. Side presentation uses the existing evaluated anatomy matrices. View switching therefore changes only which paired art region and projected presentation transform is consumed; it cannot change topology, instance identity, body preset, foot socket, or canonical pose.
 
 Long hair remains an independently selected anatomy/presentation group when headwear is equipped. Hat occupancy neither clears the active hair parts nor substitutes a head definition.
+
+## Prompt 27 production composition
+
+The integrated `visual_foundation.Scene` owns the same two character instances
+already constructed by the Prompt 26 environment/wardrobe composition. Body,
+build, hair, outfit, movement, jump, dash, interaction, IK, and view changes
+act on those instances; no showcase-only anatomy is substituted for
+production art. The male uses the conventional-male/athletic presentation and
+the female uses the conventional-female/curvy presentation.
+
+Interaction-owned side projection preserves semantic left/right identity and
+the participating right-arm animation/IK plane. Equipment ordering resolves
+through the actual bound anatomy semantic. Neither feature changes topology,
+canonical bones, morphology state, sockets, or base-anatomy ownership.

@@ -57,6 +57,13 @@ An override may independently replace the interaction component, body-part compo
 
 Because interaction precedes actor in the comparator, A can remain behind B at the torso while A's hand or forearm is temporarily above B. Moving one limb never changes the whole actor layer.
 
+Prompt 27 extends the consumer, not this ordering model: the interaction
+definition selects a typed occlusion profile, and equipment bound to an
+anatomy semantic inherits that semantic's interaction layer while preserving
+its own body/garment layer. A glove therefore follows the participant's hand
+without replacing actor order, changing item identity, or adding an
+outfit-specific branch.
+
 ## Global submission and batching
 
 `submitGlobally` accepts up to eight character pointers, sorts a fixed stack array by numeric entity ID, rejects duplicate IDs, and submits every attachment into the existing global batch. Pointer values are never compared. Entity order plus immutable attachment order establishes the deterministic final tie-breaker. The batch then performs one global semantic sort, permitting attachments from different characters to interleave.

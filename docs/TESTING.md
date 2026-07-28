@@ -2,13 +2,34 @@
 
 ## Documentation contract audit
 
-Prompt 25E adds a bounded PowerShell audit for the consolidated project, prompt-history, decision, and report trees:
+Prompt 25E introduced a bounded PowerShell audit for the consolidated project,
+prompt-history, decision, and report trees. The audited live documentation now
+records implementation through Prompt 27:
 
 ```powershell
 & '.\tools\check_documentation.ps1'
 ```
 
 It verifies required files, local Markdown targets, prompt navigation, report links, and practical orphan detection. Verbatim historical report files are excluded from link lint because their original local evidence paths are intentionally preserved rather than rewritten.
+
+## Current aggregate status through Prompt 27
+
+The Prompt 27 completion gate passed 356/356 tests in Debug and ReleaseFast.
+The focused Prompt 26 environment gate passed 13/13, and the focused Prompt 27
+visual-foundation gate passed 3/3. Current milestone-specific commands and
+their evidence boundaries are documented below.
+
+The aggregate commands remain:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test -j1
+& '.\.deps\zig-0.16.0\zig.exe' build check -j1
+& '.\.deps\zig-0.16.0\zig.exe' build -Doptimize=ReleaseSafe -j1
+& '.\.deps\zig-0.16.0\zig.exe' build -Doptimize=ReleaseFast -j1
+```
+
+Historical declaration counts in the Prompt 20–25 sections are
+milestone-time evidence, not the current total.
 
 ## Prompt 25D focused visual geometry
 

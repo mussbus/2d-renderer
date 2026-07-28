@@ -96,6 +96,12 @@ The animation definition, animator buffers, pose, skeleton, sockets, and attachm
 
 ## Side and front pose interpretation
 
-Prompt 24 does not add front/side gameplay state machines. Each character still owns one animator and one authoritative animation state. The presentation policy reads that fixed-tick state together with controller grounding/velocity: grounded idle chooses front, while locomotion, dash, airborne states, landing, and the interaction-owned handshake choose side.
+Prompt 24 does not add front/side gameplay state machines. Each character
+still owns one animator and one authoritative animation state. The
+presentation policy reads that fixed-tick state together with controller
+grounding/velocity: grounded idle chooses front, while locomotion, dash,
+airborne states, and landing choose side. Prompt 27 makes the handshake's
+side/side choice explicit per-role interaction-definition data; it still does
+not create another animator or animation state machine.
 
 Side art consumes the ordinary reflected appearance transforms. Front art builds a bounded projection from the same local pose, retaining root position, vertical animation, breathing/deformation, and attachment secondary transforms while applying view-authored arm rest offsets. It never advances playback, changes a clip, or writes physics. The 360-frame character-presentation route exercises idle/walk blending, jump/rise/fall/land, both handshake roles and IK, and ordinary idle restoration with one shared animation timeline per character.

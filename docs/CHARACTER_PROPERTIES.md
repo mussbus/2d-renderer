@@ -96,8 +96,28 @@ Pure and integrated coverage lives in `tests/character_properties_tests.zig`. Th
 
 Initialization runs actual controller steps for default/modified movement, default/stronger jump, denied/allowed double jump, denied/allowed dash, and dash collision. It also proves carrying capacity, armor, physical damage reduction, duplicate-source removal, restoration, and two-character isolation. The visible phase submits the two independently equipped characters through the existing one-range, one-draw sprite batch. The route fails on missing behavioral evidence, frame mismatch, fixed-buffer growth, batch allocation, or property-created GPU resources.
 
-## Prompt 22 integrated consumers
+## Prompt 22 focused integrated consumers
 
-The foundation playground resolves the same generic attributes/capabilities from its mixed sprite/mesh loadout and feeds only the compact `GameplayProperties` value to the existing controller. Its bounded script reaches the speed-modified terminal run velocity, compares actual accepted launch velocities before and after stronger-jump boots, consumes one granted air jump, and starts one granted collision-aware dash. Carrying capacity, armor, and physical damage reduction are queried into diagnostics only because inventory and combat consumers do not yet exist.
+The retained `foundation_playground.Scene` resolves the same generic
+attributes/capabilities from its mixed sprite/mesh loadout and feeds only the
+compact `GameplayProperties` value to the existing controller. Its bounded
+script reaches the speed-modified terminal run velocity, compares actual
+accepted launch velocities before and after stronger-jump boots, consumes one
+granted air jump, and starts one granted collision-aware dash. Carrying
+capacity, armor, and physical damage reduction are queried into diagnostics
+only because inventory and combat consumers do not yet exist.
 
 Appearance changes and topology rebinds may change visual cardinality but cannot add a modifier or capability. Attribute/capability resolution may change controller behavior but cannot create or select render resources. Reset reconstructs the default resolved set from the restored loadout and clears air-jump/dash state; no stale source count survives.
+
+## Prompt 27 production properties
+
+The production wardrobe definition declares movement speed `4.5`, jump
+strength `9.0`, and default `double_jump`/`dash` capabilities as base character
+properties. Every current wardrobe item remains cosmetic and contributes no
+modifier or capability source. The Prompt 27 foundation route therefore
+exercises movement, short/full/double jumps, and dash while cycling multiple
+outfits without coupling appearance to gameplay.
+
+Reset restores the base property set and clears controller-owned air-jump and
+dash runtime state. Theme, view, interaction presentation, and atlas selection
+cannot modify the resolved property set.

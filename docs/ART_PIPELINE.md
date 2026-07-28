@@ -196,3 +196,21 @@ deterministically cropped, nearest-resized, alpha-matte removed, and packed
 into the fixed production layout. No reference file is a runtime asset.
 Theme/collision separation and the future editor boundary are specified in
 `ENVIRONMENT_THEMES.md`.
+
+## Prompt 27 integrated page ownership
+
+Prompt 27 creates no new art pipeline or atlas. The production `foundation`
+route preloads the same eight image-backed pages already owned by Prompt
+24A–26 content:
+
+- the two Prompt 25A character base pages;
+- the Prompt 25B component page;
+- three Prompt 25 wardrobe pages;
+- two Prompt 26 theme pages.
+
+The renderer reports nine configured pages because its procedural page remains
+present beside the eight decoded images. Two garment mesh definitions upload
+once during initialization. Outfit, view, interaction, and theme changes
+select pre-resolved page/region/material data and perform no decode,
+filesystem access, texture creation, sampler creation, or topology upload in
+steady state.

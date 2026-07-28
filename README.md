@@ -36,10 +36,16 @@ Prompt 20 adds one reusable fixed-capacity attachment secondary-motion primitive
 
 Prompt 21 adds data-defined finite numeric attributes, source-counted capabilities, stable-source additive/multiplicative resolution, and character-owned recomputation after loadout changes. Movement speed and jump strength feed the existing controller, double jump grants exactly one air jump, and Left Shift/gamepad right shoulder produces a bounded collision-aware dash only when granted. Carrying capacity, armor, and physical damage reduction remain queryable for future inventory/combat consumers. Appearance never implies gameplay properties. Its GPU-backed evidence route is `zig build run -- --frames 240 --demo properties`.
 
-Prompt 22 adds the primary Character + World Foundation Playground without replacing any focused route. One modular controlled character, a canonical handshake partner, and a nonstandard-topology showcase share the established skeleton, animation, controller, collision, interaction, IK, foot-planting, deformation, secondary-motion, equipment, and unified sprite/mesh rendering paths in a traversable cave. The bounded route changes appearance and topology-aware loadouts, proves resolved movement/jump/double-jump/dash behavior, exercises camera/parallax and synthetic viewport changes, completes one measured handshake, performs the exact reset contract, and rejects allocation, resource, or draw-count growth:
+Prompt 22 added the focused Character + World Foundation Playground. One
+modular controlled character, a canonical handshake partner, and a
+nonstandard-topology showcase share the established skeleton, animation,
+controller, collision, interaction, IK, foot-planting, deformation,
+secondary-motion, equipment, and unified sprite/mesh paths in a traversable
+cave. Prompt 27 later promoted the visible `foundation` CLI to the production
+art composition. The original 1,800-frame Prompt 22 scene remains covered by:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2100 --demo foundation --scripted-input
+& '.\.deps\zig-0.16.0\zig.exe' build test-foundation
 ```
 
 Prompt 23 adds a production-oriented PNG/atlas presentation boundary without changing gameplay or creating another renderer. Windows Imaging Component decodes alpha-bearing installed PNGs, immutable art-pack definitions resolve numeric semantic/view IDs to validated regions, and bounded persistent texture/sampler pages are shared by sprite and mesh ranges. Two original nearest-sampled technical pixel-art atlases prove eight regions, synthetic view extensibility, alpha, honest page-transition draws, cleanup, and allocation-free steady state; a definition test proves that a future pack may instead select linear filtering:
@@ -77,6 +83,15 @@ $env:SDL_GPU_DRIVER = 'direct3d12'
 & '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
 ```
 
+Prompt 25B completes the remaining footwear, shoulder, elbow, pelvis/thigh,
+and hand corrections. Prompt 25C builds the semantic visual-geometry
+measuring system, and Prompt 25D hardens that ruler, reauthors the actual
+production content, retains controlled failing fixtures, reaches zero
+production geometry failures, and approves 12 real D3D12 goldens. Prompt 25E
+then consolidates project history, authority boundaries, authoring contracts,
+known gaps, exact prompt provenance, and documentation auditing without
+changing accepted art or runtime behavior.
+
 Prompt 26 adds two original layered environment themes over the unchanged
 Prompt 22 world: a violet crystal ruin and a neutral diagnostic chamber.
 Far/mid/terrain/foreground art uses the existing camera and global queue, both
@@ -106,6 +121,12 @@ records view cleanup, contact ticks, pre/post-IK separation,
 participant-qualified body/equipment ordering, theme invariance, reset,
 draw/upload peaks, and zero steady-state allocation/resource growth. Nine
 D3D12 readback captures are written to `zig-out/p27_visual_foundation`.
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2100
+```
 
 ## Interactive playground
 
@@ -167,6 +188,8 @@ Start with:
 - [`docs/WARDROBE.md`](docs/WARDROBE.md) for garment semantics, view/topology binding, presets, controls, and the future authoring workflow.
 - [`docs/VISUAL_GEOMETRY.md`](docs/VISUAL_GEOMETRY.md) for semantic landmarks, visible-alpha geometry, anatomy-relative fit contracts, pose/morphology sweeps, quantitative failure reports, debug overlays, and golden policy.
 - [`docs/PROMPT25D_DECISION_RECORD.md`](docs/PROMPT25D_DECISION_RECORD.md) for validator hardening, production root-cause corrections, before/after metrics, golden evidence, and the no-test-gaming audit.
+- [`docs/PROMPT26_DECISION_RECORD.md`](docs/PROMPT26_DECISION_RECORD.md) for environment composition, collision-derived edges, art provenance, and evidence staging.
+- [`docs/PROMPT27_DECISION_RECORD.md`](docs/PROMPT27_DECISION_RECORD.md) for production composition, interaction presentation, side projection, property ownership, and bounds.
 - [`docs/OUTFIT_REFERENCE_INVENTORY.md`](docs/OUTFIT_REFERENCE_INVENTORY.md) for the required reference-cluster inventory and project-local IDs.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.

@@ -68,8 +68,23 @@ Success requires real sprite and mesh work, fitted garments, two/four topology-e
 
 The Prompt 20 alias `--demo attachment-secondary` runs the same GPU path with additional required evidence for cape acceleration/sustained/reversal/stop/jump/fall/landing response, long hair, ponytail, repeated flexible-sleeve state, lifecycle reset, and facing reset. Detailed ownership and equations are in `docs/ATTACHMENT_SECONDARY_MOTION.md`.
 
-## Prompt 22 foundation integration
+## Prompt 22 focused foundation integration
 
-`--demo foundation` registers the same three immutable mesh definitions once in the persistent topology catalog. The controlled character, handshake partner, and nonstandard showcase submit fitted torso, topology-expanded sleeve, and cape instances through `CharacterInstance.submitUnified`. All body sprites, rigid equipment sprites, environment sprites, debug primitives, and mesh instances enter one semantic queue; reported sprite ranges, mesh ranges, indexed-instanced draws, and upload bytes are the actual encoded counts.
+The retained Prompt 22 `foundation_playground.Scene` registers three immutable
+mesh definitions once in its persistent topology catalog. Its controlled
+character, handshake partner, and nonstandard showcase submit fitted torso,
+topology-expanded sleeve, and cape instances through
+`CharacterInstance.submitUnified`. All body sprites, rigid equipment sprites,
+environment sprites, debug primitives, and mesh instances enter one semantic
+queue; reported sprite ranges, mesh ranges, indexed-instanced draws, and
+upload bytes are the actual encoded counts.
 
 Body/build/hair changes, breathing, loadout property resolution, movement abilities, and secondary motion update only CPU instance records. They do not create topology buffers, shaders, pipelines, textures, samplers, transfer buffers, or frame slots. Reset clears each loadout's `InstanceState` and secondary state before the restored loadout can repopulate valid current-character handles on the next submission.
+
+Prompt 27's visible `--demo foundation` route instead preloads the two
+production long-garment mesh definitions used by the current wardrobe. The
+2,100-frame route reaches a peak of one active mesh and one mesh range/draw
+while body, equipment, environment, standable-edge, and debug sprites remain
+in the same `UnifiedRenderQueue`. The two topology definitions and their GPU
+buffers persist across all outfit and theme changes; the route reports zero
+post-stabilization GPU-resource growth.
