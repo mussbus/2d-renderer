@@ -119,3 +119,31 @@ The open-ended inspection route is:
 ```
 
 `Q` cycles automatic, force side, and force front for the controlled character without changing facing. `H` toggles its bald/buzz choice. Movement, jump, dash, interaction, reset, and exit retain their production mappings.
+
+## Prompt 27C production anatomy presentation
+
+The current base anatomy uses the Prompt 27C male, female, and component
+pages. Front/side binding identity is unchanged; authored sizes and pivots
+were retuned only where the visible body disagreed with the active
+presentation contract. Front feet retain their style-specific visible span
+and use top/three-quarter source silhouettes plus a bounded bilateral toe-out
+rotation while preserving anatomical side,
+canonical foot sockets, and foot planting. Side feet retain their canonical
+forward axis.
+
+Shoulder continuity is torso-owned, with the upper arm remaining a separately
+articulated anatomy component underneath that contour. Elbow, wrist, hip,
+knee, and ankle endpoints use bounded overlap and softened source edges
+rather than connector patches. The pelvis remains the permanent
+`base_presentation` modesty surface, not removable clothing.
+
+The body-only D3D12 inspection route is:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
+```
+
+It selects eight poses through production state predicates and submits both
+styles through the ordinary global queue. Prompt 27C owner/manual visual
+acceptance remains `[PENDING OWNER REVIEW]`.

@@ -137,6 +137,7 @@ $presentationPoseSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRo
 $characterArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_art.zig')
 $characterPresentationDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_presentation_demo.zig')
 $characterPresentationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/character_presentation_tests.zig')
+$visualGeometryTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/visual_geometry_tests.zig')
 $wardrobeCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_catalog.zig')
 $wardrobeArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_art.zig')
 $wardrobePresentationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_presentation.zig')
@@ -155,6 +156,12 @@ $p27aRepeatSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'to
 $foundationCoherenceSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_coherence.zig')
 $foundationCoherenceReportSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_coherence_report.zig')
 $p27bReviewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/build_p27b_review_package.ps1')
+$anatomyQualitySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy_quality.zig')
+$anatomyQualityReportSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy_quality_report.zig')
+$anatomyEvidenceSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy_evidence.zig')
+$p27cReviewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/build_p27c_review_package.ps1')
+$p27cArtAuditSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/audit_p27c_art.ps1')
+$p27cArtAuthoringSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/reauthor_p27c_anatomy.ps1')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
@@ -1802,9 +1809,9 @@ if ([regex]::IsMatch($presentationPoseSource, 'allocator|SDL_|CreateGPU|Characte
     $failed = $true
 }
 foreach ($phrase in @(
-    'p25a_male_base_anatomy_atlas.png',
-    'p25a_female_base_anatomy_atlas.png',
-    'p25b_anatomy_components_atlas.png',
+    'p27c_male_base_anatomy_atlas.png',
+    'p27c_female_base_anatomy_atlas.png',
+    'p27c_anatomy_components_atlas.png',
     'pub const region_inputs = makeRegionInputs()',
     'pub const binding_inputs = makeBindingInputs()',
     'presentation_view.View',
@@ -1861,9 +1868,9 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'p25a_male_base_anatomy_atlas.png',
-    'p25a_female_base_anatomy_atlas.png',
-    'p25b_anatomy_components_atlas.png',
+    'p27c_male_base_anatomy_atlas.png',
+    'p27c_female_base_anatomy_atlas.png',
+    'p27c_anatomy_components_atlas.png',
     'app_module.addImport("presentation_view", presentation_view_module)',
     'app_module.addImport("character_art", character_art_module)',
     'app_module.addImport("character_presentation_demo", character_presentation_demo_module)',
@@ -2041,6 +2048,10 @@ foreach ($relativePath in @(
     'assets/art/p25a_male_base_anatomy_atlas.png',
     'assets/art/p25a_female_base_anatomy_atlas.png',
     'assets/art/p25b_anatomy_components_atlas.png',
+    'assets/art/p27c_male_base_anatomy_atlas.png',
+    'assets/art/p27c_female_base_anatomy_atlas.png',
+    'assets/art/p27c_anatomy_components_atlas.png',
+    'docs/PROMPT27C_DECISION_RECORD.md',
     'docs/PROMPT25A_DECISION_RECORD.md',
     'docs/PROMPT25B_DECISION_RECORD.md',
     'docs/VISUAL_ACCEPTANCE_25A.md'
@@ -2077,9 +2088,9 @@ if (-not $presentationViewSource.Contains('spriteMorphologyScale')) {
     $failed = $true
 }
 foreach ($phrase in @(
-    'p25a_male_base_anatomy_atlas',
-    'p25a_female_base_anatomy_atlas',
-    'p25b_anatomy_components_atlas',
+    'p27c_male_base_anatomy_atlas',
+    'p27c_female_base_anatomy_atlas',
+    'p27c_anatomy_components_atlas',
     'component_page_id',
     'mirrorsFrontRegion',
     'connectorLayer',
@@ -2132,8 +2143,8 @@ foreach ($phrase in @(
 foreach ($phrase in @(
     'Prompt 25B production anatomy pages and regions have exact valid bounds',
     'Prompt 25D real component bindings are distinct with valid authored extents',
-    'Prompt 25D component sizes and pivots follow view-specific rig spans',
-    'Prompt 25D final front joins retain accepted authored geometry',
+    'Prompt 27C component sizes and pivots follow view-specific rig spans',
+    'Prompt 27C final front joins retain accepted authored geometry',
     'Prompt 25D side projection preserves one readable profile root per bilateral pair',
     'Prompt 25D wardrobe pivots match alpha-derived semantic anchors',
     'Prompt 25B bilateral footwear receives mirrored submission metadata',
@@ -2391,6 +2402,121 @@ foreach ($phrase in @(
         $failed = $true
     }
 }
+foreach ($relativePath in @(
+    'assets/art/p27c_male_base_anatomy_atlas.png',
+    'assets/art/p27c_female_base_anatomy_atlas.png',
+    'assets/art/p27c_anatomy_components_atlas.png',
+    'docs/PROMPT27C_DECISION_RECORD.md',
+    'src/scene/anatomy_quality.zig',
+    'src/scene/anatomy_quality_report.zig',
+    'src/scene/anatomy_evidence.zig',
+    'tools/audit_p27c_art.ps1',
+    'tools/build_p27c_review_package.ps1',
+    'tools/reauthor_p27c_anatomy.ps1'
+)) {
+    $path = Join-Path $repositoryRoot $relativePath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
+        (Get-Item -LiteralPath $path).Length -eq 0) {
+        Write-Error "Prompt 27C required file is missing or empty: '$relativePath'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'shoulder_slope_degrees',
+    'shoulder_curve_ratio',
+    'maximum_dark_joint_edge_ratio',
+    'front_toe_out_degrees',
+    'maximum_bilateral_ankle_error_px',
+    'evaluateShoulders',
+    'evaluateBodyRatios',
+    'evaluateSideJoints',
+    'evaluateFrontStance',
+    'endpointDarkRatio'
+)) {
+    if (-not $anatomyQualitySource.Contains($phrase)) {
+        Write-Error "Prompt 27C production anatomy ruler is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 27C anatomy contracts are style and view specific',
+    'Prompt 27C controlled anatomy defects fail their intended rulers',
+    'Prompt 27C anatomy matrix fails closed when a declared case is missing',
+    'Prompt 27C frozen pre-correction production anatomy yields actionable failures'
+)) {
+    if (-not $visualGeometryTestsSource.Contains($phrase)) {
+        Write-Error "Prompt 27C deterministic validation coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'required_case_count',
+    'trace_record_count',
+    'steady_state_queue_allocations',
+    '--expect-failures',
+    '--expect-pass',
+    'ProductionAnatomyRejected'
+)) {
+    if (-not $anatomyQualityReportSource.Contains($phrase)) {
+        Write-Error "Prompt 27C semantic report boundary is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'minimum_stable_frames',
+    'neutral_front',
+    'neutral_side_right',
+    'neutral_side_left',
+    'build_low_front',
+    'build_high_front',
+    'arm_extended_side',
+    'elbow_bent_side',
+    'deep_knee_bend_side',
+    'AnatomyEvidenceCaptureTimeout'
+)) {
+    if (-not $anatomyEvidenceSource.Contains($phrase)) {
+        Write-Error "Prompt 27C state-conditioned evidence authority is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 27C D3D12 manifest contract failed',
+    'Prompt 27C semantic production report is not a zero-failure result',
+    'before_after_neutral_front.png',
+    'shoulders.png',
+    'elbows_wrists.png',
+    'pelvis_hips.png',
+    'knees_ankles.png',
+    'feet.png'
+)) {
+    if (-not $p27cReviewSource.Contains($phrase)) {
+        Write-Error "Prompt 27C D3D12 review contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'p27c_male_base_anatomy_atlas.png',
+    'p27c_female_base_anatomy_atlas.png',
+    'p27c_anatomy_components_atlas.png',
+    'preserved predecessor hashes'
+)) {
+    if (-not ($p27cArtAuditSource + [Environment]::NewLine +
+        $p27cArtAuthoringSource).Contains($phrase)) {
+        Write-Error "Prompt 27C source-art preservation contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    '"p27c-anatomy-report"',
+    'src/scene/anatomy_quality.zig',
+    'src/scene/anatomy_quality_report.zig',
+    'src/scene/anatomy_evidence.zig'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Prompt 27C build integration is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
 
 if ($failed) {
     exit 1
@@ -2406,6 +2532,7 @@ Write-Host 'Prompt 26 environment audit passed: both preloaded themes use produc
 Write-Host 'Prompt 27 visual-foundation audit passed: real-art production composition, typed per-role interaction presentation, focused deterministic coverage, and explicit build integration are present.'
 Write-Host 'Prompt 27A evidence-integrity audit passed: state predicates, stable holds, fail-closed metadata, bounded HUD submission, D3D12 review packaging, and repeatability comparison are present.'
 Write-Host 'Prompt 27B coherence audit passed: submitted-contact identity, safe framing, measured parallax, bounded presence, controlled fixtures, semantic reporting, and independent D3D12 review are present.'
+Write-Host 'Prompt 27C anatomy-quality audit passed: versioned production art, style/view-specific silhouette rulers, controlled bad fixtures, complete matrix reporting, state-conditioned D3D12 evidence, and review packaging are present.'
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
 Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'
 Write-Host 'Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.'

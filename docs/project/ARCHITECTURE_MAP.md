@@ -67,6 +67,9 @@ collider-data authority.
 | Prompt 27B semantic contact/framing/parallax/presence authority | [`src/scene/foundation_coherence.zig`](../../src/scene/foundation_coherence.zig) |
 | Prompt 27B semantic report route | [`src/scene/foundation_coherence_report.zig`](../../src/scene/foundation_coherence_report.zig) |
 | Prompt 27B D3D12 readback review | [`tools/build_p27b_review_package.ps1`](../../tools/build_p27b_review_package.ps1) |
+| Prompt 27C anatomy-quality contracts and report | [`src/scene/anatomy_quality.zig`](../../src/scene/anatomy_quality.zig), [`src/scene/anatomy_quality_report.zig`](../../src/scene/anatomy_quality_report.zig) |
+| Prompt 27C state-conditioned D3D12 evidence | [`src/scene/anatomy_evidence.zig`](../../src/scene/anatomy_evidence.zig), [`tools/build_p27c_review_package.ps1`](../../tools/build_p27c_review_package.ps1) |
+| Prompt 27C deterministic art reauthoring and audit | [`tools/reauthor_p27c_anatomy.ps1`](../../tools/reauthor_p27c_anatomy.ps1), [`tools/audit_p27c_art.ps1`](../../tools/audit_p27c_art.ps1) |
 | Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig), [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
 | Skeleton, poses, clips, state machine | [`src/animation/skeleton.zig`](../../src/animation/skeleton.zig), [`src/animation/pose.zig`](../../src/animation/pose.zig), [`src/animation/clip.zig`](../../src/animation/clip.zig), [`src/animation/state_machine.zig`](../../src/animation/state_machine.zig) |
 | Anatomy identity/runtime | [`src/scene/anatomy.zig`](../../src/scene/anatomy.zig), production definitions in [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |

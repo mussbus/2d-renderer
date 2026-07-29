@@ -460,6 +460,30 @@ stable and every moving root is constrained by the normal per-tick controller
 speed bound. Interactive character pass-through remains a documented
 limitation rather than an implied collision feature.
 
+### Prompt 27C anatomy silhouette authority
+
+Prompt 27C does not add a skeleton, pose, animation, renderer, or
+character-specific draw path. `character_art.submitTraced` remains the one
+production presentation path and optionally records the same submitted
+`SpriteRequest` in a bounded semantic trace. `anatomy_quality.zig` evaluates
+that trace together with decoded alpha-visible pixels and the production
+camera.
+
+The ruler is style-, view-, role-, and side-aware. It measures shoulder slope
+and curvature, parent/child widths at articulated joints, body-relative
+length ratios, transverse crop-edge darkness, foot axes, and neutral-front
+symmetry. Production contracts belong to the conventional male/female
+presentation profiles; they are not a universal human-proportion table.
+Missing matrix cases, alpha, landmarks, or finite transforms fail closed.
+
+The three Prompt 27C pages are immutable runtime inputs installed and uploaded
+through the existing art-pack catalog. They version their Prompt 25
+predecessors, retain the same anatomy/equipment ownership, and preserve the
+permanent `base_presentation` modesty classification. Reauthoring changes
+silhouette pixels, authored body-part dimensions, pivots, and front-foot rest
+presentation only; physics roots, sockets, foot planting, IK, garments, and
+the Prompt 27B camera remain authoritative and unchanged.
+
 ### Future interaction and authoring boundaries
 
 A future paired definition may add a bounded array of semantic contacts such

@@ -165,6 +165,30 @@ subsequent world-camera movement remains below the unchanged 16 px bound.
 The review candidates are not approved goldens; owner/manual acceptance
 remains `[PENDING OWNER REVIEW]`.
 
+Prompt 27C versions and reauthors the production male/female base-anatomy
+pages without changing anatomy identity, the authoritative skeleton,
+simulation, garments, camera policy, or rendering architecture. A
+style/view-specific anatomy ruler evaluates shoulder contour, joint width
+continuity, body-relative proportions, dark crop edges, foot direction, and
+bilateral stance across 102 production cases. The focused gate retains the
+existing visual-geometry suite and adds controlled bad fixtures; the final
+anatomy report contains 3,788 metrics with zero failures.
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
+& '.\.deps\zig-0.16.0\zig.exe' build p27c-anatomy-report -j1 -- --output 'zig-out\p27c_evidence\final_semantic_report' --expect-pass
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
+& '.\tools\build_p27c_review_package.ps1'
+```
+
+The real D3D12/DXIL route captures eight body-only state-conditioned frames;
+the review package supplies before/after and five anatomical close-up sheets.
+Two isolated semantic, D3D12, and review runs are byte-identical. Prompt 27A,
+Prompt 27B, and Prompt 27C owner/manual visual acceptance remains
+`[PENDING OWNER REVIEW]`; Prompt 27C review candidates are not approved
+goldens.
+
 ## Interactive playground
 
 ```powershell
@@ -227,6 +251,7 @@ Start with:
 - [`docs/PROMPT25D_DECISION_RECORD.md`](docs/PROMPT25D_DECISION_RECORD.md) for validator hardening, production root-cause corrections, before/after metrics, golden evidence, and the no-test-gaming audit.
 - [`docs/PROMPT26_DECISION_RECORD.md`](docs/PROMPT26_DECISION_RECORD.md) for environment composition, collision-derived edges, art provenance, and evidence staging.
 - [`docs/PROMPT27_DECISION_RECORD.md`](docs/PROMPT27_DECISION_RECORD.md) for production composition, interaction presentation, side projection, property ownership, and bounds.
+- [`docs/PROMPT27C_DECISION_RECORD.md`](docs/PROMPT27C_DECISION_RECORD.md) for the production anatomy ruler, reauthoring rationale, before/after evidence, and preservation boundary.
 - [`docs/OUTFIT_REFERENCE_INVENTORY.md`](docs/OUTFIT_REFERENCE_INVENTORY.md) for the required reference-cluster inventory and project-local IDs.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.

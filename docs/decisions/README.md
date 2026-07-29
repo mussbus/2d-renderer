@@ -21,3 +21,4 @@ Related historical decisions:
 - [Prompt 27 integrated visual foundation](../PROMPT27_DECISION_RECORD.md)
 - [Prompt 27A evidence integrity](../PROMPT27A_DECISION_RECORD.md)
 - [Prompt 27B contact, framing, parallax, and presence](../PROMPT27B_DECISION_RECORD.md)
+- [Prompt 27C production anatomy reauthoring](../PROMPT27C_DECISION_RECORD.md)

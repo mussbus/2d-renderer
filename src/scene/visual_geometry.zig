@@ -260,10 +260,10 @@ pub fn anatomyGeometry(style: []const u8, role: Role, view: View) Geometry {
             }),
         .foot => if (view == .front)
             Geometry.init(.foot, &.{
-                // The ankle is the center of the visible proximal stem. The
-                // former mid-height landmark forced almost half the foot
-                // sprite underneath the shin and hid the actual articulation.
-                .{ .kind = .ankle, .visible_uv = .{ if (female) 0.267 else 0.239, 0.0 } },
+                // The top/three-quarter front-foot neck is authored at the
+                // unchanged style-specific sprite pivot. These visible-space
+                // coordinates resolve that neck after alpha-bound derivation.
+                .{ .kind = .ankle, .visible_uv = .{ if (female) 0.319 else 0.283, 0.0 } },
                 .{ .kind = .heel, .visible_uv = .{ 0.07, 0.70 } },
                 .{ .kind = .toe, .visible_uv = .{ 0.97, 0.78 } },
                 .{ .kind = .sole_back, .visible_uv = .{ 0.06, 0.91 } },
@@ -1167,6 +1167,9 @@ pub const TraceRecord = struct {
     /// transform before authored art size is applied. Proportion contracts
     /// use this to evaluate supported morphology rather than one screenshot.
     morphology_length_scale: f32 = 1,
+    /// Rotation of the authoritative attachment/bone transform before the
+    /// view-specific authored rest rotation is applied.
+    binding_rotation_radians: f32 = 0,
 };
 
 pub const Trace = struct {
@@ -1249,6 +1252,7 @@ pub const Metric = struct {
     outfit: []const u8,
     view: View,
     pose: []const u8,
+    morphology: []const u8 = "nominal",
     component: []const u8,
     side: Side,
     metric: []const u8,
@@ -1256,6 +1260,7 @@ pub const Metric = struct {
     minimum: ?f32 = null,
     maximum: ?f32 = null,
     unit: []const u8,
+    source: []const u8 = "semantic_visual_geometry",
     outcome: Outcome,
 };
 

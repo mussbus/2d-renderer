@@ -351,7 +351,13 @@ pub const Presentation = struct {
                 }
             } else {
                 const sprite_transform = try humanoid.spriteTransform(try resolved.world());
-                const rest_rotation = restRotation(binding.anchor, view, instance.facing);
+                const resolved_side = semanticSide(visual, anatomy_definition);
+                const rest_rotation = restRotation(
+                    binding.anchor,
+                    view,
+                    instance.facing,
+                    resolved_side,
+                );
                 var world_size = presentation_view.spriteMorphologyScale(
                     sprite_transform.signed_scale,
                     rest_rotation,
@@ -437,7 +443,7 @@ pub const Presentation = struct {
                         .view = geometryView(view, instance.facing),
                         .owner = ownerForRole(role),
                         .role = role,
-                        .side = semanticSide(visual, anatomy_definition),
+                        .side = resolved_side,
                         .semantic_id = @intFromEnum(selected.semantic_id),
                         .component_id = @intCast(component.id.index()),
                         .bound_identity = boundIdentityRaw(visual),
@@ -609,7 +615,16 @@ fn restRotation(
     anchor: wardrobe_catalog.AnchorKind,
     view: presentation_view.View,
     facing: humanoid.Facing,
+    side: visual_geometry.Side,
 ) f32 {
+    if (anchor == .foot and view == .front) {
+        const front_foot_rotation = std.math.degreesToRadians(78.0);
+        return switch (side) {
+            .left => -front_foot_rotation,
+            .right => front_foot_rotation,
+            .none => 0,
+        };
+    }
     return switch (anchor) {
         .upper_arm, .hand, .lower_leg => if (view == .side and facing == .left)
             -std.math.pi / 2.0

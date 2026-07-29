@@ -36,9 +36,9 @@ pub fn build(b: *std.Build) void {
     const mesh_shader_source = "assets/shaders/deformable_mesh.hlsl";
     const mechanical_art_atlas = "assets/art/p23_mechanical_atlas.png";
     const energy_art_atlas = "assets/art/p23_energy_atlas.png";
-    const male_character_atlas = "assets/art/p25a_male_base_anatomy_atlas.png";
-    const female_character_atlas = "assets/art/p25a_female_base_anatomy_atlas.png";
-    const character_component_atlas = "assets/art/p25b_anatomy_components_atlas.png";
+    const male_character_atlas = "assets/art/p27c_male_base_anatomy_atlas.png";
+    const female_character_atlas = "assets/art/p27c_female_base_anatomy_atlas.png";
+    const character_component_atlas = "assets/art/p27c_anatomy_components_atlas.png";
     const wardrobe_upper_atlas = "assets/art/p25_wardrobe_upper_atlas.png";
     const wardrobe_layers_atlas = "assets/art/p25_wardrobe_layers_atlas.png";
     const wardrobe_lower_atlas = "assets/art/p25_wardrobe_lower_atlas.png";
@@ -133,9 +133,9 @@ pub fn build(b: *std.Build) void {
     const install_mesh_vertex_shader = b.addInstallFileWithDir(mesh_vertex_shader.output, .bin, "shaders/deformable_mesh_vs.dxil");
     const install_mechanical_art_atlas = b.addInstallFileWithDir(b.path(mechanical_art_atlas), .bin, "art/p23_mechanical_atlas.png");
     const install_energy_art_atlas = b.addInstallFileWithDir(b.path(energy_art_atlas), .bin, "art/p23_energy_atlas.png");
-    const install_male_character_atlas = b.addInstallFileWithDir(b.path(male_character_atlas), .bin, "art/p25a_male_base_anatomy_atlas.png");
-    const install_female_character_atlas = b.addInstallFileWithDir(b.path(female_character_atlas), .bin, "art/p25a_female_base_anatomy_atlas.png");
-    const install_character_component_atlas = b.addInstallFileWithDir(b.path(character_component_atlas), .bin, "art/p25b_anatomy_components_atlas.png");
+    const install_male_character_atlas = b.addInstallFileWithDir(b.path(male_character_atlas), .bin, "art/p27c_male_base_anatomy_atlas.png");
+    const install_female_character_atlas = b.addInstallFileWithDir(b.path(female_character_atlas), .bin, "art/p27c_female_base_anatomy_atlas.png");
+    const install_character_component_atlas = b.addInstallFileWithDir(b.path(character_component_atlas), .bin, "art/p27c_anatomy_components_atlas.png");
     const install_wardrobe_upper_atlas = b.addInstallFileWithDir(b.path(wardrobe_upper_atlas), .bin, "art/p25_wardrobe_upper_atlas.png");
     const install_wardrobe_layers_atlas = b.addInstallFileWithDir(b.path(wardrobe_layers_atlas), .bin, "art/p25_wardrobe_layers_atlas.png");
     const install_wardrobe_lower_atlas = b.addInstallFileWithDir(b.path(wardrobe_lower_atlas), .bin, "art/p25_wardrobe_lower_atlas.png");
@@ -265,6 +265,12 @@ pub fn build(b: *std.Build) void {
     visual_geometry_module.addImport("math", math_module);
     visual_geometry_module.addImport("camera2d", camera2d_module);
     visual_geometry_module.addImport("sprite_batch", sprite_batch_module);
+    const anatomy_evidence_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/anatomy_evidence.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    anatomy_evidence_module.addImport("visual_geometry", visual_geometry_module);
     const visual_geometry_audit_module = b.createModule(.{
         .root_source_file = b.path("src/scene/visual_geometry_audit.zig"),
         .target = target,
@@ -274,6 +280,16 @@ pub fn build(b: *std.Build) void {
     visual_geometry_audit_module.addImport("camera2d", camera2d_module);
     visual_geometry_audit_module.addImport("sprite_batch", sprite_batch_module);
     visual_geometry_audit_module.addImport("visual_geometry", visual_geometry_module);
+    const anatomy_quality_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/anatomy_quality.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    anatomy_quality_module.addImport("math", math_module);
+    anatomy_quality_module.addImport("camera2d", camera2d_module);
+    anatomy_quality_module.addImport("sprite_batch", sprite_batch_module);
+    anatomy_quality_module.addImport("visual_geometry", visual_geometry_module);
+    anatomy_quality_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     const collider_module = b.createModule(.{
         .root_source_file = b.path("src/physics/collider.zig"),
         .target = target,
@@ -822,6 +838,7 @@ pub fn build(b: *std.Build) void {
     wardrobe_demo_module.addImport("render_queue", render_queue_module);
     wardrobe_demo_module.addImport("deformable_mesh", deformable_mesh_module);
     wardrobe_demo_module.addImport("visual_geometry", visual_geometry_module);
+    wardrobe_demo_module.addImport("anatomy_evidence", anatomy_evidence_module);
     const equipment_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/equipment_demo.zig"),
         .target = target,
@@ -1076,6 +1093,7 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("visual_geometry", visual_geometry_module);
     app_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     app_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
+    app_module.addImport("anatomy_evidence", anatomy_evidence_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("deformable_mesh", deformable_mesh_module);
@@ -1142,6 +1160,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("environment_demo", environment_demo_module);
     test_module.addImport("visual_geometry", visual_geometry_module);
     test_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
+    test_module.addImport("anatomy_evidence", anatomy_evidence_module);
     const art_test_module = b.createModule(.{
         .root_source_file = b.path("tests/art_pipeline_tests.zig"),
         .target = target,
@@ -1232,6 +1251,7 @@ pub fn build(b: *std.Build) void {
     visual_geometry_test_module.addImport("wardrobe_demo", wardrobe_demo_module);
     visual_geometry_test_module.addImport("visual_geometry", visual_geometry_module);
     visual_geometry_test_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
+    visual_geometry_test_module.addImport("anatomy_quality", anatomy_quality_module);
     const visual_geometry_tests = b.addTest(.{
         .name = "visual-geometry-tests",
         .root_module = visual_geometry_test_module,
@@ -1266,6 +1286,32 @@ pub fn build(b: *std.Build) void {
         "Write Prompt 25D human and machine production-acceptance reports",
     );
     visual_geometry_report_step.dependOn(&run_visual_geometry_report.step);
+    const anatomy_quality_report_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/anatomy_quality_report.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    anatomy_quality_report_module.addImport("camera2d", camera2d_module);
+    anatomy_quality_report_module.addImport("image_decode", image_decode_module);
+    anatomy_quality_report_module.addImport("render_queue", render_queue_module);
+    anatomy_quality_report_module.addImport("presentation_view", presentation_view_module);
+    anatomy_quality_report_module.addImport("humanoid", humanoid_module);
+    anatomy_quality_report_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    anatomy_quality_report_module.addImport("visual_geometry", visual_geometry_module);
+    anatomy_quality_report_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
+    anatomy_quality_report_module.addImport("anatomy_quality", anatomy_quality_module);
+    const anatomy_quality_report_exe = b.addExecutable(.{
+        .name = "anatomy_quality_report",
+        .root_module = anatomy_quality_report_module,
+    });
+    const run_anatomy_quality_report = b.addRunArtifact(anatomy_quality_report_exe);
+    if (b.args) |args| run_anatomy_quality_report.addArgs(args);
+    const anatomy_quality_report_step = b.step(
+        "p27c-anatomy-report",
+        "Write Prompt 27C anatomy-silhouette, proportion, and continuity evidence",
+    );
+    anatomy_quality_report_step.dependOn(&run_anatomy_quality_report.step);
     const verify_p25d_goldens = b.addSystemCommand(&.{
         "pwsh",
         "-NoProfile",

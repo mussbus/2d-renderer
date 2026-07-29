@@ -106,12 +106,14 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .wardrobe;
             } else if (std.mem.eql(u8, arguments[index], "visual-quality")) {
                 options.demo = .visual_quality;
+            } else if (std.mem.eql(u8, arguments[index], "anatomy-quality")) {
+                options.demo = .anatomy_quality;
             } else if (std.mem.eql(u8, arguments[index], "environment")) {
                 options.demo = .environment;
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, modular-body, equipment, properties, breathing, mesh-attachments, attachment-secondary, side-scroller, foundation, art-assets, character-presentation, wardrobe, visual-quality, environment", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, humanoid, animation, controller, secondary-motion, multi-character, handshake, handshake-ik, foot-planting, integrated, playground, modular-body, equipment, properties, breathing, mesh-attachments, attachment-secondary, side-scroller, foundation, art-assets, character-presentation, wardrobe, visual-quality, anatomy-quality, environment", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
@@ -121,11 +123,11 @@ fn parseOptions(arguments: []const []const u8) !Options {
         } else if (std.mem.eql(u8, argument, "--interactive")) {
             options.interactive = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation|art-assets|character-presentation|wardrobe|visual-quality|environment>, --scripted-input, --debug-visualization, --interactive", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation|art-assets|character-presentation|wardrobe|visual-quality|anatomy-quality|environment>, --scripted-input, --debug-visualization, --interactive", .{argument});
             return error.UnknownArgument;
         }
     }
-    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated and options.demo != .playground and options.demo != .side_scroller and options.demo != .foundation and options.demo != .character_presentation and options.demo != .wardrobe and options.demo != .visual_quality and options.demo != .environment) {
+    if (options.scripted_input and options.demo != .controller and options.demo != .secondary_motion and options.demo != .handshake and options.demo != .handshake_ik and options.demo != .foot_planting and options.demo != .integrated and options.demo != .playground and options.demo != .side_scroller and options.demo != .foundation and options.demo != .character_presentation and options.demo != .wardrobe and options.demo != .visual_quality and options.demo != .anatomy_quality and options.demo != .environment) {
         return error.ScriptedInputRequiresControllerDemo;
     }
     if (options.debug_visualization and
@@ -157,6 +159,11 @@ fn parseOptions(arguments: []const []const u8) !Options {
         (!options.scripted_input or options.interactive or options.maximum_frames != 600))
     {
         return error.VisualQualityRequiresExactScriptedRoute;
+    }
+    if (options.demo == .anatomy_quality and
+        (!options.scripted_input or options.interactive or options.maximum_frames != 600))
+    {
+        return error.AnatomyQualityRequiresExactScriptedRoute;
     }
     if (options.demo == .environment and options.interactive == options.scripted_input) {
         return error.EnvironmentRequiresExactlyOneInputMode;

@@ -29,8 +29,12 @@ $requiredFiles = @(
     'docs/prompts/exact/026-source.txt',
     'docs/prompts/exact/027-source.txt',
     'docs/prompts/027A-evidence-integrity.md',
+    'docs/prompts/027B-ground-contact-camera-parallax-presence.md',
+    'docs/prompts/027C-production-anatomy.md',
     'prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md',
     'docs/PROMPT27A_DECISION_RECORD.md',
+    'docs/PROMPT27B_DECISION_RECORD.md',
+    'docs/PROMPT27C_DECISION_RECORD.md',
     'docs/decisions/README.md',
     'docs/reports/README.md',
     'docs/reports/prompt-implementation-reports/INDEX.md',
@@ -45,6 +49,8 @@ $requiredFiles = @(
     'docs/reports/prompt-implementation-reports/exact/025C-implementation-report.md',
     'docs/reports/prompt-implementation-reports/exact/025D-implementation-report.md',
     'docs/reports/prompt-implementation-reports/exact/027A-implementation-report.md'
+    'docs/reports/prompt-implementation-reports/exact/027B-implementation-report.md'
+    'docs/reports/prompt-implementation-reports/exact/027C-implementation-report.md'
 )
 
 $failures = [Collections.Generic.List[string]]::new()

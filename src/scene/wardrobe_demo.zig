@@ -15,6 +15,7 @@ const wardrobe_art = @import("wardrobe_art");
 const wardrobe_presentation = @import("wardrobe_presentation");
 const render_queue = @import("render_queue");
 const visual_geometry = @import("visual_geometry");
+const anatomy_evidence = @import("anatomy_evidence");
 
 pub const required_frames: u32 = 600;
 pub const visual_quality_required_frames: u32 = 600;
@@ -27,6 +28,25 @@ pub const combined_art_page_count: usize =
     character_art.texture_page_count + wardrobe_art.texture_page_count;
 pub const mesh_definition_count: usize = wardrobe_presentation.mesh_definition_count;
 const preset_frames: u32 = 24;
+
+fn anatomyStageForFrame(frame: u32) anatomy_evidence.Stage {
+    return if (frame < 40)
+        .neutral_front
+    else if (frame < 80)
+        .neutral_side_right
+    else if (frame < 120)
+        .neutral_side_left
+    else if (frame < 160)
+        .build_low_front
+    else if (frame < 200)
+        .build_high_front
+    else if (frame < 360)
+        .arm_extended_side
+    else if (frame < 480)
+        .elbow_bent_side
+    else
+        .deep_knee_bend_side;
+}
 
 pub const Initialization = struct {
     collider_inputs: ?[]const collider.StaticColliderInput = null,
@@ -101,6 +121,9 @@ pub const Scene = struct {
     evidence: Evidence = .{},
     visual_quality_enabled: bool = false,
     visual_quality_evidence: VisualQualityEvidence = .{},
+    anatomy_quality_enabled: bool = false,
+    anatomy_evidence_stage: anatomy_evidence.Stage = .neutral_front,
+    anatomy_stage_frame: u16 = 0,
 
     pub fn init(allocator: std.mem.Allocator) !Scene {
         return initWithConfiguration(allocator, .{});
@@ -280,6 +303,124 @@ pub const Scene = struct {
         scene.current_preset = base;
         scene.custom_active = false;
         scene.visual_quality_enabled = true;
+    }
+
+    pub fn enableAnatomyQualityAcceptance(scene: *Scene) !void {
+        if (scene.anatomy_quality_enabled) {
+            return error.AnatomyQualityAlreadyEnabled;
+        }
+        try scene.enableVisualQualityAcceptance();
+        scene.anatomy_quality_enabled = true;
+        try scene.configureAnatomyEvidenceStage(.neutral_front);
+    }
+
+    pub fn updateAnatomyQualityFrame(scene: *Scene) !void {
+        if (!scene.anatomy_quality_enabled) {
+            return error.AnatomyQualityNotEnabled;
+        }
+        const next_stage = anatomyStageForFrame(scene.frame_index);
+        if (next_stage != scene.anatomy_evidence_stage) {
+            try scene.configureAnatomyEvidenceStage(next_stage);
+            scene.anatomy_stage_frame = 0;
+        }
+        const frame = try scene.clock.beginFrame(1.0 / 60.0);
+        if (frame.substeps != fixed_ticks_per_frame) {
+            return error.WardrobeFixedTickGroupingMismatch;
+        }
+        for (0..frame.substeps) |substep| {
+            scene.simulation_tick = std.math.add(
+                u64,
+                scene.simulation_tick,
+                1,
+            ) catch return error.SimulationTickOverflow;
+            if (scene.anatomy_evidence_stage == .elbow_bent_side) {
+                try scene.female.sampleInteractionAnimation(
+                    .handshake_role_b,
+                    0.55,
+                );
+                try scene.stepMale();
+                continue;
+            }
+            const moving = scene.anatomy_evidence_stage ==
+                .arm_extended_side;
+            const turn_right = scene.anatomy_evidence_stage ==
+                .neutral_side_right and scene.anatomy_stage_frame < 3;
+            const turn_left = scene.anatomy_evidence_stage ==
+                .neutral_side_left and scene.anatomy_stage_frame < 3;
+            const jumping = scene.anatomy_evidence_stage ==
+                .deep_knee_bend_side;
+            _ = try scene.stepFemale(.{
+                .move_axis = if (moving or turn_right or jumping)
+                    0.58
+                else if (turn_left)
+                    -0.58
+                else
+                    0,
+                .jump_pressed = jumping and
+                    scene.anatomy_stage_frame == 0 and substep == 0,
+                .jump_held = jumping and scene.anatomy_stage_frame < 12,
+                .jump_released = jumping and
+                    scene.anatomy_stage_frame == 12 and substep == 0,
+                .interact_pressed = false,
+            });
+            try scene.stepMale();
+        }
+        scene.anatomy_stage_frame = std.math.add(
+            u16,
+            scene.anatomy_stage_frame,
+            1,
+        ) catch return error.AnatomyEvidenceStageFrameOverflow;
+        scene.frame_index = std.math.add(u32, scene.frame_index, 1) catch
+            return error.WardrobeFrameOverflow;
+    }
+
+    fn configureAnatomyEvidenceStage(
+        scene: *Scene,
+        stage: anatomy_evidence.Stage,
+    ) !void {
+        scene.anatomy_evidence_stage = stage;
+        if (stage == .arm_extended_side or
+            stage == .elbow_bent_side or
+            stage == .deep_knee_bend_side)
+        {
+            try scene.female.resetControlled(&scene.world);
+        }
+        const side = switch (stage) {
+            .neutral_side_right,
+            .arm_extended_side,
+            .elbow_bent_side,
+            .deep_knee_bend_side,
+            => true,
+            else => false,
+        };
+        const facing: humanoid.Facing = if (stage == .neutral_side_left)
+            .left
+        else
+            .right;
+        try scene.male.setFacing(facing);
+        try scene.female.setFacing(facing);
+        try scene.male.setPresentationOverride(
+            if (side or stage == .neutral_side_left)
+                .force_side
+            else
+                .force_front,
+        );
+        try scene.female.setPresentationOverride(
+            if (side or stage == .neutral_side_left)
+                .force_side
+            else
+                .force_front,
+        );
+        const build: f32 = switch (stage) {
+            .build_low_front => 15,
+            .build_high_front => 85,
+            else => 50,
+        };
+        try scene.male.setGlobalBuild(build);
+        try scene.female.setGlobalBuild(build);
+        if (stage == .elbow_bent_side) {
+            try scene.female.enterAnimationState(.handshake_role_b);
+        }
     }
 
     pub fn updateVisualQualityFrame(scene: *Scene) !void {

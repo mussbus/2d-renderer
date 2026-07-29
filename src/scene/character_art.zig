@@ -104,24 +104,24 @@ const garment_binding_count = std.enums.values(Style).len *
 pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = male_page_id,
-        .stable_name = "p25a_male_base_anatomy_atlas",
-        .asset_path = "art/p25a_male_base_anatomy_atlas.png",
+        .stable_name = "p27c_male_base_anatomy_atlas",
+        .asset_path = "art/p27c_male_base_anatomy_atlas.png",
         .sampling = .nearest,
         .expected_width = 1600,
         .expected_height = 983,
     },
     .{
         .id = female_page_id,
-        .stable_name = "p25a_female_base_anatomy_atlas",
-        .asset_path = "art/p25a_female_base_anatomy_atlas.png",
+        .stable_name = "p27c_female_base_anatomy_atlas",
+        .asset_path = "art/p27c_female_base_anatomy_atlas.png",
         .sampling = .nearest,
         .expected_width = 1599,
         .expected_height = 984,
     },
     .{
         .id = component_page_id,
-        .stable_name = "p25b_anatomy_components_atlas",
-        .asset_path = "art/p25b_anatomy_components_atlas.png",
+        .stable_name = "p27c_anatomy_components_atlas",
+        .asset_path = "art/p27c_anatomy_components_atlas.png",
         .sampling = .nearest,
         .expected_width = 1792,
         .expected_height = 1024,
@@ -461,6 +461,7 @@ pub const Presentation = struct {
                         morphology_scale.y
                     else
                         morphology_scale.x),
+                    .binding_rotation_radians = sprite_transform.rotation_radians,
                     .submission_index = submission_index,
                 });
             }
@@ -937,24 +938,24 @@ fn makeBindingInputs() [anatomy_binding_count + garment_binding_count]art_pack.V
 
 fn authoredSize(style: Style, key: RegionKey) [2]f32 {
     return switch (key) {
-        .side_head, .front_head => .{ 0.68, 0.96 },
+        .side_head, .front_head => if (style == .male) .{ 0.68, 0.96 } else .{ 0.68, 0.94 },
         .side_torso => if (style == .male) .{ 0.66, 1.30 } else .{ 0.72, 1.30 },
         .front_torso => if (style == .male) .{ 0.94, 1.30 } else .{ 0.85, 1.30 },
         .side_pelvis => if (style == .male) .{ 0.72, 1.13 } else .{ 0.72, 1.15 },
         .front_pelvis => if (style == .male) .{ 0.96, 0.62 } else .{ 1.08, 0.63 },
-        .side_upper_arm => if (style == .male) .{ 0.68, 0.30 } else .{ 0.68, 0.29 },
-        .side_forearm => if (style == .male) .{ 0.582, 0.20 } else .{ 0.58, 0.18 },
-        .side_hand => if (style == .male) .{ 0.34, 0.20 } else .{ 0.34, 0.18 },
+        .side_upper_arm => if (style == .male) .{ 0.687, 0.41 } else .{ 0.68, 0.44 },
+        .side_forearm => if (style == .male) .{ 0.588, 0.235 } else .{ 0.58, 0.255 },
+        .side_hand => if (style == .male) .{ 0.32, 0.153 } else .{ 0.29, 0.18 },
         .side_thigh => if (style == .male) .{ 0.415, 0.93 } else .{ 0.38, 0.919 },
         .side_shin => if (style == .male) .{ 0.28, 0.88 } else .{ 0.28, 0.875 },
         .side_foot => .{ 0.44, 0.167 },
-        .front_upper_arm => if (style == .male) .{ 0.255, 0.801 } else .{ 0.25, 0.783 },
+        .front_upper_arm => if (style == .male) .{ 0.320, 0.813 } else .{ 0.330, 0.783 },
         // Both visible forearm spans now resolve to the authoritative
         // elbow-to-wrist distance independently of thickness morphology.
-        .front_forearm => if (style == .male) .{ 0.20, 0.568 } else .{ 0.19, 0.568 },
-        .front_hand => if (style == .male) .{ 0.20, 0.36 } else .{ 0.15, 0.31 },
-        .front_thigh => if (style == .male) .{ 0.36, 0.980 } else .{ 0.46, 1.026 },
-        .front_shin => if (style == .male) .{ 0.34, 0.883 } else .{ 0.31, 0.882 },
+        .front_forearm => if (style == .male) .{ 0.210, 0.577 } else .{ 0.225, 0.568 },
+        .front_hand => if (style == .male) .{ 0.135, 0.32 } else .{ 0.15, 0.282 },
+        .front_thigh => if (style == .male) .{ 0.380, 0.980 } else .{ 0.46, 1.026 },
+        .front_shin => if (style == .male) .{ 0.34, 0.883 } else .{ 0.355, 0.882 },
         .front_foot => if (style == .male) .{ 0.42, 0.172 } else .{ 0.36, 0.190 },
         .side_eye => .{ 0.14, 0.09 },
         .front_left_eye, .front_right_eye => .{ 0.13, 0.085 },
@@ -995,7 +996,11 @@ fn pivotFor(style: Style, key: RegionKey) [2]f32 {
         .front_thigh => if (style == .male) .{ 0.5, 0.951154 } else .{ 0.5, 0.945065 },
         .front_shin => .{ 0.5, 0.985 },
         .side_foot => if (style == .male) .{ 0.261357, 0.948980 } else .{ 0.248357, 0.947917 },
-        .front_foot => if (style == .male) .{ 0.258478, 0.950980 } else .{ 0.287086, 0.955357 },
+        // Prompt 27C's top/three-quarter alpha envelope begins one source
+        // pixel farther inward than its preserved predecessor. Compensate
+        // that alpha-derived X shift at the pivot so the semantic ankle stays
+        // registered to footwear and the authoritative socket.
+        .front_foot => if (style == .male) .{ 0.305500, 0.961000 } else .{ 0.337086, 0.966000 },
         .side_hair, .front_hair => if (style == .male) .{ 0.5, 0.15 } else .{ 0.5, 0.76 },
         else => .{ 0.5, 0.5 },
     };
@@ -1003,6 +1008,7 @@ fn pivotFor(style: Style, key: RegionKey) [2]f32 {
 
 fn restRotation(style: Style, slot: Slot, view: presentation_view.View) f32 {
     _ = style;
+    const front_foot_rotation = std.math.degreesToRadians(78.0);
     return switch (view) {
         .side => switch (slot) {
             .left_thigh, .right_thigh, .left_shin, .right_shin => std.math.pi / 2.0,
@@ -1020,6 +1026,8 @@ fn restRotation(style: Style, slot: Slot, view: presentation_view.View) f32 {
             .left_shin,
             .right_shin,
             => std.math.pi / 2.0,
+            .left_foot => -front_foot_rotation,
+            .right_foot => front_foot_rotation,
             else => 0,
         },
     };

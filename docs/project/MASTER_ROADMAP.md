@@ -48,7 +48,7 @@ Prompt 22 scene as a focused regression module.
 
 ## Phase 3 — Production presentation
 
-Status: **complete for the current production content**
+Status: **automated implementation complete; current anatomy owner review pending**
 
 - Real image assets, typed texture pages, atlas regions, and semantic view
   bindings.
@@ -61,6 +61,9 @@ Status: **complete for the current production content**
 - Prompt 25D production-art and presentation corrections.
 - Prompt 25E consolidated history, authority, authoring, and known-gap
   contracts.
+- Prompt 27C versioned and reauthored the production base anatomy, hardened
+  style/view silhouette and joint-continuity contracts, and added repeatable
+  body-only D3D12 evidence. Owner visual review remains pending.
 
 Historical scope: Prompts 23–25E.
 
@@ -120,7 +123,7 @@ collision, theme, or atlas-identity models.
 
 ## Milestone gate
 
-Prompts 0–27B are implemented. Prompt 27C and later milestones have not
-started. Current non-blocking limitations, the pending Prompt 27A/27B owner
-review, and future schema triggers are recorded in
+Prompts 0–27C are implemented. Prompt 27D and later milestones have not
+started. Current non-blocking limitations, the pending Prompt 27A/27B/27C
+owner review, and future schema triggers are recorded in
 [KNOWN_GAPS.md](KNOWN_GAPS.md).

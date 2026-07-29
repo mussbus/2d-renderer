@@ -8,6 +8,7 @@ const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_demo = @import("wardrobe_demo");
 const visual = @import("visual_geometry");
 const audit = @import("visual_geometry_audit");
+const anatomy_quality = @import("anatomy_quality");
 
 test "alpha geometry ignores transparent padding and maps visible landmarks" {
     var pixels = [_]u8{0} ** (8 * 6 * 4);
@@ -184,6 +185,32 @@ test "joint continuity contracts retain strict distal seams and bounded root cap
     try std.testing.expectEqual(visual.Outcome.fail, report.metrics[5].outcome);
 }
 
+test "joint continuity depth measures contiguous overlap rather than aliased extent" {
+    var shallow_disconnected = [_]bool{false} ** 25;
+    shallow_disconnected[4] = true;
+    shallow_disconnected[5] = true;
+    shallow_disconnected[17] = true;
+    shallow_disconnected[18] = true;
+    try std.testing.expectEqual(
+        @as(f32, 2.0),
+        audit.longestContiguousProjectionRun(&shallow_disconnected),
+    );
+
+    var valid_boundary = [_]bool{false} ** 25;
+    @memset(valid_boundary[8..13], true);
+    try std.testing.expectEqual(
+        @as(f32, 5.0),
+        audit.longestContiguousProjectionRun(&valid_boundary),
+    );
+
+    var excessive_overlap = [_]bool{false} ** 25;
+    @memset(excessive_overlap[8..14], true);
+    try std.testing.expect(
+        audit.longestContiguousProjectionRun(&excessive_overlap) >
+            visual.continuityContract(.shin, .foot).maximum_overlap_px,
+    );
+}
+
 test "curved lower garments keep design-specific coverage without weakening the generic ruler" {
     const generic = visual.fitContract(.lower_long);
     const split = findVisualSpec("garnet_split_skirt").fit;
@@ -253,6 +280,160 @@ test "reports are structured and unapproved current captures cannot become golde
     );
 }
 
+test "Prompt 27C anatomy contracts are style and view specific" {
+    const male_front = try anatomy_quality.contract("male", .front);
+    const female_front = try anatomy_quality.contract("female", .front);
+    const male_side = try anatomy_quality.contract("male", .side_right);
+    try std.testing.expectEqual(@as(f32, 8.0), male_front.shoulder_slope_degrees.minimum);
+    try std.testing.expectEqual(@as(f32, 10.0), female_front.shoulder_slope_degrees.minimum);
+    try std.testing.expectEqual(@as(f32, 6.0), male_side.shoulder_slope_degrees.minimum);
+    try std.testing.expectEqual(@as(f32, 0.57), male_front.hand_forearm_length_ratio.maximum);
+    try std.testing.expectEqual(@as(f32, 0.54), female_front.hand_forearm_length_ratio.maximum);
+    try std.testing.expectError(
+        error.UnsupportedAnatomyStyle,
+        anatomy_quality.contract("fixture", .front),
+    );
+}
+
+test "Prompt 27C controlled anatomy defects fail their intended rulers" {
+    const accepted = try anatomy_quality.contract("male", .front);
+    var report = visual.Report{};
+    const base = visual.Metric{
+        .character_style = "fixture",
+        .outfit = "base_only",
+        .view = .front,
+        .pose = "controlled",
+        .component = "anatomy",
+        .side = .left,
+        .metric = "controlled",
+        .actual = 0,
+        .unit = "ratio",
+        .outcome = .pass,
+    };
+
+    try recordControlledRange(&report, base, "shoulder_slope_valid", 8.0, accepted.shoulder_slope_degrees);
+    try recordControlledRange(&report, base, "shoulder_flat_minimal", 7.999, accepted.shoulder_slope_degrees);
+    try recordControlledRange(&report, base, "shoulder_flat_clear", 0.0, accepted.shoulder_slope_degrees);
+    try recordControlledRange(&report, base, "shoulder_curve_valid", 0.008, accepted.shoulder_curve_ratio);
+    try recordControlledRange(&report, base, "shoulder_square_minimal", 0.0079, accepted.shoulder_curve_ratio);
+    try recordControlledRange(&report, base, "shoulder_blob", 0.30, accepted.shoulder_curve_ratio);
+    try recordControlledMaximum(&report, base, "shoulder_gap_valid", 2.0, 2.0);
+    try recordControlledMaximum(&report, base, "shoulder_gap_minimal", 2.001, 2.0);
+    try recordControlledMaximum(&report, base, "shoulder_gap_clear", 12.0, 2.0);
+    try recordControlledRange(&report, base, "hand_length_valid", 0.57, accepted.hand_forearm_length_ratio);
+    try recordControlledRange(&report, base, "oversized_hand_minimal", 0.5701, accepted.hand_forearm_length_ratio);
+    try recordControlledRange(&report, base, "oversized_hand_clear", 0.90, accepted.hand_forearm_length_ratio);
+    try recordControlledRange(&report, base, "arm_length_valid", 1.18, accepted.arm_torso_length_ratio);
+    try recordControlledRange(&report, base, "overlong_arm_minimal", 1.1801, accepted.arm_torso_length_ratio);
+    try recordControlledRange(&report, base, "overlong_arm_clear", 1.60, accepted.arm_torso_length_ratio);
+    try recordControlledRange(&report, base, "wrist_valid", 0.68, accepted.wrist_width_ratio);
+    try recordControlledRange(&report, base, "wrist_pinch_minimal", 0.6799, accepted.wrist_width_ratio);
+    try recordControlledRange(&report, base, "wrist_pinch_clear", 0.30, accepted.wrist_width_ratio);
+    try recordControlledMaximum(&report, base, "floating_pelvis_valid", 2.0, 2.0);
+    try recordControlledMaximum(&report, base, "floating_pelvis_minimal", 2.001, 2.0);
+    try recordControlledMaximum(&report, base, "floating_pelvis_clear", 18.0, 2.0);
+    try recordControlledMaximum(&report, base, "hip_overlap_valid", 15.0, 15.0);
+    try recordControlledMaximum(&report, base, "hip_overlap_minimal", 15.001, 15.0);
+    try recordControlledMaximum(&report, base, "hip_overlap_clear", 30.0, 15.0);
+    try recordControlledRange(&report, base, "knee_valid", 1.34, accepted.knee_width_ratio);
+    try recordControlledRange(&report, base, "knee_bead_minimal", 1.3401, accepted.knee_width_ratio);
+    try recordControlledRange(&report, base, "knee_bead_clear", 1.80, accepted.knee_width_ratio);
+    try recordControlledMaximum(&report, base, "ankle_gap_valid", 2.0, 2.0);
+    try recordControlledMaximum(&report, base, "ankle_gap_minimal", 2.001, 2.0);
+    try recordControlledMaximum(&report, base, "ankle_gap_clear", 14.0, 2.0);
+    try recordControlledMaximum(&report, base, "side_foot_valid", 7.0, accepted.maximum_side_foot_axis_error_degrees);
+    try recordControlledMaximum(&report, base, "reversed_foot_minimal", 7.001, accepted.maximum_side_foot_axis_error_degrees);
+    try recordControlledMaximum(&report, base, "reversed_foot_clear", 180.0, accepted.maximum_side_foot_axis_error_degrees);
+    try recordControlledRange(&report, base, "toe_out_valid", 8.0, accepted.front_toe_out_degrees);
+    try recordControlledRange(&report, base, "toe_in_minimal", 7.999, accepted.front_toe_out_degrees);
+    try recordControlledRange(&report, base, "toe_out_excessive", 40.0, accepted.front_toe_out_degrees);
+    try recordControlledMaximum(&report, base, "joint_edge_valid", 0.20, accepted.maximum_dark_joint_edge_ratio);
+    try recordControlledMaximum(&report, base, "joint_edge_minimal", 0.2001, accepted.maximum_dark_joint_edge_ratio);
+    try recordControlledMaximum(&report, base, "joint_edge_clear", 0.90, accepted.maximum_dark_joint_edge_ratio);
+
+    try std.testing.expectEqual(@as(usize, 39), report.count);
+    for (report.metrics[0..report.count], 0..) |metric, index| {
+        try std.testing.expectEqual(
+            if (index % 3 == 0) visual.Outcome.pass else visual.Outcome.fail,
+            metric.outcome,
+        );
+    }
+}
+
+test "Prompt 27C anatomy matrix fails closed when a declared case is missing" {
+    const cases = [_]anatomy_quality.MatrixCase{
+        .{ .style = "male", .view = .front, .pose = "neutral", .morphology = "nominal" },
+        .{ .style = "female", .view = .side_right, .pose = "neutral", .morphology = "nominal" },
+    };
+    var tracker = try anatomy_quality.MatrixTracker.init(&cases);
+    try tracker.observe(cases[0]);
+    try std.testing.expectError(error.MissingAnatomyMatrixCase, tracker.validateComplete());
+    try std.testing.expectError(
+        error.UndeclaredAnatomyMatrixCase,
+        tracker.observe(.{
+            .style = "female",
+            .view = .side_left,
+            .pose = "neutral",
+            .morphology = "nominal",
+        }),
+    );
+    try tracker.observe(cases[1]);
+    try tracker.validateComplete();
+}
+
+test "Prompt 27C frozen pre-correction production anatomy yields actionable failures" {
+    var scene = try wardrobe_demo.Scene.init(std.testing.allocator);
+    defer scene.deinit();
+    try scene.enableVisualQualityAcceptance();
+    try scene.male.setPresentationOverride(.force_front);
+    try scene.female.setPresentationOverride(.force_front);
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        256,
+        240,
+        16,
+        wardrobe_demo.combined_art_page_count + 1,
+    );
+    defer queue.deinit();
+    var trace = visual.Trace{};
+    queue.beginFrame();
+    _ = try scene.submitTraced(&queue, &trace);
+    _ = queue.prepare();
+    var decoded = try decodePreCorrectionPages(std.testing.allocator);
+    defer decoded.deinit();
+    var report = visual.Report{};
+    try anatomy_quality.evaluate(&trace, &decoded.images, .{
+        .outfit = "base_only",
+        .pose = "neutral",
+        .camera = camera2d.Camera2D.initDefault(),
+    }, &report);
+    try std.testing.expect(report.count >= 70);
+    try std.testing.expect(report.failure_count > 0);
+    try expectAnyFailure(&report, &.{
+        "shoulder_contour_curve",
+        "shoulder_root_width_ratio",
+        "hand_to_forearm_length_ratio",
+    });
+    for (report.metrics[0..report.count]) |entry| {
+        if (entry.outcome != .fail) continue;
+        std.debug.print(
+            "Prompt27C baseline {s}/{s}/{s}/{s}/{s}: {s}={d:.3} min={?d:.3} max={?d:.3} {s}\n",
+            .{
+                entry.character_style,
+                @tagName(entry.view),
+                entry.pose,
+                @tagName(entry.side),
+                entry.component,
+                entry.metric,
+                entry.actual,
+                entry.minimum,
+                entry.maximum,
+                entry.unit,
+            },
+        );
+    }
+}
+
 test "trace preserves semantic left and right identities independently of mirror signs" {
     var trace = visual.Trace{};
     const geometry = visual.attachmentGeometry("fixture_shoe", .shoe, .front);
@@ -267,7 +448,7 @@ test "trace preserves semantic left and right identities independently of mirror
     try std.testing.expectEqual(visual.Side.left, trace.records[0].side);
 }
 
-test "current Prompt 25D production content satisfies visual geometry" {
+test "current Prompt 27C production content satisfies visual geometry" {
     var scene = try wardrobe_demo.Scene.init(std.testing.allocator);
     defer scene.deinit();
     try scene.enableVisualQualityAcceptance();
@@ -301,7 +482,7 @@ test "current Prompt 25D production content satisfies visual geometry" {
     try std.testing.expect(report.count >= 129);
     try std.testing.expectEqual(@as(u32, 0), report.failure_count);
     std.debug.print(
-        "Prompt 25D focused production geometry: {d}/{d} PASS\n",
+        "Prompt 27C focused production geometry: {d}/{d} PASS\n",
         .{ report.count, report.count },
     );
 }
@@ -465,7 +646,7 @@ test "pose and morphology sweep traces production transforms without allocations
     try std.testing.expectEqual(@as(u64, 0), scene.male.metrics.submission_allocations);
     try std.testing.expectEqual(@as(u64, 0), scene.female.metrics.submission_allocations);
     std.debug.print(
-        "Prompt 25D pose/morphology geometry: {d}/{d} PASS\n",
+        "Prompt 27C pose/morphology geometry: {d}/{d} PASS\n",
         .{ sweep_report.count, sweep_report.count },
     );
 }
@@ -491,11 +672,34 @@ const DecodedPages = struct {
 };
 
 fn decodeProductionPages(allocator: std.mem.Allocator) !DecodedPages {
-    var male = try image_decode.decodePngFile(allocator, "assets/art/p25a_male_base_anatomy_atlas.png", null);
+    return decodePagesWithAnatomy(
+        allocator,
+        "assets/art/p27c_male_base_anatomy_atlas.png",
+        "assets/art/p27c_female_base_anatomy_atlas.png",
+        "assets/art/p27c_anatomy_components_atlas.png",
+    );
+}
+
+fn decodePreCorrectionPages(allocator: std.mem.Allocator) !DecodedPages {
+    return decodePagesWithAnatomy(
+        allocator,
+        "assets/art/p25a_male_base_anatomy_atlas.png",
+        "assets/art/p25a_female_base_anatomy_atlas.png",
+        "assets/art/p25b_anatomy_components_atlas.png",
+    );
+}
+
+fn decodePagesWithAnatomy(
+    allocator: std.mem.Allocator,
+    male_path: []const u8,
+    female_path: []const u8,
+    component_path: []const u8,
+) !DecodedPages {
+    var male = try image_decode.decodePngFile(allocator, male_path, null);
     errdefer male.deinit();
-    var female = try image_decode.decodePngFile(allocator, "assets/art/p25a_female_base_anatomy_atlas.png", null);
+    var female = try image_decode.decodePngFile(allocator, female_path, null);
     errdefer female.deinit();
-    var components = try image_decode.decodePngFile(allocator, "assets/art/p25b_anatomy_components_atlas.png", null);
+    var components = try image_decode.decodePngFile(allocator, component_path, null);
     errdefer components.deinit();
     var upper = try image_decode.decodePngFile(allocator, "assets/art/p25_wardrobe_upper_atlas.png", null);
     errdefer upper.deinit();
@@ -565,6 +769,32 @@ fn findVisualSpec(stable_id: []const u8) wardrobe_catalog.VisualSpec {
         if (std.mem.eql(u8, spec.stable_id, stable_id)) return spec;
     }
     std.debug.panic("missing controlled visual spec: {s}", .{stable_id});
+}
+
+fn recordControlledRange(
+    report: *visual.Report,
+    base: visual.Metric,
+    name: []const u8,
+    actual: f32,
+    accepted: anatomy_quality.Range,
+) !void {
+    var value = base;
+    value.metric = name;
+    value.actual = actual;
+    try report.recordRange(value, accepted.minimum, accepted.maximum);
+}
+
+fn recordControlledMaximum(
+    report: *visual.Report,
+    base: visual.Metric,
+    name: []const u8,
+    actual: f32,
+    maximum: f32,
+) !void {
+    var value = base;
+    value.metric = name;
+    value.actual = actual;
+    try report.recordMaximum(value, maximum);
 }
 
 fn testRequest(overrides: struct {

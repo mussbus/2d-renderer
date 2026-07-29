@@ -39,6 +39,7 @@ const diagnostics = @import("diagnostics");
 const debug_draw = @import("debug_draw");
 const visual_geometry = @import("visual_geometry");
 const visual_geometry_overlay = @import("visual_geometry_overlay");
+const anatomy_evidence = @import("anatomy_evidence");
 
 pub const DemoMode = enum {
     sprites,
@@ -64,13 +65,15 @@ pub const DemoMode = enum {
     character_presentation,
     wardrobe,
     visual_quality,
+    anatomy_quality,
     environment,
 };
 
 fn usesUnifiedRendering(mode: DemoMode) bool {
     return mode == .mesh_attachments or mode == .attachment_secondary or mode == .foundation or
         mode == .art_assets or mode == .character_presentation or mode == .wardrobe or
-        mode == .visual_quality or mode == .environment;
+        mode == .visual_quality or mode == .anatomy_quality or
+        mode == .environment;
 }
 
 fn visualCapturePath(frame: u32) ?[]const u8 {
@@ -105,6 +108,8 @@ const foundation_capture_directory = "zig-out/p27a_evidence/candidate";
 const foundation_capture_count: u32 = @intCast(foundation_evidence.capture_count);
 const p27b_capture_directory = "zig-out/p27b_evidence/candidate";
 const p27b_capture_count: u32 = 4;
+const p27c_capture_directory = "zig-out/p27c_evidence/candidate";
+const p27c_capture_count: u32 = @intCast(anatomy_evidence.capture_count);
 
 fn environmentCapturePath(frame: u32) ?[]const u8 {
     return switch (frame) {
@@ -226,6 +231,92 @@ const P27bCaptureArtifact = struct {
     instantaneous_reprojection_world_delta_px: f32 = 0,
     pixels: CapturePixelEvidence = .{},
 };
+
+const AnatomyCaptureArtifact = struct {
+    captured: bool = false,
+    stable_frames: u16 = 0,
+    observation: anatomy_evidence.Observation = undefined,
+    pixels: CapturePixelEvidence = .{},
+};
+
+fn anatomyObservation(
+    scene: *const wardrobe_demo.Scene,
+    trace: *const visual_geometry.Trace,
+    render_frame: u32,
+) !anatomy_evidence.Observation {
+    var resolved_view: ?visual_geometry.View = null;
+    var upper_arm_rotation: [2]?f32 = .{ null, null };
+    var forearm_rotation: [2]?f32 = .{ null, null };
+    var thigh_rotation: [2]?f32 = .{ null, null };
+    var shin_rotation: [2]?f32 = .{ null, null };
+    var anatomy_records: u16 = 0;
+    for (trace.slice()) |record| {
+        if (record.character_id != scene.female.id.raw() or
+            (record.owner != .anatomy and
+                record.owner != .base_presentation))
+        {
+            continue;
+        }
+        anatomy_records = std.math.add(u16, anatomy_records, 1) catch
+            return error.AnatomyTraceCountOverflow;
+        if (record.role == .torso) resolved_view = record.view;
+        const side_index: usize = switch (record.side) {
+            .left => 0,
+            .right => 1,
+            .none => continue,
+        };
+        switch (record.role) {
+            .upper_arm => upper_arm_rotation[side_index] = record.request.rotation,
+            .forearm => forearm_rotation[side_index] = record.request.rotation,
+            .thigh => thigh_rotation[side_index] = record.request.rotation,
+            .shin => shin_rotation[side_index] = record.request.rotation,
+            else => {},
+        }
+    }
+    const anatomy_runtime = scene.female.character.anatomy_runtime orelse
+        return error.AnatomyEvidenceRuntimeMissing;
+    return .{
+        .render_frame = render_frame,
+        .simulation_tick = scene.simulation_tick,
+        .stage = scene.anatomy_evidence_stage,
+        .stage_frame = scene.anatomy_stage_frame,
+        .view = resolved_view orelse return error.AnatomyEvidenceViewMissing,
+        .facing = if (scene.female.facing == .left) .left else .right,
+        .animation = @tagName(scene.female.animationState()),
+        .global_build = anatomy_runtime.global_build_normalized * 100,
+        .elbow_angle_degrees = try maximumBilateralAngle(
+            upper_arm_rotation,
+            forearm_rotation,
+        ),
+        .knee_angle_degrees = try maximumBilateralAngle(
+            thigh_rotation,
+            shin_rotation,
+        ),
+        .anatomy_trace_records = anatomy_records,
+    };
+}
+
+fn angularDifferenceDegrees(a: f32, b: f32) f32 {
+    var difference = @mod(@abs(a - b), 2.0 * std.math.pi);
+    if (difference > std.math.pi) difference = 2.0 * std.math.pi - difference;
+    return std.math.radiansToDegrees(difference);
+}
+
+fn maximumBilateralAngle(
+    proximal: [2]?f32,
+    distal: [2]?f32,
+) !f32 {
+    var maximum: ?f32 = null;
+    for (proximal, distal) |proximal_rotation, distal_rotation| {
+        if (proximal_rotation == null or distal_rotation == null) continue;
+        const angle = angularDifferenceDegrees(
+            proximal_rotation.?,
+            distal_rotation.?,
+        );
+        maximum = if (maximum) |value| @max(value, angle) else angle;
+    }
+    return maximum orelse error.AnatomyJointTraceMissing;
+}
 
 fn writeOptionalU32(file: anytype, io: std.Io, value: ?u32) !void {
     if (value) |number| {
@@ -946,6 +1037,9 @@ pub const GpuDemo = struct {
             [_]FoundationCaptureArtifact{.{}} ** foundation_evidence.capture_count;
         var p27b_capture_artifacts =
             [_]P27bCaptureArtifact{.{}} ** p27b_capture_count;
+        var anatomy_capture_tracker = anatomy_evidence.Tracker{};
+        var anatomy_capture_artifacts =
+            [_]AnatomyCaptureArtifact{.{}} ** anatomy_evidence.capture_count;
         var environment_sequence = environment_demo.ScriptedInput{};
         var playground_snapshot_builder = input.SnapshotBuilder{};
         var foundation_snapshot_builder = input.SnapshotBuilder{};
@@ -1111,9 +1205,13 @@ pub const GpuDemo = struct {
             try self.initializeUnifiedQueue();
             if (interactive_enabled) platform_input = sdl_input.PlatformInput.init();
         }
-        if (mode == .wardrobe or mode == .visual_quality) {
+        if (mode == .wardrobe or mode == .visual_quality or
+            mode == .anatomy_quality)
+        {
             if ((mode == .wardrobe and scripted_input_enabled == interactive_enabled) or
                 (mode == .visual_quality and
+                    (!scripted_input_enabled or interactive_enabled)) or
+                (mode == .anatomy_quality and
                     (!scripted_input_enabled or interactive_enabled)))
             {
                 return error.WardrobeRequiresExactlyOneInputMode;
@@ -1121,6 +1219,12 @@ pub const GpuDemo = struct {
             wardrobe_scene = try wardrobe_demo.Scene.init(humanoid_allocator.allocator());
             if (mode == .visual_quality) {
                 try wardrobe_scene.?.enableVisualQualityAcceptance();
+            } else if (mode == .anatomy_quality) {
+                try wardrobe_scene.?.enableAnatomyQualityAcceptance();
+                try std.Io.Dir.cwd().createDirPath(
+                    self.io,
+                    p27c_capture_directory,
+                );
             }
             try self.visible_camera.setCenter(.{
                 .x = 0,
@@ -1138,7 +1242,7 @@ pub const GpuDemo = struct {
             });
             const definitions = wardrobe_scene.?.meshDefinitions();
             try self.initializeMeshRendering(&definitions);
-            if (mode == .visual_quality) {
+            if (mode == .visual_quality or mode == .anatomy_quality) {
                 try self.initializeVisualCaptureTransfer(integrated_debug_enabled);
             }
             if (interactive_enabled) platform_input = sdl_input.PlatformInput.init();
@@ -1707,11 +1811,13 @@ pub const GpuDemo = struct {
                     humanoid_instances = try scene.submit(&self.unified_queue.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
-                .wardrobe, .visual_quality => {
+                .wardrobe, .visual_quality, .anatomy_quality => {
                     const scene = &wardrobe_scene.?;
                     const allocation_checkpoint = humanoid_allocator.end_index;
                     if (mode == .visual_quality) {
                         try scene.updateVisualQualityFrame();
+                    } else if (mode == .anatomy_quality) {
+                        try scene.updateAnatomyQualityFrame();
                     } else if (scripted_input_enabled) {
                         try scene.updateScriptedFrame();
                     } else {
@@ -1727,21 +1833,25 @@ pub const GpuDemo = struct {
                         humanoid_allocator.end_index - allocation_checkpoint;
                     self.unified_queue.?.beginFrame();
                     const submission_checkpoint = humanoid_allocator.end_index;
-                    if (mode == .visual_quality and integrated_debug_enabled) {
+                    if ((mode == .visual_quality and integrated_debug_enabled) or
+                        mode == .anatomy_quality)
+                    {
                         geometry_trace.begin();
                         humanoid_instances = try scene.submitTraced(
                             &self.unified_queue.?,
                             &geometry_trace,
                         );
-                        try visual_geometry_overlay.build(
-                            &geometry_debug_commands,
-                            &geometry_trace,
-                            &geometry_alpha_catalog.?,
-                            self.visible_camera,
-                        );
-                        humanoid_instances += try geometry_debug_commands.submitUnified(
-                            &self.unified_queue.?,
-                        );
+                        if (mode == .visual_quality) {
+                            try visual_geometry_overlay.build(
+                                &geometry_debug_commands,
+                                &geometry_trace,
+                                &geometry_alpha_catalog.?,
+                                self.visible_camera,
+                            );
+                            humanoid_instances += try geometry_debug_commands.submitUnified(
+                                &self.unified_queue.?,
+                            );
+                        }
                     } else {
                         humanoid_instances = try scene.submit(&self.unified_queue.?);
                     }
@@ -1964,6 +2074,45 @@ pub const GpuDemo = struct {
                         }
                     } else if (visualCapturePath(frame)) |capture_path| {
                         _ = try self.captureUnifiedToPpm(prepared, capture_path);
+                    }
+                } else if (mode == .anatomy_quality) {
+                    const observation = try anatomyObservation(
+                        &wardrobe_scene.?,
+                        &geometry_trace,
+                        frame,
+                    );
+                    if (try anatomy_capture_tracker.observe(observation)) |candidate| {
+                        const spec = anatomy_evidence.specs[candidate.spec_index];
+                        var capture_path_buffer: [256]u8 = undefined;
+                        const capture_path = try std.fmt.bufPrint(
+                            &capture_path_buffer,
+                            "{s}/{s}",
+                            .{ p27c_capture_directory, spec.filename },
+                        );
+                        anatomy_capture_artifacts[candidate.spec_index] = .{
+                            .captured = true,
+                            .stable_frames = candidate.stable_frames,
+                            .observation = observation,
+                            .pixels = try self.captureUnifiedToPpm(
+                                prepared,
+                                capture_path,
+                            ),
+                        };
+                        try anatomy_capture_tracker.commit(candidate, observation);
+                        std.log.info(
+                            "Prompt 27C capture accepted: id={s} frame={d} tick={d} stable_frames={d} view={s} facing={s} animation={s} elbow={d:.3} knee={d:.3}",
+                            .{
+                                @tagName(spec.stage),
+                                observation.render_frame,
+                                observation.simulation_tick,
+                                candidate.stable_frames,
+                                @tagName(observation.view),
+                                @tagName(observation.facing),
+                                observation.animation,
+                                observation.elbow_angle_degrees,
+                                observation.knee_angle_degrees,
+                            },
+                        );
                     }
                 } else if (mode == .environment and scripted_input_enabled) {
                     if (environmentCapturePath(frame)) |capture_path| {
@@ -3250,10 +3399,13 @@ pub const GpuDemo = struct {
             {
                 return error.EnvironmentRenderingEvidenceIncomplete;
             }
-        } else if (mode == .wardrobe or mode == .visual_quality) {
+        } else if (mode == .wardrobe or mode == .visual_quality or
+            mode == .anatomy_quality)
+        {
             const scene = &wardrobe_scene.?;
             if (scripted_input_enabled) {
-                const required_frames = if (mode == .visual_quality)
+                const required_frames = if (mode == .visual_quality or
+                    mode == .anatomy_quality)
                     wardrobe_demo.visual_quality_required_frames
                 else
                     wardrobe_demo.required_frames;
@@ -3262,6 +3414,9 @@ pub const GpuDemo = struct {
                 }
                 if (mode == .visual_quality) {
                     try scene.validateVisualQualityComplete();
+                } else if (mode == .anatomy_quality) {
+                    try anatomy_capture_tracker.validateComplete();
+                    try self.writeAnatomyEvidence(&anatomy_capture_artifacts);
                 } else {
                     try scene.validateComplete();
                 }
@@ -3282,7 +3437,21 @@ pub const GpuDemo = struct {
                 return error.MissingArtTexturePage;
             const lower_page = self.art_texture_pages[5] orelse
                 return error.MissingArtTexturePage;
-            if (mode == .visual_quality) {
+            if (mode == .anatomy_quality) {
+                std.log.info(
+                    "PROMPT 27C STATE-CONDITIONED PRODUCTION ANATOMY EVIDENCE",
+                    .{},
+                );
+                std.log.info(
+                    "Captures: count={d} format=P6_PPM size={d}x{d} directory={s} source=same_prepared_global_queue",
+                    .{
+                        self.visual_captures_written,
+                        target_width,
+                        target_height,
+                        p27c_capture_directory,
+                    },
+                );
+            } else if (mode == .visual_quality) {
                 const evidence = scene.visual_quality_evidence;
                 std.log.info("PROMPT 25A VISUAL QUALITY ACCEPTANCE ROUTE", .{});
                 std.log.info(
@@ -3403,9 +3572,14 @@ pub const GpuDemo = struct {
                 pose_evaluation_allocations != 0 or
                 humanoid_submission_allocations != 0 or
                 self.unified_queue.?.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
-                (mode == .visual_quality and
+                ((mode == .visual_quality or mode == .anatomy_quality) and
                     self.visual_captures_written !=
-                        (if (integrated_debug_enabled) 1 else visual_capture_count)) or
+                        (if (mode == .anatomy_quality)
+                            p27c_capture_count
+                        else if (integrated_debug_enabled)
+                            1
+                        else
+                            visual_capture_count)) or
                 gpu_resource_delta != 0)
             {
                 return error.WardrobeRenderingEvidenceIncomplete;
@@ -4118,6 +4292,70 @@ pub const GpuDemo = struct {
                     artifact.semantic_headroom_px,
                     artifact.semantic_footroom_px,
                     artifact.instantaneous_reprojection_world_delta_px,
+                    artifact.pixels.width,
+                    artifact.pixels.height,
+                    hash_hex[0..],
+                    if (index + 1 == artifacts.len) "" else ",",
+                },
+            );
+            try manifest.writeStreamingAll(self.io, line);
+        }
+        try manifest.writeStreamingAll(self.io, "  ]\n}\n");
+    }
+
+    fn writeAnatomyEvidence(
+        self: *GpuDemo,
+        artifacts: *const [anatomy_evidence.capture_count]AnatomyCaptureArtifact,
+    ) !void {
+        var manifest = try std.Io.Dir.cwd().createFile(
+            self.io,
+            p27c_capture_directory ++ "/manifest.json",
+            .{},
+        );
+        defer manifest.close(self.io);
+        try manifest.writeStreamingAll(
+            self.io,
+            "{\n  \"schema\":\"prompt27c.state-conditioned-d3d12.v1\",\n  \"status\":\"candidate_pending_owner_review\",\n  \"backend\":\"direct3d12\",\n  \"shader_format\":\"dxil\",\n  \"capture_count\":8,\n  \"failure_count\":0,\n  \"captures\":[\n",
+        );
+        for (artifacts, 0..) |artifact, index| {
+            if (!artifact.captured or
+                artifact.stable_frames < anatomy_evidence.minimum_stable_frames)
+            {
+                return error.AnatomyCaptureArtifactMissing;
+            }
+            if (artifact.pixels.width != target_width or
+                artifact.pixels.height != target_height or
+                artifact.pixels.rgb_payload_bytes !=
+                    target_width * target_height * 3 or
+                artifact.pixels.minimum_channel >= artifact.pixels.maximum_channel)
+            {
+                return error.AnatomyCapturePixelsInvalid;
+            }
+            const spec = anatomy_evidence.specs[index];
+            const observation = artifact.observation;
+            const hash_hex = std.fmt.bytesToHex(
+                artifact.pixels.sha256,
+                .lower,
+            );
+            var line_buffer: [1280]u8 = undefined;
+            const line = try std.fmt.bufPrint(
+                &line_buffer,
+                "    {{\"order\":{d},\"capture_id\":\"{s}\",\"filename\":\"{s}\",\"render_frame\":{d},\"simulation_tick\":{d},\"stage_frame\":{d},\"stable_frames\":{d},\"resolved_view\":\"{s}\",\"facing\":\"{s}\",\"animation\":\"{s}\",\"global_build\":{d:.3},\"elbow_angle_deg\":{d:.6},\"knee_angle_deg\":{d:.6},\"anatomy_trace_records\":{d},\"readback_px\":[{d},{d}],\"pixel_sha256\":\"{s}\"}}{s}\n",
+                .{
+                    index + 1,
+                    @tagName(spec.stage),
+                    spec.filename,
+                    observation.render_frame,
+                    observation.simulation_tick,
+                    observation.stage_frame,
+                    artifact.stable_frames,
+                    @tagName(observation.view),
+                    @tagName(observation.facing),
+                    observation.animation,
+                    observation.global_build,
+                    observation.elbow_angle_degrees,
+                    observation.knee_angle_degrees,
+                    observation.anatomy_trace_records,
                     artifact.pixels.width,
                     artifact.pixels.height,
                     hash_hex[0..],

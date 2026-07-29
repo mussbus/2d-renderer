@@ -1,11 +1,11 @@
 # Known Gaps
 
 Prompt 27's automated integration remains the protected runtime boundary.
-Prompt 27A has reopened its manual visual acceptance and Prompt 27B has added
-measured contact/framing/parallax/presence evidence; owner review is still
-pending for both. The gaps below are future-content or tooling limitations
-and are separate from the specific visual issues that Prompt 27C–27H may
-address.
+Prompt 27A reopened manual visual acceptance, Prompt 27B added measured
+contact/framing/parallax/presence evidence, and Prompt 27C reauthored and
+measured the production base anatomy. Owner review is still pending for all
+three. The gaps below are future-content or tooling limitations and are
+separate from the specific visual issues that Prompt 27D–27H may address.
 
 | Gap | Impact | Current workaround | Trigger for implementation | Blocks current Prompt 27 acceptance? | Blocks a future editor? |
 |---|---|---|---|---|---|
@@ -27,12 +27,15 @@ address.
 
 ## Art-quality status
 
-The current Prompt 25D character art remains accepted at its stored 640×480
-acceptance camera and required pose/view/preset matrix. Prompt 27A has
-produced 16 honest combined D3D12/DXIL captures and contact sheets. Prompt 27B
-adds measured contact/framing/parallax/presence candidates and supplemental
-debug evidence. Their integrated aesthetic/manual field is
-`[PENDING OWNER REVIEW]`; none is an approved golden. This does not prove
+The historical Prompt 25D character art remains accepted at its stored
+640×480 acceptance camera and required pose/view/preset matrix. Prompt 27C
+versions that anatomy for the current production route and provides eight
+body-only D3D12/DXIL captures, a before/after sheet, and five anatomical
+close-up sheets. Prompt 27A has produced 16 honest combined captures; Prompt
+27B adds measured contact/framing/parallax/presence candidates and
+supplemental debug evidence. Their current aesthetic/manual fields are
+`[PENDING OWNER REVIEW]`; none of the Prompt 27A–27C candidates is an approved
+golden. This does not prove
 arbitrary future combinations, views, body topologies, morphology ranges,
 themes, or interactions. New content must declare and pass its own contracts
 rather than inheriting acceptance from the current atlases.

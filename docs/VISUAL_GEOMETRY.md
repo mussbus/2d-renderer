@@ -159,3 +159,45 @@ manifest. Prompt 25B captures remain unapproved.
   submission path.
 - Full Prompt 25D rationale and the no-test-gaming audit are in
   `PROMPT25D_DECISION_RECORD.md`.
+
+## Prompt 27C anatomy-quality layer
+
+`anatomy_quality.zig` extends the existing trace and alpha authority rather
+than creating a screenshot-specific validator. Its data-driven contract is
+selected by style and view, then applied independently to semantic left/right
+records. It evaluates:
+
+- neck-to-shoulder slope and alpha-derived shoulder curvature;
+- shoulder, elbow, wrist, hip, knee, and ankle parent/child width ratios;
+- hand/forearm, arm/torso, head/torso, pelvis/torso, and thigh/shin ratios;
+- dark transverse source-edge coverage at articulated interfaces;
+- side-foot forward-axis error, front toe-out, and bilateral symmetry.
+
+Pixel joint-overlap depth is the longest contiguous occupied run along the
+semantic limb axis. Separated antialias islands are not treated as a solid
+overlap spanning the empty projection rows between them. The existing
+per-joint pixel thresholds are unchanged; controlled fixtures retain a
+five-pixel ankle boundary and reject a six-pixel contiguous overlap.
+
+The 102-case production matrix includes front, side-right, side-left,
+relaxed/extended/bent limbs, deep knee bend, low/nominal/high global build,
+and low/high supported morphology channels for both styles. A missing case or
+nonfinite value is a report failure. Controlled scalar/mask fixtures prove
+that square shoulders, gaps, blobs, disproportionate hands/arms, pinched
+wrists, floating/excessive pelvis overlap, knee beads, ankle gaps, reversed
+feet, invalid toe-out, and dark crop edges are rejected without a production
+stable-ID exception.
+
+Run:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
+& '.\.deps\zig-0.16.0\zig.exe' build p27c-anatomy-report -j1 -- --output 'zig-out\p27c_evidence\final_semantic_report' --expect-pass
+```
+
+The final production report contains 102 cases, 2,450 trace records, 3,788
+metrics, and zero failures. The frozen pre-correction report contains 817
+failures and is never overwritten. The real D3D12 review package provides
+clean body-only captures, a same-scale before/after sheet, and shoulder,
+elbow/wrist, pelvis/hip, knee/ankle, and foot close-ups. Captures remain
+review candidates until owner acceptance.

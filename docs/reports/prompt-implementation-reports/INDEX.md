@@ -133,3 +133,16 @@ Use the
 [test evidence](../../TESTING.md#prompt-27b-contact-framing-parallax-and-presence).
 The exact implementation report is archived in
 [`exact/027B-implementation-report.md`](exact/027B-implementation-report.md).
+
+### Prompt 27C
+
+Prompt 27C versions and reauthors production base anatomy, adds a
+style/view-specific anatomy-quality ruler, and produces repeatable body-only
+D3D12 evidence while preserving all historical Prompt 27/27A and final Prompt
+27B evidence. Use the
+[roadmap source](../../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
+[prompt record](../../prompts/027C-production-anatomy.md),
+[decision record](../../PROMPT27C_DECISION_RECORD.md), and
+[test evidence](../../TESTING.md#prompt-27c-production-anatomy).
+The exact implementation report is archived in
+[`exact/027C-implementation-report.md`](exact/027C-implementation-report.md).

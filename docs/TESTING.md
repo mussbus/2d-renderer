@@ -12,10 +12,11 @@ records implementation through Prompt 27:
 
 It verifies required files, local Markdown targets, prompt navigation, report links, and practical orphan detection. Verbatim historical report files are excluded from link lint because their original local evidence paths are intentionally preserved rather than rewritten.
 
-## Current aggregate status through Prompt 27B
+## Current aggregate status through Prompt 27C
 
-The Prompt 27B aggregate gate passes 381/381 tests in Debug. The focused
-visual-foundation gate expanded from 18 to 28 tests and passes 28/28.
+The Prompt 27C aggregate gate passes 386/386 tests in Debug. The focused
+visual-geometry gate passes 158/158 checks and the retained
+visual-foundation gate passes 28/28.
 Prompt 27B's semantic report contains 9,714 metrics with zero failures; each
 final D3D12 review package contains 55 independent pixel metrics with zero
 failures. ReleaseSafe, ReleaseFast, repository audit, D3D12/DXIL GPU smoke,
@@ -675,3 +676,65 @@ candidates remain preserved.
 These automated checks and the Codex visual inspection establish the declared
 geometry/evidence contract. They do not approve aesthetics or promote
 goldens. Owner/manual acceptance remains `[PENDING OWNER REVIEW]`.
+
+## Prompt 27C production anatomy
+
+Fast source and semantic gates:
+
+```powershell
+& '.\tools\audit_p27c_art.ps1'
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
+& '.\.deps\zig-0.16.0\zig.exe' build p27c-anatomy-report -j1 -- --output 'zig-out\p27c_evidence\final_semantic_report' --expect-pass
+```
+
+The source audit validates three exact-size RGBA pages, 28 nonempty component
+regions, and preserved predecessor hashes. The focused gate contains 15 Zig
+test declarations and 158 Prompt 27C controlled/production checks while
+retaining the 6,354-check Prompt 25D pose/morphology sweep. Controlled
+fixtures prove square/gapped/blob shoulders, oversized hands, overlong arms,
+wrist pinches, floating/excessive pelvis transitions, knee beads, ankle gaps,
+reversed feet, invalid toe-out, dark joint strips, incomplete matrices, and
+nonfinite values fail.
+
+The anatomy report runs 102 style/view/pose/morphology cases, records 2,450
+production traces and 3,788 metrics, and requires zero failures. The frozen
+pre-correction report under
+`zig-out/p27c_evidence/pre_correction_head_3259f79` contains the same counts
+and 817 failures. Two final semantic runs are byte-identical.
+
+Real D3D12/DXIL evidence:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
+& '.\tools\build_p27c_review_package.ps1'
+```
+
+The state predicates produce eight 640×480 body-only captures covering
+neutral front, side-right, side-left, low/high build, extended arm, bent
+elbow, and deep knee bend. The ordinary `UnifiedRenderQueue` and SDL3 GPU
+readback are used; post-initialization update, submission, queue, and GPU
+resource growth are zero. The review tool validates the manifest and report,
+converts deterministic PNGs, and produces before/after plus shoulder,
+elbow/wrist, pelvis/hip, knee/ankle, and foot sheets. Two isolated nine-file
+capture trees and two 18-file review trees are byte-identical.
+
+Regression requirements retain:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-presentation -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-wardrobe -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test -j1
+& '.\.deps\zig-0.16.0\zig.exe' build check -j1
+& '.\.deps\zig-0.16.0\zig.exe' build -Doptimize=ReleaseSafe -j1
+& '.\.deps\zig-0.16.0\zig.exe' build -Doptimize=ReleaseFast -j1
+& '.\.deps\zig-0.16.0\zig.exe' build gpu-smoke -j1
+```
+
+The 28-test foundation gate keeps both incremental and direct resize
+fixtures. The direct first frame remains instantaneous viewport reprojection;
+subsequent world-camera movement retains the unchanged 16 px bound. All 314
+historical Prompt 27/27A evidence files remain present and SHA-256 identical.
+Prompt 27A, Prompt 27B, and Prompt 27C owner/manual visual acceptance remains
+`[PENDING OWNER REVIEW]`; no Prompt 27C capture is an approved golden.

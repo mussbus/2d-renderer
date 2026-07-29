@@ -1,6 +1,6 @@
 # Scope Boundaries
 
-## Current production scope through Prompt 27B
+## Current production scope through Prompt 27C
 
 - Modular 2D segmented characters.
 - Front and canonical-side presentation with stable gameplay-facing
@@ -32,6 +32,11 @@
 - Bounded camera safe framing from actual submitted character bounds,
   measured far/mid/gameplay parallax, and scripted character-presence
   validation without teleports or a second renderer.
+- Versioned production male/female base-anatomy pages with style/view-specific
+  silhouette, proportion, joint-edge, foot-axis, and bilateral-stance
+  contracts across a bounded pose/morphology matrix.
+- Body-only state-conditioned D3D12 evidence, before/after comparison, and
+  anatomical close-up review sheets. Manual aesthetics remain pending.
 
 ## Possible next product scope
 
@@ -43,8 +48,8 @@ One narrow gameplay vertical slice may add:
 - a completion condition;
 - replay/reset.
 
-Prompt 27B does not implement that gameplay loop, and this document does not
-authorize Prompt 27C, Prompt 28, or any unrelated later work.
+Prompt 27C does not implement that gameplay loop, and this document does not
+authorize Prompt 27D, Prompt 28, or any unrelated later work.
 
 ## Later tools
 

@@ -214,3 +214,27 @@ once during initialization. Outfit, view, interaction, and theme changes
 select pre-resolved page/region/material data and perform no decode,
 filesystem access, texture creation, sampler creation, or topology upload in
 steady state.
+
+## Prompt 27C anatomy page versioning
+
+Prompt 27C installs:
+
+- `art/p27c_male_base_anatomy_atlas.png`;
+- `art/p27c_female_base_anatomy_atlas.png`;
+- `art/p27c_anatomy_components_atlas.png`.
+
+The source script recreates each page deterministically from its preserved
+Prompt 25 predecessor, then applies bounded silhouette edits for shoulder
+contours, articulated endpoints, pelvis continuity, and anatomy-component
+edges. The front-foot regions are reauthored as top/three-quarter silhouettes
+at their unchanged ankle pivots instead of rotating profile feet into pointed
+front-view spikes. It does not modify wardrobe or environment pages. The source-art audit
+requires exact RGBA dimensions, nonempty alpha in all 28 component regions,
+distinct output bytes, and the preserved predecessor hashes.
+
+`character_art.zig` binds the versioned pages through the existing typed page,
+region, semantic, view, and ownership model. Texture packing still has no
+semantic authority: anatomy remains `.character`, removable visuals remain
+`.equipment`, and the neutral modesty bridge remains `base_presentation`.
+Decode/upload occurs at initialization; Prompt 27C adds no steady-state asset
+work.

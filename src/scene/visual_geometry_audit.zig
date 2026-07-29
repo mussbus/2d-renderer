@@ -44,6 +44,7 @@ pub const Images = struct {
 pub const EvaluationContext = struct {
     outfit: []const u8,
     pose: []const u8,
+    morphology: []const u8 = "nominal",
     camera: camera2d.Camera2D,
 };
 
@@ -79,12 +80,13 @@ pub fn formatHuman(report: *const visual.Report, buffer: []u8) ![]const u8 {
         try appendFormat(
             buffer,
             &offset,
-            "{s}/{s}/{s}/{s}/{s}/{s} {s}={d:.3}{s} {s} min={any} max={any}\n",
+            "{s}/{s}/{s}/{s}/{s}/{s}/{s} {s}={d:.3}{s} {s} min={any} max={any} source={s}\n",
             .{
                 entry.character_style,
                 @tagName(entry.view),
                 entry.outfit,
                 entry.pose,
+                entry.morphology,
                 @tagName(entry.side),
                 entry.component,
                 entry.metric,
@@ -93,6 +95,7 @@ pub fn formatHuman(report: *const visual.Report, buffer: []u8) ![]const u8 {
                 @tagName(entry.outcome),
                 entry.minimum,
                 entry.maximum,
+                entry.source,
             },
         );
     }
@@ -110,17 +113,19 @@ pub fn formatJson(report: *const visual.Report, buffer: []u8) ![]const u8 {
         try appendFormat(
             buffer,
             &offset,
-            "{{\"style\":\"{s}\",\"view\":\"{s}\",\"outfit\":\"{s}\",\"pose\":\"{s}\",\"side\":\"{s}\",\"component\":\"{s}\",\"metric\":\"{s}\",\"actual\":{d:.6},\"unit\":\"{s}\",\"minimum\":",
+            "{{\"style\":\"{s}\",\"view\":\"{s}\",\"outfit\":\"{s}\",\"pose\":\"{s}\",\"morphology\":\"{s}\",\"side\":\"{s}\",\"component\":\"{s}\",\"metric\":\"{s}\",\"actual\":{d:.6},\"unit\":\"{s}\",\"source\":\"{s}\",\"minimum\":",
             .{
                 entry.character_style,
                 @tagName(entry.view),
                 entry.outfit,
                 entry.pose,
+                entry.morphology,
                 @tagName(entry.side),
                 entry.component,
                 entry.metric,
                 entry.actual,
                 entry.unit,
+                entry.source,
             },
         );
         if (entry.minimum) |value|
@@ -832,6 +837,7 @@ fn metric(
         .outfit = context.outfit,
         .view = record.view,
         .pose = context.pose,
+        .morphology = context.morphology,
         .component = record.stable_id,
         .side = record.side,
         .metric = metric_name,
@@ -1468,6 +1474,20 @@ const ContinuityStats = struct {
     overlap_equivalent_depth_px: f32,
 };
 
+pub fn longestContiguousProjectionRun(bins: []const bool) f32 {
+    var longest: u32 = 0;
+    var current: u32 = 0;
+    for (bins) |occupied| {
+        if (occupied) {
+            current += 1;
+            longest = @max(longest, current);
+        } else {
+            current = 0;
+        }
+    }
+    return @floatFromInt(longest);
+}
+
 fn continuityStats(
     first: visual.TraceRecord,
     second: visual.TraceRecord,
@@ -1482,8 +1502,8 @@ fn continuityStats(
     var first_count: usize = 0;
     var second_count: usize = 0;
     var overlap: u32 = 0;
-    var overlap_min_projection = std.math.inf(f32);
-    var overlap_max_projection = -std.math.inf(f32);
+    const projection_bin_radius: i32 = 18;
+    var overlap_projection_bins = [_]bool{false} ** 37;
     const first_binding = try camera.worldToPresentation(.{
         .x = first.request.world_position[0],
         .y = first.request.world_position[1],
@@ -1544,19 +1564,28 @@ fn continuityStats(
             if (in_first and in_second and inside_band) {
                 overlap += 1;
                 const projection = sample.sub(center).dot(axis);
-                overlap_min_projection = @min(overlap_min_projection, projection);
-                overlap_max_projection = @max(overlap_max_projection, projection);
+                const projection_bin: i32 = @intFromFloat(@round(projection));
+                if (projection_bin >= -projection_bin_radius and
+                    projection_bin <= projection_bin_radius)
+                {
+                    const index: usize = @intCast(
+                        projection_bin + projection_bin_radius,
+                    );
+                    overlap_projection_bins[index] = true;
+                }
             }
         }
     }
     if (overlap > 0) {
-        // Measure actual overlap depth along the semantic limb axis. The
-        // Prompt-25C square-root-of-area proxy incorrectly made broad but
-        // shallow joints appear deeply overlapped simply because they were
-        // wide.
+        // Measure the deepest contiguous overlap along the semantic limb
+        // axis. Using only the first and last occupied projections turned
+        // separated antialias islands into a fictitious solid overlap.
+        const contiguous_depth = longestContiguousProjectionRun(
+            &overlap_projection_bins,
+        );
         return .{
             .gap_px = 0,
-            .overlap_equivalent_depth_px = @max(@as(f32, 0), overlap_max_projection - overlap_min_projection + 1.0),
+            .overlap_equivalent_depth_px = contiguous_depth,
         };
     }
     var minimum = std.math.inf(f32);

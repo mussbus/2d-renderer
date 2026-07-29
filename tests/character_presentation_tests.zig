@@ -128,19 +128,19 @@ test "character art definitions cover both views bald buzz cut and long hair" {
 
 test "Prompt 25B production anatomy pages and regions have exact valid bounds" {
     try std.testing.expectEqualStrings(
-        "art/p25a_male_base_anatomy_atlas.png",
+        "art/p27c_male_base_anatomy_atlas.png",
         character_art.page_inputs[0].asset_path,
     );
     try std.testing.expectEqual(@as(u32, 1600), character_art.page_inputs[0].expected_width);
     try std.testing.expectEqual(@as(u32, 983), character_art.page_inputs[0].expected_height);
     try std.testing.expectEqualStrings(
-        "art/p25a_female_base_anatomy_atlas.png",
+        "art/p27c_female_base_anatomy_atlas.png",
         character_art.page_inputs[1].asset_path,
     );
     try std.testing.expectEqual(@as(u32, 1599), character_art.page_inputs[1].expected_width);
     try std.testing.expectEqual(@as(u32, 984), character_art.page_inputs[1].expected_height);
     try std.testing.expectEqualStrings(
-        "art/p25b_anatomy_components_atlas.png",
+        "art/p27c_anatomy_components_atlas.png",
         character_art.page_inputs[2].asset_path,
     );
     try std.testing.expectEqual(@as(u32, 1792), character_art.page_inputs[2].expected_width);
@@ -212,7 +212,7 @@ test "Prompt 25D real component bindings are distinct with valid authored extent
     }
 }
 
-test "Prompt 25D component sizes and pivots follow view-specific rig spans" {
+test "Prompt 27C component sizes and pivots follow view-specific rig spans" {
     var art = try character_art.Definition.init(std.testing.allocator);
     defer art.deinit();
 
@@ -237,12 +237,24 @@ test "Prompt 25D component sizes and pivots follow view-specific rig spans" {
                 try std.testing.expect(upper_length >= 0.65 and upper_length <= 0.70);
                 try std.testing.expect(forearm_length >= 0.57 and forearm_length <= 0.60);
             } else {
-                try std.testing.expect(upper_length >= 0.78 and upper_length <= 0.81);
+                try std.testing.expect(upper_length >= 0.78 and upper_length <= 0.82);
                 try std.testing.expect(forearm_length >= 0.56 and forearm_length <= 0.58);
             }
             try std.testing.expect(thigh.authored_size[1] >= 0.90 and thigh.authored_size[1] <= 1.05);
             try std.testing.expect(shin.authored_size[1] >= 0.85 and shin.authored_size[1] <= 0.96);
-            try std.testing.expect(foot.authored_size[0] >= 0.35 and foot.authored_size[0] <= 0.45);
+            // The two views use separately authored foot silhouettes. Keep
+            // their declared spans narrow and style-specific so neither
+            // presentation can drift while retaining footwear fit.
+            if (view == .side) {
+                try std.testing.expect(foot.authored_size[0] >= 0.43);
+                try std.testing.expect(foot.authored_size[0] <= 0.45);
+            } else if (style == .male) {
+                try std.testing.expect(foot.authored_size[0] >= 0.415);
+                try std.testing.expect(foot.authored_size[0] <= 0.425);
+            } else {
+                try std.testing.expect(foot.authored_size[0] >= 0.355);
+                try std.testing.expect(foot.authored_size[0] <= 0.365);
+            }
 
             if (view == .side) {
                 try std.testing.expect(upper_arm.pivot[0] <= 0.10);
@@ -256,15 +268,23 @@ test "Prompt 25D component sizes and pivots follow view-specific rig spans" {
             }
             try std.testing.expect(thigh.pivot[1] >= 0.90);
             try std.testing.expect(shin.pivot[1] >= 0.90);
-            // The reauthored alpha-tight feet place the semantic ankle/heel
-            // origin near the first quarter of the visible silhouette.
-            try std.testing.expect(foot.pivot[0] >= 0.24);
-            try std.testing.expect(foot.pivot[0] <= 0.30);
+            // Side and front source axes are distinct. Their style-specific
+            // alpha-derived ankle pivots stay in narrow declared bands.
+            if (view == .side) {
+                try std.testing.expect(foot.pivot[0] >= 0.24);
+                try std.testing.expect(foot.pivot[0] <= 0.27);
+            } else if (style == .male) {
+                try std.testing.expect(foot.pivot[0] >= 0.30);
+                try std.testing.expect(foot.pivot[0] <= 0.31);
+            } else {
+                try std.testing.expect(foot.pivot[0] >= 0.33);
+                try std.testing.expect(foot.pivot[0] <= 0.34);
+            }
         }
     }
 }
 
-test "Prompt 25D final front joins retain accepted authored geometry" {
+test "Prompt 27C final front joins retain accepted authored geometry" {
     var art = try character_art.Definition.init(std.testing.allocator);
     defer art.deinit();
 
@@ -278,8 +298,8 @@ test "Prompt 25D final front joins retain accepted authored geometry" {
     try std.testing.expectEqual([2]f32{ 0.85, 1.30 }, female_torso.authored_size);
     try std.testing.expectEqual([2]f32{ 0.96, 0.62 }, male_pelvis.authored_size);
     try std.testing.expectEqual([2]f32{ 0.5, 0.305 }, male_pelvis.pivot);
-    try std.testing.expectEqual([2]f32{ 0.36, 0.980 }, male_thigh.authored_size);
-    try std.testing.expectEqual([2]f32{ 0.15, 0.31 }, female_hand.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.38, 0.980 }, male_thigh.authored_size);
+    try std.testing.expectEqual([2]f32{ 0.15, 0.282 }, female_hand.authored_size);
 
     // The alpha-tight upper-arm distal ends own the bounded elbow overlap.
     // This is normal anatomy ordering, not a connector sprite.
