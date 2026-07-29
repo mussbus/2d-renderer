@@ -99,7 +99,10 @@ pub fn main(init: std.process.Init) !void {
     const arguments = try init.minimal.args.toSlice(init.arena.allocator());
     const options = try parseOptions(arguments);
     const allocator = std.heap.page_allocator;
-    var scene = try visual_foundation.Scene.init(allocator);
+    var scene = try visual_foundation.Scene.init(
+        allocator,
+        .enforce_acceptance,
+    );
     defer scene.deinit();
     var queue = try render_queue.UnifiedRenderQueue.init(
         allocator,

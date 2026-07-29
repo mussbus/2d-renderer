@@ -1312,6 +1312,57 @@ pub fn build(b: *std.Build) void {
         "Write Prompt 27C anatomy-silhouette, proportion, and continuity evidence",
     );
     anatomy_quality_report_step.dependOn(&run_anatomy_quality_report.step);
+    const p27c_art_audit = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    p27c_art_audit.addFileArg(b.path("tools/audit_p27c_art.ps1"));
+    p27c_art_audit.setName("audit Prompt 27C production anatomy pages");
+    const p27c_r1_torso_audit = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    p27c_r1_torso_audit.addFileArg(
+        b.path("tools/audit_p27c_r1_torso.ps1"),
+    );
+    p27c_r1_torso_audit.setName(
+        "audit Prompt 27C-R1 torso correction bounds and fixtures",
+    );
+    const p27c_r1_torso_audit_step = b.step(
+        "audit-p27c-r1-torso",
+        "Audit Prompt 27C-R1 torso pixels, alpha, continuity, and fixtures",
+    );
+    p27c_r1_torso_audit_step.dependOn(&p27c_art_audit.step);
+    p27c_r1_torso_audit_step.dependOn(&p27c_r1_torso_audit.step);
+    const p27c_r1_review_package = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    p27c_r1_review_package.addFileArg(
+        b.path("tools/build_p27c_r1_review_package.ps1"),
+    );
+    p27c_r1_review_package.setName(
+        "build Prompt 27C-R1 provenance and owner-review package",
+    );
+    const p27c_r1_review_step = b.step(
+        "p27c-r1-review",
+        "Build the Prompt 27C-R1 provenance and owner-review package",
+    );
+    p27c_r1_review_step.dependOn(&p27c_r1_review_package.step);
+    visual_geometry_test_step.dependOn(&p27c_art_audit.step);
+    visual_geometry_test_step.dependOn(&p27c_r1_torso_audit.step);
     const verify_p25d_goldens = b.addSystemCommand(&.{
         "pwsh",
         "-NoProfile",
@@ -1441,6 +1492,7 @@ pub fn build(b: *std.Build) void {
     const run_foundation_coherence_report = b.addRunArtifact(
         foundation_coherence_report_exe,
     );
+    if (b.args) |args| run_foundation_coherence_report.addArgs(args);
     const foundation_coherence_report_step = b.step(
         "p27b-coherence-report",
         "Write the Prompt 27B semantic production-acceptance report",
@@ -1488,6 +1540,8 @@ pub fn build(b: *std.Build) void {
     check_step.dependOn(&run_environment_tests.step);
     check_step.dependOn(&run_visual_foundation_tests.step);
     check_step.dependOn(&environment_art_audit.step);
+    check_step.dependOn(&p27c_art_audit.step);
+    check_step.dependOn(&p27c_r1_torso_audit.step);
     check_step.dependOn(&verify_p25d_goldens.step);
     check_step.dependOn(&repository_audit.step);
 }

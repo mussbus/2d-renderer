@@ -37,7 +37,8 @@ Status vocabulary:
 | Integrated Prompt 27 presentation | complete | The visible `foundation` route composes the two production characters, all current wardrobe, both themes, movement, jumping, three measured fixed-root handshakes, view/ordering cleanup, debug, reset, and real D3D12 rendering. |
 | Prompt 27A evidence integrity | complete, owner review pending | Sixteen captures are selected by authoritative/presentation/interaction predicates, bound to validated semantic metadata and independent D3D12 pixel hashes, packaged into contact sheets, and repeated byte-exactly. Aesthetic acceptance is `[PENDING OWNER REVIEW]`. |
 | Prompt 27B contact/framing/parallax/presence | complete, owner review pending | One fail-closed chain measures support, post-IK sole, alpha-derived submitted visual sole, camera projection, render ordering, and real D3D12 pixels. Existing-camera safe framing, actual-factor parallax, and non-teleport scripted presence pass semantic and readback metrics. |
-| Prompt 27C production anatomy | complete, owner review pending | Versioned male/female/component pages, style/view anatomy contracts, 102-case pose/morphology coverage, controlled failures, and real body-only D3D12 evidence correct and protect silhouette, proportion, joint continuity, and foot orientation without changing simulation or garments. |
+| Prompt 27C production anatomy | superseded torso result | The anatomy ruler, limb/joint/foot corrections, 102-case matrix, and evidence route remain protected; the original torso pixels were owner-rejected and are preserved only as negative evidence. |
+| Prompt 27C-R1 torso/presence corrective pass | complete, owner review pending | Restores the pre-27C chest identity with 2,743 bounded shoulder pixels and zero outside-page changes; preserves the component page; classifies every review visual; and separates interactive presence measurement from fail-closed scripted acceptance without changing thresholds. |
 | Semantic body-relative garment depth schema | documented only | Current content resolves numeric visual layers. Required reusable depth relations are defined in [AUTHORING_CONTRACTS.md](AUTHORING_CONTRACTS.md), but no current accepted item requires a runtime extension. |
 | Authored side-left/side-right garment variants | documented only | Current production side art is mirror-safe. Directional and mixed-fragment policies are defined for future content. |
 | First-class collar coverage and shoulder-slope contour | documented only | Current validator has point/span fit and per-item coverage zones, but not the richer semantic contour contract required by a future editor. |
@@ -88,6 +89,16 @@ resource growth. All 314 frozen Prompt 27/27A artifacts remain present and
 hash-identical. Prompt 27B's incremental/direct resize fixtures and unchanged
 16 px world-camera bound pass inside the retained 28/28 foundation gate.
 
+Prompt 27C-R1 supersedes only the rejected torso output. Its page audit records
+1,509 male and 1,234 female changed pixels inside four explicit shoulder
+rectangles and zero changes outside them. The component page remains
+byte-identical. The foundation route exposes one presence measurement under
+an explicit policy: unrestricted interactive movement is measure-only, while
+scripted evidence remains fail-closed. The `0.02` ordinary, `0.15`
+active-interaction, and 16 px camera bounds are unchanged.
+The current aggregate passes 389/389 Debug tests, including 31/31 focused
+foundation tests.
+
 ## Focused demonstrations
 
 - `--demo animation`, `--demo controller`, and the focused
@@ -105,6 +116,9 @@ hash-identical. Prompt 27B's incremental/direct resize fixtures and unchanged
   review package.
 - Prompt 27C semantic anatomy report, body-only D3D12 route, before/after
   comparison, and anatomical close-up review sheets.
+- Prompt 27C-R1 classified provenance, changed-pixel torso audit,
+  native/enlarged/directional/composite/diff review, and explicit
+  measure-only interactive presence route.
 
 Prompt 27 changed the visible `--demo foundation` CLI owner to
 `visual_foundation.Scene`. The older procedural Prompt 22 scene remains a
@@ -117,8 +131,9 @@ current rendered application.
   capture has been promoted to a golden.
 - Prompt 27B clean/debug candidates also await owner/manual review and are not
   approved goldens.
-- Prompt 27C anatomy candidates also await owner/manual review and are not
-  approved goldens.
+- The original Prompt 27C torso candidate is owner-rejected. Prompt 27C-R1
+  corrective candidates await owner/manual review and are not approved
+  goldens.
 - General interactive character-character collision is not implemented. The
   deterministic Prompt 27B route uses ordinary controller input to walk the
   partner clear/return plus an overlap detector; this is not a general
@@ -150,8 +165,8 @@ The impact and intended future milestones are in
 
 ## Next authorized milestone
 
-Prompt 27C is automated implementation and evidence complete. Prompt 27A,
-Prompt 27B, and Prompt 27C owner/manual visual acceptance remains
+Prompt 27C-R1 is the current bounded corrective authority. Prompt 27A,
+Prompt 27B, and Prompt 27C-R1 owner/manual visual acceptance remains
 `[PENDING OWNER REVIEW]`. Prompt 27D, Prompt 28, gameplay vertical slice,
 editor, combat, mission, or other expansion has not started. Future work
 requires an explicit user request and must preserve the existing authority

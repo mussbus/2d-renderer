@@ -184,10 +184,15 @@ $env:SDL_GPU_DRIVER = 'direct3d12'
 
 The real D3D12/DXIL route captures eight body-only state-conditioned frames;
 the review package supplies before/after and five anatomical close-up sheets.
-Two isolated semantic, D3D12, and review runs are byte-identical. Prompt 27A,
-Prompt 27B, and Prompt 27C owner/manual visual acceptance remains
-`[PENDING OWNER REVIEW]`; Prompt 27C review candidates are not approved
-goldens.
+The original Prompt 27C torso result was owner-rejected. Prompt 27C-R1
+restores the last accepted chest identity inside four fixed shoulder
+rectangles and changes zero pixels outside them. It also makes character
+presence an explicit `measure_only` policy in unrestricted interactive
+execution while preserving fail-closed scripted acceptance and the unchanged
+`0.02`/`0.15` thresholds. The R1 review package labels every visual as runtime
+production, candidate, reference, or evaluation. Prompt 27A, Prompt 27B, and
+Prompt 27C-R1 owner/manual visual acceptance remains
+`[PENDING OWNER REVIEW]`; no R1 candidate is an approved golden.
 
 ## Interactive playground
 
@@ -252,6 +257,7 @@ Start with:
 - [`docs/PROMPT26_DECISION_RECORD.md`](docs/PROMPT26_DECISION_RECORD.md) for environment composition, collision-derived edges, art provenance, and evidence staging.
 - [`docs/PROMPT27_DECISION_RECORD.md`](docs/PROMPT27_DECISION_RECORD.md) for production composition, interaction presentation, side projection, property ownership, and bounds.
 - [`docs/PROMPT27C_DECISION_RECORD.md`](docs/PROMPT27C_DECISION_RECORD.md) for the production anatomy ruler, reauthoring rationale, before/after evidence, and preservation boundary.
+- [`docs/PROMPT27C_R1_DECISION_RECORD.md`](docs/PROMPT27C_R1_DECISION_RECORD.md) for the bounded torso restoration, exact asset provenance, changed-pixel audit, and character-presence policy boundary.
 - [`docs/OUTFIT_REFERENCE_INVENTORY.md`](docs/OUTFIT_REFERENCE_INVENTORY.md) for the required reference-cluster inventory and project-local IDs.
 - [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
 - [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.

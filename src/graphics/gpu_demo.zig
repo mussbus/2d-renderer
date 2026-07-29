@@ -1154,7 +1154,13 @@ pub const GpuDemo = struct {
         }
         if (mode == .foundation) {
             if (scripted_input_enabled == interactive_enabled) return error.FoundationRequiresExactlyOneInputMode;
-            foundation_scene = try visual_foundation.Scene.init(humanoid_allocator.allocator());
+            foundation_scene = try visual_foundation.Scene.init(
+                humanoid_allocator.allocator(),
+                if (scripted_input_enabled)
+                    .enforce_acceptance
+                else
+                    .measure_only,
+            );
             foundation_scene.?.integrated.detailed_debug_enabled = integrated_debug_enabled;
             if (!scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {

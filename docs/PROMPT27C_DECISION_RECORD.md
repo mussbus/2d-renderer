@@ -1,5 +1,10 @@
 # Prompt 27C Engineering Decision Record
 
+> Owner-review update: the torso result documented here was rejected and is
+> preserved as historical evidence. Prompt 27C-R1 is the current corrective
+> authority; see
+> [`PROMPT27C_R1_DECISION_RECORD.md`](PROMPT27C_R1_DECISION_RECORD.md).
+
 ## Status and scope
 
 Prompt 27B is the inherited automated baseline at HEAD

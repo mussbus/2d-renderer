@@ -83,6 +83,25 @@ pub const TimeMode = enum(u8) {
     paused,
 };
 
+pub const PresenceValidationPolicy = enum(u8) {
+    /// Ordinary interactive play measures and exposes overlap without making
+    /// the Prompt 27B acceptance ruler a simulation invariant.
+    measure_only,
+    /// Scripted acceptance/reporting routes fail closed on the unchanged
+    /// Prompt 27B ordinary and interaction thresholds.
+    enforce_acceptance,
+};
+
+pub const PresenceMeasurement = struct {
+    render_frame: u64,
+    simulation_tick: u64,
+    female_position: math.Vec2,
+    male_position: math.Vec2,
+    overlap_ratio: f32,
+    interaction_context: bool,
+    passes_acceptance: bool,
+};
+
 const PartnerMotion = enum(u8) {
     stopped,
     moving_left,
@@ -194,11 +213,14 @@ pub const Evidence = struct {
     maximum_interaction_overlap_ratio: f32 = 0,
     maximum_controlled_root_step_m: f32 = 0,
     maximum_passive_root_step_m: f32 = 0,
+    presence_violation_count: u64 = 0,
 };
 
 pub const Scene = struct {
     integrated: environment_demo.Scene,
     manager: interaction_system.Manager,
+    presence_validation_policy: PresenceValidationPolicy,
+    latest_presence: ?PresenceMeasurement = null,
     time_mode: TimeMode = .normal,
     body_cycle_index: u8 = 0,
     build_cycle_index: u8 = 0,
@@ -224,7 +246,10 @@ pub const Scene = struct {
     reset_generation: u32 = 0,
     evidence: Evidence = .{},
 
-    pub fn init(allocator: std.mem.Allocator) !Scene {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        presence_validation_policy: PresenceValidationPolicy,
+    ) !Scene {
         var integrated = try environment_demo.Scene.init(allocator);
         errdefer integrated.deinit();
         try integrated.production.male.setFacing(.left);
@@ -235,6 +260,7 @@ pub const Scene = struct {
         var scene = Scene{
             .integrated = integrated,
             .manager = manager,
+            .presence_validation_policy = presence_validation_policy,
             .initial_breathing_sample = try integrated.production.female.breathingSample(),
         };
         scene.evidence.white_surface_count = @intCast(scene.integrated.environment.surfaces.count);
@@ -456,7 +482,7 @@ pub const Scene = struct {
         );
         try scene.applyGroundAlignment(queue);
         try scene.applyCameraSafeRegion();
-        try scene.validateCharacterPresence();
+        try scene.measureCharacterPresence();
         scene.debug_counts = .{};
         if (scene.integrated.detailed_debug_enabled) {
             scene.debug_counts.collider =
@@ -794,7 +820,7 @@ pub const Scene = struct {
         );
     }
 
-    fn validateCharacterPresence(scene: *Scene) !void {
+    fn measureCharacterPresence(scene: *Scene) !void {
         const production = &scene.integrated.production;
         const female = try foundation_coherence.traceCharacterPresenceBounds(
             &scene.visual_trace,
@@ -820,29 +846,50 @@ pub const Scene = struct {
                 ratio,
             );
         }
-        if (!foundation_coherence.overlapPasses(ratio, interaction_active)) {
+        const measurement = PresenceMeasurement{
+            .render_frame = production.frame_index,
+            .simulation_tick = production.simulation_tick,
+            .female_position = production.female.world_position,
+            .male_position = production.male.world_position,
+            .overlap_ratio = ratio,
+            .interaction_context = interaction_active,
+            .passes_acceptance = foundation_coherence.overlapPasses(
+                ratio,
+                interaction_active,
+            ),
+        };
+        scene.latest_presence = measurement;
+        if (!measurement.passes_acceptance) {
+            scene.evidence.presence_violation_count = std.math.add(
+                u64,
+                scene.evidence.presence_violation_count,
+                1,
+            ) catch return error.PresenceViolationCountOverflow;
+        }
+        enforcePresenceMeasurement(
+            measurement,
+            scene.presence_validation_policy,
+        ) catch |err| {
             std.log.err(
-                "character presence overlap: ratio={d:.6} interaction_context={} female_x={d:.4} male_x={d:.4}",
+                "character presence acceptance failed: frame={d} tick={d} ratio={d:.6} interaction_context={} female=({d:.6},{d:.6}) male=({d:.6},{d:.6}) policy={s}",
                 .{
-                    ratio,
-                    interaction_active,
-                    production.female.world_position.x,
-                    production.male.world_position.x,
+                    measurement.render_frame,
+                    measurement.simulation_tick,
+                    measurement.overlap_ratio,
+                    measurement.interaction_context,
+                    measurement.female_position.x,
+                    measurement.female_position.y,
+                    measurement.male_position.x,
+                    measurement.male_position.y,
+                    @tagName(scene.presence_validation_policy),
                 },
             );
-            return error.CharacterPresenceOverlapExceeded;
-        }
+            return err;
+        };
     }
 
     pub fn presenceInteractionContext(scene: *const Scene) bool {
-        if (scene.manager.activeCount() != 0) return true;
-        if (scene.last_terminal_id == .invalid) return false;
-        const production = &scene.integrated.production;
-        const separation = @abs(
-            production.male.world_position.x -
-                production.female.world_position.x,
-        );
-        return separation <= handshake.maximum_horizontal_separation + 0.10;
+        return scene.manager.activeCount() != 0;
     }
 
     fn supportingTop(scene: *const Scene, collider_id: u16) !f32 {
@@ -1659,6 +1706,21 @@ pub const Scene = struct {
         };
     }
 };
+
+pub fn enforcePresenceMeasurement(
+    measurement: PresenceMeasurement,
+    policy: PresenceValidationPolicy,
+) !void {
+    if (!std.math.isFinite(measurement.overlap_ratio) or
+        measurement.overlap_ratio < 0 or
+        measurement.overlap_ratio > 1)
+    {
+        return error.InvalidCharacterPresenceMeasurement;
+    }
+    if (policy == .enforce_acceptance and !measurement.passes_acceptance) {
+        return error.CharacterPresenceOverlapExceeded;
+    }
+}
 
 fn evidenceLifecycle(
     value: interaction.Lifecycle,

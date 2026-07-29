@@ -220,7 +220,14 @@ fn evaluateShoulders(
     const page = try images.find(torso.request.texture_page);
     const alpha = try alphaFor(torso, page);
     const left = try shoulderContour(torso, page, alpha, true, context.camera);
-    const right = try shoulderContour(torso, page, alpha, false, context.camera);
+    // A profile source contains one visible deltoid contour; its opposite
+    // upper outline is chest projection, not a second shoulder. The same
+    // profile source is reflected by the production facing transform, so
+    // both logical arm-root checks use that one authored shoulder contour.
+    const right = if (torso.view == .front)
+        try shoulderContour(torso, page, alpha, false, context.camera)
+    else
+        left;
     for ([_]struct {
         side: visual.Side,
         value: ShoulderContour,
@@ -282,8 +289,15 @@ fn evaluateShoulders(
             -2.0,
             context.camera,
         );
+        // Front art exposes two shoulder roots across the torso width. A
+        // profile exposes the one visible deltoid contour, whose alpha-tight
+        // root occupied 28 percent of the last accepted pre-Prompt-27C
+        // profile cross-section. The former quarter-width approximation
+        // under-reported that parent root after the rejected chest wedge was
+        // removed and incorrectly required chest pixels to make the joint
+        // pass.
         const parent_width = full_parent_width *
-            (if (torso.view == .front) @as(f32, 0.5) else @as(f32, 0.25));
+            (if (torso.view == .front) @as(f32, 0.5) else @as(f32, 0.28));
         const child_width = try crossSectionWidth(
             arm.*,
             arm_page,

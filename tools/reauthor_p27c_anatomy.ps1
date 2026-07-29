@@ -15,6 +15,25 @@ function Save-Copy(
     [string]$destinationPath,
     [scriptblock]$edit
 ) {
+    $bitmap = Open-Bitmap $sourcePath
+    try {
+        # Edit the decoded 32-bit source directly. Copying it through a
+        # Graphics surface rounds straight-alpha edge RGB on untouched pixels,
+        # which makes a bounded semantic correction silently rewrite the page.
+        & $edit $bitmap
+        $destination = Join-Path $RepositoryRoot $destinationPath
+        $bitmap.Save($destination, [System.Drawing.Imaging.ImageFormat]::Png)
+    }
+    finally {
+        $bitmap.Dispose()
+    }
+}
+
+function Save-SurfaceCopy(
+    [string]$sourcePath,
+    [string]$destinationPath,
+    [scriptblock]$edit
+) {
     $source = Open-Bitmap $sourcePath
     try {
         $bitmap = [System.Drawing.Bitmap]::new(
@@ -70,157 +89,10 @@ function Fill-Front-Shoulders(
     [int]$height,
     [System.Drawing.Color]$skin
 ) {
-    $bounds = Get-Alpha-Bounds $bitmap $left $top $width $height
-    $originalMinimumX = $bounds[0]
-    $originalMaximumX = $bounds[0] + $bounds[2] - 1
-    # Recontour inside the existing visible torso envelope. Widening this
-    # envelope changes the anatomy-relative fit authority for every front
-    # garment, even though the intended correction is only the shoulder edge.
-    $outerMargin = $originalMinimumX
-    $lastX = $originalMaximumX
-    $innerLeft = [int][math]::Round($width * 0.39)
-    $innerRight = [int][math]::Round($width * 0.61)
-    $outerDrop = [int][math]::Round($height * 0.078)
-    $centerX = [int]($width / 2)
-
-    for ($localX = $outerMargin; $localX -le $innerLeft; $localX++) {
-        $t = ($innerLeft - $localX) / [double]($innerLeft - $outerMargin)
-        $edgeY = [int][math]::Round(1 + $outerDrop * [math]::Pow($t, 1.30))
-        $firstOpaque = $height
-        for ($localY = 0; $localY -lt $height; $localY++) {
-            if ($bitmap.GetPixel($left + $localX, $top + $localY).A -ge 16) {
-                $firstOpaque = $localY
-                break
-            }
-        }
-        $bottom = if ($localX -lt $originalMinimumX) {
-            $capProgress = ($localX - $outerMargin) /
-                [double]($originalMinimumX - $outerMargin)
-            [int][math]::Round(
-                $edgeY + 2 + 36 * [math]::Pow($capProgress, 0.60)
-            )
-        }
-        elseif ($firstOpaque -lt $height) {
-            $firstOpaque - 1
-        }
-        else {
-            [int][math]::Round($edgeY + 20 + 10 * (1.0 - $t))
-        }
-        for ($localY = $edgeY; $localY -le $bottom; $localY++) {
-            $existing = $bitmap.GetPixel($left + $localX, $top + $localY)
-            if ($existing.A -ge 16) { continue }
-            $color = Skin-Pixel $skin $localX $localY $centerX
-            if ($localY -eq $edgeY -or $localX -eq $outerMargin) {
-                $color = [System.Drawing.Color]::FromArgb(255, 96, 39, 21)
-            }
-            $bitmap.SetPixel($left + $localX, $top + $localY, $color)
-        }
-        if ($firstOpaque -lt $height -and $firstOpaque -gt $edgeY) {
-            $seamEnd = if ($localX -le $originalMinimumX + 2) {
-                $bottom
-            }
-            else {
-                [math]::Min($bottom, $firstOpaque + 2)
-            }
-            for ($localY = $firstOpaque; $localY -le $seamEnd; $localY++) {
-                $color = $bitmap.GetPixel($left + $localX, $top + $localY)
-                if ($color.A -ge 16 -and (Is-Dark $color)) {
-                    $bitmap.SetPixel(
-                        $left + $localX,
-                        $top + $localY,
-                        (Skin-Pixel $skin $localX $localY $centerX)
-                    )
-                }
-            }
-        }
-    }
-
-    for ($localX = $innerRight; $localX -le $lastX; $localX++) {
-        $t = ($localX - $innerRight) / [double]($lastX - $innerRight)
-        $edgeY = [int][math]::Round(1 + $outerDrop * [math]::Pow($t, 1.30))
-        $firstOpaque = $height
-        for ($localY = 0; $localY -lt $height; $localY++) {
-            if ($bitmap.GetPixel($left + $localX, $top + $localY).A -ge 16) {
-                $firstOpaque = $localY
-                break
-            }
-        }
-        $bottom = if ($localX -gt $originalMaximumX) {
-            $capProgress = ($lastX - $localX) /
-                [double]($lastX - $originalMaximumX)
-            [int][math]::Round(
-                $edgeY + 2 + 36 * [math]::Pow($capProgress, 0.60)
-            )
-        }
-        elseif ($firstOpaque -lt $height) {
-            $firstOpaque - 1
-        }
-        else {
-            [int][math]::Round($edgeY + 20 + 10 * (1.0 - $t))
-        }
-        for ($localY = $edgeY; $localY -le $bottom; $localY++) {
-            $existing = $bitmap.GetPixel($left + $localX, $top + $localY)
-            if ($existing.A -ge 16) { continue }
-            $color = Skin-Pixel $skin $localX $localY $centerX
-            if ($localY -eq $edgeY -or $localX -eq $lastX) {
-                $color = [System.Drawing.Color]::FromArgb(255, 96, 39, 21)
-            }
-            $bitmap.SetPixel($left + $localX, $top + $localY, $color)
-        }
-        if ($firstOpaque -lt $height -and $firstOpaque -gt $edgeY) {
-            $seamEnd = if ($localX -ge $originalMaximumX - 2) {
-                $bottom
-            }
-            else {
-                [math]::Min($bottom, $firstOpaque + 2)
-            }
-            for ($localY = $firstOpaque; $localY -le $seamEnd; $localY++) {
-                $color = $bitmap.GetPixel($left + $localX, $top + $localY)
-                if ($color.A -ge 16 -and (Is-Dark $color)) {
-                    $bitmap.SetPixel(
-                        $left + $localX,
-                        $top + $localY,
-                        (Skin-Pixel $skin $localX $localY $centerX)
-                    )
-                }
-            }
-        }
-    }
-
-    # Continue each deltoid into the upper ribcage instead of leaving the
-    # original torso's nearly vertical outer crop edge below the new slope.
-    # This trim stays in the upper 23 percent of the torso, so chest/waist
-    # garment-fit authority remains the inherited anatomy silhouette.
-    $shoulderBandStart = [math]::Max(1, $outerDrop)
-    $shoulderBandEnd = [int][math]::Round($height * 0.23)
-    for ($localY = $shoulderBandStart; $localY -le $shoulderBandEnd; $localY++) {
-        $progress = ($localY - $shoulderBandStart) /
-            [double][math]::Max(1, $shoulderBandEnd - $shoulderBandStart)
-        $trim = [int][math]::Round(4 * [math]::Sin($progress * [math]::PI))
-        if ($trim -le 0) { continue }
-        $rowMinimum = $width
-        $rowMaximum = -1
-        for ($localX = 0; $localX -lt $width; $localX++) {
-            if ($bitmap.GetPixel($left + $localX, $top + $localY).A -lt 16) {
-                continue
-            }
-            $rowMinimum = [math]::Min($rowMinimum, $localX)
-            $rowMaximum = [math]::Max($rowMaximum, $localX)
-        }
-        if ($rowMaximum -le $rowMinimum) { continue }
-        for ($offset = 0; $offset -lt $trim; $offset++) {
-            $bitmap.SetPixel(
-                $left + $rowMinimum + $offset,
-                $top + $localY,
-                [System.Drawing.Color]::Transparent
-            )
-            $bitmap.SetPixel(
-                $left + $rowMaximum - $offset,
-                $top + $localY,
-                [System.Drawing.Color]::Transparent
-            )
-        }
-    }
+    Refine-Torso-Shoulder `
+        $bitmap $left $top $width $height $skin 0.28 0.045 24.0 1.0
+    Smooth-Front-Shoulder-Samples `
+        $bitmap $left $top $width $height $skin 20.0
 }
 
 function Fill-Profile-Shoulders(
@@ -231,102 +103,340 @@ function Fill-Profile-Shoulders(
     [int]$height,
     [System.Drawing.Color]$skin
 ) {
-    $bounds = Get-Alpha-Bounds $bitmap $left $top $width $height
-    $minimumX = $bounds[0]
-    $maximumX = $bounds[0] + $bounds[2] - 1
-    $neckLeft = [int][math]::Round($minimumX + $bounds[2] * 0.34)
-    $neckRight = [int][math]::Round($minimumX + $bounds[2] * 0.63)
-    $outerDrop = [int][math]::Round($height * 0.075)
-    $centerX = [int]($width / 2)
-
-    for ($localX = $minimumX; $localX -le $maximumX; $localX++) {
-        if ($localX -lt $neckLeft) {
-            $t = ($neckLeft - $localX) / [double]($neckLeft - $minimumX)
-        }
-        elseif ($localX -gt $neckRight) {
-            $t = ($localX - $neckRight) / [double]($maximumX - $neckRight)
-        }
-        else {
-            $t = 0
-        }
-        $edgeY = [int][math]::Round(
-            1 + $outerDrop * [math]::Pow($t, 1.80)
-        )
-        $originalFirstOpaque = $height
-        for ($localY = 0; $localY -lt $height; $localY++) {
-            if ($bitmap.GetPixel($left + $localX, $top + $localY).A -ge 16) {
-                $originalFirstOpaque = $localY
-                break
-            }
-        }
-        if ($t -gt 0) {
-            for ($localY = 0; $localY -lt $edgeY; $localY++) {
-                $bitmap.SetPixel(
-                    $left + $localX,
-                    $top + $localY,
-                    [System.Drawing.Color]::Transparent
-                )
-            }
-        }
-        $firstOpaque = $height
-        for ($localY = 0; $localY -lt $height; $localY++) {
-            if ($bitmap.GetPixel($left + $localX, $top + $localY).A -ge 16) {
-                $firstOpaque = $localY
-                break
-            }
-        }
-        for ($localY = $edgeY; $localY -lt $firstOpaque; $localY++) {
-            $color = Skin-Pixel $skin $localX $localY $centerX
-            if ($localY -eq $edgeY) {
-                $color = [System.Drawing.Color]::FromArgb(255, 96, 39, 21)
-            }
-            $bitmap.SetPixel($left + $localX, $top + $localY, $color)
-        }
-        if ($originalFirstOpaque -gt $edgeY -and
-            $originalFirstOpaque -lt $height) {
-            for ($localY = $originalFirstOpaque;
-                $localY -le [math]::Min($height - 1, $originalFirstOpaque + 2);
-                $localY++) {
-                $color = $bitmap.GetPixel($left + $localX, $top + $localY)
-                if ($color.A -ge 16 -and (Is-Dark $color)) {
-                    $bitmap.SetPixel(
-                        $left + $localX,
-                        $top + $localY,
-                        (Skin-Pixel $skin $localX $localY $centerX)
-                    )
-                }
-            }
-        }
-    }
+    Refine-Profile-Shoulder `
+        $bitmap $left $top $width $height $skin 24.0
 }
 
-function Soften-Front-Shoulder-Outline(
+function Refine-Torso-Shoulder(
     [System.Drawing.Bitmap]$bitmap,
     [int]$left,
     [int]$top,
     [int]$width,
     [int]$height,
-    [System.Drawing.Color]$skin
+    [System.Drawing.Color]$skin,
+    [double]$shoulderBandFraction,
+    [double]$neckBandFraction,
+    [double]$targetSlopeDegrees,
+    [double]$curvePower
 ) {
-    $bandEnd = [int][math]::Round($height * 0.26)
-    for ($localY = 3; $localY -le $bandEnd; $localY++) {
-        for ($localX = 1; $localX -lt $width - 1; $localX++) {
-            $color = $bitmap.GetPixel($left + $localX, $top + $localY)
-            if ($color.A -lt 16 -or -not (Is-Dark $color)) { continue }
-            $leftAlpha = $bitmap.GetPixel(
-                $left + $localX - 1,
-                $top + $localY
-            ).A
-            $rightAlpha = $bitmap.GetPixel(
-                $left + $localX + 1,
-                $top + $localY
-            ).A
-            if ($leftAlpha -ge 16 -and $rightAlpha -ge 16) { continue }
-            $bitmap.SetPixel(
+    $shoulderBandEnd = [int][math]::Round(
+        $height * $shoulderBandFraction
+    )
+    $neckBandEnd = [int][math]::Round($height * $neckBandFraction)
+    $firstOpaque = [int[]]::new($width)
+    $shoulderMinimumX = $width
+    $shoulderMaximumX = -1
+    $neckMinimumX = $width
+    $neckMaximumX = -1
+
+    for ($localX = 0; $localX -lt $width; $localX++) {
+        $firstOpaque[$localX] = $height
+        for ($localY = 0; $localY -lt $height; $localY++) {
+            if ($bitmap.GetPixel(
                 $left + $localX,
-                $top + $localY,
-                (Skin-Pixel $skin $localX $localY ([int]($width / 2)))
+                $top + $localY
+            ).A -ge 16) {
+                $firstOpaque[$localX] = $localY
+                break
+            }
+        }
+        if ($firstOpaque[$localX] -le $shoulderBandEnd) {
+            $shoulderMinimumX = [math]::Min($shoulderMinimumX, $localX)
+            $shoulderMaximumX = [math]::Max($shoulderMaximumX, $localX)
+        }
+        if ($firstOpaque[$localX] -le $neckBandEnd) {
+            $neckMinimumX = [math]::Min($neckMinimumX, $localX)
+            $neckMaximumX = [math]::Max($neckMaximumX, $localX)
+        }
+    }
+    if ($shoulderMaximumX -le $shoulderMinimumX -or
+        $neckMaximumX -le $neckMinimumX) {
+        throw 'Torso shoulder/neck contour is incomplete.'
+    }
+    $neckY = $height
+    for ($localX = $neckMinimumX; $localX -le $neckMaximumX; $localX++) {
+        $neckY = [math]::Min($neckY, $firstOpaque[$localX])
+    }
+    $targetSlope = [math]::Tan(
+        $targetSlopeDegrees * [math]::PI / 180.0
+    )
+    $outline = [System.Drawing.Color]::FromArgb(255, 96, 39, 21)
+    $centerX = [int]($width / 2)
+
+    for ($localX = $shoulderMinimumX;
+        $localX -le $shoulderMaximumX;
+        $localX++) {
+        if ($localX -lt $neckMinimumX) {
+            $distance = $neckMinimumX - $localX
+            $maximumDistance = [math]::Max(
+                1,
+                $neckMinimumX - $shoulderMinimumX
             )
+        }
+        elseif ($localX -gt $neckMaximumX) {
+            $distance = $localX - $neckMaximumX
+            $maximumDistance = [math]::Max(
+                1,
+                $shoulderMaximumX - $neckMaximumX
+            )
+        }
+        else {
+            $distance = 0
+            $maximumDistance = 1
+        }
+        $progress = $distance / [double]$maximumDistance
+        if ($progress -le 0 -or
+            $firstOpaque[$localX] -gt $shoulderBandEnd) {
+            continue
+        }
+        $outerDrop = $targetSlope * $maximumDistance
+        $targetEdge = [int][math]::Round(
+            $neckY + $outerDrop * [math]::Pow($progress, $curvePower)
+        )
+        $targetEdge = [math]::Max(0, [math]::Min(
+            $targetEdge,
+            $shoulderBandEnd
+        ))
+        if ($targetEdge -lt $firstOpaque[$localX]) {
+            for ($localY = $targetEdge;
+                $localY -lt $firstOpaque[$localX];
+                $localY++) {
+                $color = if ($localY -eq $targetEdge) {
+                    $outline
+                }
+                else {
+                    Skin-Pixel $skin $localX $localY $centerX
+                }
+                $bitmap.SetPixel(
+                    $left + $localX,
+                    $top + $localY,
+                    $color
+                )
+            }
+        }
+        elseif ($targetEdge -gt $firstOpaque[$localX]) {
+            for ($localY = $firstOpaque[$localX];
+                $localY -lt $targetEdge;
+                $localY++) {
+                $bitmap.SetPixel(
+                    $left + $localX,
+                    $top + $localY,
+                    [System.Drawing.Color]::FromArgb(0, 0, 0, 0)
+                )
+            }
+        }
+    }
+}
+
+function Normalize-Transparent-Rgb(
+    [System.Drawing.Bitmap]$bitmap,
+    [int]$left,
+    [int]$top,
+    [int]$width,
+    [int]$height
+) {
+    for ($localY = 0; $localY -lt $height; $localY++) {
+        for ($localX = 0; $localX -lt $width; $localX++) {
+            $color = $bitmap.GetPixel($left + $localX, $top + $localY)
+            if ($color.A -eq 0 -and
+                ($color.R -ne 0 -or $color.G -ne 0 -or $color.B -ne 0)) {
+                $bitmap.SetPixel(
+                    $left + $localX,
+                    $top + $localY,
+                    [System.Drawing.Color]::FromArgb(0, 0, 0, 0)
+                )
+            }
+        }
+    }
+}
+
+function Refine-Profile-Shoulder(
+    [System.Drawing.Bitmap]$bitmap,
+    [int]$left,
+    [int]$top,
+    [int]$width,
+    [int]$height,
+    [System.Drawing.Color]$skin,
+    [double]$targetSlopeDegrees
+) {
+    $bounds = Get-Alpha-Bounds $bitmap $left $top $width $height
+    $visibleMinimumX = $bounds[0]
+    $visibleWidth = $bounds[2]
+    $startX = $visibleMinimumX + [int][math]::Round(
+        0.34 * ($visibleWidth - 1)
+    )
+    $endX = $visibleMinimumX + [int][math]::Round(
+        0.06 * ($visibleWidth - 1)
+    )
+    if ($startX -le $endX) {
+        throw 'Profile shoulder contour is degenerate.'
+    }
+    $firstOpaque = [int[]]::new($width)
+    for ($localX = 0; $localX -lt $width; $localX++) {
+        $firstOpaque[$localX] = $height
+        for ($localY = 0; $localY -lt $height; $localY++) {
+            if ($bitmap.GetPixel(
+                $left + $localX,
+                $top + $localY
+            ).A -ge 16) {
+                $firstOpaque[$localX] = $localY
+                break
+            }
+        }
+    }
+    $startY = $height
+    for ($sampleX = $startX - 1; $sampleX -le $startX + 1; $sampleX++) {
+        if ($sampleX -ge 0 -and $sampleX -lt $width) {
+            $startY = [math]::Min($startY, $firstOpaque[$sampleX])
+        }
+    }
+    if ($startY -eq $height) {
+        throw 'Profile shoulder contour start is transparent.'
+    }
+    $targetSlope = [math]::Tan(
+        $targetSlopeDegrees * [math]::PI / 180.0
+    )
+    $outline = [System.Drawing.Color]::FromArgb(255, 96, 39, 21)
+    $centerX = [int]($width / 2)
+    for ($localX = $endX - 1; $localX -le $startX + 1; $localX++) {
+        if ($localX -lt 0 -or $localX -ge $width) { continue }
+        $distance = [math]::Max(0, $startX - $localX)
+        $progress = $distance / [double]($startX - $endX)
+        $curve = [math]::Sin(
+            [math]::Min(1.0, $progress) * [math]::PI
+        )
+        $targetEdge = [int][math]::Round(
+            $startY + $targetSlope * $distance + $curve
+        )
+        $targetEdge = [math]::Max(0, [math]::Min(
+            $targetEdge,
+            $height - 1
+        ))
+        if ($targetEdge -lt $firstOpaque[$localX]) {
+            for ($localY = $targetEdge;
+                $localY -lt $firstOpaque[$localX];
+                $localY++) {
+                $color = if ($localY -eq $targetEdge) {
+                    $outline
+                }
+                else {
+                    Skin-Pixel $skin $localX $localY $centerX
+                }
+                $bitmap.SetPixel(
+                    $left + $localX,
+                    $top + $localY,
+                    $color
+                )
+            }
+        }
+        elseif ($targetEdge -gt $firstOpaque[$localX]) {
+            for ($localY = $firstOpaque[$localX];
+                $localY -lt $targetEdge;
+                $localY++) {
+                $bitmap.SetPixel(
+                    $left + $localX,
+                    $top + $localY,
+                    [System.Drawing.Color]::FromArgb(0, 0, 0, 0)
+                )
+            }
+        }
+    }
+}
+
+function Smooth-Front-Shoulder-Samples(
+    [System.Drawing.Bitmap]$bitmap,
+    [int]$left,
+    [int]$top,
+    [int]$width,
+    [int]$height,
+    [System.Drawing.Color]$skin,
+    [double]$targetSlopeDegrees
+) {
+    $bounds = Get-Alpha-Bounds $bitmap $left $top $width $height
+    $minimumX = $bounds[0]
+    $visibleWidth = $bounds[2]
+    $outline = [System.Drawing.Color]::FromArgb(255, 96, 39, 21)
+    $centerX = [int]($width / 2)
+    $targetSlope = [math]::Tan(
+        $targetSlopeDegrees * [math]::PI / 180.0
+    )
+    foreach ($arc in @(
+        @{ start = 0.34; finish = 0.06 },
+        @{ start = 0.66; finish = 0.94 }
+    )) {
+        $startX = $minimumX + [int][math]::Round(
+            $arc.start * ($visibleWidth - 1)
+        )
+        $finishX = $minimumX + [int][math]::Round(
+            $arc.finish * ($visibleWidth - 1)
+        )
+        $direction = if ($finishX -gt $startX) { 1 } else { -1 }
+        $distanceTotal = [math]::Abs($finishX - $startX)
+        if ($distanceTotal -le 0) {
+            throw 'Front shoulder sample arc is degenerate.'
+        }
+        $firstOpaque = [int[]]::new($width)
+        for ($localX = 0; $localX -lt $width; $localX++) {
+            $firstOpaque[$localX] = $height
+            for ($localY = 0; $localY -lt $height; $localY++) {
+                if ($bitmap.GetPixel(
+                    $left + $localX,
+                    $top + $localY
+                ).A -ge 16) {
+                    $firstOpaque[$localX] = $localY
+                    break
+                }
+            }
+        }
+        $startY = $height
+        for ($sampleX = $startX - 1; $sampleX -le $startX + 1; $sampleX++) {
+            if ($sampleX -ge 0 -and $sampleX -lt $width) {
+                $startY = [math]::Min($startY, $firstOpaque[$sampleX])
+            }
+        }
+        if ($startY -eq $height) {
+            throw 'Front shoulder contour start is transparent.'
+        }
+        for ($step = 0; $step -le $distanceTotal + 1; $step++) {
+            $localX = $startX + $direction * $step
+            if ($localX -lt 0 -or $localX -ge $width) { continue }
+            $progress = [math]::Min(1.0, $step / [double]$distanceTotal)
+            $curve = [math]::Sin($progress * [math]::PI)
+            $targetEdge = [int][math]::Round(
+                $startY + $targetSlope * $step + $curve
+            )
+            $targetEdge = [math]::Max(0, [math]::Min(
+                $targetEdge,
+                $height - 1
+            ))
+            if ($targetEdge -lt $firstOpaque[$localX]) {
+                for ($localY = $targetEdge;
+                    $localY -lt $firstOpaque[$localX];
+                    $localY++) {
+                    $color = if ($localY -eq $targetEdge) {
+                        $outline
+                    }
+                    else {
+                        Skin-Pixel $skin $localX $localY $centerX
+                    }
+                    $bitmap.SetPixel(
+                        $left + $localX,
+                        $top + $localY,
+                        $color
+                    )
+                }
+            }
+            elseif ($targetEdge -gt $firstOpaque[$localX]) {
+                for ($localY = $firstOpaque[$localX];
+                    $localY -lt $targetEdge;
+                    $localY++) {
+                    $bitmap.SetPixel(
+                        $left + $localX,
+                        $top + $localY,
+                        [System.Drawing.Color]::FromArgb(0, 0, 0, 0)
+                    )
+                }
+            }
         }
     }
 }
@@ -696,8 +806,9 @@ Save-Copy `
     {
         param($bitmap)
         Fill-Front-Shoulders $bitmap 248 430 150 182 $maleSkin
-        Soften-Front-Shoulder-Outline $bitmap 248 430 150 182 $maleSkin
         Fill-Profile-Shoulders $bitmap 284 17 95 216 $maleSkin
+        Normalize-Transparent-Rgb $bitmap 248 430 150 182
+        Normalize-Transparent-Rgb $bitmap 284 17 95 216
     }
 
 Save-Copy `
@@ -706,11 +817,14 @@ Save-Copy `
     {
         param($bitmap)
         Fill-Front-Shoulders $bitmap 224 446 124 182 $femaleSkin
-        Soften-Front-Shoulder-Outline $bitmap 224 446 124 182 $femaleSkin
         Fill-Profile-Shoulders $bitmap 245 39 99 190 $femaleSkin
+        Normalize-Transparent-Rgb $bitmap 224 446 124 182
+        Normalize-Transparent-Rgb $bitmap 245 39 99 190
     }
 
-Save-Copy `
+# Preserve the accepted Prompt 27C component-page byte output. The R1
+# straight-alpha copy correction is intentionally restricted to torso pages.
+Save-SurfaceCopy `
     'assets/art/p25b_anatomy_components_atlas.png' `
     'assets/art/p27c_anatomy_components_atlas.png' `
     {

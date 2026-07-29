@@ -455,10 +455,14 @@ no second renderer or validation-only transform path.
 The runtime still has no general dynamic character collision. The
 deterministic foundation script uses ordinary controller input for a bounded
 partner walk-clear and return, and an allocation-free visible-presence
-detector rejects uncontrolled overlap. Stopped roots must remain exactly
-stable and every moving root is constrained by the normal per-tick controller
-speed bound. Interactive character pass-through remains a documented
-limitation rather than an implied collision feature.
+measurement rejects uncontrolled overlap when its explicit policy is
+`enforce_acceptance`. The unrestricted interactive route uses `measure_only`:
+it exposes the same frame/tick, roots, overlap, interaction context, and
+pass/fail result without turning the visual acceptance measurement into
+collision authority. Stopped roots must remain exactly stable and every
+moving root is constrained by the normal per-tick controller speed bound.
+Interactive character pass-through remains a documented limitation rather
+than an implied collision feature.
 
 ### Prompt 27C anatomy silhouette authority
 
@@ -483,6 +487,15 @@ permanent `base_presentation` modesty classification. Reauthoring changes
 silhouette pixels, authored body-part dimensions, pivots, and front-foot rest
 presentation only; physics roots, sockets, foot planting, IK, garments, and
 the Prompt 27B camera remain authoritative and unchanged.
+
+Prompt 27C-R1 replaces only the owner-rejected torso pixels. The source pass
+starts from the last accepted Prompt 25A pages, edits four explicit shoulder
+rectangles, and preserves every pixel outside them byte-for-byte. A canonical
+side torso region is reflected by the existing root transform for the other
+direction. The component page and all non-torso anatomy remain the accepted
+Prompt 27C output. Straight-alpha ownership and nearest sampling remain in the
+renderer; the authoring audit rejects transparent-white fringe inputs and
+unapproved page changes.
 
 ### Future interaction and authoring boundaries
 

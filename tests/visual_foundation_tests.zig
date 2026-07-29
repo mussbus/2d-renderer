@@ -12,7 +12,10 @@ const foundation_coherence = @import("foundation_coherence");
 const visual_foundation = @import("visual_foundation");
 
 test "Prompt 27 bounded real-art foundation route proves presentation interaction and reset" {
-    var scene = try visual_foundation.Scene.init(std.testing.allocator);
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .enforce_acceptance,
+    );
     defer scene.deinit();
     var script = visual_foundation.ScriptedInput{};
     var snapshots = input.SnapshotBuilder{};
@@ -40,7 +43,10 @@ test "Prompt 27 bounded real-art foundation route proves presentation interactio
 }
 
 test "interaction presentation data can select front without a second interaction subsystem" {
-    var scene = try visual_foundation.Scene.init(std.testing.allocator);
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .enforce_acceptance,
+    );
     defer scene.deinit();
     const synthetic = try handshake.definitionWithPresentation(
         &scene.integrated.production.animations,
@@ -886,7 +892,10 @@ const P27bRouteSummary = struct {
 };
 
 fn runP27bRoute(split_render_schedule: bool) !P27bRouteSummary {
-    var scene = try visual_foundation.Scene.init(std.testing.allocator);
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .enforce_acceptance,
+    );
     defer scene.deinit();
     var script = visual_foundation.ScriptedInput{};
     var snapshots = input.SnapshotBuilder{};
@@ -921,6 +930,7 @@ fn runP27bRoute(split_render_schedule: bool) !P27bRouteSummary {
     try std.testing.expect(scene.evidence.camera_follow);
     try std.testing.expect(scene.evidence.parallax);
     try std.testing.expect(scene.evidence.raised_platform_landing);
+    try std.testing.expect(!scene.presenceInteractionContext());
     try std.testing.expectEqual(
         @as(u64, 0),
         queue.lifetime_metrics.cpu_allocations_after_stabilization,
@@ -944,4 +954,117 @@ test "Prompt 27B pre-reset fixed-tick outcome is invariant to split render sched
     try std.testing.expectEqual(ordinary.camera_center, split.camera_center);
     try std.testing.expectEqual(ordinary.interaction_count, split.interaction_count);
     try std.testing.expectEqual(ordinary.fingerprint, split.fingerprint);
+}
+
+test "Prompt 27C-R1 interactive-equivalent overlap remains measured without termination" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    var snapshots = input.SnapshotBuilder{};
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    queue.markStabilized();
+
+    var crossed_reported_condition = false;
+    var crossed_partner = false;
+    var moved_away = false;
+    for (0..2_400) |render_frame| {
+        const move_right = render_frame < 1_200;
+        const snapshot = try snapshots.update(.{
+            .keyboard = if (move_right) .{ .d = true } else .{ .a = true },
+        });
+        try scene.updateFrame(1.0 / 240.0, snapshot);
+        queue.beginFrame();
+        _ = try scene.submit(&queue);
+        _ = queue.prepare();
+        const measurement = scene.latest_presence orelse
+            return error.MissingCharacterPresenceMeasurement;
+        crossed_reported_condition = crossed_reported_condition or
+            measurement.overlap_ratio >= 0.021407;
+        crossed_partner = crossed_partner or
+            scene.integrated.production.female.world_position.x >
+                scene.integrated.production.male.world_position.x + 1;
+        if (!move_right and crossed_partner and
+            scene.integrated.production.female.world_position.x <
+                scene.integrated.production.male.world_position.x - 1)
+        {
+            moved_away = true;
+            break;
+        }
+    }
+    try std.testing.expect(crossed_reported_condition);
+    try std.testing.expect(crossed_partner);
+    try std.testing.expect(moved_away);
+    try std.testing.expect(scene.evidence.presence_violation_count > 0);
+    try std.testing.expect(
+        scene.evidence.maximum_ordinary_overlap_ratio > 0.02,
+    );
+}
+
+test "Prompt 27C-R1 exact reported overlap is diagnostic interactively and fatal in acceptance" {
+    const observed = visual_foundation.PresenceMeasurement{
+        .render_frame = 0,
+        .simulation_tick = 0,
+        .female_position = .{ .x = -2.4, .y = 1.05 },
+        .male_position = .{ .x = -1.4, .y = 1.05 },
+        .overlap_ratio = 0.021407,
+        .interaction_context = false,
+        .passes_acceptance = foundation_coherence.overlapPasses(
+            0.021407,
+            false,
+        ),
+    };
+    try std.testing.expect(!observed.passes_acceptance);
+    try visual_foundation.enforcePresenceMeasurement(
+        observed,
+        .measure_only,
+    );
+    try std.testing.expectError(
+        error.CharacterPresenceOverlapExceeded,
+        visual_foundation.enforcePresenceMeasurement(
+            observed,
+            .enforce_acceptance,
+        ),
+    );
+}
+
+test "Prompt 27C-R1 presence interaction context follows active ownership and reset cancellation" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    const male_position = scene.integrated.production.male.world_position;
+    const female_position = math.Vec2{
+        .x = male_position.x - 3.72,
+        .y = male_position.y,
+    };
+    scene.integrated.production.female.controller.?.state.position =
+        female_position;
+    scene.integrated.production.female.world_position = female_position;
+
+    var snapshots = input.SnapshotBuilder{};
+    const request = try snapshots.update(.{
+        .keyboard = .{ .e = true },
+    });
+    try scene.updateFrame(1.0 / 240.0, request);
+    try std.testing.expect(scene.presenceInteractionContext());
+    try std.testing.expectEqual(@as(usize, 1), scene.manager.activeCount());
+
+    try scene.resetWorld();
+    try std.testing.expect(!scene.presenceInteractionContext());
+    try std.testing.expectEqual(@as(usize, 0), scene.manager.activeCount());
+    try std.testing.expect(scene.manager.last_terminal != null);
+    try std.testing.expectEqual(
+        interaction.Lifecycle.cancelled,
+        scene.manager.last_terminal.?.lifecycle,
+    );
 }

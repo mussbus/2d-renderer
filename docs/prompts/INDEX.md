@@ -40,7 +40,8 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 | 27 | Integrated visual foundation | automated complete; manual review reopened | exact roadmap source | [record](027-integrated-foundation.md) · [source](exact/027-source.txt) | `1de0d1d` |
 | 27A | Evidence integrity and owner-review harness | automated complete; owner review pending | exact user-supplied roadmap | [record](027A-evidence-integrity.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `7c4721a` |
 | 27B | Ground contact, framing, parallax, and presence | automated complete; owner review pending | exact user-supplied roadmap | [record](027B-ground-contact-camera-parallax-presence.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `0e29e0c` |
-| 27C | Production anatomy silhouette, proportion, and joint continuity | automated complete; owner review pending | exact user-supplied roadmap | [record](027C-production-anatomy.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `3259f79` |
+| 27C | Production anatomy silhouette, proportion, and joint continuity | torso result owner-rejected; superseded by 27C-R1 | exact user-supplied roadmap | [record](027C-production-anatomy.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `3259f79` |
+| 27C-R1 | Owner-rejected torso and interactive presence crash | automated corrective pass complete; owner review pending | copied exact user request | [record](027C-R1-owner-rejected-torso-presence.md) | worktree on `3259f79` |
 
 ## Evidence and reports
 
@@ -50,5 +51,6 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 - The user-supplied Prompt 27A–27H reopened visual-foundation roadmap is
   preserved as
   [`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md);
-  Prompts 27A, 27B, and 27C are implemented. Prompt 27D and later work has not
-  started.
+  Prompts 27A and 27B are implemented; Prompt 27C's rejected torso result is
+  superseded by the bounded 27C-R1 corrective pass. Prompt 27D and later work
+  has not started.

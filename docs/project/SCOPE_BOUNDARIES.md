@@ -1,6 +1,6 @@
 # Scope Boundaries
 
-## Current production scope through Prompt 27C
+## Current production scope through Prompt 27C-R1
 
 - Modular 2D segmented characters.
 - Front and canonical-side presentation with stable gameplay-facing

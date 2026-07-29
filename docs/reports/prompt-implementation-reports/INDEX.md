@@ -146,3 +146,18 @@ D3D12 evidence while preserving all historical Prompt 27/27A and final Prompt
 [test evidence](../../TESTING.md#prompt-27c-production-anatomy).
 The exact implementation report is archived in
 [`exact/027C-implementation-report.md`](exact/027C-implementation-report.md).
+
+The original Prompt 27C torso result was later rejected by the owner and is
+not current visual authority.
+
+### Prompt 27C-R1
+
+Prompt 27C-R1 restores the pre-27C chest identity within four bounded shoulder
+regions, fixes the deterministic authoring copy path, classifies every review
+visual by provenance, and separates unrestricted interactive presence
+measurement from fail-closed scripted acceptance. Use the
+[prompt record](../../prompts/027C-R1-owner-rejected-torso-presence.md),
+[decision record](../../PROMPT27C_R1_DECISION_RECORD.md), and
+[test evidence](../../TESTING.md#prompt-27c-r1-corrective-torso-and-presence-policy).
+The exact implementation report is archived in
+[`exact/027C-R1-implementation-report.md`](exact/027C-R1-implementation-report.md).

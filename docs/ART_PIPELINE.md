@@ -238,3 +238,24 @@ semantic authority: anatomy remains `.character`, removable visuals remain
 `.equipment`, and the neutral modesty bridge remains `base_presentation`.
 Decode/upload occurs at initialization; Prompt 27C adds no steady-state asset
 work.
+
+### Prompt 27C-R1 bounded torso regeneration
+
+The original Prompt 27C torso result is owner-rejected and preserved under
+`assets/art/source/p27c_rejected`. R1 regenerates only the male/female base
+pages from their Prompt 25A predecessors. Its approved edit bounds are:
+
+- male front `(269,432)-(376,464)` and side `(289,17)-(315,58)`;
+- female front `(240,449)-(332,482)` and side `(250,40)-(277,56)`.
+
+The authoring script edits the decoded 32-bit bitmap directly. It does not
+round untouched straight-alpha pixels through a full-page graphics surface.
+`audit_p27c_r1_torso.ps1` compares the complete output pages with the
+predecessors, requires zero changes outside the four rectangles, checks
+one-component torso alpha, checks transparent RGB, and runs four controlled
+negative fixtures. The accepted component atlas remains byte-identical to
+Prompt 27C.
+
+The standalone ImageGen torso in
+`assets/art/source/p27c_candidates/male_torso_imagegen_candidate_v1_rejected.png`
+is review-only and never enters this production path.

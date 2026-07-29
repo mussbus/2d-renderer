@@ -16,6 +16,12 @@ It retains every production movement, interaction, timing, debug, resize, and ex
 
 It runs until Escape, an SDL window-close request, or an optional `--frames` limit. Walk right toward the passive character. A handshake can begin only when both characters are grounded, the player faces right, the passive character faces left, and their fixed roots are within the authored `3.72 m ± 0.02 m` envelope. There is no root snap, facing correction, or motion warping. Hold Space for the higher jump; releasing it while rising produces the existing shorter jump.
 
+Character-presence overlap is continuously measured in this interactive route
+but is not collision authority. Walking close to or through the passive
+character does not terminate the process. Scripted acceptance evidence uses
+the same measurement with fail-closed enforcement. The ordinary `0.02` and
+active-interaction `0.15` thresholds are unchanged.
+
 The bounded production-path verification is:
 
 ```powershell

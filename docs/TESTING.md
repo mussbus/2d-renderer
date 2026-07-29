@@ -12,16 +12,17 @@ records implementation through Prompt 27:
 
 It verifies required files, local Markdown targets, prompt navigation, report links, and practical orphan detection. Verbatim historical report files are excluded from link lint because their original local evidence paths are intentionally preserved rather than rewritten.
 
-## Current aggregate status through Prompt 27C
+## Current aggregate status through Prompt 27C-R1
 
-The Prompt 27C aggregate gate passes 386/386 tests in Debug. The focused
-visual-geometry gate passes 158/158 checks and the retained
-visual-foundation gate passes 28/28.
+The Prompt 27C-R1 aggregate gate passes 389/389 tests in Debug. The focused
+visual-geometry gate passes 158/158 checks and the focused
+visual-foundation gate passes 31/31.
 Prompt 27B's semantic report contains 9,714 metrics with zero failures; each
 final D3D12 review package contains 55 independent pixel metrics with zero
 failures. ReleaseSafe, ReleaseFast, repository audit, D3D12/DXIL GPU smoke,
 the preserved Prompt 27A 16-case evidence route, the four Prompt 27B
-supplemental captures, and two-run repeatability pass. Current
+supplemental captures, 47/47 byte-identical R1 D3D artifacts, and review-image
+repeatability pass. Current
 milestone-specific commands and their evidence boundaries are documented
 below.
 
@@ -738,3 +739,56 @@ subsequent world-camera movement retains the unchanged 16 px bound. All 314
 historical Prompt 27/27A evidence files remain present and SHA-256 identical.
 Prompt 27A, Prompt 27B, and Prompt 27C owner/manual visual acceptance remains
 `[PENDING OWNER REVIEW]`; no Prompt 27C capture is an approved golden.
+
+## Prompt 27C-R1 corrective torso and presence policy
+
+Focused deterministic gates:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build audit-p27c-r1-torso -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
+& '.\.deps\zig-0.16.0\zig.exe' build p27c-anatomy-report -j1 -- --output 'zig-out\p27c_r1_evidence\final_semantic_report' --expect-pass
+```
+
+The torso audit compares both complete production pages with the last
+accepted Prompt 25A pages. It requires all 1,509 male and 1,234 female changed
+pixels to remain inside four fixed shoulder rectangles and reports zero
+unapproved page changes. Each torso must contain one alpha-connected
+component and no transparent nonzero-RGB texel. Four controlled fixtures must
+be rejected: transparent-white bilinear matte, mismatched directional mask,
+detached geometry, and one outside-region pixel.
+
+The foundation gate covers explicit `measure_only` and
+`enforce_acceptance` policies. Its interactive-equivalent case approaches the
+passive character, crosses the former failure point, continues through, moves
+away, and submits every frame without termination. The exact `0.021407`
+measurement is nonfatal but remains failed/reportable in `measure_only`; the
+same measurement produces `CharacterPresenceOverlapExceeded` under
+`enforce_acceptance`. Scripted production evidence and controlled invalid
+fixtures remain fail-closed. Interaction context is active only while the
+authoritative interaction manager has an active interaction; cancellation
+and completion restore the ordinary `0.02` threshold.
+
+Real D3D12/DXIL and review-package gates:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\tools\build_p27c_r1_review_package.ps1'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --interactive --frames 300
+```
+
+Run the anatomy and foundation routes from an isolated R1 working directory
+so their relative `zig-out` paths cannot overwrite Prompt 27, Prompt 27A, or
+final Prompt 27B evidence. The review package requires 8/8 body-only and
+16/16 foundation captures, labels source provenance for every displayed PNG,
+and includes native/enlarged torsos, both side directions, dark/light and
+bilinear composites, diffs, assembled/clothed captures, and an explicit
+`[PENDING OWNER REVIEW]` sheet.
+
+The bounded real interactive executable proves startup, D3D12/DXIL
+submission, and non-crashing frame completion. It is not represented as
+physical keyboard/gamepad testing. Automated geometry and pixel checks do not
+claim aesthetic approval.

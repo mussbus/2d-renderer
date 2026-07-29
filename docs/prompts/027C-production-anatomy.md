@@ -1,5 +1,10 @@
 # Prompt 27C — Production Anatomy Silhouette, Proportion, and Joint Continuity
 
+> Supersession: owner review rejected this prompt's torso result. The retained
+> limb/joint/foot work and ruler remain protected; current torso and presence
+> authority is
+> [Prompt 27C-R1](027C-R1-owner-rejected-torso-presence.md).
+
 ## Source
 
 The exact user-supplied scope is the Prompt 27C section of
