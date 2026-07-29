@@ -423,6 +423,7 @@ pub const Presentation = struct {
                 .texture_page = presentation.renderer_page_offset + selected.visual.texture_page,
                 .order = order,
             };
+            const submission_index: u32 = @intCast(queue.sprite_count);
             const key = try queue.submitSprite(request);
             if (trace) |sink| {
                 const region_source = sourceForRegion(selected.visual.region_id) orelse
@@ -460,6 +461,7 @@ pub const Presentation = struct {
                         morphology_scale.y
                     else
                         morphology_scale.x),
+                    .submission_index = submission_index,
                 });
             }
             if (attachment.canonical_semantic) |raw_semantic| {

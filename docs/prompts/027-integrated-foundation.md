@@ -51,3 +51,14 @@ state-conditioned matrix, per-capture semantic metadata, a bounded same-queue
 HUD, deterministic PNG/contact-sheet tooling, and repeatability comparison.
 See [`027A-evidence-integrity.md`](027A-evidence-integrity.md). Owner visual
 acceptance is `[PENDING OWNER REVIEW]`.
+
+## Prompt 27B follow-on
+
+Prompt 27B preserves Prompt 27A evidence and adds measured production
+ground-contact, collision-derived white-edge ordering, camera safe framing,
+actual parallax displacement, and scripted character-presence validation.
+The real foundation route remains the only composition root and D3D12
+renderer. It changes no anatomy/garment art, locomotion clip, or handshake
+definition. See
+[`027B-ground-contact-camera-parallax-presence.md`](027B-ground-contact-camera-parallax-presence.md).
+Owner/manual acceptance remains `[PENDING OWNER REVIEW]`.

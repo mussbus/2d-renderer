@@ -12,6 +12,7 @@ const environment_theme = @import("environment_theme");
 const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_demo = @import("wardrobe_demo");
 const render_queue = @import("render_queue");
+const visual_geometry = @import("visual_geometry");
 
 pub const required_frames: u32 = 720;
 pub const fixed_ticks_per_frame: u32 = 4;
@@ -242,8 +243,21 @@ pub const Scene = struct {
     }
 
     pub fn submit(scene: *Scene, queue: *render_queue.UnifiedRenderQueue) !u32 {
-        var submitted = try scene.environment.submit(&scene.production.world, queue);
-        submitted += try scene.production.submit(queue);
+        return scene.submitTraced(queue, null, null);
+    }
+
+    pub fn submitTraced(
+        scene: *Scene,
+        queue: *render_queue.UnifiedRenderQueue,
+        visual_trace: ?*visual_geometry.Trace,
+        parallax_trace: ?*environment_theme.ParallaxTrace,
+    ) !u32 {
+        var submitted = try scene.environment.submitTraced(
+            &scene.production.world,
+            queue,
+            parallax_trace,
+        );
+        submitted += try scene.production.submitTraced(queue, visual_trace);
         if (scene.detailed_debug_enabled) {
             submitted += try submitColliderDebug(&scene.production.world, queue);
         }

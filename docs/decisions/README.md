@@ -20,3 +20,4 @@ Related historical decisions:
 - [Prompt 26 environment presentation](../PROMPT26_DECISION_RECORD.md)
 - [Prompt 27 integrated visual foundation](../PROMPT27_DECISION_RECORD.md)
 - [Prompt 27A evidence integrity](../PROMPT27A_DECISION_RECORD.md)
+- [Prompt 27B contact, framing, parallax, and presence](../PROMPT27B_DECISION_RECORD.md)

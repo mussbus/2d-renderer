@@ -120,3 +120,11 @@ semantic sorting of environment, surfaces, two characters, wardrobe,
 interaction-qualified equipment, foreground, and optional debug work. The
 route does not claim one draw across incompatible page or primitive
 transitions.
+
+Prompt 27B adds no renderer or per-character draw path. Character and
+wardrobe trace records carry the queue index returned by their actual
+submission, enabling bounded ground-contact adjustment of those same
+submitted records. Debug-only contact, safe-frame, and parallax markers use
+the existing procedural page and global sort/range path. The final D3D12
+route reports 149 sprites, one mesh, 36 sprite ranges/draws, one mesh
+range/draw, and zero post-stabilization queue or submission allocations.

@@ -213,6 +213,16 @@ lifecycle/phase, and debug count. The HUD cannot mutate the route. Clean
 D3D12 capture files exclude the HUD; capture 15 includes the actual detailed
 production diagnostics. Owner visual acceptance remains pending.
 
+Prompt 27B retains those controls and the same state-conditioned matrix. Its
+script routes the partner clear and back with ordinary controller intent so
+the player does not visibly traverse through the other character. An
+allocation-free visible-bounds detector fails uncontrolled scripted overlap,
+but this is not general interactive character collision: two manually
+controlled characters can still pass through one another because controllers
+collide only with the immutable static world. Prompt 27B also adds clean
+camera-resize evidence and debug-only surface/sole/safe-bound/parallax rulers;
+those rulers do not alter controls or simulation.
+
 Foundation reset restores the player spawn, velocity, grounded/support state, air-jump and dash counters, interaction/IK/override ownership, foot locks, animator/procedural/breathing state, body/build/hair selection, per-part override, default loadout, resolved attributes/capabilities, mesh/secondary runtime state, fixed-step clock, pending edges, and camera center. It preserves the current nonzero viewport extent and creates no GPU resource.
 
 The latest playground input diagnostic is fixed-size and read-only. It exposes `keyboard_left_held`, `keyboard_right_held`, `jump_pressed`, `jump_held`, `jump_released`, `interact_pressed`, `reset_pressed`, `debug_toggle_pressed`, `merged_move_axis`, `substeps_this_frame`, and `pending_edge_count`. Interactive console output is transition-only and bounded by actual control transitions; held state is not printed each frame.

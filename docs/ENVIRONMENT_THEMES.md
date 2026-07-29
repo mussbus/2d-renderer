@@ -185,3 +185,11 @@ ticks, wardrobe identity, or collision fingerprints. Sixteen real D3D12
 captures and metadata under `zig-out/p27a_evidence/candidate` include both
 themes and detailed debug. The original nine Prompt 27 captures remain
 historical under `zig-out/p27_visual_foundation`.
+
+Prompt 27B traces the actual submitted far, midground, and gameplay anchors
+and camera factors. The semantic route proves ordered displacement over
+10.93 m of camera travel; independent D3D12 pixels measure
+`30/113/246 px` of far/mid/gameplay movement with `0.48/0.16/0 px`
+factor-prediction error. The collision-derived white edge remains between
+terrain and characters in semantic order, projects within `0.5 px` of its
+collider top, and contributes no white pixels inside opaque footwear.

@@ -418,6 +418,48 @@ contact sheets and raw per-case metrics, and leaves the result
 `[PENDING OWNER REVIEW]`. Historical Prompt 27 evidence is never overwritten,
 and no Prompt 27A artifact is an approved golden.
 
+### Prompt 27B contact, framing, parallax, and presence
+
+`foundation_coherence.zig` measures one production contact chain: immutable
+supporting-collider top, independently identified post-IK sole socket,
+alpha-derived sole landmarks from the actual submitted anatomy/equipment
+record, camera projection, and real D3D12 surface-edge pixels. Character and
+wardrobe traces carry their actual `UnifiedRenderQueue` submission indices,
+so alignment modifies only the corresponding submitted visual transform.
+Physics roots, colliders, animation poses, IK state, anatomy/equipment
+identity, and source art remain unchanged.
+
+The same `Camera2D` that owns ordinary presentation consumes actual submitted
+bounds from anatomy, hair, headwear, equipment, and deformable garments. It
+applies one bounded vertical safe-region correction while retaining the
+existing horizontal policy, then publishes that camera for the same submitted
+frame. It cannot write simulation, collision, interaction, or foot-planting
+state.
+
+The route retains its incremental 960×540 to 800×510 to 640×480 resize and
+also performs one separately identified direct 960×540 to 640×480 event.
+That event's first submitted frame is classified as instantaneous viewport
+reprojection: its finite head/foot projection must satisfy the unchanged
+16 px margins immediately. The first frame is not misreported as ordinary
+world-camera motion; every subsequent same-viewport camera-center step still
+must satisfy the unchanged 16 px/render bound.
+
+Environment submission exposes typed far, midground, and gameplay trace
+records containing the actual anchors and camera factors used by production.
+Semantic validation predicts ordered displacement from those factors.
+Debug-only color markers are appended through the existing global queue after
+the clean production capture; the independent D3D12 parser measures their
+actual displacement, safe bounds, collider top, and sole endpoints. There is
+no second renderer or validation-only transform path.
+
+The runtime still has no general dynamic character collision. The
+deterministic foundation script uses ordinary controller input for a bounded
+partner walk-clear and return, and an allocation-free visible-presence
+detector rejects uncontrolled overlap. Stopped roots must remain exactly
+stable and every moving root is constrained by the normal per-tick controller
+speed bound. Interactive character pass-through remains a documented
+limitation rather than an implied collision feature.
+
 ### Future interaction and authoring boundaries
 
 A future paired definition may add a bounded array of semantic contacts such

@@ -121,3 +121,15 @@ acceptance is reopened. Use the
 [test evidence](../../TESTING.md#prompt-27a-evidence-integrity).
 The exact implementation report is archived in
 [`exact/027A-implementation-report.md`](exact/027A-implementation-report.md).
+
+### Prompt 27B
+
+Prompt 27B preserves Prompt 27/27A evidence while adding ground-contact,
+camera-framing, measured-parallax, and scripted character-presence closure.
+Use the
+[roadmap source](../../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
+[prompt record](../../prompts/027B-ground-contact-camera-parallax-presence.md),
+[decision record](../../PROMPT27B_DECISION_RECORD.md), and
+[test evidence](../../TESTING.md#prompt-27b-contact-framing-parallax-and-presence).
+The exact implementation report is archived in
+[`exact/027B-implementation-report.md`](exact/027B-implementation-report.md).

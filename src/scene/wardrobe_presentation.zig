@@ -263,6 +263,7 @@ pub const Presentation = struct {
                     mesh_binding_world,
                     composed_deformation,
                 );
+                const submission_index: u32 = @intCast(queue.mesh_count);
                 _ = try queue.submitMesh(.{
                     .definition = definition,
                     .binding_world = mesh_binding_world,
@@ -345,6 +346,7 @@ pub const Presentation = struct {
                             traced_vertices[0..definition.vertices.len],
                             definition.indices,
                         ),
+                        .submission_index = submission_index,
                     });
                 }
             } else {
@@ -423,6 +425,7 @@ pub const Presentation = struct {
                     .texture_page = presentation.renderer_page_offset + selected.texture_page,
                     .order = order,
                 };
+                const submission_index: u32 = @intCast(queue.sprite_count);
                 _ = try queue.submitSprite(request);
                 if (trace) |sink| {
                     const source = sourceForWardrobeRegion(selected.region_id) orelse
@@ -453,6 +456,7 @@ pub const Presentation = struct {
                             geometryView(view, instance.facing),
                         ),
                         .fit = spec.fit,
+                        .submission_index = submission_index,
                     });
                 }
             }

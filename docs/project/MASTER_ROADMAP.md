@@ -78,6 +78,10 @@ Status: **complete**
 - Prompt 27A: a 16-case state-conditioned capture matrix, validated semantic
   metadata, bounded same-queue HUD, deterministic contact sheets/raw metrics,
   and byte-exact two-run repeatability. Owner visual review remains pending.
+- Prompt 27B: measured collider/socket/alpha/pixel ground contact, bounded
+  existing-camera safe framing, actual-factor semantic and D3D12 parallax,
+  and non-teleport scripted character presence. Owner visual review remains
+  pending.
 
 Both milestones reuse the existing collision authority, camera, character
 instances, interaction system, unified render queue, and SDL3 GPU renderer.
@@ -116,7 +120,7 @@ collision, theme, or atlas-identity models.
 
 ## Milestone gate
 
-Prompts 0–27A are implemented. Prompt 27B and later milestones have not
-started. Current non-blocking limitations, the pending Prompt 27A owner
+Prompts 0–27B are implemented. Prompt 27C and later milestones have not
+started. Current non-blocking limitations, the pending Prompt 27A/27B owner
 review, and future schema triggers are recorded in
 [KNOWN_GAPS.md](KNOWN_GAPS.md).

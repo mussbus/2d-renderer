@@ -1159,6 +1159,10 @@ pub const TraceRecord = struct {
     fit: ?FitContract = null,
     world_geometry: ?WorldGeometry = null,
     mesh: ?MeshTrace = null,
+    /// Production UnifiedRenderQueue index. Rigid records address
+    /// sprite_submissions and mesh records address mesh_submissions. Pure
+    /// geometry fixtures retain the sentinel because they submit no GPU work.
+    submission_index: u32 = std.math.maxInt(u32),
     /// Longitudinal scale contributed by the authoritative morphology/bone
     /// transform before authored art size is applied. Proportion contracts
     /// use this to evaluate supported morphology rather than one screenshot.
@@ -1184,6 +1188,10 @@ pub const Trace = struct {
     }
 
     pub fn slice(trace: *const Trace) []const TraceRecord {
+        return trace.records[0..trace.count];
+    }
+
+    pub fn sliceMutable(trace: *Trace) []TraceRecord {
         return trace.records[0..trace.count];
     }
 };

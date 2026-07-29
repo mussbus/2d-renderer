@@ -1,4 +1,5 @@
 const std = @import("std");
+const math = @import("math");
 const input = @import("input");
 const interaction = @import("interaction");
 const handshake = @import("handshake");
@@ -7,6 +8,7 @@ const render_queue = @import("render_queue");
 const camera2d = @import("camera2d");
 const acceptance_hud = @import("acceptance_hud");
 const foundation_evidence = @import("foundation_evidence");
+const foundation_coherence = @import("foundation_coherence");
 const visual_foundation = @import("visual_foundation");
 
 test "Prompt 27 bounded real-art foundation route proves presentation interaction and reset" {
@@ -472,4 +474,474 @@ test "Prompt 27A approach reach and release require their lifecycle semantics" {
     try std.testing.expect(!foundation_evidence.matches(release, observation));
     observation.release_tick = observation.simulation_tick - 100;
     try std.testing.expect(!foundation_evidence.matches(release, observation));
+}
+
+test "Prompt 27B contact ruler accepts boundaries and rejects wrong sole and pivot" {
+    const camera = camera2d.Camera2D.initDefault();
+    const pixels_per_meter = camera.pixels_per_meter;
+    const valid = try foundation_coherence.measureGroundContact(camera, .{
+        .planted = true,
+        .canonical_sole_world = .{
+            .x = 0,
+            .y = foundation_coherence.semantic_sole_tolerance_px /
+                pixels_per_meter,
+        },
+        .supporting_top_y = 0,
+        .heel_side_sole_world = .{
+            .x = -0.2,
+            .y = foundation_coherence.sole_endpoint_maximum_height_px /
+                pixels_per_meter,
+        },
+        .toe_side_sole_world = .{
+            .x = 0.2,
+            .y = foundation_coherence.sole_endpoint_minimum_height_px /
+                pixels_per_meter,
+        },
+    });
+    try std.testing.expect(valid.passes());
+
+    const wrong_sole = try foundation_coherence.measureGroundContact(camera, .{
+        .planted = true,
+        .canonical_sole_world = .{
+            .x = 0,
+            .y = (foundation_coherence.semantic_sole_tolerance_px + 0.001) /
+                pixels_per_meter,
+        },
+        .supporting_top_y = 0,
+        .heel_side_sole_world = .{ .x = -0.2, .y = 0 },
+        .toe_side_sole_world = .{ .x = 0.2, .y = 0 },
+    });
+    try std.testing.expect(!wrong_sole.passes());
+
+    const wrong_pivot = try foundation_coherence.measureGroundContact(camera, .{
+        .planted = true,
+        .canonical_sole_world = .{ .x = 0, .y = 0 },
+        .supporting_top_y = 0,
+        .heel_side_sole_world = .{
+            .x = -0.2,
+            .y = (foundation_coherence.visual_sole_tolerance_px + 0.001) /
+                pixels_per_meter,
+        },
+        .toe_side_sole_world = .{
+            .x = 0.2,
+            .y = (foundation_coherence.visual_sole_tolerance_px + 0.001) /
+                pixels_per_meter,
+        },
+    });
+    try std.testing.expect(!wrong_pivot.passes());
+
+    const clearly_invalid = try foundation_coherence.measureGroundContact(camera, .{
+        .planted = true,
+        .canonical_sole_world = .{ .x = 0, .y = 1 },
+        .supporting_top_y = 0,
+        .heel_side_sole_world = .{ .x = -0.2, .y = 1 },
+        .toe_side_sole_world = .{ .x = 0.2, .y = 1 },
+    });
+    try std.testing.expect(!clearly_invalid.passes());
+
+    const swinging = try foundation_coherence.measureGroundContact(camera, .{
+        .planted = false,
+        .canonical_sole_world = .{ .x = 0, .y = 100 },
+        .supporting_top_y = 0,
+        .heel_side_sole_world = .{ .x = -0.2, .y = 100 },
+        .toe_side_sole_world = .{ .x = 0.2, .y = 100 },
+    });
+    try std.testing.expect(!swinging.applicable);
+    try std.testing.expect(swinging.passes());
+}
+
+test "Prompt 27B left and right planted contacts are accepted independently" {
+    const camera = camera2d.Camera2D.initDefault();
+    const pixels_per_meter = camera.pixels_per_meter;
+    const left = try foundation_coherence.measureGroundContact(camera, .{
+        .planted = true,
+        .canonical_sole_world = .{ .x = -0.25, .y = 0 },
+        .supporting_top_y = 0,
+        .heel_side_sole_world = .{ .x = -0.4, .y = 0 },
+        .toe_side_sole_world = .{ .x = -0.1, .y = 0 },
+    });
+    const right = try foundation_coherence.measureGroundContact(camera, .{
+        .planted = true,
+        .canonical_sole_world = .{
+            .x = 0.25,
+            .y = (foundation_coherence.semantic_sole_tolerance_px + 0.001) /
+                pixels_per_meter,
+        },
+        .supporting_top_y = 0,
+        .heel_side_sole_world = .{ .x = 0.1, .y = 0 },
+        .toe_side_sole_world = .{ .x = 0.4, .y = 0 },
+    });
+    try std.testing.expect(left.passes());
+    try std.testing.expect(!right.passes());
+    try std.testing.expect(
+        (left.canonical_error_px + right.canonical_error_px) * 0.5 <
+            foundation_coherence.semantic_sole_tolerance_px,
+    );
+}
+
+test "Prompt 27B surface order keeps truthful edge below characters and debug" {
+    try std.testing.expect(foundation_coherence.surfaceOrderingValid(
+        -10_000,
+        -9_500,
+        0,
+        30_000,
+    ));
+    try std.testing.expect(!foundation_coherence.surfaceOrderingValid(
+        -10_000,
+        1,
+        0,
+        30_000,
+    ));
+    try std.testing.expect(!foundation_coherence.surfaceOrderingValid(
+        -10_000,
+        31_000,
+        0,
+        30_000,
+    ));
+}
+
+test "Prompt 27B camera safe region accepts exact margins and corrects clipping" {
+    var camera = try camera2d.Camera2D.init(
+        math.Vec2.zero,
+        640,
+        480,
+        camera2d.default_pixels_per_meter,
+    );
+    const half_safe_world =
+        (240 - foundation_coherence.minimum_top_headroom_px) /
+        camera.pixels_per_meter;
+    const valid_bounds = foundation_coherence.Bounds{
+        .minimum = .{ .x = -1, .y = -half_safe_world },
+        .maximum = .{ .x = 1, .y = half_safe_world },
+    };
+    const exact = try foundation_coherence.framingMeasurement(
+        valid_bounds,
+        camera,
+    );
+    try std.testing.expectApproxEqAbs(
+        foundation_coherence.minimum_top_headroom_px,
+        exact.top_headroom_px,
+        0.0001,
+    );
+    try std.testing.expect(exact.passes());
+
+    const clipped = foundation_coherence.Bounds{
+        .minimum = .{ .x = -1, .y = -1 },
+        .maximum = .{ .x = 1, .y = half_safe_world + 0.01 },
+    };
+    const before = try foundation_coherence.framingMeasurement(clipped, camera);
+    try std.testing.expect(
+        before.top_headroom_px <
+            foundation_coherence.minimum_top_headroom_px,
+    );
+    const correction = try foundation_coherence.applyVerticalSafeRegion(
+        &camera,
+        clipped,
+    );
+    try std.testing.expect(correction.measurement.passes());
+
+    const impossible = foundation_coherence.Bounds{
+        .minimum = .{ .x = -1, .y = -4 },
+        .maximum = .{ .x = 1, .y = 4 },
+    };
+    try std.testing.expectError(
+        error.VisibleBoundsExceedSafeViewport,
+        foundation_coherence.applyVerticalSafeRegion(&camera, impossible),
+    );
+}
+
+test "Prompt 27B camera safe region remains deterministic at resized viewport" {
+    var first = try camera2d.Camera2D.init(
+        .{ .x = 3, .y = 0 },
+        960,
+        540,
+        camera2d.default_pixels_per_meter,
+    );
+    var second = first;
+    const raised_jump_bounds = foundation_coherence.Bounds{
+        .minimum = .{ .x = 1.2, .y = 0.9 },
+        .maximum = .{ .x = 4.8, .y = 6.2 },
+    };
+    const first_correction = try foundation_coherence.applyVerticalSafeRegion(
+        &first,
+        raised_jump_bounds,
+    );
+    const second_correction = try foundation_coherence.applyVerticalSafeRegion(
+        &second,
+        raised_jump_bounds,
+    );
+    try std.testing.expect(first_correction.measurement.passes());
+    try std.testing.expect(second_correction.measurement.passes());
+    try std.testing.expectEqual(first.center, second.center);
+    try std.testing.expectApproxEqAbs(
+        first_correction.delta_px,
+        second_correction.delta_px,
+        0.000001,
+    );
+}
+
+test "Prompt 27B abrupt resize separates first-frame reprojection from subsequent camera motion" {
+    var previous = try camera2d.Camera2D.init(
+        .{ .x = 3, .y = 0 },
+        foundation_coherence.abrupt_resize_from_width,
+        foundation_coherence.abrupt_resize_from_height,
+        camera2d.default_pixels_per_meter,
+    );
+    var first_post = previous;
+    try first_post.setViewport(
+        foundation_coherence.abrupt_resize_to_width,
+        foundation_coherence.abrupt_resize_to_height,
+    );
+    const bounds = foundation_coherence.Bounds{
+        .minimum = .{ .x = 1.2, .y = 0 },
+        .maximum = .{ .x = 4.8, .y = 5.4 },
+    };
+    const correction = try foundation_coherence.applyVerticalSafeRegion(
+        &first_post,
+        bounds,
+    );
+    const abrupt = try foundation_coherence.measureAbruptResize(
+        previous,
+        first_post,
+        bounds,
+    );
+    try std.testing.expect(abrupt.passes());
+    try std.testing.expect(correction.measurement.passes());
+    try std.testing.expect(
+        abrupt.world_camera_delta_px >
+            foundation_coherence.maximum_camera_step_px,
+    );
+    try std.testing.expectError(
+        error.ViewportReprojectionIsNotWorldCameraStep,
+        foundation_coherence.worldCameraVerticalStepPx(previous, first_post),
+    );
+
+    previous = first_post;
+    var within_bound = first_post;
+    try within_bound.setCenter(.{
+        .x = within_bound.center.x,
+        .y = within_bound.center.y +
+            (foundation_coherence.maximum_camera_step_px - 0.001) /
+                within_bound.pixels_per_meter,
+    });
+    try std.testing.expect(
+        try foundation_coherence.worldCameraVerticalStepPasses(
+            previous,
+            within_bound,
+        ),
+    );
+    var minimally_invalid = first_post;
+    try minimally_invalid.setCenter(.{
+        .x = minimally_invalid.center.x,
+        .y = minimally_invalid.center.y +
+            (foundation_coherence.maximum_camera_step_px + 0.001) /
+                minimally_invalid.pixels_per_meter,
+    });
+    try std.testing.expect(
+        !try foundation_coherence.worldCameraVerticalStepPasses(
+            previous,
+            minimally_invalid,
+        ),
+    );
+}
+
+test "Prompt 27B transformed parallax rejects zero and reversed displacement" {
+    const anchors = [3]foundation_coherence.ParallaxAnchor{
+        .{
+            .role = .far,
+            .world = .{ .x = 0, .y = 0 },
+            .camera_x_factor = 0.12,
+        },
+        .{
+            .role = .midground,
+            .world = .{ .x = 0, .y = 0 },
+            .camera_x_factor = 0.46,
+        },
+        .{
+            .role = .gameplay,
+            .world = .{ .x = 0, .y = 0 },
+            .camera_x_factor = 1,
+        },
+    };
+    const start_camera = camera2d.Camera2D.initDefault();
+    var finish_camera = start_camera;
+    try finish_camera.setCenter(.{
+        .x = start_camera.center.x + 2.5,
+        .y = start_camera.center.y,
+    });
+    const start = try foundation_coherence.sampleParallaxFrame(
+        start_camera,
+        anchors,
+    );
+    const finish = try foundation_coherence.sampleParallaxFrame(
+        finish_camera,
+        anchors,
+    );
+    const valid = try foundation_coherence.measureParallax(
+        start,
+        finish,
+        anchors,
+        start_camera.pixels_per_meter,
+    );
+    try std.testing.expect(valid.passes());
+
+    var configuration_only = finish;
+    configuration_only.screen_x = start.screen_x;
+    const zero = try foundation_coherence.measureParallax(
+        start,
+        configuration_only,
+        anchors,
+        start_camera.pixels_per_meter,
+    );
+    try std.testing.expect(!zero.passes());
+
+    var reversed = finish;
+    reversed.screen_x = .{
+        start.screen_x[0] - 100,
+        start.screen_x[1] - 40,
+        start.screen_x[2] - 20,
+    };
+    const wrong_order = try foundation_coherence.measureParallax(
+        start,
+        reversed,
+        anchors,
+        start_camera.pixels_per_meter,
+    );
+    try std.testing.expect(!wrong_order.passes());
+}
+
+test "Prompt 27B presence ruler rejects minimally excessive and full overlap" {
+    const first = foundation_coherence.Bounds{
+        .minimum = .{ .x = 0, .y = 0 },
+        .maximum = .{ .x = 1, .y = 2 },
+    };
+    const exact_boundary = foundation_coherence.Bounds{
+        .minimum = .{ .x = 0.98, .y = 0 },
+        .maximum = .{ .x = 1.98, .y = 2 },
+    };
+    const minimally_invalid = foundation_coherence.Bounds{
+        .minimum = .{ .x = 0.9799, .y = 0 },
+        .maximum = .{ .x = 1.9799, .y = 2 },
+    };
+    const full = first;
+    const boundary_ratio = try foundation_coherence.overlapRatio(
+        first,
+        exact_boundary,
+    );
+    const minimal_ratio = try foundation_coherence.overlapRatio(
+        first,
+        minimally_invalid,
+    );
+    const full_ratio = try foundation_coherence.overlapRatio(first, full);
+    try std.testing.expectApproxEqAbs(@as(f32, 0.02), boundary_ratio, 0.00001);
+    try std.testing.expect(
+        foundation_coherence.overlapPasses(boundary_ratio, false),
+    );
+    try std.testing.expect(
+        !foundation_coherence.overlapPasses(minimal_ratio, false),
+    );
+    try std.testing.expect(
+        !foundation_coherence.overlapPasses(full_ratio, false),
+    );
+    try std.testing.expect(
+        foundation_coherence.overlapPasses(@as(f32, 0.15), true),
+    );
+    try std.testing.expect(
+        !foundation_coherence.overlapPasses(@as(f32, 0.1501), true),
+    );
+}
+
+test "Prompt 27B root-step ruler accepts controller motion and rejects teleport" {
+    const fixed_dt: f32 = 1.0 / 240.0;
+    const maximum_speed: f32 = 8;
+    const maximum_step =
+        maximum_speed * fixed_dt + foundation_coherence.root_step_slack_m;
+    try std.testing.expect(foundation_coherence.controlledRootStepPasses(
+        math.Vec2.zero,
+        .{ .x = maximum_step, .y = 0 },
+        maximum_speed,
+        fixed_dt,
+    ));
+    try std.testing.expect(!foundation_coherence.controlledRootStepPasses(
+        math.Vec2.zero,
+        .{ .x = maximum_step + 0.0001, .y = 0 },
+        maximum_speed,
+        fixed_dt,
+    ));
+    try std.testing.expect(!foundation_coherence.controlledRootStepPasses(
+        math.Vec2.zero,
+        .{ .x = 10, .y = 0 },
+        maximum_speed,
+        fixed_dt,
+    ));
+}
+
+const P27bRouteSummary = struct {
+    fingerprint: u64,
+    simulation_tick: u64,
+    female_root: math.Vec2,
+    male_root: math.Vec2,
+    camera_center: math.Vec2,
+    interaction_count: usize,
+};
+
+fn runP27bRoute(split_render_schedule: bool) !P27bRouteSummary {
+    var scene = try visual_foundation.Scene.init(std.testing.allocator);
+    defer scene.deinit();
+    var script = visual_foundation.ScriptedInput{};
+    var snapshots = input.SnapshotBuilder{};
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    queue.markStabilized();
+    const fixed_delta: f64 = 1.0 / 240.0;
+
+    for (0..900) |_| {
+        const raw = script.nextRaw(&scene);
+        if (split_render_schedule) {
+            const first = try snapshots.update(raw);
+            try scene.updateFrame(fixed_delta * 2, first);
+            const second = try snapshots.update(raw);
+            try scene.updateFrame(fixed_delta * 2, second);
+        } else {
+            const snapshot = try snapshots.update(raw);
+            try scene.updateFrame(fixed_delta * 4, snapshot);
+        }
+        try script.observe(&scene);
+        queue.beginFrame();
+        _ = try scene.submit(&queue);
+        _ = queue.prepare();
+        scene.recordRendering(queue.frame_metrics);
+    }
+    try std.testing.expect(scene.evidence.camera_follow);
+    try std.testing.expect(scene.evidence.parallax);
+    try std.testing.expect(scene.evidence.raised_platform_landing);
+    try std.testing.expectEqual(
+        @as(u64, 0),
+        queue.lifetime_metrics.cpu_allocations_after_stabilization,
+    );
+    return .{
+        .fingerprint = scene.authoritativeInteractionFingerprint(),
+        .simulation_tick = scene.integrated.production.simulation_tick,
+        .female_root = scene.integrated.production.female.world_position,
+        .male_root = scene.integrated.production.male.world_position,
+        .camera_center = scene.integrated.camera.center,
+        .interaction_count = scene.evidence.interaction_count,
+    };
+}
+
+test "Prompt 27B pre-reset fixed-tick outcome is invariant to split render schedule" {
+    const ordinary = try runP27bRoute(false);
+    const split = try runP27bRoute(true);
+    try std.testing.expectEqual(ordinary.simulation_tick, split.simulation_tick);
+    try std.testing.expectEqual(ordinary.female_root, split.female_root);
+    try std.testing.expectEqual(ordinary.male_root, split.male_root);
+    try std.testing.expectEqual(ordinary.camera_center, split.camera_center);
+    try std.testing.expectEqual(ordinary.interaction_count, split.interaction_count);
+    try std.testing.expectEqual(ordinary.fingerprint, split.fingerprint);
 }

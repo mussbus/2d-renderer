@@ -166,3 +166,10 @@ The route proves the fixed-root eligibility envelope, existing shared clock,
 existing arm IK, definition-owned presentation policy, and equipment-aware
 occlusion together. It does not add multi-contact solving, a relative-root
 constraint, world interaction anchors, or a second renderer.
+
+Prompt 27B does not redesign that interaction. The male participant remains
+stopped through approach, contact, and release; earlier route-presence stages
+use ordinary controller input to walk him clear and back. Per-tick root-step
+bounds reject teleports and the ordinary/interacting visible-overlap contracts
+remain distinct, allowing authored hand contact without accepting torso
+occupation. General dynamic character collision remains out of scope.

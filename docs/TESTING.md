@@ -12,12 +12,15 @@ records implementation through Prompt 27:
 
 It verifies required files, local Markdown targets, prompt navigation, report links, and practical orphan detection. Verbatim historical report files are excluded from link lint because their original local evidence paths are intentionally preserved rather than rewritten.
 
-## Current aggregate status through Prompt 27A
+## Current aggregate status through Prompt 27B
 
-The Prompt 27A aggregate and `check` gates pass 371/371 tests in Debug. The
-focused visual-foundation gate expanded from 3 to 18 tests. ReleaseSafe and
-ReleaseFast application builds, D3D12/DXIL GPU smoke, the 16-case evidence
-route, review packaging, and two-run repeatability also pass. Current
+The Prompt 27B aggregate gate passes 381/381 tests in Debug. The focused
+visual-foundation gate expanded from 18 to 28 tests and passes 28/28.
+Prompt 27B's semantic report contains 9,714 metrics with zero failures; each
+final D3D12 review package contains 55 independent pixel metrics with zero
+failures. ReleaseSafe, ReleaseFast, repository audit, D3D12/DXIL GPU smoke,
+the preserved Prompt 27A 16-case evidence route, the four Prompt 27B
+supplemental captures, and two-run repeatability pass. Current
 milestone-specific commands and their evidence boundaries are documented
 below.
 
@@ -593,3 +596,82 @@ with zero automated failures. Run the route and review package twice, then use
 `tools/compare_p27a_repeats.ps1`; all PPM, metadata, PNG, state, and metric
 results must match. These checks prove evidence integrity, not aesthetic
 quality. Manual visual acceptance remains `[PENDING OWNER REVIEW]`.
+
+## Prompt 27B contact, framing, parallax, and presence
+
+Focused semantic tests:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1 --global-cache-dir '.zig-cache\p27b-global'
+& '.\.deps\zig-0.16.0\zig.exe' build p27b-coherence-report -j1 --global-cache-dir '.zig-cache\p27b-global'
+```
+
+The 28 focused tests retain all Prompt 27/27A integration and evidence tests,
+then add controlled valid-boundary, minimally invalid, and clearly invalid
+fixtures for:
+
+- independent left/right socket and alpha-derived sole contact;
+- wrong landmark and wrong footwear pivot;
+- terrain/surface/character/debug semantic ordering;
+- exact and clipped camera safe bounds plus resized determinism;
+- direct 960×540-to-640×480 first-frame reprojection versus subsequent
+  15.999 px valid and 16.001 px invalid world-camera steps;
+- measured, zero-travel, and reversed parallax;
+- ordinary and interaction participant overlap;
+- stopped-root invariance, bounded controller steps, and teleport rejection;
+- one complete 2,400-frame production route;
+- simulation-equivalent outcomes under alternate render grouping.
+
+`p27b-coherence-report` executes the same state-conditioned production route
+headlessly and writes raw TXT/JSON measurements. The accepted result is 9,714
+metrics and zero failures. Required thresholds and rationales were frozen
+before correction in
+[`PROMPT27B_DECISION_RECORD.md`](PROMPT27B_DECISION_RECORD.md). Important
+measured ranges are:
+
+- canonical sole error: 14 required rows, all `0 px`;
+- visual sole midpoint: all `0 px`;
+- heel/toe endpoint error: `0..0.03 px` and `-0.03..0 px`;
+- top/bottom clearance: `16..115.30 px` and `16..80.24 px`;
+- camera vertical step: `0..15.57 px/render`, required at most `16`;
+- abrupt first-post resize: `960×540 -> 640×480`, headroom `37.50 px`,
+  footroom `36.77 px`, instantaneous reprojection world delta `0 px`;
+- ordinary participant overlap: `0`;
+- semantic camera travel: `10.93 m`;
+- semantic adjacent parallax separation: `304.69 px` and `483.92 px`.
+
+Real D3D12 route and independent readback review:
+
+```powershell
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\.deps\zig-0.16.0\zig.exe' build p27b-review
+```
+
+The route retains the 16 Prompt 27A state-conditioned captures and adds:
+
+- `07_camera_resize.ppm`;
+- `08_abrupt_resize_first_post_debug.ppm`;
+- `10_parallax_start_debug.ppm`;
+- `11_parallax_finish_debug.ppm`.
+
+`p27b-review` independently parses the real PPM pixels and produces 12 PNG
+review frames, a labeled contact sheet, and raw JSON/TXT pixel metrics. The
+accepted report contains 55 metrics and zero failures. The abrupt-resize
+readback contains complete 49-pixel top/bottom markers, projection errors of
+`0.50/0.23 px`, the unchanged 16 px semantic margins, and a maximum
+subsequent world-camera step of `15.566496 px`. Measured
+far/mid/gameplay displacement is `30/113/246 px`; camera-factor prediction
+error is `0.48/0.16/0 px`; adjacent layer separation is `83/133 px`; safe
+frame, projected surface, and heel/toe evidence are within `0.5 px`.
+
+Run the semantic report twice and the D3D12 route/review in isolated output
+roots twice. The accepted repeat comparison has zero mismatches across 38
+production D3D artifacts and 15 review artifacts. The pre-change SHA-256
+inventory covers 314 Prompt 27/27A evidence files; the final integrity audit
+reports zero missing and zero changed files. Failed Prompt 27B development
+candidates remain preserved.
+
+These automated checks and the Codex visual inspection establish the declared
+geometry/evidence contract. They do not approve aesthetics or promote
+goldens. Owner/manual acceptance remains `[PENDING OWNER REVIEW]`.

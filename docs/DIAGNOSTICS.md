@@ -107,6 +107,17 @@ The Prompt 27A route retains initialized and final fixed-buffer usage of
 resource deltas. Its larger preinitialized sprite capacity accommodates the
 same-queue HUD without runtime growth.
 
+Prompt 27B keeps the same observation/capture authority and adds a separate
+fail-closed semantic coherence report. Detailed debug can append
+surface/collider, alpha-derived sole endpoints, camera-safe bounds, actual
+far/mid/gameplay parallax anchors, and first-post-abrupt-resize character
+bounds through the existing queue. Clean captures are prepared before these
+markers. The independent D3D12 review parses marker pixels rather than
+trusting semantic metadata and reports 55 passing pixel metrics; the headless
+report records 9,714 passing semantic metrics. Both routes retain the
+131,216-byte initialized/final fixed-buffer value and zero steady-state
+allocation/resource delta.
+
 `F1` still appends detailed collider/debug evidence through the one global
 queue. Persistent white standable tops are ordinary product presentation,
 while cyan/orange collider outlines remain optional diagnostics. Debug

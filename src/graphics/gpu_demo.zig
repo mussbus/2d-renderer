@@ -26,6 +26,7 @@ const breathing_demo = @import("breathing_demo");
 const mesh_attachment_demo = @import("mesh_attachment_demo");
 const foundation_playground = @import("foundation_playground");
 const foundation_evidence = @import("foundation_evidence");
+const foundation_coherence = @import("foundation_coherence");
 const acceptance_hud = @import("acceptance_hud");
 const visual_foundation = @import("visual_foundation");
 const art_pack = @import("art_pack");
@@ -102,6 +103,8 @@ const environment_capture_directory = "zig-out/p26_environment_gpu";
 const environment_capture_count: u32 = 7;
 const foundation_capture_directory = "zig-out/p27a_evidence/candidate";
 const foundation_capture_count: u32 = @intCast(foundation_evidence.capture_count);
+const p27b_capture_directory = "zig-out/p27b_evidence/candidate";
+const p27b_capture_count: u32 = 4;
 
 fn environmentCapturePath(frame: u32) ?[]const u8 {
     return switch (frame) {
@@ -208,6 +211,19 @@ const FoundationCaptureArtifact = struct {
     captured: bool = false,
     stable_ticks: u32 = 0,
     observation: foundation_evidence.Observation = .{},
+    pixels: CapturePixelEvidence = .{},
+};
+
+const P27bCaptureArtifact = struct {
+    captured: bool = false,
+    filename: []const u8 = "",
+    camera_center: [2]f32 = .{ 0, 0 },
+    viewport: [2]u32 = .{ 0, 0 },
+    previous_viewport: [2]u32 = .{ 0, 0 },
+    first_post_abrupt_resize: bool = false,
+    semantic_headroom_px: f32 = 0,
+    semantic_footroom_px: f32 = 0,
+    instantaneous_reprojection_world_delta_px: f32 = 0,
     pixels: CapturePixelEvidence = .{},
 };
 
@@ -475,6 +491,7 @@ pub const GpuDemo = struct {
         try std.Io.Dir.cwd().createDirPath(self.io, visual_capture_directory);
         try std.Io.Dir.cwd().createDirPath(self.io, environment_capture_directory);
         try std.Io.Dir.cwd().createDirPath(self.io, foundation_capture_directory);
+        try std.Io.Dir.cwd().createDirPath(self.io, p27b_capture_directory);
         if (geometry_debug) {
             try std.Io.Dir.cwd().createDirPath(self.io, geometry_debug_capture_directory);
         }
@@ -927,6 +944,8 @@ pub const GpuDemo = struct {
         var foundation_capture_tracker = foundation_evidence.Tracker{};
         var foundation_capture_artifacts =
             [_]FoundationCaptureArtifact{.{}} ** foundation_evidence.capture_count;
+        var p27b_capture_artifacts =
+            [_]P27bCaptureArtifact{.{}} ** p27b_capture_count;
         var environment_sequence = environment_demo.ScriptedInput{};
         var playground_snapshot_builder = input.SnapshotBuilder{};
         var foundation_snapshot_builder = input.SnapshotBuilder{};
@@ -1657,6 +1676,10 @@ pub const GpuDemo = struct {
                     const submission_checkpoint = humanoid_allocator.end_index;
                     humanoid_instances = try scene.submit(&self.unified_queue.?);
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
+                    // Ground/camera presentation correction is resolved from
+                    // the real submitted trace, so publish that same-frame
+                    // camera to the production renderer before encoding.
+                    self.visible_camera = scene.integrated.camera;
                 },
                 .art_assets => {
                     self.unified_queue.?.beginFrame();
@@ -1809,6 +1832,113 @@ pub const GpuDemo = struct {
                                     @tagName(observation.facing),
                                 },
                             );
+                        }
+                        const p27b_camera = foundation_scene.?.integrated.camera;
+                        if (!p27b_capture_artifacts[0].captured and
+                            p27b_camera.viewport_width == 960 and
+                            p27b_camera.viewport_height == 540)
+                        {
+                            const filename = "07_camera_resize.ppm";
+                            p27b_capture_artifacts[0] = .{
+                                .captured = true,
+                                .filename = filename,
+                                .camera_center = p27b_camera.center.toArray(),
+                                .viewport = .{
+                                    p27b_camera.viewport_width,
+                                    p27b_camera.viewport_height,
+                                },
+                                .pixels = try self.captureUnifiedToPpm(
+                                    prepared,
+                                    p27b_capture_directory ++ "/" ++ filename,
+                                ),
+                            };
+                        }
+                        if (!p27b_capture_artifacts[3].captured and
+                            foundation_sequence.abrupt_resize_first_post_frame)
+                        {
+                            const female_bounds =
+                                try foundation_coherence.traceCharacterBounds(
+                                    &foundation_scene.?.visual_trace,
+                                    foundation_scene.?.integrated.production
+                                        .female.id.raw(),
+                                );
+                            const framing =
+                                try foundation_coherence.framingMeasurement(
+                                    female_bounds.world,
+                                    p27b_camera,
+                                );
+                            if (!framing.passes()) {
+                                return error.AbruptResizeFirstFrameClipped;
+                            }
+                            _ = try foundation_scene.?.submitAbruptResizeEvidence(
+                                &self.unified_queue.?,
+                            );
+                            prepared = self.unified_queue.?.prepare();
+                            const filename =
+                                "08_abrupt_resize_first_post_debug.ppm";
+                            p27b_capture_artifacts[3] = .{
+                                .captured = true,
+                                .filename = filename,
+                                .camera_center = p27b_camera.center.toArray(),
+                                .viewport = .{
+                                    p27b_camera.viewport_width,
+                                    p27b_camera.viewport_height,
+                                },
+                                .previous_viewport = foundation_sequence
+                                    .abrupt_resize_previous_viewport,
+                                .first_post_abrupt_resize = true,
+                                .semantic_headroom_px = framing.top_headroom_px,
+                                .semantic_footroom_px = framing.bottom_clearance_px,
+                                .instantaneous_reprojection_world_delta_px = @abs(
+                                    p27b_camera.center.y -
+                                        foundation_sequence
+                                            .abrupt_resize_previous_camera_y,
+                                ) * p27b_camera.pixels_per_meter,
+                                .pixels = try self.captureUnifiedToPpm(
+                                    prepared,
+                                    p27b_capture_directory ++
+                                        "/" ++ filename,
+                                ),
+                            };
+                        }
+                        const p27b_parallax_index: ?usize =
+                            if (!p27b_capture_artifacts[1].captured and
+                            p27b_camera.center.x >= -2.5 and
+                            p27b_camera.center.x < -2.0)
+                                1
+                            else if (!p27b_capture_artifacts[2].captured and
+                            p27b_camera.center.x >= 0.5 and
+                            p27b_camera.center.x < 1.0)
+                                2
+                            else
+                                null;
+                        if (p27b_parallax_index) |artifact_index| {
+                            _ = try foundation_scene.?.submitCoherenceEvidence(
+                                &self.unified_queue.?,
+                            );
+                            prepared = self.unified_queue.?.prepare();
+                            const filename = if (artifact_index == 1)
+                                "10_parallax_start_debug.ppm"
+                            else
+                                "11_parallax_finish_debug.ppm";
+                            p27b_capture_artifacts[artifact_index] = .{
+                                .captured = true,
+                                .filename = filename,
+                                .camera_center = p27b_camera.center.toArray(),
+                                .viewport = .{
+                                    p27b_camera.viewport_width,
+                                    p27b_camera.viewport_height,
+                                },
+                                .pixels = try self.captureUnifiedToPpm(
+                                    prepared,
+                                    if (artifact_index == 1)
+                                        p27b_capture_directory ++
+                                            "/10_parallax_start_debug.ppm"
+                                    else
+                                        p27b_capture_directory ++
+                                            "/11_parallax_finish_debug.ppm",
+                                ),
+                            };
                         }
                         const next_target = if (foundation_capture_tracker.currentSpec()) |spec|
                             spec.id
@@ -3289,6 +3419,7 @@ pub const GpuDemo = struct {
                 try scene.validateComplete(&foundation_sequence);
                 try foundation_capture_tracker.validateComplete();
                 try self.writeFoundationEvidence(&foundation_capture_artifacts);
+                try self.writeP27bSupplementalEvidence(&p27b_capture_artifacts);
             }
             const unified_metrics = self.unified_queue.?.frame_metrics;
             const gpu_resource_delta = self.resource_metrics.gpu_resource_creations - creations_before_run;
@@ -3408,7 +3539,8 @@ pub const GpuDemo = struct {
                     (scene.evidence.maximum_active_meshes == 0 or
                         scene.evidence.maximum_mesh_ranges == 0 or
                         scene.evidence.maximum_mesh_draws == 0 or
-                        self.visual_captures_written != foundation_capture_count)) or
+                        self.visual_captures_written !=
+                            foundation_capture_count + p27b_capture_count)) or
                 gpu_resource_delta != 0)
             {
                 return error.FoundationRenderingEvidenceIncomplete;
@@ -3931,6 +4063,63 @@ pub const GpuDemo = struct {
                     artifact.observation.render_frame,
                     artifact.observation.simulation_tick,
                     artifact.stable_ticks,
+                    hash_hex[0..],
+                    if (index + 1 == artifacts.len) "" else ",",
+                },
+            );
+            try manifest.writeStreamingAll(self.io, line);
+        }
+        try manifest.writeStreamingAll(self.io, "  ]\n}\n");
+    }
+
+    fn writeP27bSupplementalEvidence(
+        self: *GpuDemo,
+        artifacts: *const [p27b_capture_count]P27bCaptureArtifact,
+    ) !void {
+        var manifest = try std.Io.Dir.cwd().createFile(
+            self.io,
+            p27b_capture_directory ++ "/supplemental_manifest.json",
+            .{},
+        );
+        defer manifest.close(self.io);
+        try manifest.writeStreamingAll(
+            self.io,
+            "{\n  \"schema\":\"prompt27b.supplemental.v2\",\n  \"status\":\"candidate_pending_owner_review\",\n  \"capture_count\":4,\n  \"failure_count\":0,\n  \"marker_rgb\":{\"far\":[3,251,113],\"midground\":[17,89,253],\"gameplay\":[241,29,197],\"surface\":[11,239,239],\"safe_top\":[247,13,167],\"safe_bottom\":[31,241,71],\"bounds_top\":[199,59,251],\"bounds_bottom\":[239,137,53]},\n  \"captures\":[\n",
+        );
+        for (artifacts, 0..) |artifact, index| {
+            if (!artifact.captured or artifact.filename.len == 0) {
+                return error.Prompt27bSupplementalCaptureMissing;
+            }
+            if (artifact.pixels.width != target_width or
+                artifact.pixels.height != target_height or
+                artifact.pixels.rgb_payload_bytes != target_width * target_height * 3 or
+                artifact.pixels.minimum_channel >= artifact.pixels.maximum_channel)
+            {
+                return error.Prompt27bSupplementalPixelsInvalid;
+            }
+            const hash_hex = std.fmt.bytesToHex(
+                artifact.pixels.sha256,
+                .lower,
+            );
+            var line_buffer: [1280]u8 = undefined;
+            const line = try std.fmt.bufPrint(
+                &line_buffer,
+                "    {{\"order\":{d},\"filename\":\"{s}\",\"camera_center_m\":[{d:.6},{d:.6}],\"previous_viewport_px\":[{d},{d}],\"semantic_viewport_px\":[{d},{d}],\"first_post_abrupt_resize\":{},\"semantic_headroom_px\":{d:.6},\"semantic_footroom_px\":{d:.6},\"instantaneous_reprojection_world_delta_px\":{d:.6},\"readback_px\":[{d},{d}],\"pixel_sha256\":\"{s}\"}}{s}\n",
+                .{
+                    index + 1,
+                    artifact.filename,
+                    artifact.camera_center[0],
+                    artifact.camera_center[1],
+                    artifact.previous_viewport[0],
+                    artifact.previous_viewport[1],
+                    artifact.viewport[0],
+                    artifact.viewport[1],
+                    artifact.first_post_abrupt_resize,
+                    artifact.semantic_headroom_px,
+                    artifact.semantic_footroom_px,
+                    artifact.instantaneous_reprojection_world_delta_px,
+                    artifact.pixels.width,
+                    artifact.pixels.height,
                     hash_hex[0..],
                     if (index + 1 == artifacts.len) "" else ",",
                 },

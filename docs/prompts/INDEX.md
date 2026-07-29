@@ -39,6 +39,7 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 | 26 | Environment themes | complete | exact roadmap source | [record](026-environments.md) · [source](exact/026-source.txt) | `0dd0f21` |
 | 27 | Integrated visual foundation | automated complete; manual review reopened | exact roadmap source | [record](027-integrated-foundation.md) · [source](exact/027-source.txt) | `1de0d1d` |
 | 27A | Evidence integrity and owner-review harness | automated complete; owner review pending | exact user-supplied roadmap | [record](027A-evidence-integrity.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `7c4721a` |
+| 27B | Ground contact, framing, parallax, and presence | automated complete; owner review pending | exact user-supplied roadmap | [record](027B-ground-contact-camera-parallax-presence.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `0e29e0c` |
 
 ## Evidence and reports
 
@@ -48,4 +49,5 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 - The user-supplied Prompt 27A–27H reopened visual-foundation roadmap is
   preserved as
   [`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md);
-  only Prompt 27A is implemented.
+  Prompts 27A and 27B are implemented. Prompt 27C and later work has not
+  started.

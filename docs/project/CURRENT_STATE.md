@@ -1,7 +1,7 @@
 # Current State
 
-Snapshot basis: Prompt 27A worktree based on HEAD
-`7c4721a5fedbac93eb507b429dfecf4b9e211cde`, inspected on 2026-07-28.
+Snapshot basis: Prompt 27B worktree based on HEAD
+`0e29e0cbf9644a4284ab791c2bed6dcc366acabf`, inspected on 2026-07-28.
 
 Status vocabulary:
 
@@ -36,6 +36,7 @@ Status vocabulary:
 | Environment themes | complete | Prompt 26 supplies violet-crystal and neutral-diagnostic themes, collision-derived white standable tops, bounded hot swapping, and seven D3D12 captures over the unchanged world. |
 | Integrated Prompt 27 presentation | complete | The visible `foundation` route composes the two production characters, all current wardrobe, both themes, movement, jumping, three measured fixed-root handshakes, view/ordering cleanup, debug, reset, and real D3D12 rendering. |
 | Prompt 27A evidence integrity | complete, owner review pending | Sixteen captures are selected by authoritative/presentation/interaction predicates, bound to validated semantic metadata and independent D3D12 pixel hashes, packaged into contact sheets, and repeated byte-exactly. Aesthetic acceptance is `[PENDING OWNER REVIEW]`. |
+| Prompt 27B contact/framing/parallax/presence | complete, owner review pending | One fail-closed chain measures support, post-IK sole, alpha-derived submitted visual sole, camera projection, render ordering, and real D3D12 pixels. Existing-camera safe framing, actual-factor parallax, and non-teleport scripted presence pass semantic and readback metrics. |
 | Semantic body-relative garment depth schema | documented only | Current content resolves numeric visual layers. Required reusable depth relations are defined in [AUTHORING_CONTRACTS.md](AUTHORING_CONTRACTS.md), but no current accepted item requires a runtime extension. |
 | Authored side-left/side-right garment variants | documented only | Current production side art is mirror-safe. Directional and mixed-fragment policies are defined for future content. |
 | First-class collar coverage and shoulder-slope contour | documented only | Current validator has point/span fit and per-item coverage zones, but not the richer semantic contour contract required by a future editor. |
@@ -44,7 +45,7 @@ Status vocabulary:
 
 ## Current integrated acceptance
 
-Prompt 27A's focused `test-visual-foundation` gate passes 18/18 tests. The
+Prompt 27B's focused `test-visual-foundation` gate passes 28/28 tests. The
 2,400-frame production route uses:
 
 - two production characters;
@@ -62,13 +63,17 @@ back to ordinary front presentation. Peak clean production work is 139
 sprites and one mesh. The same-queue HUD raises bounded window submission
 without adding a renderer or resource path. The route reports zero
 post-stabilization update, submission, queue, or GPU-resource growth and
-writes 16 D3D12 captures plus semantic metadata to
-`zig-out/p27a_evidence/candidate`.
+writes the preserved 16 Prompt 27A D3D12 captures plus four Prompt 27B
+supplemental captures and semantic metadata.
 
-Two independent runs produced byte-identical PPMs, metadata, and PNGs; 263
-canonical raw metrics were identical with zero failures. The historical nine
-Prompt 27 captures remain unchanged under `zig-out/p27_visual_foundation`.
-The final Debug aggregate and `check` gates pass 371/371 tests; ReleaseSafe,
+The Prompt 27B semantic report contains 9,714 metrics and zero failures. Two
+isolated D3D12 runs and their review packages are byte-identical; each review
+contains 55 independent pixel metrics and zero failures. The direct
+960×540-to-640×480 first-post frame retains 37.50 px headroom and 36.77 px
+footroom; subsequent camera movement peaks at 15.566496 px under the unchanged
+16 px bound. All 314 inventoried
+historical Prompt 27/27A evidence files remain present and hash-identical.
+The final Debug aggregate and `check` gates pass 381/381 tests; ReleaseSafe,
 ReleaseFast, and D3D12/DXIL GPU smoke pass. See
 [../TESTING.md](../TESTING.md) for exact commands and evidence boundaries.
 
@@ -85,6 +90,8 @@ ReleaseFast, and D3D12/DXIL GPU smoke pass. See
 - Prompt 26 `environment` theme/collision-readability route.
 - Prompt 27 production `foundation` integration route.
 - Prompt 27A state-conditioned capture and owner-review package.
+- Prompt 27B semantic coherence report and D3D12 contact/framing/parallax
+  review package.
 
 Prompt 27 changed the visible `--demo foundation` CLI owner to
 `visual_foundation.Scene`. The older procedural Prompt 22 scene remains a
@@ -95,6 +102,12 @@ current rendered application.
 
 - Prompt 27A aesthetic/manual acceptance is `[PENDING OWNER REVIEW]`; no new
   capture has been promoted to a golden.
+- Prompt 27B clean/debug candidates also await owner/manual review and are not
+  approved goldens.
+- General interactive character-character collision is not implemented. The
+  deterministic Prompt 27B route uses ordinary controller input to walk the
+  partner clear/return plus an overlap detector; this is not a general
+  collision response.
 
 - Current garment fragments are recipes, but they expose no authored stable
   fragment name independent of the recipe ID.
@@ -122,7 +135,7 @@ The impact and intended future milestones are in
 
 ## Next authorized milestone
 
-Prompt 27 is complete. No Prompt 28, gameplay vertical slice, editor, combat,
-mission, or other expansion is authorized by the current documentation.
-Future work requires an explicit user request and must preserve the existing
-authority boundaries.
+Prompt 27B is complete. Prompt 27C, Prompt 28, gameplay vertical slice,
+editor, combat, mission, or other expansion has not started. Future work
+requires an explicit user request and must preserve the existing authority
+boundaries.

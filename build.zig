@@ -920,6 +920,7 @@ pub fn build(b: *std.Build) void {
     environment_theme_module.addImport("character", character_module);
     environment_theme_module.addImport("environment_art", environment_art_module);
     environment_theme_module.addImport("render_queue", render_queue_module);
+    environment_theme_module.addImport("camera2d", camera2d_module);
     const environment_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/environment_demo.zig"),
         .target = target,
@@ -940,11 +941,22 @@ pub fn build(b: *std.Build) void {
     environment_demo_module.addImport("render_queue", render_queue_module);
     environment_demo_module.addImport("deformable_mesh", deformable_mesh_module);
     environment_demo_module.addImport("collision_world", collision_world_module);
+    environment_demo_module.addImport("visual_geometry", visual_geometry_module);
     const foundation_evidence_module = b.createModule(.{
         .root_source_file = b.path("src/scene/foundation_evidence.zig"),
         .target = target,
         .optimize = optimize,
     });
+    const foundation_coherence_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/foundation_coherence.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    foundation_coherence_module.addImport("math", math_module);
+    foundation_coherence_module.addImport("camera2d", camera2d_module);
+    foundation_coherence_module.addImport("sprite_batch", sprite_batch_module);
+    foundation_coherence_module.addImport("render_queue", render_queue_module);
+    foundation_coherence_module.addImport("visual_geometry", visual_geometry_module);
     const acceptance_hud_module = b.createModule(.{
         .root_source_file = b.path("src/debug/acceptance_hud.zig"),
         .target = target,
@@ -962,6 +974,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     visual_foundation_module.addImport("foundation_evidence", foundation_evidence_module);
+    visual_foundation_module.addImport("foundation_coherence", foundation_coherence_module);
     visual_foundation_module.addImport("math", math_module);
     visual_foundation_module.addImport("input", input_module);
     visual_foundation_module.addImport("fixed_step", fixed_step_module);
@@ -983,6 +996,7 @@ pub fn build(b: *std.Build) void {
     visual_foundation_module.addImport("render_queue", render_queue_module);
     visual_foundation_module.addImport("deformable_mesh", deformable_mesh_module);
     visual_foundation_module.addImport("debug_draw", debug_draw_module);
+    visual_foundation_module.addImport("visual_geometry", visual_geometry_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -1056,6 +1070,7 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("environment_theme", environment_theme_module);
     app_module.addImport("environment_demo", environment_demo_module);
     app_module.addImport("foundation_evidence", foundation_evidence_module);
+    app_module.addImport("foundation_coherence", foundation_coherence_module);
     app_module.addImport("acceptance_hud", acceptance_hud_module);
     app_module.addImport("visual_foundation", visual_foundation_module);
     app_module.addImport("visual_geometry", visual_geometry_module);
@@ -1320,6 +1335,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    visual_foundation_test_module.addImport("math", math_module);
     visual_foundation_test_module.addImport("input", input_module);
     visual_foundation_test_module.addImport("interaction", interaction_module);
     visual_foundation_test_module.addImport("handshake", handshake_module);
@@ -1328,6 +1344,7 @@ pub fn build(b: *std.Build) void {
     visual_foundation_test_module.addImport("camera2d", camera2d_module);
     visual_foundation_test_module.addImport("acceptance_hud", acceptance_hud_module);
     visual_foundation_test_module.addImport("foundation_evidence", foundation_evidence_module);
+    visual_foundation_test_module.addImport("foundation_coherence", foundation_coherence_module);
     visual_foundation_test_module.addImport("visual_foundation", visual_foundation_module);
     const visual_foundation_tests = b.addTest(.{
         .name = "visual-foundation-tests",
@@ -1354,6 +1371,52 @@ pub fn build(b: *std.Build) void {
         "Validate Prompt 27A captures and create PNG contact sheets and raw metrics",
     );
     p27a_review_step.dependOn(&p27a_review_package.step);
+    const foundation_coherence_report_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/foundation_coherence_report.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    foundation_coherence_report_module.addImport("math", math_module);
+    foundation_coherence_report_module.addImport("input", input_module);
+    foundation_coherence_report_module.addImport("camera2d", camera2d_module);
+    foundation_coherence_report_module.addImport("image_decode", image_decode_module);
+    foundation_coherence_report_module.addImport("render_queue", render_queue_module);
+    foundation_coherence_report_module.addImport("foundation_evidence", foundation_evidence_module);
+    foundation_coherence_report_module.addImport("foundation_coherence", foundation_coherence_module);
+    foundation_coherence_report_module.addImport("visual_foundation", visual_foundation_module);
+    foundation_coherence_report_module.addImport("visual_geometry", visual_geometry_module);
+    foundation_coherence_report_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
+    foundation_coherence_report_module.addImport("environment_theme", environment_theme_module);
+    const foundation_coherence_report_exe = b.addExecutable(.{
+        .name = "foundation_coherence_report",
+        .root_module = foundation_coherence_report_module,
+    });
+    const run_foundation_coherence_report = b.addRunArtifact(
+        foundation_coherence_report_exe,
+    );
+    const foundation_coherence_report_step = b.step(
+        "p27b-coherence-report",
+        "Write the Prompt 27B semantic production-acceptance report",
+    );
+    foundation_coherence_report_step.dependOn(
+        &run_foundation_coherence_report.step,
+    );
+    const p27b_review_package = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    p27b_review_package.addFileArg(b.path("tools/build_p27b_review_package.ps1"));
+    p27b_review_package.setName("validate and package Prompt 27B D3D12 evidence");
+    const p27b_review_step = b.step(
+        "p27b-review",
+        "Validate Prompt 27B captures, pixel rulers, and review package",
+    );
+    p27b_review_step.dependOn(&p27b_review_package.step);
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");

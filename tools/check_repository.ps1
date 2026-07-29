@@ -152,6 +152,9 @@ $acceptanceHudSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 
 $visualFoundationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/visual_foundation_tests.zig')
 $p27aReviewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/build_p27a_review_package.ps1')
 $p27aRepeatSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/compare_p27a_repeats.ps1')
+$foundationCoherenceSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_coherence.zig')
+$foundationCoherenceReportSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_coherence_report.zig')
+$p27bReviewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/build_p27b_review_package.ps1')
 $buildSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'build.zig')
 $shaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/sprite.hlsl')
 $meshShaderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'assets/shaders/deformable_mesh.hlsl')
@@ -2300,13 +2303,74 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
+    'semantic_sole_tolerance_px',
+    'maximum_camera_step_px',
+    'minimum_parallax_separation_px',
+    'maximum_ordinary_overlap_ratio',
+    'alphaTightLandmarkWorld',
+    'groundAlignment',
+    'translateCharacterSubmissions',
+    'applyVerticalSafeRegion',
+    'measureAbruptResize',
+    'worldCameraVerticalStepPasses',
+    'measureParallax',
+    'controlledRootStepPasses'
+)) {
+    if (-not $foundationCoherenceSource.Contains($phrase)) {
+        Write-Error "Prompt 27B semantic coherence contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 27B contact ruler accepts boundaries and rejects wrong sole and pivot',
+    'Prompt 27B left and right planted contacts are accepted independently',
+    'Prompt 27B camera safe region remains deterministic at resized viewport',
+    'Prompt 27B abrupt resize separates first-frame reprojection from subsequent camera motion',
+    'Prompt 27B transformed parallax rejects zero and reversed displacement',
+    'Prompt 27B presence ruler rejects minimally excessive and full overlap',
+    'Prompt 27B root-step ruler accepts controller motion and rejects teleport',
+    'Prompt 27B pre-reset fixed-tick outcome is invariant to split render schedule'
+)) {
+    if (-not $visualFoundationTestsSource.Contains($phrase)) {
+        Write-Error "Required Prompt 27B deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 27B semantic baseline: metrics={d} failures={d}',
+    'MissingParallaxStart',
+    'MissingParallaxFinish'
+)) {
+    if (-not $foundationCoherenceReportSource.Contains($phrase)) {
+        Write-Error "Prompt 27B semantic report boundary is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'Prompt 27B semantic report contains failures',
+    '08_abrupt_resize_first_post_debug.ppm',
+    'maximum_subsequent_world_camera_step',
+    'far_to_midground_separation',
+    'midground_to_gameplay_separation',
+    'Prompt 27B review package rejected $failureCount pixel metrics'
+)) {
+    if (-not $p27bReviewSource.Contains($phrase)) {
+        Write-Error "Prompt 27B independent D3D12 review contract is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
     'src/scene/visual_foundation.zig',
     'src/scene/foundation_evidence.zig',
+    'src/scene/foundation_coherence.zig',
+    'src/scene/foundation_coherence_report.zig',
     'src/debug/acceptance_hud.zig',
     'tests/visual_foundation_tests.zig',
     'b.step(',
     '"test-visual-foundation"',
-    '"p27a-review"'
+    '"p27a-review"',
+    '"p27b-coherence-report"',
+    '"p27b-review"'
 )) {
     if (-not $buildSource.Contains($phrase)) {
         Write-Error "Prompt 27 build integration is missing: '$phrase'." -ErrorAction Continue
@@ -2316,7 +2380,9 @@ foreach ($phrase in @(
 foreach ($phrase in @(
     'PROMPT 27A STATE-CONDITIONED VISUAL FOUNDATION EVIDENCE',
     'PROMPT 27 INTERACTIVE SESSION SUMMARY',
-    'self.visual_captures_written != foundation_capture_count',
+    'const foundation_capture_count: u32 = @intCast(foundation_evidence.capture_count)',
+    'const p27b_capture_count: u32 = 4',
+    'foundation_capture_count + p27b_capture_count',
     'candidate_pending_owner_review',
     'consecutive_stable_ticks'
 )) {
@@ -2339,6 +2405,7 @@ Write-Host 'GPU instance layout, integer ordering, actual metrics, and persisten
 Write-Host 'Prompt 26 environment audit passed: both preloaded themes use production art-pack assets, exact collision-derived walkable surface overlays, invariant gameplay authority, one global queue, bounded hot switching, and no Prompt 27 orchestration in environment ownership.'
 Write-Host 'Prompt 27 visual-foundation audit passed: real-art production composition, typed per-role interaction presentation, focused deterministic coverage, and explicit build integration are present.'
 Write-Host 'Prompt 27A evidence-integrity audit passed: state predicates, stable holds, fail-closed metadata, bounded HUD submission, D3D12 review packaging, and repeatability comparison are present.'
+Write-Host 'Prompt 27B coherence audit passed: submitted-contact identity, safe framing, measured parallax, bounded presence, controlled fixtures, semantic reporting, and independent D3D12 review are present.'
 Write-Host 'Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.'
 Write-Host 'Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.'
 Write-Host 'Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.'

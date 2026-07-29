@@ -177,6 +177,42 @@ pub const SurfaceOverlay = struct {
     }
 };
 
+pub const ParallaxRole = enum(u8) {
+    far,
+    midground,
+    gameplay,
+};
+
+pub const ParallaxAnchor = struct {
+    role: ParallaxRole,
+    world: math.Vec2,
+    camera_x_factor: f32,
+};
+
+pub const ParallaxTrace = struct {
+    anchors: [3]ParallaxAnchor = undefined,
+    present: [3]bool = [_]bool{false} ** 3,
+
+    pub fn begin(trace: *ParallaxTrace) void {
+        trace.present = [_]bool{false} ** trace.present.len;
+    }
+
+    pub fn record(trace: *ParallaxTrace, anchor: ParallaxAnchor) !void {
+        const index: usize = @intFromEnum(anchor.role);
+        if (trace.present[index]) return error.DuplicateParallaxAnchor;
+        if (!anchor.world.isFinite()) return error.NonFiniteParallaxAnchor;
+        try @import("camera2d").validateCameraXFactor(anchor.camera_x_factor);
+        trace.anchors[index] = anchor;
+        trace.present[index] = true;
+    }
+
+    pub fn validateComplete(trace: *const ParallaxTrace) !void {
+        for (trace.present) |present| {
+            if (!present) return error.MissingParallaxAnchor;
+        }
+    }
+};
+
 pub const Presentation = struct {
     catalog: Catalog,
     surfaces: SurfaceOverlay,
@@ -209,6 +245,15 @@ pub const Presentation = struct {
         world: *const collision_world.CollisionWorld,
         queue: *render_queue.UnifiedRenderQueue,
     ) !u32 {
+        return presentation.submitTraced(world, queue, null);
+    }
+
+    pub fn submitTraced(
+        presentation: *const Presentation,
+        world: *const collision_world.CollisionWorld,
+        queue: *render_queue.UnifiedRenderQueue,
+        parallax_trace: ?*ParallaxTrace,
+    ) !u32 {
         try presentation.surfaces.validateAgainst(world);
         const theme = presentation.catalog.theme(presentation.active_theme);
         var submitted: u32 = 0;
@@ -216,12 +261,30 @@ pub const Presentation = struct {
         const far = theme.visual(.far_backdrop);
         for ([_]f32{ -48, -24, 0, 24, 48 }) |x| {
             try submitVisual(queue, far, .{ x, 4.4 }, far.authored_size, theme.tint(.far_backdrop), character.SceneLayers.background, distant_camera_x_factor, submitted);
+            if (x == 0) {
+                if (parallax_trace) |trace| {
+                    try trace.record(.{
+                        .role = .far,
+                        .world = .{ .x = x, .y = 4.4 },
+                        .camera_x_factor = distant_camera_x_factor,
+                    });
+                }
+            }
             submitted += 1;
         }
 
         const mid = theme.visual(.midground_structure);
         for ([_]f32{ -36, -24, -12, 0, 12, 24, 36 }) |x| {
             try submitVisual(queue, mid, .{ x, 2.55 }, mid.authored_size, theme.tint(.midground_structure), character.SceneLayers.midground, midground_camera_x_factor, submitted);
+            if (x == 0) {
+                if (parallax_trace) |trace| {
+                    try trace.record(.{
+                        .role = .midground,
+                        .world = .{ .x = x, .y = 2.55 },
+                        .camera_x_factor = midground_camera_x_factor,
+                    });
+                }
+            }
             submitted += 1;
         }
 
@@ -240,6 +303,18 @@ pub const Presentation = struct {
                 gameplay_camera_x_factor,
                 submitted,
             );
+            if (static_collider.id == 1) {
+                if (parallax_trace) |trace| {
+                    try trace.record(.{
+                        .role = .gameplay,
+                        .world = .{
+                            .x = (bounds.minimum.x + bounds.maximum.x) * 0.5,
+                            .y = bounds.maximum.y - authored_height * 0.5,
+                        },
+                        .camera_x_factor = gameplay_camera_x_factor,
+                    });
+                }
+            }
             submitted += 1;
         }
 
@@ -282,6 +357,7 @@ pub const Presentation = struct {
             try submitVisual(queue, foreground, .{ x, 1.9 }, foreground.authored_size, theme.tint(.foreground_frame), character.SceneLayers.foreground, foreground_camera_x_factor, submitted);
             submitted += 1;
         }
+        if (parallax_trace) |trace| try trace.validateComplete();
         return submitted;
     }
 };

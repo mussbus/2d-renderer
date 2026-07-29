@@ -133,3 +133,10 @@ participate in hand/forearm ordering without outfit-specific logic. The
 2,400-frame Prompt 27A route verifies outfit changes at idle and in motion, finite long
 garment state, contact ordering, cleanup, reset, and zero steady-state
 allocation/resource growth.
+
+Prompt 27B changes no garment, equipment, atlas, authored size, pivot, or fit
+contract. Wardrobe submission only publishes each component's actual global
+queue index so the contact ruler can identify the corresponding submitted
+footwear without inferring side from scale or draw order. All visual identity,
+semantic binding, participant-qualified ordering, and Prompt 25D geometry
+contracts remain authoritative.

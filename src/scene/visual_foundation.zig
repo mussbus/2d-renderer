@@ -20,6 +20,8 @@ const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_demo = @import("wardrobe_demo");
 const render_queue = @import("render_queue");
 const debug_draw = @import("debug_draw");
+const visual_geometry = @import("visual_geometry");
+const foundation_coherence = @import("foundation_coherence");
 
 pub const required_frames: u32 = 2_400;
 pub const character_count: u32 = 2;
@@ -29,11 +31,62 @@ pub const required_handshake_count: usize = 3;
 pub const handshake_target_x: f32 =
     foundation_playground.partner_spawn.x - handshake.authored_horizontal_separation;
 pub const raised_platform_collider: u32 = 4;
+pub const partner_clear_x: f32 = 12;
+pub const partner_route_speed_mps: f32 = 3;
+pub const coherence_marker_size_m: f32 = 7.0 / 82.0;
+pub const coherence_line_thickness_m: f32 = 2.0 / 82.0;
+pub const coherence_surface_color: [4]f32 = .{
+    11.0 / 255.0,
+    239.0 / 255.0,
+    239.0 / 255.0,
+    1,
+};
+pub const coherence_safe_top_color: [4]f32 = .{
+    247.0 / 255.0,
+    13.0 / 255.0,
+    167.0 / 255.0,
+    1,
+};
+pub const coherence_safe_bottom_color: [4]f32 = .{
+    31.0 / 255.0,
+    241.0 / 255.0,
+    71.0 / 255.0,
+    1,
+};
+pub const coherence_parallax_colors = [3][4]f32{
+    .{ 3.0 / 255.0, 251.0 / 255.0, 113.0 / 255.0, 1 },
+    .{ 17.0 / 255.0, 89.0 / 255.0, 253.0 / 255.0, 1 },
+    .{ 241.0 / 255.0, 29.0 / 255.0, 197.0 / 255.0, 1 },
+};
+pub const coherence_sole_colors = [4][4]f32{
+    .{ 251.0 / 255.0, 47.0 / 255.0, 23.0 / 255.0, 1 },
+    .{ 83.0 / 255.0, 253.0 / 255.0, 37.0 / 255.0, 1 },
+    .{ 37.0 / 255.0, 71.0 / 255.0, 251.0 / 255.0, 1 },
+    .{ 251.0 / 255.0, 211.0 / 255.0, 19.0 / 255.0, 1 },
+};
+pub const coherence_bounds_top_color: [4]f32 = .{
+    199.0 / 255.0,
+    59.0 / 255.0,
+    251.0 / 255.0,
+    1,
+};
+pub const coherence_bounds_bottom_color: [4]f32 = .{
+    239.0 / 255.0,
+    137.0 / 255.0,
+    53.0 / 255.0,
+    1,
+};
 
 pub const TimeMode = enum(u8) {
     normal,
     quarter_speed,
     paused,
+};
+
+const PartnerMotion = enum(u8) {
+    stopped,
+    moving_left,
+    moving_right,
 };
 
 pub const ScriptPhase = foundation_evidence.Stage;
@@ -137,6 +190,10 @@ pub const Evidence = struct {
     maximum_mesh_draws: u32 = 0,
     maximum_sprite_upload_bytes: usize = 0,
     maximum_mesh_upload_bytes: usize = 0,
+    maximum_ordinary_overlap_ratio: f32 = 0,
+    maximum_interaction_overlap_ratio: f32 = 0,
+    maximum_controlled_root_step_m: f32 = 0,
+    maximum_passive_root_step_m: f32 = 0,
 };
 
 pub const Scene = struct {
@@ -156,6 +213,12 @@ pub const Scene = struct {
     frame_physics: FramePhysicsEvidence = .{},
     theme_transition: ThemeTransitionEvidence = .{},
     debug_commands: debug_draw.CommandBuffer = .{},
+    visual_trace: visual_geometry.Trace = .{},
+    parallax_trace: environment_theme.ParallaxTrace = .{},
+    female_ground_alignment_y: f32 = 0,
+    male_ground_alignment_y: f32 = 0,
+    partner_motion: PartnerMotion = .stopped,
+    partner_motion_target_x: f32 = foundation_playground.partner_spawn.x,
     debug_counts: foundation_evidence.DebugCounts = .{},
     debug_enabled_ticks: u32 = 0,
     reset_generation: u32 = 0,
@@ -290,11 +353,16 @@ pub const Scene = struct {
 
     fn updateTick(scene: *Scene) !void {
         const production = &scene.integrated.production;
+        const previous_female_root = production.female.world_position;
+        const previous_male_root = production.male.world_position;
+        const previous_partner_motion = scene.partner_motion;
+        const previous_velocity = production.female.controller.?.state.velocity;
         production.simulation_tick = std.math.add(u64, production.simulation_tick, 1) catch
             return error.SimulationTickOverflow;
         const intent_value = production.pending_input.consumeTick();
         const physics = try production.stepFemale(intent_value);
         try production.stepMale();
+        try scene.advancePartnerMotion();
         scene.observePhysics(physics);
 
         const participants_value = scene.participants();
@@ -326,6 +394,43 @@ pub const Scene = struct {
                 scene.active_interaction = .invalid;
             }
         }
+        const current_velocity = production.female.controller.?.state.velocity;
+        const controlled_step = production.female.world_position
+            .sub(previous_female_root)
+            .length();
+        const passive_step = production.male.world_position
+            .sub(previous_male_root)
+            .length();
+        scene.evidence.maximum_controlled_root_step_m = @max(
+            scene.evidence.maximum_controlled_root_step_m,
+            controlled_step,
+        );
+        scene.evidence.maximum_passive_root_step_m = @max(
+            scene.evidence.maximum_passive_root_step_m,
+            passive_step,
+        );
+        const maximum_speed = @max(
+            previous_velocity.length(),
+            current_velocity.length(),
+        );
+        if (!foundation_coherence.controlledRootStepPasses(
+            previous_female_root,
+            production.female.world_position,
+            maximum_speed,
+            @floatCast(fixed_step.fixed_dt_seconds),
+        )) return error.UnexplainedControlledRootCorrection;
+        if (previous_partner_motion == .stopped) {
+            if (passive_step > 0.000001) {
+                return error.UnexplainedPassiveRootCorrection;
+            }
+        } else if (!foundation_coherence.controlledRootStepPasses(
+            previous_male_root,
+            production.male.world_position,
+            partner_route_speed_mps,
+            @floatCast(fixed_step.fixed_dt_seconds),
+        )) {
+            return error.UnboundedPartnerRouteStep;
+        }
         try scene.validateSecondaryFinite();
         if (scene.integrated.detailed_debug_enabled) {
             scene.debug_enabled_ticks = std.math.add(
@@ -342,13 +447,23 @@ pub const Scene = struct {
     pub fn submit(scene: *Scene, queue: *render_queue.UnifiedRenderQueue) !u32 {
         const before_sprites = queue.frame_metrics.submitted_sprites;
         const before_meshes = queue.frame_metrics.submitted_meshes;
-        var submitted = try scene.integrated.submit(queue);
+        scene.visual_trace.begin();
+        scene.parallax_trace.begin();
+        var submitted = try scene.integrated.submitTraced(
+            queue,
+            &scene.visual_trace,
+            &scene.parallax_trace,
+        );
+        try scene.applyGroundAlignment(queue);
+        try scene.applyCameraSafeRegion();
+        try scene.validateCharacterPresence();
         scene.debug_counts = .{};
         if (scene.integrated.detailed_debug_enabled) {
             scene.debug_counts.collider =
                 @as(u32, @intCast(scene.integrated.production.world.colliders.len)) * 4;
             try scene.buildDiagnosticCommands();
             submitted += try scene.debug_commands.submitUnified(queue);
+            submitted += try scene.submitCoherenceEvidence(queue);
         } else {
             scene.debug_commands.beginFrame();
         }
@@ -361,6 +476,420 @@ pub const Scene = struct {
             queue.frame_metrics.submitted_meshes - before_meshes,
         );
         return submitted;
+    }
+
+    /// Submits diagnostic-only Prompt 27B rulers through the production
+    /// UnifiedRenderQueue. The caller captures this augmented queue after the
+    /// corresponding clean production frame has already been read back.
+    pub fn submitCoherenceEvidence(
+        scene: *Scene,
+        queue: *render_queue.UnifiedRenderQueue,
+    ) !u32 {
+        var submitted: u32 = 0;
+        const camera = scene.integrated.camera;
+        const evidence_visual = scene.integrated.environment.catalog
+            .theme(scene.integrated.environment.active_theme)
+            .visual(.surface_white);
+        const half_width_m =
+            @as(f32, @floatFromInt(camera.viewport_width)) * 0.5 /
+            camera.pixels_per_meter;
+        const half_height_px =
+            @as(f32, @floatFromInt(camera.viewport_height)) * 0.5;
+        const safe_top_y = camera.center.y +
+            (half_height_px - foundation_coherence.minimum_top_headroom_px) /
+                camera.pixels_per_meter;
+        const safe_bottom_y = camera.center.y -
+            (half_height_px - foundation_coherence.minimum_bottom_clearance_px) /
+                camera.pixels_per_meter;
+        submitted += try submitCoherenceLine(
+            queue,
+            .{ .x = camera.center.x - half_width_m, .y = safe_top_y },
+            .{ .x = camera.center.x + half_width_m, .y = safe_top_y },
+            1,
+            coherence_safe_top_color,
+            evidence_visual.texture_page,
+            evidence_visual.uv_rect,
+            submitted,
+        );
+        submitted += try submitCoherenceLine(
+            queue,
+            .{ .x = camera.center.x - half_width_m, .y = safe_bottom_y },
+            .{ .x = camera.center.x + half_width_m, .y = safe_bottom_y },
+            1,
+            coherence_safe_bottom_color,
+            evidence_visual.texture_page,
+            evidence_visual.uv_rect,
+            submitted,
+        );
+
+        const female = &scene.integrated.production.female;
+        if (female.controller.?.state.grounded) {
+            const support_id = female.controller.?.state.supporting_collider orelse
+                return error.GroundedCharacterMissingSupport;
+            const support_y = try scene.supportingTop(support_id);
+            const bounds = try foundation_coherence.traceCharacterBounds(
+                &scene.visual_trace,
+                female.id.raw(),
+            );
+            submitted += try submitCoherenceLine(
+                queue,
+                .{ .x = bounds.world.minimum.x - 0.4, .y = support_y },
+                .{ .x = bounds.world.maximum.x + 0.4, .y = support_y },
+                1,
+                coherence_surface_color,
+                evidence_visual.texture_page,
+                evidence_visual.uv_rect,
+                submitted,
+            );
+            const sides = [_]visual_geometry.Side{ .left, .right };
+            for (sides, 0..) |side, side_index| {
+                const record = scene.outermostFootVisual(
+                    female.id.raw(),
+                    side,
+                ) orelse return error.MissingGroundContactVisual;
+                const heel = try foundation_coherence.alphaTightLandmarkWorld(
+                    record,
+                    .sole_back,
+                );
+                const toe = try foundation_coherence.alphaTightLandmarkWorld(
+                    record,
+                    .sole_front,
+                );
+                submitted += try submitCoherenceMarker(
+                    queue,
+                    heel,
+                    1,
+                    coherence_sole_colors[side_index * 2],
+                    evidence_visual.texture_page,
+                    evidence_visual.uv_rect,
+                    submitted,
+                );
+                submitted += try submitCoherenceMarker(
+                    queue,
+                    toe,
+                    1,
+                    coherence_sole_colors[side_index * 2 + 1],
+                    evidence_visual.texture_page,
+                    evidence_visual.uv_rect,
+                    submitted,
+                );
+            }
+        }
+
+        try scene.parallax_trace.validateComplete();
+        for (scene.parallax_trace.anchors, 0..) |anchor, index| {
+            submitted += try submitCoherenceMarker(
+                queue,
+                anchor.world,
+                anchor.camera_x_factor,
+                coherence_parallax_colors[index],
+                evidence_visual.texture_page,
+                evidence_visual.uv_rect,
+                submitted,
+            );
+        }
+        return submitted;
+    }
+
+    /// Adds alpha-derived character top/bottom markers to the ordinary
+    /// coherence rulers for the first frame after the direct Prompt 27B
+    /// 960x540 -> 640x480 viewport transition.
+    pub fn submitAbruptResizeEvidence(
+        scene: *Scene,
+        queue: *render_queue.UnifiedRenderQueue,
+    ) !u32 {
+        var submitted = try scene.submitCoherenceEvidence(queue);
+        const female = &scene.integrated.production.female;
+        const bounds = try foundation_coherence.traceCharacterBounds(
+            &scene.visual_trace,
+            female.id.raw(),
+        );
+        const evidence_visual = scene.integrated.environment.catalog
+            .theme(scene.integrated.environment.active_theme)
+            .visual(.surface_white);
+        const marker_x = bounds.world.minimum.x - 0.15;
+        submitted += try submitCoherenceMarker(
+            queue,
+            .{ .x = marker_x, .y = bounds.world.maximum.y },
+            1,
+            coherence_bounds_top_color,
+            evidence_visual.texture_page,
+            evidence_visual.uv_rect,
+            submitted,
+        );
+        submitted += try submitCoherenceMarker(
+            queue,
+            .{ .x = marker_x, .y = bounds.world.minimum.y },
+            1,
+            coherence_bounds_bottom_color,
+            evidence_visual.texture_page,
+            evidence_visual.uv_rect,
+            submitted,
+        );
+        return submitted;
+    }
+
+    fn outermostFootVisual(
+        scene: *const Scene,
+        character_id: u32,
+        side: visual_geometry.Side,
+    ) ?visual_geometry.TraceRecord {
+        var result: ?visual_geometry.TraceRecord = null;
+        for (scene.visual_trace.slice()) |record| {
+            if (record.character_id != character_id or
+                record.side != side or
+                (record.role != .foot and record.role != .shoe))
+            {
+                continue;
+            }
+            if (result == null or
+                record.request.order.body_part_layer >
+                    result.?.request.order.body_part_layer)
+            {
+                result = record;
+            }
+        }
+        return result;
+    }
+
+    fn submitCoherenceMarker(
+        queue: *render_queue.UnifiedRenderQueue,
+        world: math.Vec2,
+        camera_x_factor: f32,
+        color: [4]f32,
+        texture_page: u32,
+        uv_rect: [4]f32,
+        order_index: u32,
+    ) !u32 {
+        if (!world.isFinite()) return error.NonFiniteCoherenceMarker;
+        _ = try queue.submitSprite(.{
+            .world_position = world.toArray(),
+            .rotation = 0,
+            .scale = .{ coherence_marker_size_m, coherence_marker_size_m },
+            .pivot = .{ 0.5, 0.5 },
+            .uv_rect = uv_rect,
+            .tint = color,
+            .texture_page = texture_page,
+            .camera_x_factor = camera_x_factor,
+            .order = .{
+                .scene_layer = character.SceneLayers.debug_overlay,
+                .interaction_layer = 0,
+                .actor_layer = 0,
+                .body_part_layer = @intCast(order_index),
+            },
+        });
+        return 1;
+    }
+
+    fn submitCoherenceLine(
+        queue: *render_queue.UnifiedRenderQueue,
+        from_world: math.Vec2,
+        to_world: math.Vec2,
+        camera_x_factor: f32,
+        color: [4]f32,
+        texture_page: u32,
+        uv_rect: [4]f32,
+        order_index: u32,
+    ) !u32 {
+        if (!from_world.isFinite() or !to_world.isFinite()) {
+            return error.NonFiniteCoherenceLine;
+        }
+        const delta = to_world.sub(from_world);
+        const length = delta.length();
+        if (length <= std.math.floatEps(f32)) {
+            return submitCoherenceMarker(
+                queue,
+                from_world,
+                camera_x_factor,
+                color,
+                texture_page,
+                uv_rect,
+                order_index,
+            );
+        }
+        _ = try queue.submitSprite(.{
+            .world_position = from_world.toArray(),
+            .rotation = std.math.atan2(delta.y, delta.x),
+            .scale = .{ length, coherence_line_thickness_m },
+            .pivot = .{ 0, 0.5 },
+            .uv_rect = uv_rect,
+            .tint = color,
+            .texture_page = texture_page,
+            .camera_x_factor = camera_x_factor,
+            .order = .{
+                .scene_layer = character.SceneLayers.debug_overlay,
+                .interaction_layer = 0,
+                .actor_layer = 0,
+                .body_part_layer = @intCast(order_index),
+            },
+        });
+        return 1;
+    }
+
+    fn applyGroundAlignment(
+        scene: *Scene,
+        queue: *render_queue.UnifiedRenderQueue,
+    ) !void {
+        const production = &scene.integrated.production;
+        const female_controller = production.female.controller orelse
+            return error.CharacterHasNoController;
+        if (female_controller.state.grounded) {
+            const support_id = female_controller.state.supporting_collider orelse
+                return error.GroundedCharacterMissingSupport;
+            const support_y = try scene.supportingTop(support_id);
+            const left_locked = production.female.foot_plants.left.hasLock();
+            const right_locked = production.female.foot_plants.right.hasLock();
+            const alignment = try foundation_coherence.groundAlignment(
+                &scene.visual_trace,
+                production.female.id.raw(),
+                support_y,
+                if (left_locked or right_locked) left_locked else true,
+                if (left_locked or right_locked) right_locked else true,
+            );
+            if (alignment.applicable) {
+                scene.female_ground_alignment_y = alignment.translation_y;
+            }
+        }
+        const male_alignment = try foundation_coherence.groundAlignment(
+            &scene.visual_trace,
+            production.male.id.raw(),
+            0,
+            if (production.male.foot_plants.left.hasLock() or
+                production.male.foot_plants.right.hasLock())
+                production.male.foot_plants.left.hasLock()
+            else
+                true,
+            if (production.male.foot_plants.left.hasLock() or
+                production.male.foot_plants.right.hasLock())
+                production.male.foot_plants.right.hasLock()
+            else
+                true,
+        );
+        if (male_alignment.applicable) {
+            scene.male_ground_alignment_y = male_alignment.translation_y;
+        }
+        try foundation_coherence.translateCharacterSubmissions(
+            queue,
+            &scene.visual_trace,
+            production.female.id.raw(),
+            .{ .x = 0, .y = scene.female_ground_alignment_y },
+        );
+        try foundation_coherence.translateCharacterSubmissions(
+            queue,
+            &scene.visual_trace,
+            production.male.id.raw(),
+            .{ .x = 0, .y = scene.male_ground_alignment_y },
+        );
+    }
+
+    fn applyCameraSafeRegion(scene: *Scene) !void {
+        const production = &scene.integrated.production;
+        const female = try foundation_coherence.traceCharacterBounds(
+            &scene.visual_trace,
+            production.female.id.raw(),
+        );
+        _ = try foundation_coherence.applyVerticalSafeRegion(
+            &scene.integrated.camera,
+            female.world,
+        );
+    }
+
+    fn validateCharacterPresence(scene: *Scene) !void {
+        const production = &scene.integrated.production;
+        const female = try foundation_coherence.traceCharacterPresenceBounds(
+            &scene.visual_trace,
+            production.female.id.raw(),
+        );
+        const male = try foundation_coherence.traceCharacterPresenceBounds(
+            &scene.visual_trace,
+            production.male.id.raw(),
+        );
+        const ratio = try foundation_coherence.overlapRatio(
+            female.world,
+            male.world,
+        );
+        const interaction_active = scene.presenceInteractionContext();
+        if (interaction_active) {
+            scene.evidence.maximum_interaction_overlap_ratio = @max(
+                scene.evidence.maximum_interaction_overlap_ratio,
+                ratio,
+            );
+        } else {
+            scene.evidence.maximum_ordinary_overlap_ratio = @max(
+                scene.evidence.maximum_ordinary_overlap_ratio,
+                ratio,
+            );
+        }
+        if (!foundation_coherence.overlapPasses(ratio, interaction_active)) {
+            std.log.err(
+                "character presence overlap: ratio={d:.6} interaction_context={} female_x={d:.4} male_x={d:.4}",
+                .{
+                    ratio,
+                    interaction_active,
+                    production.female.world_position.x,
+                    production.male.world_position.x,
+                },
+            );
+            return error.CharacterPresenceOverlapExceeded;
+        }
+    }
+
+    pub fn presenceInteractionContext(scene: *const Scene) bool {
+        if (scene.manager.activeCount() != 0) return true;
+        if (scene.last_terminal_id == .invalid) return false;
+        const production = &scene.integrated.production;
+        const separation = @abs(
+            production.male.world_position.x -
+                production.female.world_position.x,
+        );
+        return separation <= handshake.maximum_horizontal_separation + 0.10;
+    }
+
+    fn supportingTop(scene: *const Scene, collider_id: u16) !f32 {
+        for (scene.integrated.production.world.colliders) |static_collider| {
+            if (static_collider.id == collider_id) {
+                return static_collider.bounds.maximum.y;
+            }
+        }
+        return error.MissingSupportingCollider;
+    }
+
+    fn startPartnerMotion(scene: *Scene, target_x: f32) !void {
+        if (!std.math.isFinite(target_x)) return error.NonFinitePartnerRouteTarget;
+        const male = &scene.integrated.production.male;
+        const difference = target_x - male.world_position.x;
+        if (@abs(difference) <= 0.000001) {
+            scene.partner_motion = .stopped;
+            scene.partner_motion_target_x = target_x;
+            return;
+        }
+        scene.partner_motion = if (difference < 0) .moving_left else .moving_right;
+        scene.partner_motion_target_x = target_x;
+        try male.setFacing(if (difference < 0) .left else .right);
+        try male.enterAnimationState(.walk);
+    }
+
+    fn advancePartnerMotion(scene: *Scene) !void {
+        if (scene.partner_motion == .stopped) return;
+        const male = &scene.integrated.production.male;
+        const difference = scene.partner_motion_target_x - male.world_position.x;
+        const maximum_step =
+            partner_route_speed_mps * @as(f32, @floatCast(fixed_step.fixed_dt_seconds));
+        const step = std.math.clamp(difference, -maximum_step, maximum_step);
+        try male.setWorldPosition(.{
+            .x = male.world_position.x + step,
+            .y = male.world_position.y,
+        });
+        if (@abs(scene.partner_motion_target_x - male.world_position.x) <= 0.000001) {
+            scene.partner_motion = .stopped;
+            try male.setFacing(.left);
+            try male.enterAnimationState(.idle);
+        }
+    }
+
+    fn handshakeTargetX(scene: *const Scene) f32 {
+        return scene.integrated.production.male.world_position.x -
+            handshake.authored_horizontal_separation;
     }
 
     fn buildDiagnosticCommands(scene: *Scene) !void {
@@ -483,6 +1012,8 @@ pub const Scene = struct {
             &scene.integrated.production.world,
         );
         try scene.integrated.production.male.reset();
+        scene.partner_motion = .stopped;
+        scene.partner_motion_target_x = foundation_playground.partner_spawn.x;
         try scene.integrated.production.male.setFacing(.left);
         try configureLineup(&scene.integrated.production);
         scene.integrated.production.pending_input.reset();
@@ -940,7 +1471,7 @@ pub const Scene = struct {
         scene.evidence.hair_cycle_observed = true;
     }
 
-    fn authoritativeInteractionFingerprint(scene: *const Scene) u64 {
+    pub fn authoritativeInteractionFingerprint(scene: *const Scene) u64 {
         var hash = std.hash.Wyhash.init(27);
         hash.update(std.mem.asBytes(&scene.integrated.production.female.world_position));
         hash.update(std.mem.asBytes(&scene.integrated.production.male.world_position));
@@ -1192,7 +1723,11 @@ pub const ScriptedInput = struct {
     phase: ScriptPhase = .idle,
     phase_frame: u32 = 0,
     resize_stage: u8 = 0,
-    approach_turning_right: bool = false,
+    abrupt_resize_first_post_frame: bool = false,
+    abrupt_resize_previous_viewport: [2]u32 = .{ 0, 0 },
+    abrupt_resize_previous_camera_y: f32 = 0,
+    approach_nudge_direction: i8 = 0,
+    return_nudge_direction: i8 = 0,
     completed_interactions: usize = 0,
     final_frames: u32 = 0,
 
@@ -1204,6 +1739,7 @@ pub const ScriptedInput = struct {
             .customization_release,
             .stop_left,
             .short_jump_release,
+            .partner_step_aside,
             .wait_raised_landing,
             .theme_hold,
             .theme_restore_release,
@@ -1220,6 +1756,7 @@ pub const ScriptedInput = struct {
             .ivory_outfit,
             .third_wait,
             .cleanup_idle,
+            .partner_return,
             .reset_release,
             .final_idle,
             => {},
@@ -1229,38 +1766,44 @@ pub const ScriptedInput = struct {
                 raw.keyboard.h = true;
             },
             .move_left => raw.keyboard.a = true,
-            .move_right, .travel_to_platform, .full_jump, .outfit_motion_press => {
+            .move_right, .outfit_motion_press => {
                 raw.keyboard.d = true;
-                if (script.phase == .full_jump) raw.keyboard.space = true;
                 if (script.phase == .outfit_motion_press) raw.keyboard.o = true;
+            },
+            .travel_to_platform => raw.keyboard.d = true,
+            .full_jump => {
+                raw.keyboard.d = true;
+                raw.keyboard.space = true;
             },
             .short_jump_press => raw.keyboard.space = script.phase_frame < 3,
             .theme_switch_press, .theme_restore_press => raw.keyboard.t = true,
             .double_jump_first, .double_jump_second => raw.keyboard.space = true,
             .dash_to_handshake => {
-                const error_value = handshake_target_x - state.position.x;
+                const error_value = scene.handshakeTargetX() - state.position.x;
                 if (@abs(error_value) > 0.4) {
                     if (error_value < 0) raw.keyboard.a = true else raw.keyboard.d = true;
                     raw.keyboard.left_shift = true;
                 }
             },
             .approach => {
-                const target = if (script.approach_turning_right)
-                    handshake_target_x
-                else
-                    handshake_target_x - 0.10;
-                const error_value = target - state.position.x;
-                if (script.approach_turning_right and
-                    scene.integrated.production.female.facing == .left)
+                if (script.approach_nudge_direction == 2) {
+                    raw.gamepad_move_axis = encodeGamepadAxis(0.25);
+                } else {
+                    raw.keyboard.a = script.approach_nudge_direction < 0;
+                    raw.keyboard.d = script.approach_nudge_direction > 0;
+                }
+            },
+            .depart_interaction => {
+                if (script.phase_frame < 20) {
+                    raw.keyboard.a = true;
+                    raw.keyboard.space = true;
+                } else if (state.position.x >
+                    foundation_playground.player_spawn.x + 0.5)
                 {
-                    raw.gamepad_move_axis = encodeGamepadAxis(0.30);
-                } else if (@abs(error_value) > 0.008) {
-                    const command = std.math.clamp(
-                        error_value * 0.5 - state.velocity.x * 0.8,
-                        -0.15,
-                        0.15,
-                    );
-                    raw.gamepad_move_axis = encodeGamepadAxis(command);
+                    raw.keyboard.a = true;
+                } else {
+                    raw.keyboard.a = script.return_nudge_direction < 0;
+                    raw.keyboard.d = script.return_nudge_direction > 0;
                 }
             },
             .first_interact, .second_interact, .third_interact => raw.keyboard.e = true,
@@ -1273,6 +1816,7 @@ pub const ScriptedInput = struct {
     }
 
     pub fn observe(script: *ScriptedInput, scene: *Scene) !void {
+        script.abrupt_resize_first_post_frame = false;
         script.phase_frame += 1;
         const state = scene.integrated.production.female.controller.?.state;
         switch (script.phase) {
@@ -1295,13 +1839,20 @@ pub const ScriptedInput = struct {
                 scene.integrated.production.female.animationState() == .idle and
                 scene.integrated.production.female.presentationView() == .front)
                 script.transition(.move_right),
-            .move_right => if (state.position.x >= -3.1) script.transition(.short_jump_press),
+            .move_right => if (state.position.x >= -4.3) script.transition(.short_jump_press),
             .short_jump_press => if (script.phase_frame >= 4)
                 script.transition(.short_jump_release),
-            .short_jump_release => if (script.phase_frame > 8 and state.grounded)
+            .short_jump_release => if (script.phase_frame > 8 and state.grounded) {
+                try scene.startPartnerMotion(partner_clear_x);
+                script.transition(.partner_step_aside);
+            },
+            .partner_step_aside => if (scene.partner_motion == .stopped)
                 script.transition(.travel_to_platform),
-            .travel_to_platform => if (state.position.x >= 3.25)
-                script.transition(.full_jump),
+            .travel_to_platform => {
+                if (state.position.x >= 3.25) {
+                    script.transition(.full_jump);
+                }
+            },
             .full_jump => if (script.phase_frame >= 25)
                 script.transition(.wait_raised_landing),
             .wait_raised_landing => if (script.phase_frame > 8 and
@@ -1333,33 +1884,80 @@ pub const ScriptedInput = struct {
                 try scene.selectFemalePresetByName("wide_brim_crimson");
                 script.transition(.dash_to_handshake);
             },
-            .dash_to_handshake => if (script.phase_frame >= 6)
+            .dash_to_handshake => if (@abs(
+                scene.handshakeTargetX() - state.position.x,
+            ) <= 0.14)
                 script.transition(.dash_release),
             .dash_release => if (state.dash_ticks_remaining == 0)
                 script.transition(.approach),
             .approach => {
-                if (!script.approach_turning_right and
-                    state.position.x <= handshake_target_x - 0.085)
-                {
-                    script.approach_turning_right = true;
+                if (script.approach_nudge_direction != 0) {
+                    script.approach_nudge_direction = 0;
+                } else if (@abs(state.velocity.x) < 0.02) {
+                    const error_value = scene.handshakeTargetX() - state.position.x;
+                    if (@abs(error_value) <= handshake.horizontal_tolerance * 0.5 and
+                        scene.integrated.production.female.facing == .left)
+                    {
+                        script.approach_nudge_direction = 2;
+                    } else if (error_value > handshake.horizontal_tolerance * 0.5) {
+                        script.approach_nudge_direction = 1;
+                    } else if (error_value < -handshake.horizontal_tolerance * 0.5) {
+                        script.approach_nudge_direction = -1;
+                    }
                 }
                 if (script.resize_stage == 0 and script.phase_frame >= 2) {
                     try scene.applyViewport(960, 540);
                     script.resize_stage = 1;
                 } else if (script.resize_stage == 1 and script.phase_frame >= 4) {
-                    try scene.applyViewport(640, 480);
+                    try scene.applyViewport(800, 510);
                     script.resize_stage = 2;
+                } else if (script.resize_stage == 2 and script.phase_frame >= 6) {
+                    try scene.applyViewport(640, 480);
+                    script.resize_stage = 3;
                 }
                 if (scene.interactionEligibility().isEligible()) {
                     scene.evidence.approach_observed = true;
                     script.transition(.approach_hold);
                 }
             },
-            .approach_hold => if (script.phase_frame >= 65 and
-                @abs(state.velocity.x) < 0.02 and
-                scene.integrated.production.female.animationState() == .idle and
-                scene.integrated.production.female.presentationView() == .front)
-                script.transition(.first_interact),
+            .approach_hold => {
+                if (script.resize_stage == 3 and script.phase_frame >= 20) {
+                    try scene.applyViewport(
+                        foundation_coherence.abrupt_resize_from_width,
+                        foundation_coherence.abrupt_resize_from_height,
+                    );
+                    script.resize_stage = 4;
+                } else if (script.resize_stage == 4 and
+                    script.phase_frame >= 21)
+                {
+                    const camera = scene.integrated.camera;
+                    if (camera.viewport_width !=
+                        foundation_coherence.abrupt_resize_from_width or
+                        camera.viewport_height !=
+                            foundation_coherence.abrupt_resize_from_height)
+                    {
+                        return error.AbruptResizeSourceViewportMismatch;
+                    }
+                    script.abrupt_resize_previous_viewport = .{
+                        camera.viewport_width,
+                        camera.viewport_height,
+                    };
+                    script.abrupt_resize_previous_camera_y = camera.center.y;
+                    try scene.applyViewport(
+                        foundation_coherence.abrupt_resize_to_width,
+                        foundation_coherence.abrupt_resize_to_height,
+                    );
+                    script.abrupt_resize_first_post_frame = true;
+                    script.resize_stage = 5;
+                }
+                if (script.phase_frame >= 130 and
+                    @abs(state.velocity.x) < 0.02 and
+                    scene.integrated.production.female.animationState() == .idle and
+                    scene.integrated.production.female.presentationView() == .front)
+                {
+                    script.transition(.first_interact);
+                }
+            },
             .first_interact => if (scene.evidence.interaction_count == 1)
                 script.transition(.first_wait),
             .first_wait => if (scene.evidence.interaction_records[0].captured) {
@@ -1402,6 +2000,33 @@ pub const ScriptedInput = struct {
             .cleanup_idle => if (script.phase_frame >= 30 and
                 scene.evidence.front_idle_restored)
             {
+                script.transition(.depart_interaction);
+            },
+            .depart_interaction => {
+                if (script.phase_frame < 20) {
+                    script.return_nudge_direction = 0;
+                } else if (state.position.x >
+                    foundation_playground.player_spawn.x + 0.5)
+                {
+                    script.return_nudge_direction = 0;
+                } else if (script.return_nudge_direction != 0) {
+                    script.return_nudge_direction = 0;
+                } else if (@abs(state.velocity.x) < 0.02) {
+                    const error_value =
+                        foundation_playground.player_spawn.x - state.position.x;
+                    if (error_value > 0.04) {
+                        script.return_nudge_direction = 1;
+                    } else if (error_value < -0.04) {
+                        script.return_nudge_direction = -1;
+                    } else {
+                        try scene.startPartnerMotion(
+                            foundation_playground.partner_spawn.x,
+                        );
+                        script.transition(.partner_return);
+                    }
+                }
+            },
+            .partner_return => if (scene.partner_motion == .stopped) {
                 script.transition(.reset_press);
             },
             .reset_press => if (scene.evidence.reset_observed)
@@ -1418,6 +2043,7 @@ pub const ScriptedInput = struct {
     pub fn completed(script: *const ScriptedInput) bool {
         return script.phase == .final_idle and
             script.completed_interactions == required_handshake_count and
+            script.resize_stage == 5 and
             script.final_frames >= 60;
     }
 

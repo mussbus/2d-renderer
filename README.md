@@ -136,6 +136,35 @@ PNG conversions, five labeled contact sheets, an ordered review manifest, and
 approve aesthetics or promote goldens. Prompt 27A manual visual acceptance is
 `[PENDING OWNER REVIEW]`.
 
+Prompt 27B keeps that 16-case matrix and adds one measured
+contact/framing/parallax/presence contract over the same production scene.
+Ground evidence connects immutable collider tops, post-IK sole sockets,
+alpha-derived footwear endpoints, actual queue submissions, and real D3D12
+pixels. One existing camera applies a bounded vertical safe-region correction
+from actual submitted character bounds. Actual far/mid/gameplay anchors and
+camera factors are traced and checked semantically and from readback pixels.
+The script uses ordinary controller movement to avoid uncontrolled
+character-character overlap; general interactive character collision is not
+claimed.
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1 --global-cache-dir '.zig-cache\p27b-global'
+& '.\.deps\zig-0.16.0\zig.exe' build p27b-coherence-report -j1 --global-cache-dir '.zig-cache\p27b-global'
+$env:SDL_GPU_DRIVER = 'direct3d12'
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\.deps\zig-0.16.0\zig.exe' build p27b-review
+```
+
+The current semantic report contains 9,714 metrics with zero failures. The
+independent D3D12 review contains 55 pixel metrics with zero failures, and two
+isolated runs are byte-identical. Prompt 27B adds four supplemental captures
+without overwriting the 16 Prompt 27A cases. The fourth is a diagnostic
+readback of the first frame after a direct 960×540 to 640×480 resize; it
+proves 37.50 px headroom, 36.77 px footroom, and projection agreement while
+subsequent world-camera movement remains below the unchanged 16 px bound.
+The review candidates are not approved goldens; owner/manual acceptance
+remains `[PENDING OWNER REVIEW]`.
+
 ## Interactive playground
 
 ```powershell
