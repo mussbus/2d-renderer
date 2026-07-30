@@ -161,3 +161,35 @@ measurement from fail-closed scripted acceptance. Use the
 [test evidence](../../TESTING.md#prompt-27c-r1-corrective-torso-and-presence-policy).
 The exact implementation report is archived in
 [`exact/027C-R1-implementation-report.md`](exact/027C-R1-implementation-report.md).
+
+### VF-01
+
+VF-01 adds one production-path visual-truth debugger, a deterministic F1 mode
+cycle, and atomic F4 clean/debug/JSON capture bundles without changing
+production art authority. Current visual acceptance remains pending and the
+fresh-current-art Prompt 27B foot-endpoint regression remains explicitly
+reported. Use the
+[prompt record](../../prompts/VF-01-visual-truth-debugger.md),
+[decision record](../../VF01_DECISION_RECORD.md), and
+[test evidence](../../TESTING.md#vf-01-visual-truth-debugger-and-capture-bundles).
+The exact implementation report is archived in
+[`exact/VF-01-implementation-report.md`](exact/VF-01-implementation-report.md).
+
+### VF-02
+
+VF-02 makes projected joints and alpha-visible atlas landmarks the final
+placement authority for a bounded core anatomy set. Production submission,
+VF-01 diagnostics/JSON, and structural validation consume the same
+registration evidence. Structural gates pass while the independent current
+pixel ruler remains fail-closed. The owner-review correction removes the
+surviving wardrobe `+/-78` shoe authority; a fresh Prompt 27B report now passes
+9,752/9,752 metrics while the earlier 24-failure report remains preserved.
+Front body feet and shoes share one point-axis orientation target, and
+closed-footwear coverage explicitly suppresses only covered base-foot pixels.
+Manual visual acceptance remains pending.
+Use the
+[prompt record](../../prompts/VF-02-authoritative-rig-to-art-registration.md),
+[decision record](../../VF02_DECISION_RECORD.md), and
+[test evidence](../../TESTING.md#vf-02-authoritative-registration).
+The exact implementation report is archived in
+[`exact/VF-02-implementation-report.md`](exact/VF-02-implementation-report.md).

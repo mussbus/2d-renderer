@@ -524,3 +524,106 @@ Future 3D authoring remains offline:
 ```
 
 The runtime has no dependency on that future editor.
+
+### VF-01 visual truth snapshot and capture boundary
+
+VF-01 adds one read-only inspection branch after the production character and
+wardrobe presenters have emitted their actual traced submissions:
+
+```text
+authoritative controller/collider
+  -> canonical skeleton pose
+  -> exact production presentation projection
+  -> appearance/anatomy/module topology
+  -> atlas region and alpha landmarks
+  -> final sprite/mesh submission
+  -> read-only visual_truth.Snapshot
+```
+
+The controller and collider remain gameplay authority. The canonical pose
+remains animation/IK/foot-planting authority. `character_art.Presentation`
+owns view-specific projection, and its public `projectionFor` function is
+shared by the production submitter and truth snapshot. Appearance and anatomy
+retain their existing topology domains. Atlas metadata never becomes
+physics. The final `UnifiedRenderQueue` request and trace remain rendering
+truth. Automated measurements and bundle hashes are acceptance evidence only;
+owner aesthetic approval remains external and pending.
+
+F1 uses a deterministic four-state cycle. Rig compares physics and canonical
+topology. Rig + Visual Registration adds projected transforms, final pivots,
+alpha bounds, atlas landmarks, and residual lines. All Diagnostics composes
+the retained ground, foot-lock, IK, interaction, camera, Prompt 27B, and
+presence diagnostics. Reset preserves the selected inspection mode. No mode
+can change simulation, view selection, interaction eligibility, collision, or
+camera.
+
+The snapshot and 2,048-entry debug buffer are explicitly allocated once
+during scene initialization. The larger buffer was justified by an observed
+fail-closed overflow at command 513 on the complete production overlay.
+Alpha geometry is decoded into a CPU catalog only during initialization.
+Persistent D3D12 readback resources are also created before stabilization.
+Normal frames perform no diagnostic allocation or GPU-resource creation.
+
+F4 is outside `PendingInput` and `CharacterIntent`. The already-prepared clean
+production queue is read back first. All Diagnostics is then appended from
+the same immutable snapshot and read back second. The path rejects any
+render-frame, simulation-tick, authoritative, presentation, or capture
+fingerprint change. File creation is fail-closed: a hidden incomplete
+directory is validated and hashed before an atomic preserve-rename exposes
+the timestamped, globally monotonic final directory. F4 may perform bounded
+file/process/hash allocation outside the fixed-tick loop. Automated Prompt
+27 evidence retains its deterministic untimestamped naming policy.
+
+### VF-02 authoritative atlas-to-rig registration
+
+VF-02 inserts one structural placement authority between the active
+presentation projection and final character sprite submission:
+
+```text
+canonical pose
+  -> front/side production projection
+  -> named projected targets
+  + alpha-visible atlas landmarks
+  -> visual_registration solver
+  -> final SpriteRequest
+  -> UnifiedRenderQueue + RegistrationEvidence
+```
+
+Point bindings map one landmark to one target under explicit orientation and
+scale policies. Segment bindings derive translation, rotation, and
+longitudinal scale from proximal/distal pairs while keeping transverse
+morphology independent. Frame bindings map bounded torso/pelvis axes.
+Mesh-bridge metadata is validated but has no migrated production garment.
+Missing, coincident, nonfinite, reversed, degenerate, or excessive-residual
+data fails before queue submission.
+
+The trace stores evidence generated from the exact submitted request. VF-01
+mismatch lines and JSON consume those points directly. Registered records are
+`authoritative_registration`; non-shoe wardrobe records remain
+`compatibility_adapter`; unmigrated character records are
+`transitional_legacy`.
+
+Registered anatomy-foot placement is handed directly to wardrobe submission
+as a fixed two-entry left/right value. In front view, the base foot owns one
+`point_axis` contract: its alpha-derived ankle maps to the projected ankle and
+its authored `sole_back -> sole_front` axis maps to the view's support tangent.
+The male 16-degree and female 13-degree toe-out data remain explicit physical
+ground-plane policy. Front projection retains the signed lateral component
+and discards depth instead of mapping depth into world Y, so the projected
+support tangent is horizontal. Heel, toe, sole-back, and sole-front remain
+transformed evidence rather than independent target endpoints.
+
+Closed footwear receives the exact stored ankle/support-axis target from the
+registered anatomy foot and solves its own alpha-derived ankle and sole axis
+through the same registration solver. The registered foot's transverse
+authored scale also supplies the front shoe thickness. The closed-footwear
+metadata suppresses covered base-foot pixels while retaining their full
+trace, landmarks, and registration evidence; `ankle` is the declared exposed
+anatomy anchor. This removes the former independent wardrobe `+/-78` degree
+rotation without adding mutable simulation state, a second presenter,
+per-frame allocation, or a parallel transform formula.
+
+The fixed trace is initialization-owned and heap-backed to keep the enlarged
+bounded diagnostic structure off the Windows Debug stack. Atlas-alpha scan
+scratch is initialization-only and freed immediately. Neither choice adds a
+steady-state allocation or GPU resource.

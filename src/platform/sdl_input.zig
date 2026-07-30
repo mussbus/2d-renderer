@@ -62,6 +62,7 @@ pub const PlatformInput = struct {
                 .f1 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F1),
                 .f2 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F2),
                 .f3 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F3),
+                .f4 = keyHeld(keyboard, key_count, c.SDL_SCANCODE_F4),
                 .c = keyHeld(keyboard, key_count, c.SDL_SCANCODE_C),
                 .v = keyHeld(keyboard, key_count, c.SDL_SCANCODE_V),
                 .h = keyHeld(keyboard, key_count, c.SDL_SCANCODE_H),

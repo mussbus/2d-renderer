@@ -12,6 +12,8 @@ const sprite = @import("sprite_batch");
 const wardrobe_art = @import("wardrobe_art");
 const wardrobe_catalog = @import("wardrobe_catalog");
 const visual_geometry = @import("visual_geometry");
+const visual_registration = @import("visual_registration");
+const character_art = @import("character_art");
 
 pub const mesh_definition_count: usize = 2;
 
@@ -26,6 +28,8 @@ const ComponentBinding = struct {
     active: bool = false,
     anchor: wardrobe_catalog.AnchorKind = .torso,
     views: ViewBinding = .{},
+    side_alpha: visual_geometry.AlphaGeometry = undefined,
+    front_alpha: visual_geometry.AlphaGeometry = undefined,
 };
 
 pub const Presentation = struct {
@@ -56,6 +60,12 @@ pub const Presentation = struct {
                     .side = try art_definition.resolve(presentation_semantic, false),
                     .front = try art_definition.resolve(presentation_semantic, true),
                 },
+                .side_alpha = try art_definition.registrationAlpha(
+                    (try art_definition.resolve(presentation_semantic, false)).region_id,
+                ),
+                .front_alpha = try art_definition.registrationAlpha(
+                    (try art_definition.resolve(presentation_semantic, true)).region_id,
+                ),
             };
         }
 
@@ -126,14 +136,58 @@ pub const Presentation = struct {
         presentation: *Presentation,
         instance: *character.CharacterInstance,
         queue: *render_queue.UnifiedRenderQueue,
+        registered_feet: character_art.RegisteredFeet,
     ) !u32 {
-        return presentation.submitTraced(instance, queue, null);
+        return presentation.submitTraced(instance, queue, registered_feet, null);
+    }
+
+    pub fn baseFootCoverage(
+        presentation: *const Presentation,
+        instance: *const character.CharacterInstance,
+    ) !character_art.FootCoverage {
+        _ = presentation;
+        const loadout = if (instance.equipment_loadout) |*value|
+            value
+        else
+            return .{};
+        const anatomy_definition = instance.definition.anatomy_definition orelse
+            return error.CharacterHasNoAnatomy;
+        var result = character_art.FootCoverage{};
+        for (loadout.visuals()) |visual| {
+            const recipe = try loadout.definition.recipe(visual.recipe);
+            const component = loadout.definition.visual_components[recipe.component.index()];
+            const semantic_id = component.presentation_semantic orelse
+                return error.MissingPresentationSemantic;
+            const spec = specForSemantic(semantic_id) orelse
+                return error.UnknownWardrobeSemantic;
+            if (spec.base_visual_policy != .suppress_covered_foot_pixels) continue;
+            if (spec.anchor != .foot or spec.exposed_anatomy_anchor != .ankle) {
+                return error.InvalidClosedFootwearCoveragePolicy;
+            }
+            switch (semanticSide(visual, anatomy_definition)) {
+                .left => {
+                    if (result.left != .render) {
+                        return error.DuplicateClosedFootwearCoverage;
+                    }
+                    result.left = .suppress_covered_pixels;
+                },
+                .right => {
+                    if (result.right != .render) {
+                        return error.DuplicateClosedFootwearCoverage;
+                    }
+                    result.right = .suppress_covered_pixels;
+                },
+                .none => return error.InvalidClosedFootwearCoverageSide,
+            }
+        }
+        return result;
     }
 
     pub fn submitTraced(
         presentation: *Presentation,
         instance: *character.CharacterInstance,
         queue: *render_queue.UnifiedRenderQueue,
+        registered_feet: character_art.RegisteredFeet,
         trace: ?*visual_geometry.Trace,
     ) !u32 {
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
@@ -208,6 +262,10 @@ pub const Presentation = struct {
             const binding = presentation.bindings[component.id.index()];
             if (!binding.active) return error.MissingWardrobePresentationBinding;
             const selected = if (view == .front) binding.views.front else binding.views.side;
+            const selected_alpha = if (view == .front)
+                binding.front_alpha
+            else
+                binding.side_alpha;
             const spec = specForSemantic(component.presentation_semantic.?) orelse
                 return error.UnknownWardrobeSemantic;
             const resolved = try projectedEquipmentTransform(
@@ -347,6 +405,7 @@ pub const Presentation = struct {
                             definition.indices,
                         ),
                         .submission_index = submission_index,
+                        .placement_authority = .compatibility_adapter,
                     });
                 }
             } else {
@@ -356,7 +415,6 @@ pub const Presentation = struct {
                     binding.anchor,
                     view,
                     instance.facing,
-                    resolved_side,
                 );
                 var world_size = presentation_view.spriteMorphologyScale(
                     sprite_transform.signed_scale,
@@ -375,8 +433,10 @@ pub const Presentation = struct {
                     }
                 } else if (view == .front) {
                     world_size.x *= spec.fit.female_front_scale_x;
+                    world_size.y *= spec.fit.female_front_scale_y;
                 } else {
                     world_size.x *= spec.fit.female_side_scale_x;
+                    world_size.y *= spec.fit.female_side_scale_y;
                 }
                 var pivot = selected.pivot;
                 pivot[1] = effectivePivotY(spec, pivot[1], bodyStyle(instance), view);
@@ -421,7 +481,7 @@ pub const Presentation = struct {
                     world_position.x -= @sin(fit_rotation) * morphology_fit_y;
                     world_position.y += @cos(fit_rotation) * morphology_fit_y;
                 }
-                const request = sprite.SpriteRequest{
+                const legacy_request = sprite.SpriteRequest{
                     .world_position = world_position.toArray(),
                     .rotation = sprite_transform.rotation_radians + rest_rotation,
                     .scale = world_size.toArray(),
@@ -431,12 +491,32 @@ pub const Presentation = struct {
                     .texture_page = presentation.renderer_page_offset + selected.texture_page,
                     .order = order,
                 };
+                const role = visual_geometry.roleForAnchor(binding.anchor);
+                const geometry = visual_geometry.attachmentGeometry(
+                    spec.stable_id,
+                    role,
+                    geometryView(view, instance.facing),
+                );
+                const registered = if (binding.anchor == .foot)
+                    try registeredShoePlacement(
+                        spec.stable_id,
+                        selected_alpha,
+                        geometry,
+                        resolved_side,
+                        registered_feet,
+                        legacy_request,
+                    )
+                else
+                    null;
+                const request = if (registered) |placement|
+                    placement.request
+                else
+                    legacy_request;
                 const submission_index: u32 = @intCast(queue.sprite_count);
                 _ = try queue.submitSprite(request);
                 if (trace) |sink| {
                     const source = sourceForWardrobeRegion(selected.region_id) orelse
                         return error.MissingWardrobeGeometrySource;
-                    const role = visual_geometry.roleForAnchor(binding.anchor);
                     try sink.append(.{
                         .character_id = instance.id.raw(),
                         .style = bodyStyle(instance),
@@ -456,13 +536,19 @@ pub const Presentation = struct {
                             .height = source.height,
                         },
                         .request = request,
-                        .geometry = visual_geometry.attachmentGeometry(
-                            spec.stable_id,
-                            role,
-                            geometryView(view, instance.facing),
-                        ),
+                        .geometry = geometry,
                         .fit = spec.fit,
+                        .binding_rotation_radians = request.rotation,
                         .submission_index = submission_index,
+                        .registration = if (registered) |placement|
+                            placement.evidence
+                        else
+                            null,
+                        .placement_authority = if (registered != null)
+                            .authoritative_registration
+                        else
+                            .compatibility_adapter,
+                        .base_visual_policy = spec.base_visual_policy,
                     });
                 }
             }
@@ -615,16 +701,7 @@ fn restRotation(
     anchor: wardrobe_catalog.AnchorKind,
     view: presentation_view.View,
     facing: humanoid.Facing,
-    side: visual_geometry.Side,
 ) f32 {
-    if (anchor == .foot and view == .front) {
-        const front_foot_rotation = std.math.degreesToRadians(78.0);
-        return switch (side) {
-            .left => -front_foot_rotation,
-            .right => front_foot_rotation,
-            .none => 0,
-        };
-    }
     return switch (anchor) {
         .upper_arm, .hand, .lower_leg => if (view == .side and facing == .left)
             -std.math.pi / 2.0
@@ -632,6 +709,80 @@ fn restRotation(
             std.math.pi / 2.0,
         else => 0,
     };
+}
+
+fn registeredShoePlacement(
+    identity: []const u8,
+    alpha: visual_geometry.AlphaGeometry,
+    geometry: visual_geometry.Geometry,
+    side: visual_geometry.Side,
+    registered_feet: character_art.RegisteredFeet,
+    base: sprite.SpriteRequest,
+) !visual_registration.Placement {
+    const registered_foot = try registered_feet.forSide(side);
+    const source_ankle = try visual_registration.sourcePoint(
+        alpha,
+        geometry,
+        .ankle,
+        .point,
+    );
+    const target_identity = switch (side) {
+        .left => "registered_left_foot.ankle",
+        .right => "registered_right_foot.ankle",
+        .none => return error.InvalidRegisteredAnatomyFootSide,
+    };
+    const target_ankle = try visual_registration.targetPoint(
+        target_identity,
+        .{
+            .x = registered_foot.placement.request.world_position[0],
+            .y = registered_foot.placement.request.world_position[1],
+        },
+        .point,
+    );
+    var scale = math.Vec2{
+        .x = base.scale[0],
+        .y = base.scale[1],
+    };
+    if (registered_foot.view == .front) {
+        const transverse_sign: f32 = if (base.scale[1] < 0) -1 else 1;
+        scale.y = transverse_sign *
+            @abs(registered_foot.placement.request.scale[1]);
+    }
+    const source_sole_back = try visual_registration.sourcePoint(
+        alpha,
+        geometry,
+        .sole_back,
+        .axis_start,
+    );
+    const source_sole_front = try visual_registration.sourcePoint(
+        alpha,
+        geometry,
+        .sole_front,
+        .axis_end,
+    );
+    const shared_target = registered_foot.pointAxisTarget();
+    return visual_registration.solvePointAxis(
+        .{
+            .identity = identity,
+            .binding_mode = .point_axis,
+            .scale_policy = .point_axis_authored,
+            .mirroring_policy = if (scale.x < 0)
+                .view_reflection
+            else
+                .none,
+            .allows_reflection = true,
+        },
+        base,
+        source_ankle,
+        source_sole_back,
+        source_sole_front,
+        .{
+            .anchor = target_ankle,
+            .axis_identity = shared_target.axis_identity,
+            .direction_world = shared_target.direction_world,
+        },
+        scale,
+    );
 }
 
 fn projectedEquipmentTransform(

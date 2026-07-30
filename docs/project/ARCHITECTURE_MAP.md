@@ -46,6 +46,12 @@ Layered World Presentation             |
                        v
            Unified Sprite + Mesh Queue
                        |
+                       +--> VF-01 read-only truth snapshot
+                       |      |
+                       |      +--> F1 bounded overlay through the same queue
+                       |      +--> F4 JSON/summary/manifest
+                       |      +--> clean/debug D3D12 readback
+                       |
                        v
           Atlas-Backed SDL3 GPU Rendering
 ```
@@ -70,6 +76,10 @@ collider-data authority.
 | Prompt 27C anatomy-quality contracts and report | [`src/scene/anatomy_quality.zig`](../../src/scene/anatomy_quality.zig), [`src/scene/anatomy_quality_report.zig`](../../src/scene/anatomy_quality_report.zig) |
 | Prompt 27C state-conditioned D3D12 evidence | [`src/scene/anatomy_evidence.zig`](../../src/scene/anatomy_evidence.zig), [`tools/build_p27c_review_package.ps1`](../../tools/build_p27c_review_package.ps1) |
 | Prompt 27C deterministic art reauthoring and audit | [`tools/reauthor_p27c_anatomy.ps1`](../../tools/reauthor_p27c_anatomy.ps1), [`tools/audit_p27c_art.ps1`](../../tools/audit_p27c_art.ps1) |
+| VF-01 truth snapshot, overlay categories, schema, bundle finalization, and PNG writer | [`src/debug/visual_truth.zig`](../../src/debug/visual_truth.zig) |
+| VF-01 F1/F4 scene orchestration | [`src/scene/visual_foundation.zig`](../../src/scene/visual_foundation.zig) |
+| VF-01 production D3D12 clean/debug readback | [`src/graphics/gpu_demo.zig`](../../src/graphics/gpu_demo.zig) |
+| VF-01 frame-level platform input | [`src/platform/input.zig`](../../src/platform/input.zig), [`src/platform/sdl_input.zig`](../../src/platform/sdl_input.zig) |
 | Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig), [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
 | Skeleton, poses, clips, state machine | [`src/animation/skeleton.zig`](../../src/animation/skeleton.zig), [`src/animation/pose.zig`](../../src/animation/pose.zig), [`src/animation/clip.zig`](../../src/animation/clip.zig), [`src/animation/state_machine.zig`](../../src/animation/state_machine.zig) |
 | Anatomy identity/runtime | [`src/scene/anatomy.zig`](../../src/scene/anatomy.zig), production definitions in [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
@@ -104,6 +114,7 @@ collider-data authority.
 | Standable white environment edge | Deterministic projection of `solid && ground_query_eligible` collider tops | Theme artwork, decorative ledges, or debug geometry |
 | Environment theme identity | Typed preloaded theme definition | File path, collision identity, or active GPU page |
 | Visual fit geometry | Semantic landmarks, axes, alpha-visible bounds, fit/coverage contracts | Physics collider, raw quad, or atlas dimensions alone |
+| Migrated character visual placement | `visual_registration` over active projected targets and alpha-visible atlas landmarks | Authored pivot/size alone or a validator-only expectation |
 | Render ordering | Unified queue order tuple; wardrobe preserves its visual layer and may inherit a bound anatomy interaction layer | Submission timing or a second clothing renderer |
 | Interaction ownership | Interaction manager and handshake state | Animation clip coincidence, view appearance, or full-body teleport |
 | Interaction view/occlusion policy | Validated `interaction.PresentationDefinition` on the interaction definition | Manager constants, outfit IDs, or renderer callbacks |
@@ -180,3 +191,24 @@ or GPU-resource creation in steady state.
 Prompt 27 composes that environment path with the existing character,
 wardrobe, interaction, IK, camera, diagnostics, and GPU paths. It adds no
 parallel implementation of any subsystem.
+
+VF-01 observes that composition after production submission. It explicitly
+distinguishes authoritative controller/collider state, canonical pose,
+view-specific presentation projection, appearance/anatomy/module topology,
+atlas/source metadata, final queue submissions, automated acceptance
+evidence, and owner visual approval. Only the first six become snapshot data;
+automated evidence remains diagnostic, and owner approval remains external
+and `[PENDING OWNER REVIEW]`.
+
+VF-02 makes the bounded core character path a producer, rather than merely a
+consumer, of visual-geometry truth. Both arms, forearms, thighs, shins, feet,
+torso, pelvis, and the nose are submitted from one point/segment/frame
+registration solver in front and side presentation. The solver's final
+request and residual evidence enter the existing trace and queue. Equipped
+shoes also use the point-axis solver: the registered anatomy-foot
+`PointAxisTarget` owns their ankle/orientation target, while their source
+ankle/sole landmarks supply the atlas frame. Closed-footwear metadata gives
+the shoe visible-envelope ownership, suppresses only covered base-foot
+pixels, and retains the hidden base-foot trace. Other wardrobe and unmigrated
+character visuals remain explicitly classified compatibility or transitional
+paths; they are not silently described as authoritative.

@@ -21,6 +21,8 @@ const wardrobe_demo = @import("wardrobe_demo");
 const render_queue = @import("render_queue");
 const debug_draw = @import("debug_draw");
 const visual_geometry = @import("visual_geometry");
+const visual_geometry_overlay = @import("visual_geometry_overlay");
+const visual_truth = @import("visual_truth");
 const foundation_coherence = @import("foundation_coherence");
 
 pub const required_frames: u32 = 2_400;
@@ -77,11 +79,70 @@ pub const coherence_bounds_bottom_color: [4]f32 = .{
     1,
 };
 
+pub const RegistrationProofCase = enum(u8) {
+    body_front,
+    body_side_left,
+    body_side_right,
+    equipped_front,
+    equipped_side_left,
+    equipped_side_right,
+
+    pub fn parse(text: []const u8) !RegistrationProofCase {
+        inline for (std.meta.fields(RegistrationProofCase)) |field| {
+            const value: RegistrationProofCase = @enumFromInt(field.value);
+            if (std.mem.eql(u8, text, value.cliName())) return value;
+        }
+        return error.UnknownRegistrationProofCase;
+    }
+
+    pub fn cliName(value: RegistrationProofCase) []const u8 {
+        return switch (value) {
+            .body_front => "body-front",
+            .body_side_left => "body-side-left",
+            .body_side_right => "body-side-right",
+            .equipped_front => "equipped-front",
+            .equipped_side_left => "equipped-side-left",
+            .equipped_side_right => "equipped-side-right",
+        };
+    }
+
+    pub fn bodyOnly(value: RegistrationProofCase) bool {
+        return switch (value) {
+            .body_front, .body_side_left, .body_side_right => true,
+            .equipped_front, .equipped_side_left, .equipped_side_right => false,
+        };
+    }
+
+    pub fn view(value: RegistrationProofCase) presentation_view.View {
+        return switch (value) {
+            .body_front, .equipped_front => .front,
+            .body_side_left,
+            .body_side_right,
+            .equipped_side_left,
+            .equipped_side_right,
+            => .side,
+        };
+    }
+
+    pub fn facing(value: RegistrationProofCase) humanoid.Facing {
+        return switch (value) {
+            .body_side_left, .equipped_side_left => .left,
+            .body_front,
+            .body_side_right,
+            .equipped_front,
+            .equipped_side_right,
+            => .right,
+        };
+    }
+};
+
 pub const TimeMode = enum(u8) {
     normal,
     quarter_speed,
     paused,
 };
+
+pub const DebugMode = visual_truth.Mode;
 
 pub const PresenceValidationPolicy = enum(u8) {
     /// Ordinary interactive play measures and exposes overlap without making
@@ -217,11 +278,16 @@ pub const Evidence = struct {
 };
 
 pub const Scene = struct {
+    allocator: std.mem.Allocator,
+    diagnostic_allocator: std.mem.Allocator,
     integrated: environment_demo.Scene,
     manager: interaction_system.Manager,
     presence_validation_policy: PresenceValidationPolicy,
     latest_presence: ?PresenceMeasurement = null,
     time_mode: TimeMode = .normal,
+    debug_mode: DebugMode = .off,
+    manual_capture_pending: bool = false,
+    manual_capture_request_count: u64 = 0,
     body_cycle_index: u8 = 0,
     build_cycle_index: u8 = 0,
     hair_cycle_index: u8 = 0,
@@ -234,8 +300,12 @@ pub const Scene = struct {
     last_grounded_y: f32 = foundation_playground.player_spawn.y,
     frame_physics: FramePhysicsEvidence = .{},
     theme_transition: ThemeTransitionEvidence = .{},
-    debug_commands: debug_draw.CommandBuffer = .{},
-    visual_trace: visual_geometry.Trace = .{},
+    debug_commands: *debug_draw.CommandBuffer,
+    truth_alpha_catalog: visual_geometry_overlay.AlphaCatalog,
+    truth_snapshot: *visual_truth.Snapshot,
+    truth_snapshot_valid: bool = false,
+    truth_category_counts: visual_truth.CategoryCounts = .{},
+    visual_trace: *visual_geometry.Trace,
     parallax_trace: environment_theme.ParallaxTrace = .{},
     female_ground_alignment_y: f32 = 0,
     male_ground_alignment_y: f32 = 0,
@@ -250,6 +320,18 @@ pub const Scene = struct {
         allocator: std.mem.Allocator,
         presence_validation_policy: PresenceValidationPolicy,
     ) !Scene {
+        return initWithDiagnosticAllocator(
+            allocator,
+            allocator,
+            presence_validation_policy,
+        );
+    }
+
+    pub fn initWithDiagnosticAllocator(
+        allocator: std.mem.Allocator,
+        diagnostic_allocator: std.mem.Allocator,
+        presence_validation_policy: PresenceValidationPolicy,
+    ) !Scene {
         var integrated = try environment_demo.Scene.init(allocator);
         errdefer integrated.deinit();
         try integrated.production.male.setFacing(.left);
@@ -257,11 +339,32 @@ pub const Scene = struct {
         const manager = interaction_system.Manager.initWithIk(
             try handshake.definition(&integrated.production.animations),
         );
+        const truth_alpha_catalog =
+            try visual_geometry_overlay.AlphaCatalog.init(diagnostic_allocator);
+        const truth_snapshot =
+            try diagnostic_allocator.create(visual_truth.Snapshot);
+        errdefer diagnostic_allocator.destroy(truth_snapshot);
+        const debug_commands =
+            try diagnostic_allocator.create(debug_draw.CommandBuffer);
+        errdefer diagnostic_allocator.destroy(debug_commands);
+        const visual_trace =
+            try diagnostic_allocator.create(visual_geometry.Trace);
+        errdefer diagnostic_allocator.destroy(visual_trace);
+        debug_commands.count = 0;
+        debug_commands.overflow_count = 0;
+        debug_commands.submission_allocations = 0;
+        visual_trace.* = .{};
         var scene = Scene{
+            .allocator = allocator,
+            .diagnostic_allocator = diagnostic_allocator,
             .integrated = integrated,
             .manager = manager,
             .presence_validation_policy = presence_validation_policy,
             .initial_breathing_sample = try integrated.production.female.breathingSample(),
+            .truth_alpha_catalog = truth_alpha_catalog,
+            .truth_snapshot = truth_snapshot,
+            .debug_commands = debug_commands,
+            .visual_trace = visual_trace,
         };
         scene.evidence.white_surface_count = @intCast(scene.integrated.environment.surfaces.count);
         scene.observePresentation();
@@ -270,6 +373,9 @@ pub const Scene = struct {
 
     pub fn deinit(scene: *Scene) void {
         scene.integrated.deinit();
+        scene.diagnostic_allocator.destroy(scene.visual_trace);
+        scene.diagnostic_allocator.destroy(scene.debug_commands);
+        scene.diagnostic_allocator.destroy(scene.truth_snapshot);
         scene.* = undefined;
     }
 
@@ -292,7 +398,16 @@ pub const Scene = struct {
             return;
         }
         if (snapshot.debug_toggle.pressed) {
-            scene.integrated.detailed_debug_enabled = !scene.integrated.detailed_debug_enabled;
+            scene.setDebugMode(scene.debug_mode.next());
+        }
+        if (snapshot.manual_debug_capture.pressed) {
+            if (scene.manual_capture_pending) return error.ManualCaptureRequestAlreadyPending;
+            scene.manual_capture_pending = true;
+            scene.manual_capture_request_count = std.math.add(
+                u64,
+                scene.manual_capture_request_count,
+                1,
+            ) catch return error.ManualCaptureRequestOverflow;
         }
         if (snapshot.time_mode_cycle.pressed) {
             scene.time_mode = switch (scene.time_mode) {
@@ -458,7 +573,7 @@ pub const Scene = struct {
             return error.UnboundedPartnerRouteStep;
         }
         try scene.validateSecondaryFinite();
-        if (scene.integrated.detailed_debug_enabled) {
+        if (scene.debug_mode == .all_diagnostics) {
             scene.debug_enabled_ticks = std.math.add(
                 u32,
                 scene.debug_enabled_ticks,
@@ -473,25 +588,45 @@ pub const Scene = struct {
     pub fn submit(scene: *Scene, queue: *render_queue.UnifiedRenderQueue) !u32 {
         const before_sprites = queue.frame_metrics.submitted_sprites;
         const before_meshes = queue.frame_metrics.submitted_meshes;
+        const detailed_debug_before = scene.integrated.detailed_debug_enabled;
+        if (scene.manual_capture_pending) {
+            scene.integrated.detailed_debug_enabled = false;
+        }
+        defer scene.integrated.detailed_debug_enabled = detailed_debug_before;
         scene.visual_trace.begin();
         scene.parallax_trace.begin();
         var submitted = try scene.integrated.submitTraced(
             queue,
-            &scene.visual_trace,
+            scene.visual_trace,
             &scene.parallax_trace,
         );
         try scene.applyGroundAlignment(queue);
         try scene.applyCameraSafeRegion();
         try scene.measureCharacterPresence();
         scene.debug_counts = .{};
-        if (scene.integrated.detailed_debug_enabled) {
-            scene.debug_counts.collider =
-                @as(u32, @intCast(scene.integrated.production.world.colliders.len)) * 4;
-            try scene.buildDiagnosticCommands();
+        scene.truth_snapshot_valid = false;
+        scene.truth_category_counts = .{};
+        if (scene.debug_mode != .off or scene.manual_capture_pending) {
+            try scene.buildTruthSnapshot();
+        }
+        if (scene.debug_mode != .off and !scene.manual_capture_pending) {
+            scene.truth_category_counts = try scene.truth_snapshot.buildOverlay(
+                scene.debug_mode,
+                scene.debug_commands,
+            );
+            if (scene.debug_mode == .all_diagnostics) {
+                scene.debug_counts.collider =
+                    @as(u32, @intCast(scene.integrated.production.world.colliders.len)) * 4;
+                try scene.appendLegacyDiagnosticCommands();
+            }
             submitted += try scene.debug_commands.submitUnified(queue);
-            submitted += try scene.submitCoherenceEvidence(queue);
         } else {
             scene.debug_commands.beginFrame();
+        }
+        if (scene.debug_mode == .all_diagnostics and !scene.manual_capture_pending) {
+            scene.debug_counts.collider =
+                @as(u32, @intCast(scene.integrated.production.world.colliders.len)) * 4;
+            submitted += try scene.submitCoherenceEvidence(queue);
         }
         scene.evidence.maximum_active_sprites = @max(
             scene.evidence.maximum_active_sprites,
@@ -501,6 +636,61 @@ pub const Scene = struct {
             scene.evidence.maximum_active_meshes,
             queue.frame_metrics.submitted_meshes - before_meshes,
         );
+        return submitted;
+    }
+
+    pub fn setDebugMode(scene: *Scene, mode: DebugMode) void {
+        scene.debug_mode = mode;
+        scene.integrated.detailed_debug_enabled = mode == .all_diagnostics;
+    }
+
+    pub fn takeManualCaptureRequest(scene: *Scene) bool {
+        const pending = scene.manual_capture_pending;
+        scene.manual_capture_pending = false;
+        return pending;
+    }
+
+    pub fn bindTruthRenderFrame(scene: *Scene, render_frame: u64) !void {
+        if (!scene.truth_snapshot_valid) return error.VisualTruthSnapshotUnavailable;
+        scene.truth_snapshot.bindRenderFrame(render_frame);
+    }
+
+    pub fn refreshTruthSnapshot(
+        scene: *Scene,
+        render_frame: u64,
+    ) !void {
+        try scene.buildTruthSnapshot();
+        scene.truth_snapshot.bindRenderFrame(render_frame);
+    }
+
+    /// Appends the capture-only All Diagnostics overlay to the clean queue.
+    /// It consumes the frozen truth snapshot built during the same submit and
+    /// does not advance or mutate any authoritative state.
+    pub fn submitManualTruthOverlay(
+        scene: *Scene,
+        queue: *render_queue.UnifiedRenderQueue,
+    ) !u32 {
+        if (!scene.truth_snapshot_valid) return error.VisualTruthSnapshotUnavailable;
+        const before = scene.authoritativeInteractionFingerprint();
+        scene.truth_category_counts = try scene.truth_snapshot.buildOverlay(
+            .all_diagnostics,
+            scene.debug_commands,
+        );
+        try scene.appendLegacyDiagnosticCommands();
+        for (scene.integrated.production.world.colliders) |static_collider| {
+            try scene.debug_commands.addAabb(
+                static_collider.bounds,
+                if (static_collider.ground_query_eligible)
+                    .{ 0.10, 0.92, 1.0, 0.88 }
+                else
+                    .{ 1.0, 0.34, 0.12, 0.88 },
+            );
+        }
+        var submitted = try scene.debug_commands.submitUnified(queue);
+        submitted += try scene.submitCoherenceEvidence(queue);
+        if (before != scene.authoritativeInteractionFingerprint()) {
+            return error.VisualTruthOverlayChangedAuthoritativeState;
+        }
         return submitted;
     }
 
@@ -554,7 +744,7 @@ pub const Scene = struct {
                 return error.GroundedCharacterMissingSupport;
             const support_y = try scene.supportingTop(support_id);
             const bounds = try foundation_coherence.traceCharacterBounds(
-                &scene.visual_trace,
+                scene.visual_trace,
                 female.id.raw(),
             );
             submitted += try submitCoherenceLine(
@@ -627,7 +817,7 @@ pub const Scene = struct {
         var submitted = try scene.submitCoherenceEvidence(queue);
         const female = &scene.integrated.production.female;
         const bounds = try foundation_coherence.traceCharacterBounds(
-            &scene.visual_trace,
+            scene.visual_trace,
             female.id.raw(),
         );
         const evidence_visual = scene.integrated.environment.catalog
@@ -663,6 +853,7 @@ pub const Scene = struct {
         var result: ?visual_geometry.TraceRecord = null;
         for (scene.visual_trace.slice()) |record| {
             if (record.character_id != character_id or
+                !record.isRendered() or
                 record.side != side or
                 (record.role != .foot and record.role != .shoe))
             {
@@ -766,7 +957,7 @@ pub const Scene = struct {
             const left_locked = production.female.foot_plants.left.hasLock();
             const right_locked = production.female.foot_plants.right.hasLock();
             const alignment = try foundation_coherence.groundAlignment(
-                &scene.visual_trace,
+                scene.visual_trace,
                 production.female.id.raw(),
                 support_y,
                 if (left_locked or right_locked) left_locked else true,
@@ -777,7 +968,7 @@ pub const Scene = struct {
             }
         }
         const male_alignment = try foundation_coherence.groundAlignment(
-            &scene.visual_trace,
+            scene.visual_trace,
             production.male.id.raw(),
             0,
             if (production.male.foot_plants.left.hasLock() or
@@ -796,13 +987,13 @@ pub const Scene = struct {
         }
         try foundation_coherence.translateCharacterSubmissions(
             queue,
-            &scene.visual_trace,
+            scene.visual_trace,
             production.female.id.raw(),
             .{ .x = 0, .y = scene.female_ground_alignment_y },
         );
         try foundation_coherence.translateCharacterSubmissions(
             queue,
-            &scene.visual_trace,
+            scene.visual_trace,
             production.male.id.raw(),
             .{ .x = 0, .y = scene.male_ground_alignment_y },
         );
@@ -811,7 +1002,7 @@ pub const Scene = struct {
     fn applyCameraSafeRegion(scene: *Scene) !void {
         const production = &scene.integrated.production;
         const female = try foundation_coherence.traceCharacterBounds(
-            &scene.visual_trace,
+            scene.visual_trace,
             production.female.id.raw(),
         );
         _ = try foundation_coherence.applyVerticalSafeRegion(
@@ -823,11 +1014,11 @@ pub const Scene = struct {
     fn measureCharacterPresence(scene: *Scene) !void {
         const production = &scene.integrated.production;
         const female = try foundation_coherence.traceCharacterPresenceBounds(
-            &scene.visual_trace,
+            scene.visual_trace,
             production.female.id.raw(),
         );
         const male = try foundation_coherence.traceCharacterPresenceBounds(
-            &scene.visual_trace,
+            scene.visual_trace,
             production.male.id.raw(),
         );
         const ratio = try foundation_coherence.overlapRatio(
@@ -939,8 +1130,45 @@ pub const Scene = struct {
             handshake.authored_horizontal_separation;
     }
 
-    fn buildDiagnosticCommands(scene: *Scene) !void {
-        scene.debug_commands.beginFrame();
+    fn buildTruthSnapshot(scene: *Scene) !void {
+        try scene.truth_snapshot.build(
+            scene.debug_mode,
+            scene.integrated.production.frame_index,
+            scene.integrated.production.simulation_tick,
+            scene.integrated.camera,
+            .{
+                &scene.integrated.production.female,
+                &scene.integrated.production.male,
+            },
+            .{
+                scene.integrated.production.female_art,
+                scene.integrated.production.male_art,
+            },
+            scene.visual_trace,
+            &scene.truth_alpha_catalog,
+        );
+        const production = &scene.integrated.production;
+        const preset = try production.catalog.preset(production.current_preset);
+        try scene.truth_snapshot.setOutfit(
+            production.female.id.raw(),
+            preset.stable_id,
+            if (production.female.equipment_loadout) |loadout|
+                loadout.equippedItems().len
+            else
+                0,
+        );
+        try scene.truth_snapshot.setOutfit(
+            production.male.id.raw(),
+            "foundation_male_lineup",
+            if (production.male.equipment_loadout) |loadout|
+                loadout.equippedItems().len
+            else
+                0,
+        );
+        scene.truth_snapshot_valid = true;
+    }
+
+    fn appendLegacyDiagnosticCommands(scene: *Scene) !void {
         const characters = [_]*const character.CharacterInstance{
             &scene.integrated.production.female,
             &scene.integrated.production.male,
@@ -1050,6 +1278,39 @@ pub const Scene = struct {
 
     pub fn selectFemalePresetByName(scene: *Scene, stable_id: []const u8) !void {
         try scene.selectFemalePreset(try scene.integrated.production.catalog.presetId(stable_id));
+    }
+
+    pub fn applyRegistrationProofCase(
+        scene: *Scene,
+        proof_case: RegistrationProofCase,
+    ) !void {
+        if (scene.integrated.production.frame_index != 0 or
+            scene.integrated.production.simulation_tick != 0)
+        {
+            return error.RegistrationProofCaseMustPrecedeSimulation;
+        }
+        if (proof_case.bodyOnly()) {
+            const base = try scene.integrated.production.catalog.presetId("base_only");
+            try scene.integrated.production.selectMalePreset(base);
+            try scene.integrated.production.selectPreset(base);
+        } else {
+            try scene.integrated.production.selectMalePreset(
+                try scene.integrated.production.catalog.presetId("scarlet_sport"),
+            );
+            try scene.integrated.production.selectPreset(
+                try scene.integrated.production.catalog.presetId("wide_brim_crimson"),
+            );
+        }
+        const view_override: presentation_view.DebugOverride =
+            if (proof_case.view() == .front) .force_front else .force_side;
+        const facing = proof_case.facing();
+        try scene.integrated.production.male.setFacing(facing);
+        scene.integrated.production.female.controller.?.state.facing =
+            if (facing == .left) .left else .right;
+        try scene.integrated.production.female.setFacing(facing);
+        try scene.integrated.production.male.setPresentationOverride(view_override);
+        try scene.integrated.production.female.setPresentationOverride(view_override);
+        scene.observePresentation();
     }
 
     pub fn resetWorld(scene: *Scene) !void {
@@ -1456,7 +1717,8 @@ pub const Scene = struct {
         scene.evidence.debug_theme = scene.evidence.debug_theme or
             scene.integrated.environment.active_theme == .neutral_debug;
         scene.evidence.detailed_debug_observed =
-            scene.evidence.detailed_debug_observed or scene.integrated.detailed_debug_enabled;
+            scene.evidence.detailed_debug_observed or
+            scene.debug_mode == .all_diagnostics;
         scene.observeLineup();
     }
 
@@ -1811,7 +2073,6 @@ pub const ScriptedInput = struct {
             .dash_release,
             .first_wait,
             .first_cleanup_hold,
-            .debug_hold,
             .long_outfit,
             .second_wait,
             .debug_disable_release,
@@ -1870,6 +2131,8 @@ pub const ScriptedInput = struct {
             },
             .first_interact, .second_interact, .third_interact => raw.keyboard.e = true,
             .debug_press => raw.keyboard.f1 = true,
+            .debug_hold => raw.keyboard.f1 =
+                script.phase_frame == 1 or script.phase_frame == 3,
             .debug_disable_press => raw.keyboard.f1 = true,
             .reset_press => raw.keyboard.r = true,
             .approach_hold => {},

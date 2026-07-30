@@ -1,7 +1,7 @@
 # Current State
 
-Snapshot basis: Prompt 27C worktree based on HEAD
-`3259f79db18659746ca97bde96456da086a40126`, inspected on 2026-07-29.
+Snapshot basis: VF-02 worktree based on HEAD
+`0e9bfcb733ad24ae167acf8deb43540917cbb641`, inspected on 2026-07-30.
 
 Status vocabulary:
 
@@ -32,13 +32,15 @@ Status vocabulary:
 | Base anatomy/clothing separation | complete | Base anatomy resolves without an equipped garment; removable equipment never owns or replaces anatomy identity. |
 | Wardrobe catalog and presets | complete | 30 logical items, 36 visual components, 15 presets, and a custom recombined outfit. |
 | Semantic visual-geometry validator | complete | Production transforms, semantic landmarks, fit/coverage, proportions, pose/morphology sweeps, structured reports, D3D12 debug overlays, and golden support. |
-| Current production character visuals | complete | Prompt 25D production report has zero failures; 12 approved D3D12/DXIL goldens are stored. |
+| Current production character visuals | not owner-approved | Historical Prompt 25D evidence remains preserved, but current production art must not inherit visual approval from filenames, stored goldens, reports, or automated tests. |
 | Environment themes | complete | Prompt 26 supplies violet-crystal and neutral-diagnostic themes, collision-derived white standable tops, bounded hot swapping, and seven D3D12 captures over the unchanged world. |
 | Integrated Prompt 27 presentation | complete | The visible `foundation` route composes the two production characters, all current wardrobe, both themes, movement, jumping, three measured fixed-root handshakes, view/ordering cleanup, debug, reset, and real D3D12 rendering. |
 | Prompt 27A evidence integrity | complete, owner review pending | Sixteen captures are selected by authoritative/presentation/interaction predicates, bound to validated semantic metadata and independent D3D12 pixel hashes, packaged into contact sheets, and repeated byte-exactly. Aesthetic acceptance is `[PENDING OWNER REVIEW]`. |
 | Prompt 27B contact/framing/parallax/presence | complete, owner review pending | One fail-closed chain measures support, post-IK sole, alpha-derived submitted visual sole, camera projection, render ordering, and real D3D12 pixels. Existing-camera safe framing, actual-factor parallax, and non-teleport scripted presence pass semantic and readback metrics. |
 | Prompt 27C production anatomy | superseded torso result | The anatomy ruler, limb/joint/foot corrections, 102-case matrix, and evidence route remain protected; the original torso pixels were owner-rejected and are preserved only as negative evidence. |
 | Prompt 27C-R1 torso/presence corrective pass | complete, owner review pending | Restores the pre-27C chest identity with 2,743 bounded shoulder pixels and zero outside-page changes; preserves the component page; classifies every review visual; and separates interactive presence measurement from fail-closed scripted acceptance without changing thresholds. |
+| VF-01 visual truth debugger | automated complete, owner review pending | F1 exposes canonical/projected rig and final atlas-registration truth through one production snapshot; F4 atomically writes same-state D3D12 clean/debug bundles with JSON, summary, manifest, and source hashes. |
+| VF-02 authoritative rig-to-art registration | structural implementation complete, owner review pending | One fail-closed point/segment/frame solver owns final placement for both arms, forearms, thighs, shins, feet, torso, pelvis, and nose across both styles and front/side-left/side-right. VF-01 exports exact evidence and authority classification. Current silhouette/compatibility rulers still report failures. |
 | Semantic body-relative garment depth schema | documented only | Current content resolves numeric visual layers. Required reusable depth relations are defined in [AUTHORING_CONTRACTS.md](AUTHORING_CONTRACTS.md), but no current accepted item requires a runtime extension. |
 | Authored side-left/side-right garment variants | documented only | Current production side art is mirror-safe. Directional and mixed-fragment policies are defined for future content. |
 | First-class collar coverage and shoulder-slope contour | documented only | Current validator has point/span fit and per-item coverage zones, but not the richer semantic contour contract required by a future editor. |
@@ -47,7 +49,8 @@ Status vocabulary:
 
 ## Current integrated acceptance
 
-Prompt 27B's focused `test-visual-foundation` gate passes 28/28 tests. The
+VF-01's focused `test-visual-foundation` gate now passes 41/41 tests, including
+the VF-02 production-registration assertions. The
 2,400-frame production route uses:
 
 - two production characters;
@@ -68,9 +71,13 @@ post-stabilization update, submission, queue, or GPU-resource growth and
 writes the preserved 16 Prompt 27A D3D12 captures plus four Prompt 27B
 supplemental captures and semantic metadata.
 
-The Prompt 27B semantic report contains 9,714 metrics and zero failures. Two
-isolated D3D12 runs and their review packages are byte-identical; each review
-contains 55 independent pixel metrics and zero failures. The direct
+The preserved final Prompt 27B semantic report contains 9,714 metrics and zero
+failures at its historical art hashes. A fresh-current-art VF-01 baseline
+contains 9,714 metrics and 24 failures: front-foot heel/toe endpoint-height
+errors are `-13.645128 px` and `+13.645128 px`. The historical zero-failure
+report is not cited as current-art proof. Historical isolated D3D12 runs and
+their review packages remain byte-identical; each historical review contains
+55 independent pixel metrics and zero failures. The direct
 960×540-to-640×480 first-post frame retains 37.50 px headroom and 36.77 px
 footroom; subsequent camera movement peaks at 15.566496 px under the unchanged
 16 px bound. All 314 inventoried
@@ -78,6 +85,30 @@ historical Prompt 27/27A evidence files remain present and hash-identical.
 The inherited Prompt 27B Debug aggregate and `check` gates passed 381/381
 tests; ReleaseSafe, ReleaseFast, and D3D12/DXIL GPU smoke passed. See
 [../TESTING.md](../TESTING.md) for exact commands and evidence boundaries.
+
+VF-02 adds a focused registration gate and extends the VF-01 production gate
+to front, side-right, and side-left authoritative-placement proof. Body-only
+production frames contain 26 migrated registered submissions; equipped frames
+contain 30 because all four shoes now use authoritative point registration.
+The final D3D12 set `_0068` / `_0069` / `_0070` and `_0071` / `_0072` /
+`_0073` covers male and female front / side-left / side-right body-only and
+equipped presentation. Every schema-3 manifest and clean/debug state identity
+validates. Equipped frames export four authoritative rendered shoes and four
+explicitly suppressed registered base-foot evidence records. The initial
+independent current-pixel
+ruler result is not overwritten: it passed 13/15 tests while reporting eight
+current baseline failure categories and 116
+pose/morphology/legacy-wardrobe findings. The owner-review correction also
+preserves the earlier fresh Prompt 27B 24-failure report. A new
+fresh-current-art Prompt 27B run now emits 9,752 metrics with zero failures:
+the former endpoint failures were registration-policy defects from the
+surviving wardrobe shoe `+/-78` degree branch. They are not reclassified as
+source-art defects or owner approval. Front base feet use a `point_axis`
+contract with one positional ankle target and one authored sole-axis
+orientation constraint. The 16-degree male / 13-degree female toe-out remains
+physical ground-plane policy, while front projection maps its signed lateral
+component to a horizontal support tangent. Heel/toe/sole landmarks remain
+transformed, non-target evidence.
 
 Prompt 27C extends the focused visual-geometry gate to 158/158 checks and the
 Debug aggregate to 386/386 tests. Its final semantic report contains 102
@@ -98,6 +129,14 @@ scripted evidence remains fail-closed. The `0.02` ordinary, `0.15`
 active-interaction, and 16 px camera bounds are unchanged.
 The current aggregate passes 389/389 Debug tests, including 31/31 focused
 foundation tests.
+
+VF-01 adds the production truth snapshot, four-mode F1 cycle, and atomic F4
+bundle path without changing controller, collision, pose, interaction,
+camera, allocation, or renderer authority. Its focused gate passes 40/40. Ten
+final D3D12/DXIL bundles ending `_0020` through `_0029` cover front idle,
+side idle/walk, airborne, landing/grounded, face/shoulder/leg disagreements,
+and All Diagnostics. All manifest hashes and same-state identities validate.
+These are diagnostic candidates, not approved goldens.
 
 ## Focused demonstrations
 
@@ -134,6 +173,13 @@ current rendered application.
 - The original Prompt 27C torso candidate is owner-rejected. Prompt 27C-R1
   corrective candidates await owner/manual review and are not approved
   goldens.
+- VF-01 truth bundles await owner/manual review and are not approved goldens.
+- VF-02 registration bundles await owner/manual review and are not approved
+  goldens.
+- The preserved pre-correction fresh-current-art Prompt 27B report has 24
+  front-foot endpoint-height failures. The owner-review correction resolves
+  that policy defect in a new 9,752-metric zero-failure run; neither report is
+  overwritten or rebaselined.
 - General interactive character-character collision is not implemented. The
   deterministic Prompt 27B route uses ordinary controller input to walk the
   partner clear/return plus an overlap detector; this is not a general
@@ -165,9 +211,8 @@ The impact and intended future milestones are in
 
 ## Next authorized milestone
 
-Prompt 27C-R1 is the current bounded corrective authority. Prompt 27A,
-Prompt 27B, and Prompt 27C-R1 owner/manual visual acceptance remains
-`[PENDING OWNER REVIEW]`. Prompt 27D, Prompt 28, gameplay vertical slice,
-editor, combat, mission, or other expansion has not started. Future work
-requires an explicit user request and must preserve the existing authority
-boundaries.
+VF-02 is the current bounded registration milestone. Prompt 27A, Prompt 27B,
+Prompt 27C-R1, VF-01, and VF-02 owner/manual visual acceptance remains
+`[PENDING OWNER REVIEW]`. VF-03, Prompt 28, gameplay vertical slice, editor,
+combat, mission, or other expansion has not started. Future work requires an
+explicit user request and must preserve the existing authority boundaries.

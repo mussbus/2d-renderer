@@ -265,6 +265,14 @@ pub fn build(b: *std.Build) void {
     visual_geometry_module.addImport("math", math_module);
     visual_geometry_module.addImport("camera2d", camera2d_module);
     visual_geometry_module.addImport("sprite_batch", sprite_batch_module);
+    const visual_registration_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/visual_registration.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    visual_registration_module.addImport("math", math_module);
+    visual_registration_module.addImport("sprite_batch", sprite_batch_module);
+    visual_registration_module.addImport("visual_geometry", visual_geometry_module);
     const anatomy_evidence_module = b.createModule(.{
         .root_source_file = b.path("src/scene/anatomy_evidence.zig"),
         .target = target,
@@ -280,6 +288,7 @@ pub fn build(b: *std.Build) void {
     visual_geometry_audit_module.addImport("camera2d", camera2d_module);
     visual_geometry_audit_module.addImport("sprite_batch", sprite_batch_module);
     visual_geometry_audit_module.addImport("visual_geometry", visual_geometry_module);
+    visual_geometry_audit_module.addImport("visual_registration", visual_registration_module);
     const anatomy_quality_module = b.createModule(.{
         .root_source_file = b.path("src/scene/anatomy_quality.zig"),
         .target = target,
@@ -601,11 +610,14 @@ pub fn build(b: *std.Build) void {
     character_art_module.addImport("humanoid", humanoid_module);
     character_art_module.addImport("character", character_module);
     character_art_module.addImport("appearance", appearance_module);
+    character_art_module.addImport("skeleton", skeleton_module);
     character_art_module.addImport("presentation_pose", presentation_pose_module);
     character_art_module.addImport("presentation_view", presentation_view_module);
     character_art_module.addImport("render_queue", render_queue_module);
     character_art_module.addImport("sprite_batch", sprite_batch_module);
     character_art_module.addImport("visual_geometry", visual_geometry_module);
+    character_art_module.addImport("visual_registration", visual_registration_module);
+    character_art_module.addImport("image_decode", image_decode_module);
     const wardrobe_catalog_module = b.createModule(.{
         .root_source_file = b.path("src/scene/wardrobe_catalog.zig"),
         .target = target,
@@ -626,6 +638,8 @@ pub fn build(b: *std.Build) void {
     wardrobe_art_module.addImport("art_pack", art_pack_module);
     wardrobe_art_module.addImport("equipment", equipment_module);
     wardrobe_art_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    wardrobe_art_module.addImport("visual_geometry", visual_geometry_module);
+    wardrobe_art_module.addImport("image_decode", image_decode_module);
     const wardrobe_presentation_module = b.createModule(.{
         .root_source_file = b.path("src/scene/wardrobe_presentation.zig"),
         .target = target,
@@ -645,6 +659,8 @@ pub fn build(b: *std.Build) void {
     wardrobe_presentation_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
     wardrobe_presentation_module.addImport("anatomy", anatomy_module);
     wardrobe_presentation_module.addImport("visual_geometry", visual_geometry_module);
+    wardrobe_presentation_module.addImport("visual_registration", visual_registration_module);
+    wardrobe_presentation_module.addImport("character_art", character_art_module);
     const multi_character_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/multi_character_demo.zig"),
         .target = target,
@@ -741,6 +757,25 @@ pub fn build(b: *std.Build) void {
     visual_geometry_overlay_module.addImport("debug_draw", debug_draw_module);
     visual_geometry_overlay_module.addImport("sprite_batch", sprite_batch_module);
     visual_geometry_overlay_module.addImport("visual_geometry", visual_geometry_module);
+    const visual_truth_module = b.createModule(.{
+        .root_source_file = b.path("src/debug/visual_truth.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    visual_truth_module.addImport("math", math_module);
+    visual_truth_module.addImport("collider", collider_module);
+    visual_truth_module.addImport("skeleton", skeleton_module);
+    visual_truth_module.addImport("appearance", appearance_module);
+    visual_truth_module.addImport("anatomy", anatomy_module);
+    visual_truth_module.addImport("character", character_module);
+    visual_truth_module.addImport("humanoid", humanoid_module);
+    visual_truth_module.addImport("character_art", character_art_module);
+    visual_truth_module.addImport("presentation_pose", presentation_pose_module);
+    visual_truth_module.addImport("camera2d", camera2d_module);
+    visual_truth_module.addImport("sprite_batch", sprite_batch_module);
+    visual_truth_module.addImport("debug_draw", debug_draw_module);
+    visual_truth_module.addImport("visual_geometry", visual_geometry_module);
+    visual_truth_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
     const integrated_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/integrated_demo.zig"),
         .target = target,
@@ -1014,6 +1049,8 @@ pub fn build(b: *std.Build) void {
     visual_foundation_module.addImport("deformable_mesh", deformable_mesh_module);
     visual_foundation_module.addImport("debug_draw", debug_draw_module);
     visual_foundation_module.addImport("visual_geometry", visual_geometry_module);
+    visual_foundation_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
+    visual_foundation_module.addImport("visual_truth", visual_truth_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -1091,8 +1128,10 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("acceptance_hud", acceptance_hud_module);
     app_module.addImport("visual_foundation", visual_foundation_module);
     app_module.addImport("visual_geometry", visual_geometry_module);
+    app_module.addImport("visual_registration", visual_registration_module);
     app_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     app_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
+    app_module.addImport("visual_truth", visual_truth_module);
     app_module.addImport("anatomy_evidence", anatomy_evidence_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
@@ -1159,6 +1198,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("environment_theme", environment_theme_module);
     test_module.addImport("environment_demo", environment_demo_module);
     test_module.addImport("visual_geometry", visual_geometry_module);
+    test_module.addImport("visual_registration", visual_registration_module);
     test_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     test_module.addImport("anatomy_evidence", anatomy_evidence_module);
     const art_test_module = b.createModule(.{
@@ -1225,6 +1265,8 @@ pub fn build(b: *std.Build) void {
     wardrobe_test_module.addImport("modular_body_demo", modular_body_demo_module);
     wardrobe_test_module.addImport("authored_clips", authored_clips_module);
     wardrobe_test_module.addImport("render_queue", render_queue_module);
+    wardrobe_test_module.addImport("character_art", character_art_module);
+    wardrobe_test_module.addImport("visual_geometry", visual_geometry_module);
     const wardrobe_tests = b.addTest(.{
         .name = "wardrobe-tests",
         .root_module = wardrobe_test_module,
@@ -1235,6 +1277,25 @@ pub fn build(b: *std.Build) void {
         "Run Prompt 25 wardrobe catalog, preset, view-binding, and steady-state tests",
     );
     wardrobe_test_step.dependOn(&run_wardrobe_tests.step);
+    const visual_registration_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/visual_registration_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    visual_registration_test_module.addImport("math", math_module);
+    visual_registration_test_module.addImport("sprite_batch", sprite_batch_module);
+    visual_registration_test_module.addImport("visual_geometry", visual_geometry_module);
+    visual_registration_test_module.addImport("visual_registration", visual_registration_module);
+    const visual_registration_tests = b.addTest(.{
+        .name = "visual-registration-tests",
+        .root_module = visual_registration_test_module,
+    });
+    const run_visual_registration_tests = b.addRunArtifact(visual_registration_tests);
+    const visual_registration_test_step = b.step(
+        "test-visual-registration",
+        "Run VF-02 point, segment, frame, mesh-bridge, and fail-closed registration tests",
+    );
+    visual_registration_test_step.dependOn(&run_visual_registration_tests.step);
     const visual_geometry_test_module = b.createModule(.{
         .root_source_file = b.path("tests/visual_geometry_tests.zig"),
         .target = target,
@@ -1443,6 +1504,9 @@ pub fn build(b: *std.Build) void {
     visual_foundation_test_module.addImport("foundation_evidence", foundation_evidence_module);
     visual_foundation_test_module.addImport("foundation_coherence", foundation_coherence_module);
     visual_foundation_test_module.addImport("visual_foundation", visual_foundation_module);
+    visual_foundation_test_module.addImport("visual_truth", visual_truth_module);
+    visual_foundation_test_module.addImport("visual_geometry", visual_geometry_module);
+    visual_foundation_test_module.addImport("debug_draw", debug_draw_module);
     const visual_foundation_tests = b.addTest(.{
         .name = "visual-foundation-tests",
         .root_module = visual_foundation_test_module,
@@ -1479,6 +1543,7 @@ pub fn build(b: *std.Build) void {
     foundation_coherence_report_module.addImport("camera2d", camera2d_module);
     foundation_coherence_report_module.addImport("image_decode", image_decode_module);
     foundation_coherence_report_module.addImport("render_queue", render_queue_module);
+    foundation_coherence_report_module.addImport("sprite_batch", sprite_batch_module);
     foundation_coherence_report_module.addImport("foundation_evidence", foundation_evidence_module);
     foundation_coherence_report_module.addImport("foundation_coherence", foundation_coherence_module);
     foundation_coherence_report_module.addImport("visual_foundation", visual_foundation_module);
@@ -1521,6 +1586,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_tests.step);
     test_step.dependOn(&run_image_decode_tests.step);
     test_step.dependOn(&run_wardrobe_tests.step);
+    test_step.dependOn(&run_visual_registration_tests.step);
     test_step.dependOn(&run_visual_geometry_tests.step);
     test_step.dependOn(&run_environment_tests.step);
     test_step.dependOn(&run_visual_foundation_tests.step);
@@ -1536,6 +1602,7 @@ pub fn build(b: *std.Build) void {
     check_step.dependOn(&run_tests.step);
     check_step.dependOn(&run_image_decode_tests.step);
     check_step.dependOn(&run_wardrobe_tests.step);
+    check_step.dependOn(&run_visual_registration_tests.step);
     check_step.dependOn(&run_visual_geometry_tests.step);
     check_step.dependOn(&run_environment_tests.step);
     check_step.dependOn(&run_visual_foundation_tests.step);

@@ -5,7 +5,11 @@ Prompt 27A reopened manual visual acceptance, Prompt 27B added measured
 contact/framing/parallax/presence evidence, and Prompt 27C measured the
 production base anatomy. The original Prompt 27C torso was owner-rejected;
 Prompt 27C-R1 supplies the current bounded correction and remains pending
-owner review. The gaps below are future-content or tooling limitations and
+owner review. VF-01 makes rig, projection, component, atlas, and final
+submission disagreements inspectable and exportable. VF-02 now makes a
+bounded core anatomy set authoritative atlas-to-rig placement while leaving
+unmigrated visuals and wardrobe compatibility explicit. The gaps below are
+future-content or tooling limitations and
 are separate from the specific visual issues that Prompt 27D–27H may address.
 
 | Gap | Impact | Current workaround | Trigger for implementation | Blocks current Prompt 27 acceptance? | Blocks a future editor? |
@@ -24,6 +28,8 @@ are separate from the specific visual issues that Prompt 27D–27H may address.
 | Interaction presentation has one production contact/occlusion profile | Carrying, lifting, hand-to-prop, multi-contact, or cinematic interactions need additional data contracts and authored animation/views. | The fixed-root handshake uses typed role views, automatic-view suppression, one typed right-hand contact profile, existing IK, and deterministic cleanup. | First production interaction requiring more contacts, a relative-root constraint, or world anchors. | No | Yes, for general interaction authoring |
 | No general dynamic character-character collision | Independently controlled characters can pass through each other outside authored routes. | Prompt 27C-R1 measures interactive overlap without terminating; scripted Prompt 27B evidence explicitly enforces the same unchanged acceptance thresholds. No physics or root teleport is hidden behind presentation. | First gameplay milestone requiring free simultaneous character occupancy/avoidance. | No | No |
 | No authoring GUI | Artists cannot place pivots, landmarks, zones, fragments, themes, or interaction presentation interactively. | Definitions are authored in source and checked by focused validation plus D3D12 captures. | Phase 6 authoring tools. | No | Yes |
+| Registration migration is bounded rather than catalog-wide | Arms, forearms, thighs, shins, feet, torso, pelvis, and nose use authoritative registration; hands, head, other face features, hair, and wardrobe remain classified transitional or compatibility paths. | VF-01 exports authority status and residuals for every submitted visual; no legacy visual is labeled authoritative. | A later explicitly authorized production-art migration after owner review and VF-03 topology decisions. | Yes, for visual approval | Yes |
+| Appearance and anatomy remain overlapping topology authorities | VF-01 can inspect both hierarchies, but one compiled typed component graph does not yet own runtime topology. | Existing immutable appearance/anatomy definitions remain authoritative in their established domains. | VF-03 after explicit authorization. | No | Yes |
 | No bounded gameplay loop | The repository demonstrates integrated production systems, not a beginning-to-completion game slice. | Prompt 27 foundation supports traversal, jumps, dash, themes, outfits, and three handshakes with reset. | Phase 5 vertical slice after explicit authorization. | No | No |
 
 ## Art-quality status
@@ -36,8 +42,19 @@ fresh body-only/clothed D3D12 evidence, provenance, composites, and diffs.
 Prompt 27A has produced 16 honest combined captures; Prompt 27B adds measured
 contact/framing/parallax/presence candidates and supplemental debug evidence.
 Their current aesthetic/manual fields are `[PENDING OWNER REVIEW]`; none of
-the Prompt 27A, 27B, or 27C-R1 candidates is an approved golden. This does not
-prove
+the Prompt 27A, 27B, 27C-R1, VF-01, or VF-02 candidates is an approved
+golden.
+The preserved pre-correction fresh-current-art report retains 24 Prompt 27B
+front-foot endpoint-height failures. The VF-02 owner-review correction removes
+the surviving wardrobe shoe `+/-78` degree orientation policy and a new fresh
+report records 9,752 metrics with zero failures. Neither result is
+overwritten, and the corrected automated result does not prove
+full heel/toe/sole endpoint registration: front base feet and shoes use one
+positional ankle target plus a sole-axis orientation constraint, with
+heel/toe/sole landmarks exported as transformed evidence rather than
+independent endpoint targets. Closed footwear suppresses covered base-foot
+pixels but retains their hidden evidence. It also does not prove aesthetic
+approval or
 arbitrary future combinations, views, body topologies, morphology ranges,
 themes, or interactions. New content must declare and pass its own contracts
 rather than inheriting acceptance from the current atlases.

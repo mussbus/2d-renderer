@@ -2,6 +2,8 @@ const std = @import("std");
 const art_pack = @import("art_pack");
 const equipment = @import("equipment");
 const wardrobe_catalog = @import("wardrobe_catalog");
+const visual_geometry = @import("visual_geometry");
+const image_decode = @import("image_decode");
 
 pub const texture_page_count: usize = 3;
 pub const regions_per_visual: usize = 2;
@@ -42,6 +44,70 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
 pub const region_inputs = makeRegionInputs();
 pub const binding_inputs = makeBindingInputs();
 
+const RegistrationAlphaEntry = struct {
+    region_id: art_pack.AtlasRegionId,
+    alpha: visual_geometry.AlphaGeometry,
+};
+
+const RegistrationAlphaCatalog = struct {
+    entries: [region_inputs.len]RegistrationAlphaEntry = undefined,
+    count: usize = 0,
+
+    fn init() !RegistrationAlphaCatalog {
+        var catalog = RegistrationAlphaCatalog{};
+        for (page_inputs) |page| {
+            var path_buffer: [256]u8 = undefined;
+            const path = try std.fmt.bufPrint(
+                &path_buffer,
+                "assets/{s}",
+                .{page.asset_path},
+            );
+            var decoded = try image_decode.decodePngFile(
+                std.heap.smp_allocator,
+                path,
+                null,
+            );
+            defer decoded.deinit();
+            for (region_inputs) |region| {
+                if (region.page_id != page.id) continue;
+                if (catalog.count == catalog.entries.len) {
+                    return error.RegistrationAlphaCatalogCapacityExceeded;
+                }
+                catalog.entries[catalog.count] = .{
+                    .region_id = region.id,
+                    .alpha = try visual_geometry.deriveAlphaGeometry(
+                        decoded.pixels,
+                        decoded.layout.width,
+                        decoded.layout.height,
+                        decoded.layout.row_bytes,
+                        .{
+                            .x = region.source.x,
+                            .y = region.source.y,
+                            .width = region.source.width,
+                            .height = region.source.height,
+                        },
+                    ),
+                };
+                catalog.count += 1;
+            }
+        }
+        if (catalog.count != catalog.entries.len) {
+            return error.IncompleteRegistrationAlphaCatalog;
+        }
+        return catalog;
+    }
+
+    fn find(
+        catalog: RegistrationAlphaCatalog,
+        region_id: art_pack.AtlasRegionId,
+    ) !visual_geometry.AlphaGeometry {
+        for (catalog.entries[0..catalog.count]) |entry| {
+            if (entry.region_id == region_id) return entry.alpha;
+        }
+        return error.MissingRegistrationAlphaGeometry;
+    }
+};
+
 pub fn definitionInput() art_pack.DefinitionInput {
     return .{
         .stable_name = "prompt25_modular_wardrobe_art",
@@ -53,9 +119,15 @@ pub fn definitionInput() art_pack.DefinitionInput {
 
 pub const Definition = struct {
     art: art_pack.Definition,
+    registration_alpha: RegistrationAlphaCatalog,
 
     pub fn init(allocator: std.mem.Allocator) !Definition {
-        return .{ .art = try art_pack.Definition.init(allocator, definitionInput()) };
+        var art = try art_pack.Definition.init(allocator, definitionInput());
+        errdefer art.deinit();
+        return .{
+            .art = art,
+            .registration_alpha = try RegistrationAlphaCatalog.init(),
+        };
     }
 
     pub fn deinit(definition: *Definition) void {
@@ -73,6 +145,13 @@ pub const Definition = struct {
             artSemantic(semantic),
             if (front) art_pack.front_view else art_pack.side_view,
         );
+    }
+
+    pub fn registrationAlpha(
+        definition: *const Definition,
+        region_id: art_pack.AtlasRegionId,
+    ) !visual_geometry.AlphaGeometry {
+        return definition.registration_alpha.find(region_id);
     }
 
     pub fn validateCatalog(

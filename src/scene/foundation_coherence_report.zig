@@ -4,6 +4,7 @@ const input = @import("input");
 const camera2d = @import("camera2d");
 const image_decode = @import("image_decode");
 const render_queue = @import("render_queue");
+const sprite = @import("sprite_batch");
 const foundation_evidence = @import("foundation_evidence");
 const coherence = @import("foundation_coherence");
 const visual_foundation = @import("visual_foundation");
@@ -138,7 +139,7 @@ pub fn main(init: std.process.Init) !void {
         scene.recordRendering(queue.frame_metrics);
 
         const female_bounds = try coherence.traceCharacterBounds(
-            &scene.visual_trace,
+            scene.visual_trace,
             scene.integrated.production.female.id.raw(),
         );
         const framing = try coherence.framingMeasurement(
@@ -147,11 +148,11 @@ pub fn main(init: std.process.Init) !void {
         );
         const interaction_active = scene.presenceInteractionContext();
         const female_presence = try coherence.traceCharacterPresenceBounds(
-            &scene.visual_trace,
+            scene.visual_trace,
             scene.integrated.production.female.id.raw(),
         );
         const male_presence = try coherence.traceCharacterPresenceBounds(
-            &scene.visual_trace,
+            scene.visual_trace,
             scene.integrated.production.male.id.raw(),
         );
         const overlap_ratio = try coherence.overlapRatio(
@@ -475,10 +476,10 @@ fn evaluateCaptureGround(
         {
             continue;
         }
-        const record = findOutermostFootVisual(&scene.visual_trace, female.id.raw(), side) orelse
+        const record = findOutermostFootVisual(scene.visual_trace, female.id.raw(), side) orelse
             return error.MissingGroundContactVisual;
         const anatomy_record = findAnatomyFoot(
-            &scene.visual_trace,
+            scene.visual_trace,
             female.id.raw(),
             side,
         ) orelse return error.MissingGroundContactAnatomy;
@@ -580,9 +581,22 @@ fn evaluateCaptureGround(
             0;
         try report.maximum(value, coherence.semantic_sole_tolerance_px);
         value.metric = "anatomy_inside_outer_sole_clearance";
-        value.actual =
+        const registered_anatomy_clearance =
             (anatomy_sole.y - projected_post_ik_sole.y) *
             scene.integrated.camera.pixels_per_meter;
+        if (!anatomy_record.isRendered()) {
+            var hidden_evidence = value;
+            hidden_evidence.metric = "hidden_registered_anatomy_sole_clearance";
+            hidden_evidence.actual = registered_anatomy_clearance;
+            hidden_evidence.allowed_minimum = null;
+            hidden_evidence.allowed_maximum = null;
+            hidden_evidence.outcome = .pass;
+            try report.append(hidden_evidence);
+        }
+        value.actual = if (anatomy_record.isRendered())
+            registered_anatomy_clearance
+        else
+            0;
         try report.range(
             value,
             coherence.sole_endpoint_minimum_height_px,
@@ -605,6 +619,42 @@ fn evaluateCaptureGround(
             coherence.sole_endpoint_minimum_height_px,
             coherence.sole_endpoint_maximum_height_px,
         );
+        if (observation.view == .front) {
+            const sole_delta = toe.world.sub(heel.world);
+            value.metric = "front_sole_support_tangent_angle";
+            value.actual = @abs(std.math.radiansToDegrees(std.math.atan2(
+                sole_delta.y,
+                @abs(sole_delta.x),
+            )));
+            value.unit = "deg";
+            try report.maximum(value, 0.01);
+
+            var alpha_minimum_y = std.math.inf(f32);
+            for ([_][2]f32{
+                .{ 0, 0 },
+                .{ 1, 0 },
+                .{ 0, 1 },
+                .{ 1, 1 },
+            }) |visible_uv| {
+                const local = alpha.visibleUvToLocal(visible_uv);
+                const world = sprite.localPointToWorld(
+                    record.request,
+                    local,
+                );
+                alpha_minimum_y = @min(alpha_minimum_y, world[1]);
+            }
+            value.metric = "front_alpha_support_penetration";
+            value.actual = @max(
+                @as(f32, 0),
+                (supporting_top - alpha_minimum_y) *
+                    scene.integrated.camera.pixels_per_meter,
+            );
+            value.unit = "px";
+            try report.maximum(
+                value,
+                coherence.sole_endpoint_maximum_height_px,
+            );
+        }
     }
 }
 
@@ -616,6 +666,7 @@ fn findOutermostFootVisual(
     var result: ?visual_geometry.TraceRecord = null;
     for (trace.slice()) |record| {
         if (record.character_id != character_id or record.side != side) continue;
+        if (!record.isRendered()) continue;
         if (record.role != .shoe and record.role != .foot) continue;
         if (result == null or
             record.request.order.body_part_layer >

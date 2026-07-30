@@ -9,6 +9,7 @@ const Options = struct {
     scripted_input: bool = false,
     debug_visualization: bool = false,
     interactive: bool = false,
+    registration_proof_case: ?@import("visual_foundation").RegistrationProofCase = null,
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -25,7 +26,14 @@ pub fn main(init: std.process.Init) !void {
 
     var demo = try gpu.GpuDemo.init(std.heap.page_allocator, init.io, false, null);
     defer demo.deinit();
-    try demo.runVisible(options.maximum_frames, options.demo, options.scripted_input, options.debug_visualization, options.interactive);
+    try demo.runVisible(
+        options.maximum_frames,
+        options.demo,
+        options.scripted_input,
+        options.debug_visualization,
+        options.interactive,
+        options.registration_proof_case,
+    );
 }
 
 test "application entry point remains type checked" {
@@ -122,8 +130,15 @@ fn parseOptions(arguments: []const []const u8) !Options {
             options.debug_visualization = true;
         } else if (std.mem.eql(u8, argument, "--interactive")) {
             options.interactive = true;
+        } else if (std.mem.eql(u8, argument, "--registration-proof-case")) {
+            index += 1;
+            if (index >= arguments.len) return error.MissingRegistrationProofCase;
+            options.registration_proof_case =
+                try @import("visual_foundation").RegistrationProofCase.parse(
+                    arguments[index],
+                );
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation|art-assets|character-presentation|wardrobe|visual-quality|anatomy-quality|environment>, --scripted-input, --debug-visualization, --interactive", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation|art-assets|character-presentation|wardrobe|visual-quality|anatomy-quality|environment>, --scripted-input, --debug-visualization, --interactive, --registration-proof-case <body-front|body-side-left|body-side-right|equipped-front|equipped-side-left|equipped-side-right>", .{argument});
             return error.UnknownArgument;
         }
     }
@@ -143,6 +158,11 @@ fn parseOptions(arguments: []const []const u8) !Options {
     if (options.demo == .playground and options.interactive == options.scripted_input) return error.PlaygroundRequiresExactlyOneInputMode;
     if (options.demo == .playground and options.scripted_input and options.maximum_frames != 1800) return error.PlaygroundScriptRequiresExactFrameCount;
     if (options.demo == .foundation and options.interactive == options.scripted_input) return error.FoundationRequiresExactlyOneInputMode;
+    if (options.registration_proof_case != null and
+        (options.demo != .foundation or !options.interactive))
+    {
+        return error.RegistrationProofCaseRequiresInteractiveFoundation;
+    }
     if (options.demo == .foundation and options.scripted_input and
         options.maximum_frames != @import("visual_foundation").required_frames)
     {

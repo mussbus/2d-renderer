@@ -147,3 +147,41 @@ $env:SDL_GPU_DRIVER = 'direct3d12'
 It selects eight poses through production state predicates and submits both
 styles through the ordinary global queue. Prompt 27C owner/manual visual
 acceptance remains `[PENDING OWNER REVIEW]`.
+
+## VF-02 registered production placement
+
+The migrated core anatomy no longer uses authored size, pivot, and rest
+rotation as an independent final authority. The active front/side projection
+supplies targets and current atlas alpha geometry supplies source landmarks.
+The shared registration solver produces the final request.
+
+Segment bindings cover both upper arms, forearms, thighs, and shins. Front
+feet use a `point_axis` binding: the alpha-derived ankle is the sole positional
+target, while the authored `sole_back -> sole_front` axis is the orientation
+constraint. Explicit 16-degree male and 13-degree female toe-out data describe
+the physical ground-plane lateral/depth direction. Front projection maps only
+the signed lateral component to the view's horizontal support tangent; it
+does not reinterpret ground-plane depth as vertical screen/world Y. The final
+front base-foot rotations are therefore `0` radians in the current proof
+poses, not approximately `+/-75.8` or `+/-79.3` degrees. Heel, toe, sole-back,
+and sole-front remain transformed evidence, not independent targets. The
+former base-anatomy and wardrobe-shoe hard-coded front-foot `+/-78` degree
+branches are both removed. The nose is the first point-bound face feature.
+Torso and pelvis use view-specific bounded frames.
+
+Authored metadata remains available to unmigrated components and explicit
+transverse/profile policies. Non-shoe wardrobe presentation remains a
+classified compatibility adapter. An equipped shoe is authoritative: it
+registers its alpha-derived ankle and authored sole axis to the exact
+`PointAxisTarget` stored by the anatomy-foot registration. In front view it
+also uses the registered base foot's full authored transverse scale; no
+independent rotation or depth multiplier remains. Closed-footwear metadata
+suppresses the covered base-foot pixels but keeps their diagnostic record,
+with `ankle` declared as the exposed anatomy anchor. Production submission,
+diagnostic trace, JSON, and validation observe the same solved shoe request.
+Front reflection never swaps left/right anatomical identity. Side-left and
+side-right tests require the same stable components and targets.
+
+The existing whole-character ground-alignment pass remains after character
+submission. It translates the queue request and both sides of registration
+evidence together, so it cannot hide or change a structural residual.

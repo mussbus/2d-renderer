@@ -42,6 +42,8 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 | 27B | Ground contact, framing, parallax, and presence | automated complete; owner review pending | exact user-supplied roadmap | [record](027B-ground-contact-camera-parallax-presence.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `0e29e0c` |
 | 27C | Production anatomy silhouette, proportion, and joint continuity | torso result owner-rejected; superseded by 27C-R1 | exact user-supplied roadmap | [record](027C-production-anatomy.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `3259f79` |
 | 27C-R1 | Owner-rejected torso and interactive presence crash | automated corrective pass complete; owner review pending | copied exact user request | [record](027C-R1-owner-rejected-torso-presence.md) | worktree on `3259f79` |
+| VF-01 | Visual truth debugger and manual capture bundles | automated complete; owner review pending | exact active handoff package | [record](VF-01-visual-truth-debugger.md) | worktree on `0e9bfcb` |
+| VF-02 | Authoritative rig-to-art registration | automated implementation complete; owner review pending | exact active handoff package | [record](VF-02-authoritative-rig-to-art-registration.md) | worktree on `0e9bfcb` |
 
 ## Evidence and reports
 
@@ -52,5 +54,6 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
   preserved as
   [`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md);
   Prompts 27A and 27B are implemented; Prompt 27C's rejected torso result is
-  superseded by the bounded 27C-R1 corrective pass. Prompt 27D and later work
-  has not started.
+  superseded by the bounded 27C-R1 corrective pass. VF-01 is implemented as a
+  diagnostic milestone and VF-02 implements bounded production registration.
+  VF-03, Prompt 27D, and later work have not started.

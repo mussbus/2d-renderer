@@ -33,6 +33,8 @@ pub const AnchorKind = enum(u8) {
     waist,
 };
 
+pub const BaseVisualPolicy = visual_geometry.BaseVisualPolicy;
+
 pub const VisualSpec = struct {
     stable_id: []const u8,
     semantic: equipment.PresentationSemanticId,
@@ -47,6 +49,10 @@ pub const VisualSpec = struct {
     female_front_pivot_y: ?f32 = null,
     male_side_pivot_y: ?f32 = null,
     female_side_pivot_y: ?f32 = null,
+    /// Closed footwear can own the visible foot envelope. The registered base
+    /// foot remains in diagnostics while its covered pixels are not submitted.
+    base_visual_policy: BaseVisualPolicy = .retain,
+    exposed_anatomy_anchor: ?visual_geometry.LandmarkKind = null,
     fit: visual_geometry.FitContract,
 };
 
@@ -68,6 +74,10 @@ fn fitWithViewCoverage(
 fn torsoFit(stable_id: []const u8, design: visual_geometry.FitDesign) visual_geometry.FitContract {
     var fit = visual_geometry.fitContract(design);
     if (std.mem.eql(u8, stable_id, "crimson_halter_top")) {
+        // Prompt 27C-R1's narrower registered female chest frame keeps the
+        // halter's declared chest/waist spans fitted without changing its
+        // source pixels or registration thresholds.
+        fit.female_front_scale_x = 0.555;
         fit.minimum_front_coverage = 0.90;
         fit.minimum_side_coverage = 0.82;
         // Profile halter art intentionally covers the anterior bust rather
@@ -156,11 +166,13 @@ fn lowerFit(stable_id: []const u8, design: visual_geometry.FitDesign) visual_geo
         // male profile enough authored width to enclose the pelvis core
         // during walk compression.
         fit.male_side_scale_x = 1.180;
+        fit.male_side_scale_y = 0.30;
     } else if (std.mem.eql(u8, stable_id, "velvet_mini_skirt")) {
         // The mini skirt's curved side seam and secondary motion need a small
         // female-profile clearance increase so the promised upper-pelvis
         // enclosure remains intact during rise and landing.
         fit.female_side_scale_x = 1.300;
+        fit.female_side_scale_y = 0.30;
     } else if (std.mem.eql(u8, stable_id, "ruby_day_dress_lower") or
         std.mem.eql(u8, stable_id, "ruby_fitted_pants"))
     {
@@ -182,6 +194,12 @@ fn lowerFit(stable_id: []const u8, design: visual_geometry.FitDesign) visual_geo
     return fit;
 }
 
+fn tailoredShortsFit() visual_geometry.FitContract {
+    var fit = visual_geometry.fitContract(.lower_shorts);
+    fit.female_front_scale_y = 0.30;
+    return fit;
+}
+
 pub const visual_specs = [_]VisualSpec{
     .{ .stable_id = "crimson_wide_brim_hat", .semantic = semantic(25_000), .anchor = .head, .authored_size = .{ 1.30, 0.72 }, .pivot = .{ 0.50, 0.32 }, .fit = wideHatFit() },
     .{ .stable_id = "moon_ear_headband", .semantic = semantic(25_001), .anchor = .head, .authored_size = .{ 0.84, 1.02 }, .pivot = .{ 0.50, 0.808 }, .fit = visual_geometry.fitContract(.headwear_band) },
@@ -189,12 +207,12 @@ pub const visual_specs = [_]VisualSpec{
     .{ .stable_id = "rose_pillbox_hat", .semantic = semantic(25_003), .anchor = .head, .authored_size = .{ 0.64, 0.30 }, .pivot = .{ 0.50, 0.74 }, .fit = visual_geometry.fitContract(.headwear_fitted) },
     .{ .stable_id = "crimson_halter_top", .semantic = semantic(25_004), .anchor = .torso, .authored_size = .{ 0.905, 1.22 }, .side_authored_size = .{ 0.869, 1.22 }, .pivot = .{ 0.50, 0.50 }, .side_pivot = .{ 0.641, 0.50 }, .fit = torsoFit("crimson_halter_top", .torso_sleeveless) },
     .{ .stable_id = "garnet_wrap_bodice", .semantic = semantic(25_005), .anchor = .torso, .authored_size = .{ 0.928, 1.22 }, .side_authored_size = .{ 0.818, 1.22 }, .pivot = .{ 0.50, 0.50 }, .side_pivot = .{ 0.780, 0.50 }, .fit = torsoFit("garnet_wrap_bodice", .torso_sleeveless) },
-    .{ .stable_id = "scarlet_sport_top", .semantic = semantic(25_006), .anchor = .torso, .authored_size = .{ 0.917, 1.10 }, .side_authored_size = .{ 0.831, 1.10 }, .pivot = .{ 0.493, 0.41 }, .side_pivot = .{ 0.578, 0.41 }, .female_front_pivot_y = 0.427, .fit = torsoFit("scarlet_sport_top", .torso_sleeveless) },
+    .{ .stable_id = "scarlet_sport_top", .semantic = semantic(25_006), .anchor = .torso, .authored_size = .{ 0.917, 1.10 }, .side_authored_size = .{ 0.831, 1.10 }, .pivot = .{ 0.493, 0.41 }, .side_pivot = .{ 0.512, 0.41 }, .female_front_pivot_y = 0.427, .fit = torsoFit("scarlet_sport_top", .torso_sleeveless) },
     .{ .stable_id = "rose_romper_torso", .semantic = semantic(25_007), .anchor = .torso, .authored_size = .{ 0.877, 1.18 }, .side_authored_size = .{ 0.780, 1.18 }, .pivot = .{ 0.50, 0.470 }, .side_pivot = .{ 0.546, 0.470 }, .fit = torsoFit("rose_romper_torso", .torso_sleeveless) },
-    .{ .stable_id = "crimson_cardigan_torso", .semantic = semantic(25_008), .anchor = .torso, .authored_size = .{ 0.928, 1.24 }, .side_authored_size = .{ 0.869, 1.24 }, .pivot = .{ 0.504, 0.50 }, .side_pivot = .{ 0.595, 0.50 }, .fit = visual_geometry.fitContract(.torso_outer) },
-    .{ .stable_id = "ivory_blouse_torso", .semantic = semantic(25_009), .anchor = .torso, .authored_size = .{ 0.869, 1.22 }, .side_authored_size = .{ 0.838, 1.22 }, .pivot = .{ 0.504, 0.500 }, .side_pivot = .{ 0.615, 0.479 }, .fit = torsoFit("ivory_blouse_torso", .torso_sleeveless) },
+    .{ .stable_id = "crimson_cardigan_torso", .semantic = semantic(25_008), .anchor = .torso, .authored_size = .{ 0.928, 1.24 }, .side_authored_size = .{ 0.869, 1.24 }, .pivot = .{ 0.504, 0.50 }, .side_pivot = .{ 0.551, 0.50 }, .fit = visual_geometry.fitContract(.torso_outer) },
+    .{ .stable_id = "ivory_blouse_torso", .semantic = semantic(25_009), .anchor = .torso, .authored_size = .{ 0.869, 1.22 }, .side_authored_size = .{ 0.838, 1.22 }, .pivot = .{ 0.504, 0.500 }, .side_pivot = .{ 0.570, 0.479 }, .fit = torsoFit("ivory_blouse_torso", .torso_sleeveless) },
     .{ .stable_id = "ruby_day_dress_torso", .semantic = semantic(25_010), .anchor = .torso, .authored_size = .{ 0.927, 1.20 }, .side_authored_size = .{ 0.765, 1.20 }, .pivot = .{ 0.668, 0.477 }, .side_pivot = .{ 0.472, 0.477 }, .fit = torsoFit("ruby_day_dress_torso", .torso_sleeveless) },
-    .{ .stable_id = "crimson_strap_shoe", .semantic = semantic(25_011), .anchor = .foot, .authored_size = .{ 0.364, 0.36 }, .side_authored_size = .{ 0.455, 0.36 }, .pivot = .{ 0.70, 0.62 }, .side_pivot = .{ 0.763, 0.62 }, .fit = visual_geometry.fitContract(.shoe_strap) },
+    .{ .stable_id = "crimson_strap_shoe", .semantic = semantic(25_011), .anchor = .foot, .authored_size = .{ 0.364, 0.36 }, .side_authored_size = .{ 0.455, 0.36 }, .pivot = .{ 0.70, 0.62 }, .side_pivot = .{ 0.763, 0.62 }, .base_visual_policy = .suppress_covered_foot_pixels, .exposed_anatomy_anchor = .ankle, .fit = visual_geometry.fitContract(.shoe_strap) },
 
     .{ .stable_id = "velvet_puff_blouse_torso", .semantic = semantic(25_012), .anchor = .torso, .authored_size = .{ 0.804, 1.24 }, .side_authored_size = .{ 0.806, 1.24 }, .pivot = .{ 0.504, 0.50 }, .side_pivot = .{ 0.442, 0.50 }, .fit = torsoFit("velvet_puff_blouse_torso", .torso_sleeveless) },
     .{ .stable_id = "crimson_one_shoulder_top", .semantic = semantic(25_013), .anchor = .torso, .authored_size = .{ 1.067, 1.20 }, .side_authored_size = .{ 0.926, 1.20 }, .pivot = .{ 0.816, 0.478 }, .side_pivot = .{ 0.540, 0.478 }, .fit = torsoFit("crimson_one_shoulder_top", .torso_sleeveless) },
@@ -209,11 +227,11 @@ pub const visual_specs = [_]VisualSpec{
     .{ .stable_id = "ribbon_waist_sash", .semantic = semantic(25_022), .anchor = .waist, .authored_size = .{ 0.836, 0.48 }, .side_authored_size = .{ 0.759, 0.48 }, .pivot = .{ 0.50, 0.45 }, .fit = visual_geometry.fitContract(.waist_sash) },
     .{ .stable_id = "ebony_waist_belt", .semantic = semantic(25_023), .anchor = .waist, .authored_size = .{ 0.827, 0.25 }, .side_authored_size = .{ 0.745, 0.25 }, .pivot = .{ 0.50, 0.50 }, .fit = visual_geometry.fitContract(.waist_belt) },
 
-    .{ .stable_id = "crimson_tailored_shorts", .semantic = semantic(25_024), .anchor = .pelvis, .authored_size = .{ 0.797, 0.68 }, .side_authored_size = .{ 0.727, 0.68 }, .pivot = .{ 0.50, 0.10 }, .male_front_pivot_y = 0.071, .female_front_pivot_y = 0.430, .male_side_pivot_y = 0.287, .female_side_pivot_y = 0.271, .fit = visual_geometry.fitContract(.lower_shorts) },
-    .{ .stable_id = "scarlet_sport_shorts", .semantic = semantic(25_025), .anchor = .pelvis, .authored_size = .{ 0.790, 0.64 }, .side_authored_size = .{ 0.713, 0.67 }, .pivot = .{ 0.50, 0.06 }, .male_front_pivot_y = 0.016, .female_front_pivot_y = 0.396, .male_side_pivot_y = 0.246, .female_side_pivot_y = 0.230, .fit = lowerFit("scarlet_sport_shorts", .lower_shorts) },
+    .{ .stable_id = "crimson_tailored_shorts", .semantic = semantic(25_024), .anchor = .pelvis, .authored_size = .{ 0.797, 0.68 }, .side_authored_size = .{ 0.727, 0.68 }, .pivot = .{ 0.50, 0.10 }, .male_front_pivot_y = 0.071, .female_front_pivot_y = 0.937, .male_side_pivot_y = 0.287, .female_side_pivot_y = 0.271, .fit = tailoredShortsFit() },
+    .{ .stable_id = "scarlet_sport_shorts", .semantic = semantic(25_025), .anchor = .pelvis, .authored_size = .{ 0.790, 0.64 }, .side_authored_size = .{ 0.713, 0.67 }, .pivot = .{ 0.50, 0.06 }, .male_front_pivot_y = 0.016, .female_front_pivot_y = 0.396, .male_side_pivot_y = 0.937, .female_side_pivot_y = 0.230, .fit = lowerFit("scarlet_sport_shorts", .lower_shorts) },
     .{ .stable_id = "rose_romper_lower", .semantic = semantic(25_026), .anchor = .pelvis, .authored_size = .{ 0.793, 0.68 }, .side_authored_size = .{ 0.712, 0.68 }, .pivot = .{ 0.50, 0.07 }, .male_front_pivot_y = 0.064, .female_front_pivot_y = 0.420, .male_side_pivot_y = 0.289, .female_side_pivot_y = 0.274, .fit = visual_geometry.fitContract(.lower_shorts) },
     .{ .stable_id = "ruby_day_dress_lower", .semantic = semantic(25_027), .anchor = .pelvis, .authored_size = .{ 0.844, 1.42 }, .side_authored_size = .{ 0.770, 1.42 }, .pivot = .{ 0.50, 0.62 }, .male_front_pivot_y = 0.525, .female_front_pivot_y = 0.697, .male_side_pivot_y = 0.629, .female_side_pivot_y = 0.621, .fit = lowerFit("ruby_day_dress_lower", .lower_long) },
-    .{ .stable_id = "velvet_mini_skirt", .semantic = semantic(25_028), .anchor = .pelvis, .authored_size = .{ 0.814, 0.72 }, .side_authored_size = .{ 0.733, 0.75 }, .pivot = .{ 0.50, 0.10 }, .male_front_pivot_y = 0.115, .female_front_pivot_y = 0.460, .male_side_pivot_y = 0.323, .female_side_pivot_y = 0.308, .fit = lowerFit("velvet_mini_skirt", .lower_mini) },
+    .{ .stable_id = "velvet_mini_skirt", .semantic = semantic(25_028), .anchor = .pelvis, .authored_size = .{ 0.814, 0.72 }, .side_authored_size = .{ 0.733, 0.75 }, .pivot = .{ 0.50, 0.10 }, .male_front_pivot_y = 0.115, .female_front_pivot_y = 0.460, .male_side_pivot_y = 0.323, .female_side_pivot_y = 0.920, .fit = lowerFit("velvet_mini_skirt", .lower_mini) },
     .{ .stable_id = "crimson_highwaist_pants", .semantic = semantic(25_029), .anchor = .pelvis, .authored_size = .{ 0.798, 1.62 }, .side_authored_size = .{ 0.713, 1.62 }, .pivot = .{ 0.50, 0.58 }, .male_front_pivot_y = 0.574, .female_front_pivot_y = 0.736, .male_side_pivot_y = 0.676, .female_side_pivot_y = 0.669, .fit = lowerFit("crimson_highwaist_pants", .lower_pants) },
     .{ .stable_id = "ruby_fitted_pants", .semantic = semantic(25_030), .anchor = .pelvis, .authored_size = .{ 0.810, 1.62 }, .side_authored_size = .{ 0.741, 1.62 }, .pivot = .{ 0.50, 0.58 }, .male_front_pivot_y = 0.577, .female_front_pivot_y = 0.729, .male_side_pivot_y = 0.669, .female_side_pivot_y = 0.662, .fit = lowerFit("ruby_fitted_pants", .lower_pants) },
     .{ .stable_id = "ivory_side_laced_shorts", .semantic = semantic(25_031), .anchor = .pelvis, .authored_size = .{ 0.780, 0.70 }, .side_authored_size = .{ 0.713, 0.70 }, .pivot = .{ 0.50, 0.10 }, .male_front_pivot_y = 0.100, .female_front_pivot_y = 0.437, .male_side_pivot_y = 0.300, .female_side_pivot_y = 0.285, .fit = visual_geometry.fitContract(.lower_shorts) },
@@ -341,6 +359,11 @@ pub const Catalog = struct {
 
         var components: [visual_count]equipment.VisualComponentInput = undefined;
         for (visual_specs, 0..) |spec, index| {
+            if (spec.base_visual_policy == .suppress_covered_foot_pixels and
+                (spec.anchor != .foot or spec.exposed_anatomy_anchor != .ankle))
+            {
+                return error.InvalidClosedFootwearCoveragePolicy;
+            }
             const is_skirt = spec.semantic == semantic(25_032);
             const is_loose_sleeve = spec.semantic == semantic(25_016) or
                 spec.semantic == semantic(25_017) or

@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const c = @import("sdl").c;
 const fault_injection = @import("fault_injection");
 const sprite = @import("sprite_batch");
@@ -39,6 +40,7 @@ const diagnostics = @import("diagnostics");
 const debug_draw = @import("debug_draw");
 const visual_geometry = @import("visual_geometry");
 const visual_geometry_overlay = @import("visual_geometry_overlay");
+const visual_truth = @import("visual_truth");
 const anatomy_evidence = @import("anatomy_evidence");
 
 pub const DemoMode = enum {
@@ -110,6 +112,17 @@ const p27b_capture_directory = "zig-out/p27b_evidence/candidate";
 const p27b_capture_count: u32 = 4;
 const p27c_capture_directory = "zig-out/p27c_evidence/candidate";
 const p27c_capture_count: u32 = @intCast(anatomy_evidence.capture_count);
+const manual_capture_directory = "zig-out/manual_debug_captures";
+const manual_capture_asset_paths = [_][]const u8{
+    "assets/art/p27c_male_base_anatomy_atlas.png",
+    "assets/art/p27c_female_base_anatomy_atlas.png",
+    "assets/art/p27c_anatomy_components_atlas.png",
+    "assets/art/p25_wardrobe_upper_atlas.png",
+    "assets/art/p25_wardrobe_layers_atlas.png",
+    "assets/art/p25_wardrobe_lower_atlas.png",
+    "assets/art/p26_violet_crystal_ruin_atlas.png",
+    "assets/art/p26_neutral_debug_atlas.png",
+};
 
 fn environmentCapturePath(frame: u32) ?[]const u8 {
     return switch (frame) {
@@ -399,6 +412,8 @@ pub const GpuDemo = struct {
     art_texture_page_count: usize = 0,
     image_decode_metrics: image_decode.Metrics = .{},
     visual_captures_written: u32 = 0,
+    manual_capture_next_index: u64 = 0,
+    manual_captures_written: u64 = 0,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -583,6 +598,7 @@ pub const GpuDemo = struct {
         try std.Io.Dir.cwd().createDirPath(self.io, environment_capture_directory);
         try std.Io.Dir.cwd().createDirPath(self.io, foundation_capture_directory);
         try std.Io.Dir.cwd().createDirPath(self.io, p27b_capture_directory);
+        try std.Io.Dir.cwd().createDirPath(self.io, manual_capture_directory);
         if (geometry_debug) {
             try std.Io.Dir.cwd().createDirPath(self.io, geometry_debug_capture_directory);
         }
@@ -978,7 +994,15 @@ pub const GpuDemo = struct {
         }
     }
 
-    pub fn runVisible(self: *GpuDemo, maximum_frames: ?u32, mode: DemoMode, scripted_input_enabled: bool, integrated_debug_enabled: bool, interactive_enabled: bool) !void {
+    pub fn runVisible(
+        self: *GpuDemo,
+        maximum_frames: ?u32,
+        mode: DemoMode,
+        scripted_input_enabled: bool,
+        integrated_debug_enabled: bool,
+        interactive_enabled: bool,
+        registration_proof_case: ?visual_foundation.RegistrationProofCase,
+    ) !void {
         self.visible_camera = camera2d.Camera2D.initDefault();
         if (self.drawable_available) try self.visible_camera.setViewport(self.drawable_width, self.drawable_height);
         const camera_follower = try camera2d.HorizontalFollower.init(3.25);
@@ -1015,8 +1039,11 @@ pub const GpuDemo = struct {
         defer if (breathing_scene) |*scene| scene.deinit();
         var mesh_attachment_scene: ?mesh_attachment_demo.Scene = null;
         defer if (mesh_attachment_scene) |*scene| scene.deinit();
-        var foundation_scene: ?visual_foundation.Scene = null;
-        defer if (foundation_scene) |*scene| scene.deinit();
+        var foundation_scene: ?*visual_foundation.Scene = null;
+        defer if (foundation_scene) |scene| {
+            scene.deinit();
+            self.allocator.destroy(scene);
+        };
         var art_scene: ?art_asset_demo.Scene = null;
         defer if (art_scene) |*scene| scene.deinit();
         var character_presentation_scene: ?character_presentation_demo.Scene = null;
@@ -1154,14 +1181,25 @@ pub const GpuDemo = struct {
         }
         if (mode == .foundation) {
             if (scripted_input_enabled == interactive_enabled) return error.FoundationRequiresExactlyOneInputMode;
-            foundation_scene = try visual_foundation.Scene.init(
-                humanoid_allocator.allocator(),
-                if (scripted_input_enabled)
-                    .enforce_acceptance
-                else
-                    .measure_only,
+            const allocated_foundation_scene =
+                try self.allocator.create(visual_foundation.Scene);
+            errdefer self.allocator.destroy(allocated_foundation_scene);
+            allocated_foundation_scene.* =
+                try visual_foundation.Scene.initWithDiagnosticAllocator(
+                    humanoid_allocator.allocator(),
+                    self.allocator,
+                    if (scripted_input_enabled)
+                        .enforce_acceptance
+                    else
+                        .measure_only,
+                );
+            foundation_scene = allocated_foundation_scene;
+            if (registration_proof_case) |proof_case| {
+                try foundation_scene.?.applyRegistrationProofCase(proof_case);
+            }
+            foundation_scene.?.setDebugMode(
+                if (integrated_debug_enabled) .all_diagnostics else .off,
             );
-            foundation_scene.?.integrated.detailed_debug_enabled = integrated_debug_enabled;
             if (!scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.FoundationInitializationCreatedGpuResources;
@@ -1186,7 +1224,7 @@ pub const GpuDemo = struct {
             try self.ensureGpuCapacity(render_queue.default_sprite_capacity, null);
             const definitions = foundation_scene.?.meshDefinitions();
             try self.initializeMeshRendering(&definitions);
-            if (scripted_input_enabled) try self.initializeVisualCaptureTransfer(false);
+            try self.initializeVisualCaptureTransfer(false);
         }
         if (mode == .art_assets) {
             art_scene = try art_asset_demo.Scene.init(humanoid_allocator.allocator(), 1);
@@ -1762,7 +1800,7 @@ pub const GpuDemo = struct {
                     humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
                 .foundation => {
-                    const scene = &foundation_scene.?;
+                    const scene = foundation_scene.?;
                     const now_ticks_ns = c.SDL_GetTicksNS();
                     const measured_delta = @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;
                     last_ticks_ns = now_ticks_ns;
@@ -1904,6 +1942,217 @@ pub const GpuDemo = struct {
             const rendered = if (usesUnifiedRendering(mode)) unified: {
                 var prepared = self.unified_queue.?.prepare();
                 if (mode == .foundation) {
+                    if (foundation_scene.?.takeManualCaptureRequest()) {
+                        const scene = foundation_scene.?;
+                        try scene.bindTruthRenderFrame(frame);
+                        const simulation_tick_before =
+                            scene.integrated.production.simulation_tick;
+                        const authoritative_before =
+                            scene.truth_snapshot.authoritative_fingerprint;
+                        const presentation_before =
+                            scene.truth_snapshot.presentation_fingerprint;
+                        const capture_before =
+                            scene.truth_snapshot.capture_fingerprint;
+                        const live_authoritative_before =
+                            scene.authoritativeInteractionFingerprint();
+                        var timestamp_buffer: [32]u8 = undefined;
+                        const timestamp = try visual_truth.utcTimestamp(
+                            self.io,
+                            &timestamp_buffer,
+                        );
+                        var bundle = try visual_truth.Bundle.begin(
+                            self.io,
+                            manual_capture_directory,
+                            timestamp,
+                            self.manual_capture_next_index,
+                        );
+                        var clean_path_buffer: [384]u8 = undefined;
+                        const clean_path = try bundle.filePath(
+                            &clean_path_buffer,
+                            "clean.png",
+                        );
+                        try self.captureUnifiedToPng(prepared, clean_path);
+                        _ = try scene.submitManualTruthOverlay(
+                            &self.unified_queue.?,
+                        );
+                        prepared = self.unified_queue.?.prepare();
+                        var debug_path_buffer: [384]u8 = undefined;
+                        const debug_path = try bundle.filePath(
+                            &debug_path_buffer,
+                            "debug.png",
+                        );
+                        try self.captureUnifiedToPng(prepared, debug_path);
+                        const live_authoritative_after =
+                            scene.authoritativeInteractionFingerprint();
+                        const simulation_tick_after =
+                            scene.integrated.production.simulation_tick;
+                        try scene.refreshTruthSnapshot(frame);
+                        const authoritative_after =
+                            scene.truth_snapshot.authoritative_fingerprint;
+                        const presentation_after =
+                            scene.truth_snapshot.presentation_fingerprint;
+                        const capture_after =
+                            scene.truth_snapshot.capture_fingerprint;
+                        if (live_authoritative_before != live_authoritative_after or
+                            simulation_tick_before != simulation_tick_after or
+                            authoritative_before != authoritative_after or
+                            presentation_before != presentation_after or
+                            capture_before != capture_after)
+                        {
+                            return error.ManualCaptureStateChanged;
+                        }
+                        const git_head_result = try std.process.run(
+                            self.allocator,
+                            self.io,
+                            .{
+                                .argv = &.{
+                                    "git",
+                                    "-c",
+                                    "safe.directory=C:/Users/Chad/Documents/2d Renderer",
+                                    "rev-parse",
+                                    "HEAD",
+                                },
+                                .stdout_limit = .limited(4096),
+                                .stderr_limit = .limited(4096),
+                            },
+                        );
+                        defer {
+                            self.allocator.free(git_head_result.stdout);
+                            self.allocator.free(git_head_result.stderr);
+                        }
+                        try requireSuccessfulProcess(
+                            git_head_result.term,
+                            "git rev-parse HEAD",
+                            git_head_result.stderr,
+                        );
+                        const git_status_result = try std.process.run(
+                            self.allocator,
+                            self.io,
+                            .{
+                                .argv = &.{
+                                    "git",
+                                    "-c",
+                                    "safe.directory=C:/Users/Chad/Documents/2d Renderer",
+                                    "status",
+                                    "--porcelain=v1",
+                                    "--untracked-files=all",
+                                },
+                                .stdout_limit = .limited(1024 * 1024),
+                                .stderr_limit = .limited(4096),
+                            },
+                        );
+                        defer {
+                            self.allocator.free(git_status_result.stdout);
+                            self.allocator.free(git_status_result.stderr);
+                        }
+                        try requireSuccessfulProcess(
+                            git_status_result.term,
+                            "git status --porcelain=v1 --untracked-files=all",
+                            git_status_result.stderr,
+                        );
+                        const dirty = parseGitDirty(git_status_result.stdout);
+                        const driver_pointer = c.SDL_GetGPUDeviceDriver(
+                            self.device.?,
+                        ) orelse return failSdl(
+                            "SDL_GetGPUDeviceDriver(manual capture)",
+                            error.GpuDeviceCreationFailure,
+                        );
+                        const driver = std.mem.span(
+                            @as([*:0]const u8, @ptrCast(driver_pointer)),
+                        );
+                        var argument_buffer: [128]u8 = undefined;
+                        var proof_argument_buffer: [64]u8 = undefined;
+                        const proof_argument = if (registration_proof_case) |proof_case|
+                            try std.fmt.bufPrint(
+                                &proof_argument_buffer,
+                                " --registration-proof-case {s}",
+                                .{proof_case.cliName()},
+                            )
+                        else
+                            "";
+                        const arguments = try std.fmt.bufPrint(
+                            &argument_buffer,
+                            "--demo foundation {s}{s}{s}",
+                            .{
+                                if (scripted_input_enabled)
+                                    "--scripted-input"
+                                else
+                                    "--interactive",
+                                if (integrated_debug_enabled)
+                                    " --debug-visualization"
+                                else
+                                    "",
+                                proof_argument,
+                            },
+                        );
+                        const provenance = visual_truth.CaptureProvenance{
+                            .utc_timestamp = timestamp,
+                            .capture_index = bundle.capture_index,
+                            .git_head = std.mem.trim(
+                                u8,
+                                git_head_result.stdout,
+                                " \t\r\n",
+                            ),
+                            .staged_dirty = dirty.staged,
+                            .unstaged_dirty = dirty.unstaged,
+                            .untracked_dirty = dirty.untracked,
+                            .build_configuration = @tagName(builtin.mode),
+                            .executable_arguments = arguments,
+                            .gpu_driver = driver,
+                            .shader_format = "DXIL",
+                            .clean_render_frame = frame,
+                            .debug_render_frame = frame,
+                            .clean_simulation_tick = simulation_tick_before,
+                            .debug_simulation_tick = simulation_tick_after,
+                            .authoritative_before = authoritative_before,
+                            .authoritative_after = authoritative_after,
+                            .presentation_before = presentation_before,
+                            .presentation_after = presentation_after,
+                            .capture_before = capture_before,
+                            .capture_after = capture_after,
+                        };
+                        try bundle.writeStateJson(
+                            self.io,
+                            scene.truth_snapshot,
+                            provenance,
+                        );
+                        try bundle.writeSummary(
+                            self.io,
+                            scene.truth_snapshot,
+                            provenance,
+                            scene.truth_category_counts,
+                        );
+                        var source_assets: [manual_capture_asset_paths.len]visual_truth.SourceAssetEvidence =
+                            undefined;
+                        for (manual_capture_asset_paths, 0..) |path, index| {
+                            source_assets[index] = try visual_truth.hashSourceAsset(
+                                self.allocator,
+                                self.io,
+                                path,
+                            );
+                        }
+                        try bundle.finalize(
+                            self.allocator,
+                            self.io,
+                            scene.truth_snapshot,
+                            provenance,
+                            &source_assets,
+                        );
+                        self.manual_capture_next_index = std.math.add(
+                            u64,
+                            bundle.capture_index,
+                            1,
+                        ) catch return error.ManualCaptureIndexOverflow;
+                        self.manual_captures_written = std.math.add(
+                            u64,
+                            self.manual_captures_written,
+                            1,
+                        ) catch return error.ManualCaptureCountOverflow;
+                        std.log.info(
+                            "manual visual-truth bundle finalized: {s}",
+                            .{bundle.finalDirectory()},
+                        );
+                    }
                     if (scripted_input_enabled) {
                         const observation = try foundation_scene.?.captureObservation(
                             &foundation_sequence,
@@ -1974,7 +2223,7 @@ pub const GpuDemo = struct {
                         {
                             const female_bounds =
                                 try foundation_coherence.traceCharacterBounds(
-                                    &foundation_scene.?.visual_trace,
+                                    foundation_scene.?.visual_trace,
                                     foundation_scene.?.integrated.production
                                         .female.id.raw(),
                                 );
@@ -3591,7 +3840,7 @@ pub const GpuDemo = struct {
                 return error.WardrobeRenderingEvidenceIncomplete;
             }
         } else if (mode == .foundation) {
-            const scene = &foundation_scene.?;
+            const scene = foundation_scene.?;
             if (scripted_input_enabled) {
                 if (self.resource_metrics.frames_rendered != visual_foundation.required_frames) {
                     return error.FoundationFrameCountMismatch;
@@ -4192,6 +4441,109 @@ pub const GpuDemo = struct {
             .mean_channel = @as(f64, @floatFromInt(channel_sum)) /
                 @as(f64, @floatFromInt(payload_bytes)),
         };
+    }
+
+    fn captureUnifiedToPng(
+        self: *GpuDemo,
+        prepared: render_queue.PreparedQueue,
+        path: []const u8,
+    ) !void {
+        const transfer = self.visual_capture_transfer orelse
+            return error.VisualCaptureTransferNotInitialized;
+        const row_pitch = alignForward(target_width * 4, 256);
+        if (prepared.sprites.len > self.gpu_instance_capacity) {
+            return error.GpuInstanceCapacityExceeded;
+        }
+        if (prepared.meshes.len > render_queue.default_mesh_capacity) {
+            return error.MeshInstanceCapacityExceeded;
+        }
+
+        const slot_index = try self.acquireFrameSlot();
+        try self.populateInstanceTransfer(slot_index, prepared.sprites);
+        try self.populateMeshInstanceTransfer(slot_index, prepared.meshes);
+        const command = c.SDL_AcquireGPUCommandBuffer(self.device.?) orelse
+            return failSdl(
+                "SDL_AcquireGPUCommandBuffer(manual visual-truth capture)",
+                error.PipelineResourceBindingFailure,
+            );
+        var command_active = true;
+        errdefer if (command_active) {
+            if (!c.SDL_CancelGPUCommandBuffer(command)) {
+                std.log.err(
+                    "SDL_CancelGPUCommandBuffer(manual visual-truth capture): {s}",
+                    .{sdlErrorText()},
+                );
+            }
+        };
+        _ = try self.encodeUnifiedQueue(
+            command,
+            slot_index,
+            prepared,
+            self.render_target.?,
+            self.offscreen_pipeline.?,
+            self.mesh_offscreen_pipeline,
+            self.visible_camera,
+            false,
+            false,
+        );
+        const copy_pass = c.SDL_BeginGPUCopyPass(command);
+        if (copy_pass == null) {
+            return failSdl(
+                "SDL_BeginGPUCopyPass(manual visual-truth capture)",
+                error.UploadFailure,
+            );
+        }
+        const source = c.SDL_GPUTextureRegion{
+            .texture = self.render_target.?,
+            .mip_level = 0,
+            .layer = 0,
+            .x = 0,
+            .y = 0,
+            .z = 0,
+            .w = target_width,
+            .h = target_height,
+            .d = 1,
+        };
+        const destination = c.SDL_GPUTextureTransferInfo{
+            .transfer_buffer = transfer,
+            .offset = 0,
+            .pixels_per_row = row_pitch / 4,
+            .rows_per_layer = target_height,
+        };
+        c.SDL_DownloadFromGPUTexture(copy_pass.?, &source, &destination);
+        c.SDL_EndGPUCopyPass(copy_pass.?);
+        const fence = c.SDL_SubmitGPUCommandBufferAndAcquireFence(command);
+        command_active = false;
+        if (fence == null) {
+            return failSdl(
+                "SDL_SubmitGPUCommandBufferAndAcquireFence(manual visual-truth capture)",
+                error.FrameFenceAcquisitionFailure,
+            );
+        }
+        self.resource_metrics.fence_acquisitions += 1;
+        try self.waitReleaseStandaloneFence(fence.?);
+        self.current_frame_slot = (slot_index + 1) % frame_slot_count;
+
+        const mapped = c.SDL_MapGPUTransferBuffer(
+            self.device.?,
+            transfer,
+            false,
+        ) orelse return failSdl(
+            "SDL_MapGPUTransferBuffer(manual visual-truth capture)",
+            error.ReadbackFailure,
+        );
+        defer c.SDL_UnmapGPUTransferBuffer(self.device.?, transfer);
+        const rgba: [*]const u8 = @ptrCast(mapped);
+        var file = try std.Io.Dir.cwd().createFile(self.io, path, .{});
+        defer file.close(self.io);
+        try visual_truth.writeRgbaPng(
+            &file,
+            self.io,
+            rgba,
+            target_width,
+            target_height,
+            row_pitch,
+        );
     }
 
     fn writeFoundationEvidence(
@@ -5375,6 +5727,47 @@ fn colorNear(actual: [4]u8, expected: [4]u8, tolerance: u8) bool {
         if (difference > tolerance) return false;
     }
     return true;
+}
+
+const GitDirty = struct {
+    staged: bool = false,
+    unstaged: bool = false,
+    untracked: bool = false,
+};
+
+fn parseGitDirty(output: []const u8) GitDirty {
+    var result = GitDirty{};
+    var lines = std.mem.splitScalar(u8, output, '\n');
+    while (lines.next()) |line| {
+        if (line.len < 2) continue;
+        if (line[0] == '?' and line[1] == '?') {
+            result.untracked = true;
+            continue;
+        }
+        if (line[0] != ' ' and line[0] != '?') result.staged = true;
+        if (line[1] != ' ' and line[1] != '?') result.unstaged = true;
+    }
+    return result;
+}
+
+fn requireSuccessfulProcess(
+    term: std.process.Child.Term,
+    operation: []const u8,
+    stderr: []const u8,
+) !void {
+    switch (term) {
+        .exited => |code| if (code != 0) {
+            std.log.err(
+                "{s} exited with code {d}: {s}",
+                .{ operation, code, std.mem.trim(u8, stderr, " \t\r\n") },
+            );
+            return error.ManualCaptureProvenanceCommandFailed;
+        },
+        else => {
+            std.log.err("{s} terminated abnormally", .{operation});
+            return error.ManualCaptureProvenanceCommandFailed;
+        },
+    }
 }
 
 fn sdlErrorText() []const u8 {

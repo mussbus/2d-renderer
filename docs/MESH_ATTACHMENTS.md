@@ -88,3 +88,8 @@ while body, equipment, environment, standable-edge, and debug sprites remain
 in the same `UnifiedRenderQueue`. The two topology definitions and their GPU
 buffers persist across all outfit and theme changes; the route reports zero
 post-stabilization GPU-resource growth.
+
+VF-02 validates a `mesh_bridge` registration definition as an explicit future
+schema boundary, but migrates no production garment mesh. Existing deformable
+mesh topology, deformation, resource lifetime, and unified-queue submission
+remain unchanged and are classified compatibility placement in VF-01 output.

@@ -199,7 +199,7 @@ pub fn traceCharacterBounds(
     var result: ?Bounds = null;
     var record_count: u32 = 0;
     for (trace.slice()) |record| {
-        if (record.character_id != character_id) continue;
+        if (record.character_id != character_id or !record.isRendered()) continue;
         if (record.mesh) |mesh_trace| {
             for (mesh_trace.vertices[0..mesh_trace.vertex_count]) |vertex| {
                 try includeOptional(&result, vertex.world);
@@ -471,6 +471,7 @@ pub fn groundAlignment(
     var selected: [2]?visual_geometry.TraceRecord = .{ null, null };
     for (trace.slice()) |record| {
         if (record.character_id != character_id or
+            !record.isRendered() or
             (record.role != .foot and record.role != .shoe) or
             record.side == .none)
         {
@@ -524,24 +525,40 @@ pub fn translateCharacterSubmissions(
     }
     for (trace.sliceMutable()) |*record| {
         if (record.character_id != character_id) continue;
-        if (record.submission_index == std.math.maxInt(u32)) {
-            return error.MissingProductionSubmissionIdentity;
-        }
-        const index: usize = @intCast(record.submission_index);
         record.request.world_position[0] += translation.x;
         record.request.world_position[1] += translation.y;
+        if (record.registration) |*registration| {
+            for (registration.points[0..registration.point_count]) |*point| {
+                point.target_world = point.target_world.add(translation);
+                point.transformed_world = point.transformed_world.add(translation);
+            }
+            if (registration.axis) |*axis| {
+                axis.transformed_start_world =
+                    axis.transformed_start_world.add(translation);
+                axis.transformed_end_world =
+                    axis.transformed_end_world.add(translation);
+                axis.expected_end_world = axis.expected_end_world.add(translation);
+            }
+        }
         if (record.world_geometry) |*geometry| {
             for (geometry.landmarks[0..geometry.landmark_count]) |*landmark| {
                 landmark.world = landmark.world.add(translation);
             }
         }
         if (record.mesh) |*mesh_trace| {
-            if (index >= queue.mesh_count) return error.InvalidMeshSubmissionIdentity;
-            queue.mesh_submissions[index].gpu_instance.world_translation[0] += translation.x;
-            queue.mesh_submissions[index].gpu_instance.world_translation[1] += translation.y;
             for (mesh_trace.vertices[0..mesh_trace.vertex_count]) |*vertex| {
                 vertex.world = vertex.world.add(translation);
             }
+        }
+        if (!record.isRendered()) continue;
+        if (record.submission_index == std.math.maxInt(u32)) {
+            return error.MissingProductionSubmissionIdentity;
+        }
+        const index: usize = @intCast(record.submission_index);
+        if (record.mesh != null) {
+            if (index >= queue.mesh_count) return error.InvalidMeshSubmissionIdentity;
+            queue.mesh_submissions[index].gpu_instance.world_translation[0] += translation.x;
+            queue.mesh_submissions[index].gpu_instance.world_translation[1] += translation.y;
         } else {
             if (index >= queue.sprite_count) return error.InvalidSpriteSubmissionIdentity;
             queue.sprite_submissions[index].world_position[0] += translation.x;

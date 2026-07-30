@@ -14,6 +14,7 @@ pub const KeyboardState = struct {
     f1: bool = false,
     f2: bool = false,
     f3: bool = false,
+    f4: bool = false,
     c: bool = false,
     v: bool = false,
     h: bool = false,
@@ -61,6 +62,7 @@ pub const FrameInputSnapshot = struct {
     debug_toggle: ButtonSnapshot,
     time_mode_cycle: ButtonSnapshot,
     single_step: ButtonSnapshot,
+    manual_debug_capture: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     body_preset_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     build_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
     hair_cycle: ButtonSnapshot = .{ .pressed = false, .held = false, .released = false },
@@ -95,6 +97,7 @@ pub const SnapshotBuilder = struct {
     previous_debug_toggle: bool = false,
     previous_time_mode_cycle: bool = false,
     previous_single_step: bool = false,
+    previous_manual_debug_capture: bool = false,
     previous_body_preset_cycle: bool = false,
     previous_build_cycle: bool = false,
     previous_hair_cycle: bool = false,
@@ -151,6 +154,7 @@ pub const SnapshotBuilder = struct {
             .debug_toggle = button(builder.previous_debug_toggle, effective_keyboard.f1),
             .time_mode_cycle = button(builder.previous_time_mode_cycle, effective_keyboard.f2),
             .single_step = button(builder.previous_single_step, effective_keyboard.f3),
+            .manual_debug_capture = button(builder.previous_manual_debug_capture, effective_keyboard.f4),
             .body_preset_cycle = button(builder.previous_body_preset_cycle, effective_keyboard.c),
             .build_cycle = button(builder.previous_build_cycle, effective_keyboard.v),
             .hair_cycle = button(builder.previous_hair_cycle, effective_keyboard.h),
@@ -169,6 +173,7 @@ pub const SnapshotBuilder = struct {
         builder.previous_debug_toggle = effective_keyboard.f1;
         builder.previous_time_mode_cycle = effective_keyboard.f2;
         builder.previous_single_step = effective_keyboard.f3;
+        builder.previous_manual_debug_capture = effective_keyboard.f4;
         builder.previous_body_preset_cycle = effective_keyboard.c;
         builder.previous_build_cycle = effective_keyboard.v;
         builder.previous_hair_cycle = effective_keyboard.h;
@@ -268,6 +273,7 @@ fn keyboardWithout(state: KeyboardState, blocked: KeyboardState) KeyboardState {
         .f1 = state.f1 and !blocked.f1,
         .f2 = state.f2 and !blocked.f2,
         .f3 = state.f3 and !blocked.f3,
+        .f4 = state.f4 and !blocked.f4,
         .c = state.c and !blocked.c,
         .v = state.v and !blocked.v,
         .h = state.h and !blocked.h,
@@ -293,6 +299,7 @@ fn keyboardUnion(left: KeyboardState, right: KeyboardState) KeyboardState {
         .f1 = left.f1 or right.f1,
         .f2 = left.f2 or right.f2,
         .f3 = left.f3 or right.f3,
+        .f4 = left.f4 or right.f4,
         .c = left.c or right.c,
         .v = left.v or right.v,
         .h = left.h or right.h,
@@ -318,6 +325,7 @@ fn keyboardIntersection(left: KeyboardState, right: KeyboardState) KeyboardState
         .f1 = left.f1 and right.f1,
         .f2 = left.f2 and right.f2,
         .f3 = left.f3 and right.f3,
+        .f4 = left.f4 and right.f4,
         .c = left.c and right.c,
         .v = left.v and right.v,
         .h = left.h and right.h,

@@ -4,11 +4,14 @@ const art_pack = @import("art_pack");
 const humanoid = @import("humanoid");
 const character = @import("character");
 const appearance = @import("appearance");
+const skeleton = @import("skeleton");
 const presentation_pose = @import("presentation_pose");
 const presentation_view = @import("presentation_view");
 const render_queue = @import("render_queue");
 const sprite = @import("sprite_batch");
 const visual_geometry = @import("visual_geometry");
+const visual_registration = @import("visual_registration");
+const image_decode = @import("image_decode");
 
 pub const male_page_id: art_pack.TexturePageId = @enumFromInt(41);
 pub const female_page_id: art_pack.TexturePageId = @enumFromInt(42);
@@ -28,6 +31,104 @@ pub const HairSelection = enum(u8) {
 
 pub const Garment = enum(u8) {
     training_vest,
+};
+
+pub const FootPixelPolicy = enum(u8) {
+    render,
+    suppress_covered_pixels,
+};
+
+pub const FootCoverage = struct {
+    left: FootPixelPolicy = .render,
+    right: FootPixelPolicy = .render,
+
+    fn forSlot(coverage: FootCoverage, slot: Slot) FootPixelPolicy {
+        return switch (slot) {
+            .left_foot => coverage.left,
+            .right_foot => coverage.right,
+            else => .render,
+        };
+    }
+};
+
+pub const FrontFootGroundPolicy = struct {
+    toe_out_degrees: f32,
+    /// Ground-plane lateral component. Negative is anatomical left and
+    /// positive is anatomical right.
+    lateral: f32,
+    /// Ground-plane depth component, retained as policy evidence. Front
+    /// projection discards it rather than treating it as world Y.
+    depth: f32,
+    /// Exact projected world-XY target consumed by registration.
+    projected_support_tangent: math.Vec2,
+};
+
+pub const RegisteredFoot = struct {
+    placement: visual_registration.Placement,
+    view: presentation_view.View,
+    orientation_target: visual_registration.PointAxisTarget,
+    front_ground_policy: ?FrontFootGroundPolicy = null,
+    heel_world: math.Vec2,
+    toe_world: math.Vec2,
+    sole_back_world: math.Vec2,
+    sole_front_world: math.Vec2,
+
+    /// Heel/toe are transformed evidence for the point binding's authored
+    /// orientation. They are not independent registration targets.
+    pub fn orientationAxis(foot: RegisteredFoot) math.Vec2 {
+        return foot.toe_world.sub(foot.heel_world);
+    }
+
+    /// Base anatomy and equipped footwear consume this exact target. It is
+    /// created by the base-foot registration result and is not reconstructed
+    /// from a second wardrobe placement formula.
+    pub fn pointAxisTarget(foot: RegisteredFoot) visual_registration.PointAxisTarget {
+        return foot.orientation_target;
+    }
+};
+
+pub const RegisteredFeet = struct {
+    left: ?RegisteredFoot = null,
+    right: ?RegisteredFoot = null,
+
+    pub fn begin(feet: *RegisteredFeet) void {
+        feet.* = .{};
+    }
+
+    pub fn forSide(
+        feet: RegisteredFeet,
+        side: visual_geometry.Side,
+    ) !RegisteredFoot {
+        return switch (side) {
+            .left => feet.left orelse error.MissingRegisteredAnatomyFoot,
+            .right => feet.right orelse error.MissingRegisteredAnatomyFoot,
+            .none => error.InvalidRegisteredAnatomyFootSide,
+        };
+    }
+
+    fn record(
+        feet: *RegisteredFeet,
+        slot: Slot,
+        foot: RegisteredFoot,
+    ) !void {
+        switch (slot) {
+            .left_foot => {
+                if (feet.left != null) return error.DuplicateRegisteredAnatomyFoot;
+                feet.left = foot;
+            },
+            .right_foot => {
+                if (feet.right != null) return error.DuplicateRegisteredAnatomyFoot;
+                feet.right = foot;
+            },
+            else => return error.InvalidRegisteredAnatomyFootSlot,
+        }
+    }
+
+    pub fn validateComplete(feet: RegisteredFeet) !void {
+        if (feet.left == null or feet.right == null) {
+            return error.IncompleteRegisteredAnatomyFeet;
+        }
+    }
 };
 
 const Slot = enum(u8) {
@@ -131,6 +232,70 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
 pub const region_inputs = makeRegionInputs();
 pub const binding_inputs = makeBindingInputs();
 
+const RegistrationAlphaEntry = struct {
+    region_id: art_pack.AtlasRegionId,
+    alpha: visual_geometry.AlphaGeometry,
+};
+
+const RegistrationAlphaCatalog = struct {
+    entries: [region_inputs.len]RegistrationAlphaEntry = undefined,
+    count: usize = 0,
+
+    fn init() !RegistrationAlphaCatalog {
+        var catalog = RegistrationAlphaCatalog{};
+        for (page_inputs) |page| {
+            var path_buffer: [256]u8 = undefined;
+            const path = try std.fmt.bufPrint(
+                &path_buffer,
+                "assets/{s}",
+                .{page.asset_path},
+            );
+            var decoded = try image_decode.decodePngFile(
+                std.heap.smp_allocator,
+                path,
+                null,
+            );
+            defer decoded.deinit();
+            for (region_inputs) |region| {
+                if (region.page_id != page.id) continue;
+                if (catalog.count == catalog.entries.len) {
+                    return error.RegistrationAlphaCatalogCapacityExceeded;
+                }
+                catalog.entries[catalog.count] = .{
+                    .region_id = region.id,
+                    .alpha = try visual_geometry.deriveAlphaGeometry(
+                        decoded.pixels,
+                        decoded.layout.width,
+                        decoded.layout.height,
+                        decoded.layout.row_bytes,
+                        .{
+                            .x = region.source.x,
+                            .y = region.source.y,
+                            .width = region.source.width,
+                            .height = region.source.height,
+                        },
+                    ),
+                };
+                catalog.count += 1;
+            }
+        }
+        if (catalog.count != catalog.entries.len) {
+            return error.IncompleteRegistrationAlphaCatalog;
+        }
+        return catalog;
+    }
+
+    fn find(
+        catalog: RegistrationAlphaCatalog,
+        region_id: art_pack.AtlasRegionId,
+    ) !visual_geometry.AlphaGeometry {
+        for (catalog.entries[0..catalog.count]) |entry| {
+            if (entry.region_id == region_id) return entry.alpha;
+        }
+        return error.MissingRegistrationAlphaGeometry;
+    }
+};
+
 pub fn definitionInput() art_pack.DefinitionInput {
     return .{
         .stable_name = "prompt24a_character_presentation",
@@ -142,10 +307,13 @@ pub fn definitionInput() art_pack.DefinitionInput {
 
 pub const Definition = struct {
     art: art_pack.Definition,
+    registration_alpha: RegistrationAlphaCatalog,
 
     pub fn init(allocator: std.mem.Allocator) !Definition {
+        const registration_alpha = try RegistrationAlphaCatalog.init();
         var definition = Definition{
             .art = try art_pack.Definition.init(allocator, definitionInput()),
+            .registration_alpha = registration_alpha,
         };
         errdefer definition.deinit();
         try definition.validateAnatomyClothingBoundary();
@@ -174,6 +342,13 @@ pub const Definition = struct {
         view: presentation_view.View,
     ) !art_pack.ResolvedVisual {
         return definition.art.resolve(.equipment, garmentSemanticId(style, garment), artView(view));
+    }
+
+    pub fn registrationAlpha(
+        definition: *const Definition,
+        region_id: art_pack.AtlasRegionId,
+    ) !visual_geometry.AlphaGeometry {
+        return definition.registration_alpha.find(region_id);
     }
 
     pub fn validateAnatomyClothingBoundary(definition: *const Definition) !void {
@@ -213,6 +388,7 @@ pub const Definition = struct {
 const ViewBinding = struct {
     visual: art_pack.ResolvedVisual,
     rest_rotation: f32,
+    alpha: visual_geometry.AlphaGeometry,
 };
 
 const AttachmentBinding = struct {
@@ -246,24 +422,28 @@ pub const Presentation = struct {
         for (humanoid_definition.attachments) |attachment| {
             const slot = slotForAttachment(style, attachment) orelse continue;
             const semantic_id = semanticId(style, slot);
+            const side = try definition.art.resolve(
+                .character,
+                semantic_id,
+                art_pack.side_view,
+            );
+            const front = try definition.art.resolve(
+                .character,
+                semantic_id,
+                art_pack.front_view,
+            );
             result.bindings[attachment.id.index()] = .{
                 .active = true,
                 .slot = slot,
                 .side = .{
-                    .visual = try definition.art.resolve(
-                        .character,
-                        semantic_id,
-                        art_pack.side_view,
-                    ),
+                    .visual = side,
                     .rest_rotation = restRotation(style, slot, .side),
+                    .alpha = try definition.registration_alpha.find(side.region_id),
                 },
                 .front = .{
-                    .visual = try definition.art.resolve(
-                        .character,
-                        semantic_id,
-                        art_pack.front_view,
-                    ),
+                    .visual = front,
                     .rest_rotation = restRotation(style, slot, .front),
+                    .alpha = try definition.registration_alpha.find(front.region_id),
                 },
             };
         }
@@ -324,52 +504,45 @@ pub const Presentation = struct {
         queue: *render_queue.UnifiedRenderQueue,
         trace: ?*visual_geometry.Trace,
     ) !u32 {
+        var ignored_registered_feet = RegisteredFeet{};
+        return presentation.submitTracedWithRegisteredFeet(
+            instance,
+            queue,
+            trace,
+            &ignored_registered_feet,
+        );
+    }
+
+    pub fn submitTracedWithRegisteredFeet(
+        presentation: Presentation,
+        instance: *character.CharacterInstance,
+        queue: *render_queue.UnifiedRenderQueue,
+        trace: ?*visual_geometry.Trace,
+        registered_feet: *RegisteredFeet,
+    ) !u32 {
+        return presentation.submitTracedWithRegisteredFeetAndCoverage(
+            instance,
+            queue,
+            trace,
+            registered_feet,
+            .{},
+        );
+    }
+
+    pub fn submitTracedWithRegisteredFeetAndCoverage(
+        presentation: Presentation,
+        instance: *character.CharacterInstance,
+        queue: *render_queue.UnifiedRenderQueue,
+        trace: ?*visual_geometry.Trace,
+        registered_feet: *RegisteredFeet,
+        foot_coverage: FootCoverage,
+    ) !u32 {
         if (presentation.attachment_count != instance.definition.attachments.len) {
             return error.PresentationDefinitionMismatch;
         }
+        registered_feet.begin();
         const view = instance.presentationView();
-        const projection = switch (view) {
-            .front => projection: {
-                var front = try presentation_pose.FrontProjection.init(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
-                );
-                const anatomy_definition = instance.definition.anatomy_definition orelse
-                    return error.CharacterHasNoAnatomy;
-                const anatomy_runtime = instance.character.anatomy_runtime orelse
-                    return error.CharacterHasNoAnatomy;
-                try front.applyFrontShoulderMorphology(
-                    &instance.definition.skeleton_definition,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    anatomy_definition,
-                    anatomy_runtime,
-                    instance.world_position.x,
-                );
-                break :projection front;
-            },
-            .side => if (instance.isInteractionLocked())
-                try presentation_pose.FrontProjection.initSideInteraction(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
-                    instance.facing == .left,
-                )
-            else
-                try presentation_pose.FrontProjection.initSide(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
-                    instance.facing == .left,
-                ),
-        };
+        const projection = try presentation.projectionFor(instance);
 
         instance.last_submitted_keys =
             [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
@@ -413,7 +586,7 @@ pub const Presentation = struct {
                 world_size.x = -world_size.x;
             }
             const order = presentationOrder(instance, attachment, binding.slot, presentation.style, view);
-            const request = sprite.SpriteRequest{
+            const legacy_request = sprite.SpriteRequest{
                 .world_position = sprite_transform.world_position.toArray(),
                 .rotation = sprite_transform.rotation_radians + rest_rotation,
                 .scale = world_size.toArray(),
@@ -423,8 +596,131 @@ pub const Presentation = struct {
                 .texture_page = presentation.renderer_page_offset + selected.visual.texture_page,
                 .order = order,
             };
-            const submission_index: u32 = @intCast(queue.sprite_count);
-            const key = try queue.submitSprite(request);
+            const geometry = geometryForSlot(
+                presentation.style,
+                binding.slot,
+                geometryView(view, instance.facing),
+            );
+            const registered = try productionRegistration(
+                instance,
+                attachment,
+                binding.slot,
+                presentation.style,
+                view,
+                projection,
+                selected,
+                geometry,
+                legacy_request,
+            );
+            const request = if (registered) |placement|
+                placement.request
+            else
+                legacy_request;
+            if (registered) |placement| {
+                if (binding.slot == .left_foot or binding.slot == .right_foot) {
+                    const heel = try visual_registration.sourcePoint(
+                        selected.alpha,
+                        geometry,
+                        .heel,
+                        .point,
+                    );
+                    const toe = try visual_registration.sourcePoint(
+                        selected.alpha,
+                        geometry,
+                        .toe,
+                        .point,
+                    );
+                    const sole_back = try visual_registration.sourcePoint(
+                        selected.alpha,
+                        geometry,
+                        .sole_back,
+                        .point,
+                    );
+                    const sole_front = try visual_registration.sourcePoint(
+                        selected.alpha,
+                        geometry,
+                        .sole_front,
+                        .point,
+                    );
+                    const heel_world = sprite.localPointToWorld(
+                        placement.request,
+                        heel.local.toArray(),
+                    );
+                    const toe_world = sprite.localPointToWorld(
+                        placement.request,
+                        toe.local.toArray(),
+                    );
+                    const sole_back_world = sprite.localPointToWorld(
+                        placement.request,
+                        sole_back.local.toArray(),
+                    );
+                    const sole_front_world = sprite.localPointToWorld(
+                        placement.request,
+                        sole_front.local.toArray(),
+                    );
+                    const orientation_target = if (placement.evidence.axis) |axis|
+                        visual_registration.PointAxisTarget{
+                            .anchor = .{
+                                .role = .point,
+                                .identity = placement.evidence.points[0].target_identity,
+                                .world = placement.evidence.points[0].target_world,
+                            },
+                            .axis_identity = axis.reference_identity,
+                            .direction_world = axis.reference_vector_world,
+                        }
+                    else
+                        visual_registration.PointAxisTarget{
+                            .anchor = .{
+                                .role = .point,
+                                .identity = placement.evidence.points[0].target_identity,
+                                .world = placement.evidence.points[0].target_world,
+                            },
+                            .axis_identity = "registered_side_foot.sole_axis",
+                            .direction_world = math.Vec2{
+                                .x = sole_front_world[0] - sole_back_world[0],
+                                .y = sole_front_world[1] - sole_back_world[1],
+                            },
+                        };
+                    try registered_feet.record(binding.slot, .{
+                        .placement = placement,
+                        .view = view,
+                        .orientation_target = orientation_target,
+                        .front_ground_policy = if (view == .front)
+                            try frontFootGroundPolicy(
+                                presentation.style,
+                                geometrySide(binding.slot),
+                            )
+                        else
+                            null,
+                        .heel_world = .{
+                            .x = heel_world[0],
+                            .y = heel_world[1],
+                        },
+                        .toe_world = .{
+                            .x = toe_world[0],
+                            .y = toe_world[1],
+                        },
+                        .sole_back_world = .{
+                            .x = sole_back_world[0],
+                            .y = sole_back_world[1],
+                        },
+                        .sole_front_world = .{
+                            .x = sole_front_world[0],
+                            .y = sole_front_world[1],
+                        },
+                    });
+                }
+            }
+            const pixel_policy = foot_coverage.forSlot(binding.slot);
+            const suppressed = pixel_policy == .suppress_covered_pixels;
+            const submission_index: u32 = if (suppressed)
+                std.math.maxInt(u32)
+            else
+                @intCast(queue.sprite_count);
+            const key: ?sprite.DrawOrderKey = if (suppressed)
+                null
+            else
+                try queue.submitSprite(request);
             if (trace) |sink| {
                 const region_source = sourceForRegion(selected.visual.region_id) orelse
                     return error.MissingCharacterGeometrySource;
@@ -447,32 +743,761 @@ pub const Presentation = struct {
                         .height = region_source.height,
                     },
                     .request = request,
-                    .geometry = visual_geometry.anatomyGeometry(
-                        @tagName(presentation.style),
-                        geometryRole(binding.slot),
-                        geometryView(view, instance.facing),
-                    ),
-                    .world_geometry = try anatomyRootWorldGeometry(
-                        instance,
-                        binding.slot,
-                        projection,
-                    ),
+                    .geometry = geometry,
+                    .world_geometry = if (registered != null)
+                        null
+                    else
+                        try anatomyRootWorldGeometry(
+                            instance,
+                            binding.slot,
+                            projection,
+                        ),
                     .morphology_length_scale = @abs(if (view == .front)
                         morphology_scale.y
                     else
                         morphology_scale.x),
-                    .binding_rotation_radians = sprite_transform.rotation_radians,
+                    .binding_rotation_radians = if (registered) |placement|
+                        placement.request.rotation
+                    else
+                        sprite_transform.rotation_radians,
                     .submission_index = submission_index,
+                    .registration = if (registered) |placement|
+                        placement.evidence
+                    else
+                        null,
+                    .placement_authority = if (registered != null)
+                        .authoritative_registration
+                    else
+                        .transitional_legacy,
+                    .submission_visibility = if (suppressed)
+                        .suppressed_by_closed_footwear
+                    else
+                        .rendered,
                 });
             }
-            if (attachment.canonical_semantic) |raw_semantic| {
-                instance.last_submitted_keys[raw_semantic] = key;
+            if (key) |submitted_key| {
+                if (attachment.canonical_semantic) |raw_semantic| {
+                    instance.last_submitted_keys[raw_semantic] = submitted_key;
+                }
+                submitted += 1;
             }
-            submitted += 1;
         }
+        try registered_feet.validateComplete();
         return submitted;
     }
+
+    /// Builds the exact view-specific projection consumed by production
+    /// submission. Read-only diagnostics call this method so canonical versus
+    /// presented transforms cannot drift through a second formula.
+    pub fn projectionFor(
+        presentation: Presentation,
+        instance: *const character.CharacterInstance,
+    ) !presentation_pose.FrontProjection {
+        _ = presentation;
+        return switch (instance.presentationView()) {
+            .front => projection: {
+                var front = try presentation_pose.FrontProjection.init(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                );
+                const anatomy_definition = instance.definition.anatomy_definition orelse
+                    return error.CharacterHasNoAnatomy;
+                const anatomy_runtime = instance.character.anatomy_runtime orelse
+                    return error.CharacterHasNoAnatomy;
+                try front.applyFrontShoulderMorphology(
+                    &instance.definition.skeleton_definition,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    anatomy_definition,
+                    anatomy_runtime,
+                    instance.world_position.x,
+                );
+                break :projection front;
+            },
+            .side => if (instance.isInteractionLocked())
+                try presentation_pose.FrontProjection.initSideInteraction(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                    instance.facing == .left,
+                )
+            else
+                try presentation_pose.FrontProjection.initSide(
+                    &instance.definition.skeleton_definition,
+                    instance.character.local_and_world_pose,
+                    instance.definition.visual_definition,
+                    instance.character.appearance_runtime,
+                    instance.world_position,
+                    instance.facing == .left,
+                ),
+        };
+    }
 };
+
+fn geometryForSlot(
+    style: Style,
+    slot: Slot,
+    view: visual_geometry.View,
+) visual_geometry.Geometry {
+    return switch (slot) {
+        .left_eye,
+        .right_eye,
+        .eyebrows,
+        .nose,
+        .mouth,
+        .left_ear,
+        .right_ear,
+        => visual_geometry.Geometry.init(.face_feature, &.{
+            .{ .kind = .center, .visible_uv = .{ 0.5, 0.5 } },
+        }),
+        else => visual_geometry.anatomyGeometry(
+            @tagName(style),
+            geometryRole(slot),
+            view,
+        ),
+    };
+}
+
+fn productionRegistration(
+    instance: *const character.CharacterInstance,
+    attachment: appearance.VisualAttachment,
+    slot: Slot,
+    style: Style,
+    view: presentation_view.View,
+    projection: presentation_pose.FrontProjection,
+    selected: ViewBinding,
+    geometry: visual_geometry.Geometry,
+    legacy_request: sprite.SpriteRequest,
+) !?visual_registration.Placement {
+    return switch (slot) {
+        .left_upper_arm,
+        .right_upper_arm,
+        .left_forearm,
+        .right_forearm,
+        .left_thigh,
+        .right_thigh,
+        .left_shin,
+        .right_shin,
+        => try segmentRegistration(
+            instance,
+            slot,
+            style,
+            view,
+            projection,
+            selected,
+            geometry,
+            legacy_request,
+        ),
+        .left_foot, .right_foot => try footRegistration(
+            instance,
+            slot,
+            style,
+            view,
+            projection,
+            selected,
+            geometry,
+            legacy_request,
+        ),
+        .nose => try facePointRegistration(
+            instance,
+            attachment,
+            view,
+            projection,
+            selected,
+            geometry,
+            legacy_request,
+        ),
+        .torso, .pelvis => try frameRegistration(
+            instance,
+            slot,
+            view,
+            projection,
+            selected,
+            geometry,
+            legacy_request,
+        ),
+        else => null,
+    };
+}
+
+const SegmentContract = struct {
+    proximal_landmark: visual_geometry.LandmarkKind,
+    distal_landmark: visual_geometry.LandmarkKind,
+    proximal_bone: skeleton.BoneSemantic,
+    distal_bone: skeleton.BoneSemantic,
+};
+
+fn segmentContract(slot: Slot) ?SegmentContract {
+    return switch (slot) {
+        .left_upper_arm => .{
+            .proximal_landmark = .shoulder,
+            .distal_landmark = .elbow,
+            .proximal_bone = .left_upper_arm,
+            .distal_bone = .left_forearm,
+        },
+        .right_upper_arm => .{
+            .proximal_landmark = .shoulder,
+            .distal_landmark = .elbow,
+            .proximal_bone = .right_upper_arm,
+            .distal_bone = .right_forearm,
+        },
+        .left_forearm => .{
+            .proximal_landmark = .elbow,
+            .distal_landmark = .wrist,
+            .proximal_bone = .left_forearm,
+            .distal_bone = .left_hand,
+        },
+        .right_forearm => .{
+            .proximal_landmark = .elbow,
+            .distal_landmark = .wrist,
+            .proximal_bone = .right_forearm,
+            .distal_bone = .right_hand,
+        },
+        .left_thigh => .{
+            .proximal_landmark = .hip,
+            .distal_landmark = .knee,
+            .proximal_bone = .left_thigh,
+            .distal_bone = .left_shin,
+        },
+        .right_thigh => .{
+            .proximal_landmark = .hip,
+            .distal_landmark = .knee,
+            .proximal_bone = .right_thigh,
+            .distal_bone = .right_shin,
+        },
+        .left_shin => .{
+            .proximal_landmark = .knee,
+            .distal_landmark = .ankle,
+            .proximal_bone = .left_shin,
+            .distal_bone = .left_foot,
+        },
+        .right_shin => .{
+            .proximal_landmark = .knee,
+            .distal_landmark = .ankle,
+            .proximal_bone = .right_shin,
+            .distal_bone = .right_foot,
+        },
+        else => null,
+    };
+}
+
+fn segmentRegistration(
+    instance: *const character.CharacterInstance,
+    slot: Slot,
+    style: Style,
+    view: presentation_view.View,
+    projection: presentation_pose.FrontProjection,
+    selected: ViewBinding,
+    geometry: visual_geometry.Geometry,
+    legacy_request: sprite.SpriteRequest,
+) !visual_registration.Placement {
+    const contract = segmentContract(slot) orelse
+        return error.MissingSegmentRegistrationContract;
+    const source_proximal = try visual_registration.sourcePoint(
+        selected.alpha,
+        geometry,
+        contract.proximal_landmark,
+        .proximal,
+    );
+    const source_distal = try visual_registration.sourcePoint(
+        selected.alpha,
+        geometry,
+        contract.distal_landmark,
+        .distal,
+    );
+    const target_proximal = try projectedBoneTarget(
+        instance,
+        projection,
+        contract.proximal_bone,
+        .proximal,
+    );
+    const target_distal = try projectedBoneTarget(
+        instance,
+        projection,
+        contract.distal_bone,
+        .distal,
+    );
+    const source_axis = source_distal.local.sub(source_proximal.local);
+    const transverse_scale = (if (@abs(source_axis.x) >= @abs(source_axis.y))
+        @abs(legacy_request.scale[1])
+    else
+        @abs(legacy_request.scale[0])) * registrationTransverseMultiplier(
+        style,
+        slot,
+        view,
+    );
+    const reflect_transverse =
+        (view == .front and mirrorsFrontRegion(slot)) or
+        (view == .side and instance.facing == .left);
+    return visual_registration.solveSegment(
+        .{
+            .identity = @tagName(slot),
+            .binding_mode = .segment,
+            .scale_policy = .segment_longitudinal_transverse,
+            .mirroring_policy = if (reflect_transverse)
+                .transverse_reflection
+            else
+                .none,
+            .allows_reflection = true,
+        },
+        legacy_request,
+        source_proximal,
+        source_distal,
+        target_proximal,
+        target_distal,
+        transverse_scale,
+        reflect_transverse,
+    );
+}
+
+fn registrationTransverseMultiplier(
+    style: Style,
+    slot: Slot,
+    view: presentation_view.View,
+) f32 {
+    return switch (view) {
+        .front => switch (style) {
+            // The source atlas keeps Prompt 27C's accepted authored dimensions.
+            // Registration owns the independent transverse policy and narrows
+            // the front male thigh around its exact hip-to-knee axis.
+            .male => switch (slot) {
+                .left_thigh, .right_thigh => 0.724,
+                else => 1,
+            },
+            .female => 1,
+        },
+        .side => 1,
+    };
+}
+
+fn footRegistration(
+    instance: *const character.CharacterInstance,
+    slot: Slot,
+    style: Style,
+    view: presentation_view.View,
+    projection: presentation_pose.FrontProjection,
+    selected: ViewBinding,
+    geometry: visual_geometry.Geometry,
+    legacy_request: sprite.SpriteRequest,
+) !visual_registration.Placement {
+    const semantic: skeleton.BoneSemantic = switch (slot) {
+        .left_foot => .left_foot,
+        .right_foot => .right_foot,
+        else => return error.MissingFootRegistrationContract,
+    };
+    const source = try visual_registration.sourcePoint(
+        selected.alpha,
+        geometry,
+        .ankle,
+        .point,
+    );
+    const target = try projectedBoneTarget(instance, projection, semantic, .point);
+    const bone_index = try instance.definition.skeleton_definition.boneIndex(semantic);
+    const target_transform = try humanoid.spriteTransform(
+        projection.bone_world[bone_index],
+    );
+    var scale = math.Vec2{
+        .x = @abs(legacy_request.scale[0]),
+        .y = @abs(legacy_request.scale[1]),
+    };
+    if ((view == .front and mirrorsFrontRegion(slot)) or
+        (view == .side and instance.facing == .left))
+    {
+        scale.x = -scale.x;
+    }
+    if (view == .front) {
+        const sole_back = try visual_registration.sourcePoint(
+            selected.alpha,
+            geometry,
+            .sole_back,
+            .axis_start,
+        );
+        const sole_front = try visual_registration.sourcePoint(
+            selected.alpha,
+            geometry,
+            .sole_front,
+            .axis_end,
+        );
+        const policy = try frontFootGroundPolicy(style, geometrySide(slot));
+        return visual_registration.solvePointAxis(
+            .{
+                .identity = @tagName(slot),
+                .binding_mode = .point_axis,
+                .scale_policy = .point_axis_authored,
+                .mirroring_policy = if (scale.x < 0)
+                    .view_reflection
+                else
+                    .none,
+                .allows_reflection = true,
+            },
+            legacy_request,
+            source,
+            sole_back,
+            sole_front,
+            .{
+                .anchor = target,
+                .axis_identity = switch (slot) {
+                    .left_foot => "left_foot.support_tangent",
+                    .right_foot => "right_foot.support_tangent",
+                    else => return error.MissingFootRegistrationContract,
+                },
+                .direction_world = policy.projected_support_tangent,
+            },
+            scale,
+        );
+    }
+    return visual_registration.solvePoint(
+        .{
+            .identity = @tagName(slot),
+            .binding_mode = .point,
+            .scale_policy = .point_authored,
+            .mirroring_policy = if (scale.x < 0)
+                .view_reflection
+            else
+                .none,
+            .allows_reflection = true,
+        },
+        legacy_request,
+        source,
+        target,
+        target_transform.rotation_radians,
+        scale,
+    );
+}
+
+pub fn frontFootToeOutDegrees(style: Style) f32 {
+    return switch (style) {
+        .male => 16.0,
+        .female => 13.0,
+    };
+}
+
+pub fn frontFootGroundPolicy(
+    style: Style,
+    side: visual_geometry.Side,
+) !FrontFootGroundPolicy {
+    const toe_out_degrees = frontFootToeOutDegrees(style);
+    const toe_out_radians = std.math.degreesToRadians(toe_out_degrees);
+    const outward_sign: f32 = switch (side) {
+        .left => -1,
+        .right => 1,
+        else => return error.MissingFootRegistrationContract,
+    };
+    const lateral = outward_sign * @sin(toe_out_radians);
+    const depth = @cos(toe_out_radians);
+    return .{
+        .toe_out_degrees = toe_out_degrees,
+        .lateral = lateral,
+        .depth = depth,
+        // Front projection maps ground-plane lateral to world X and discards
+        // depth. World Y remains the support-normal axis and is exactly zero.
+        .projected_support_tangent = .{ .x = lateral, .y = 0 },
+    };
+}
+
+fn facePointRegistration(
+    instance: *const character.CharacterInstance,
+    attachment: appearance.VisualAttachment,
+    view: presentation_view.View,
+    projection: presentation_pose.FrontProjection,
+    selected: ViewBinding,
+    geometry: visual_geometry.Geometry,
+    legacy_request: sprite.SpriteRequest,
+) !visual_registration.Placement {
+    const anatomy_definition = instance.definition.anatomy_definition orelse
+        return error.CharacterHasNoAnatomy;
+    const anatomy_runtime = instance.character.anatomy_runtime orelse
+        return error.CharacterHasNoAnatomy;
+    const part_id = try anatomy_definition.partInstanceId(
+        attachment.debug_name.slice(),
+    );
+    if (!try anatomy_runtime.isPartActive(anatomy_definition, part_id)) {
+        return error.InactiveRegistrationTarget;
+    }
+    const anatomy_projection = try presentation_pose.FrontAnatomyProjection.init(
+        projection,
+        anatomy_definition,
+        anatomy_runtime,
+    );
+    const target_world = anatomy_projection.part_world[part_id.index()];
+    const target_transform = try humanoid.spriteTransform(target_world);
+    const source = try visual_registration.sourcePoint(
+        selected.alpha,
+        geometry,
+        .center,
+        .point,
+    );
+    const target = try visual_registration.targetPoint(
+        anatomy_definition.part_instances[part_id.index()].stable_id.slice(),
+        target_transform.world_position,
+        .point,
+    );
+    var scale = target_transform.signed_scale.componentMul(.{
+        .x = selected.visual.authored_size[0],
+        .y = selected.visual.authored_size[1],
+    });
+    if (view == .side and instance.facing == .left and scale.x > 0) {
+        scale.x = -scale.x;
+    }
+    return visual_registration.solvePoint(
+        .{
+            .identity = @tagName(Slot.nose),
+            .binding_mode = .point,
+            .scale_policy = .point_authored,
+            .mirroring_policy = if (scale.x < 0) .view_reflection else .none,
+            .allows_reflection = true,
+        },
+        legacy_request,
+        source,
+        target,
+        target_transform.rotation_radians,
+        scale,
+    );
+}
+
+fn frameRegistration(
+    instance: *const character.CharacterInstance,
+    slot: Slot,
+    view: presentation_view.View,
+    projection: presentation_pose.FrontProjection,
+    selected: ViewBinding,
+    geometry: visual_geometry.Geometry,
+    legacy_request: sprite.SpriteRequest,
+) !visual_registration.Placement {
+    const source_frame = try sourceFrame(selected.alpha, geometry, slot, view);
+    const target_frame = try targetFrame(
+        instance,
+        projection,
+        slot,
+        view,
+        legacy_request,
+        source_frame,
+    );
+    return visual_registration.solveFrame(
+        .{
+            .identity = @tagName(slot),
+            .binding_mode = .frame,
+            .scale_policy = .frame_axes,
+            .mirroring_policy = if (view == .side and instance.facing == .left)
+                .view_reflection
+            else
+                .transverse_reflection,
+            .allows_reflection = true,
+        },
+        legacy_request,
+        source_frame.origin,
+        source_frame.axis_x,
+        source_frame.axis_y,
+        target_frame.origin,
+        target_frame.axis_x,
+        target_frame.axis_y,
+    );
+}
+
+const RegistrationFrame = struct {
+    origin: visual_registration.SourcePoint,
+    axis_x: visual_registration.SourcePoint,
+    axis_y: visual_registration.SourcePoint,
+};
+
+fn sourceFrame(
+    alpha: visual_geometry.AlphaGeometry,
+    geometry: visual_geometry.Geometry,
+    slot: Slot,
+    view: presentation_view.View,
+) !RegistrationFrame {
+    const lateral_left_kind: visual_geometry.LandmarkKind = switch (slot) {
+        .torso => .shoulder_left,
+        .pelvis => .hip_left,
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const lateral_right_kind: visual_geometry.LandmarkKind = switch (slot) {
+        .torso => .shoulder_right,
+        .pelvis => .hip_right,
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const depth_kind: visual_geometry.LandmarkKind = switch (slot) {
+        .torso => .waist_left,
+        .pelvis => .waist_left,
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const left = try visual_registration.sourcePoint(
+        alpha,
+        geometry,
+        lateral_left_kind,
+        .origin,
+    );
+    const right = try visual_registration.sourcePoint(
+        alpha,
+        geometry,
+        if (view == .front) lateral_right_kind else switch (slot) {
+            .torso => .proximal,
+            .pelvis => .proximal,
+            else => return error.MissingFrameRegistrationContract,
+        },
+        .axis_x,
+    );
+    const origin_local = if (view == .front)
+        midpoint(left.local, (try visual_registration.sourcePoint(
+            alpha,
+            geometry,
+            lateral_right_kind,
+            .axis_x,
+        )).local)
+    else
+        left.local;
+    const depth_local = if (view == .front) d: {
+        const depth_left = try visual_registration.sourcePoint(
+            alpha,
+            geometry,
+            .waist_left,
+            .axis_y,
+        );
+        const depth_right = try visual_registration.sourcePoint(
+            alpha,
+            geometry,
+            .waist_right,
+            .axis_y,
+        );
+        break :d midpoint(depth_left.local, depth_right.local);
+    } else (try visual_registration.sourcePoint(
+        alpha,
+        geometry,
+        depth_kind,
+        .axis_y,
+    )).local;
+    return .{
+        .origin = .{
+            .role = .origin,
+            .landmark = lateral_left_kind,
+            .local = origin_local,
+        },
+        .axis_x = .{
+            .role = .axis_x,
+            .landmark = right.landmark,
+            .local = .{ .x = right.local.x, .y = origin_local.y },
+        },
+        .axis_y = .{
+            .role = .axis_y,
+            .landmark = depth_kind,
+            .local = .{ .x = origin_local.x, .y = depth_local.y },
+        },
+    };
+}
+
+const TargetFrame = struct {
+    origin: visual_registration.TargetPoint,
+    axis_x: visual_registration.TargetPoint,
+    axis_y: visual_registration.TargetPoint,
+};
+
+fn targetFrame(
+    instance: *const character.CharacterInstance,
+    projection: presentation_pose.FrontProjection,
+    slot: Slot,
+    view: presentation_view.View,
+    legacy_request: sprite.SpriteRequest,
+    source: RegistrationFrame,
+) !TargetFrame {
+    const definition = &instance.definition.skeleton_definition;
+    const left_semantic: skeleton.BoneSemantic = switch (slot) {
+        .torso => .left_upper_arm,
+        .pelvis => .left_thigh,
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const right_semantic: skeleton.BoneSemantic = switch (slot) {
+        .torso => .right_upper_arm,
+        .pelvis => .right_thigh,
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const depth_semantic: skeleton.BoneSemantic = switch (slot) {
+        .torso => .torso,
+        .pelvis => .pelvis,
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const origin_identity: []const u8 = switch (slot) {
+        .torso => "projected_torso_frame.shoulder_origin",
+        .pelvis => "projected_pelvis_frame.hip_origin",
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const axis_x_identity: []const u8 = switch (slot) {
+        .torso => "projected_torso_frame.shoulder_axis",
+        .pelvis => "projected_pelvis_frame.hip_axis",
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const axis_y_identity: []const u8 = switch (slot) {
+        .torso => "projected_torso_frame.waist_axis",
+        .pelvis => "projected_pelvis_frame.waist_axis",
+        else => return error.MissingFrameRegistrationContract,
+    };
+    const left_world =
+        projection.bone_world[try definition.boneIndex(left_semantic)].translationPart();
+    const right_world =
+        projection.bone_world[try definition.boneIndex(right_semantic)].translationPart();
+    const origin_world = if (view == .front)
+        midpoint(left_world, right_world)
+    else
+        right_world;
+    const axis_x_world = if (view == .front)
+        math.Vec2{ .x = right_world.x, .y = origin_world.y }
+    else a: {
+        const source_delta = source.axis_x.local.sub(source.origin.local);
+        var signed_span = source_delta.x * legacy_request.scale[0];
+        if (@abs(signed_span) <= visual_registration.axis_epsilon) {
+            signed_span = if (instance.facing == .left) -0.01 else 0.01;
+        }
+        break :a math.Vec2{
+            .x = origin_world.x + signed_span,
+            .y = origin_world.y,
+        };
+    };
+    const depth_world =
+        projection.bone_world[try definition.boneIndex(depth_semantic)].translationPart();
+    const axis_y_world = math.Vec2{
+        .x = origin_world.x,
+        .y = depth_world.y,
+    };
+    return .{
+        .origin = try visual_registration.targetPoint(
+            origin_identity,
+            origin_world,
+            .origin,
+        ),
+        .axis_x = try visual_registration.targetPoint(
+            axis_x_identity,
+            axis_x_world,
+            .axis_x,
+        ),
+        .axis_y = try visual_registration.targetPoint(
+            axis_y_identity,
+            axis_y_world,
+            .axis_y,
+        ),
+    };
+}
+
+fn projectedBoneTarget(
+    instance: *const character.CharacterInstance,
+    projection: presentation_pose.FrontProjection,
+    semantic: skeleton.BoneSemantic,
+    role: visual_registration.EndpointRole,
+) !visual_registration.TargetPoint {
+    const index = try instance.definition.skeleton_definition.boneIndex(semantic);
+    return visual_registration.targetPoint(
+        @tagName(semantic),
+        projection.bone_world[index].translationPart(),
+        role,
+    );
+}
+
+fn midpoint(a: math.Vec2, b: math.Vec2) math.Vec2 {
+    return a.add(b).scale(0.5);
+}
 
 fn anatomyRootWorldGeometry(
     instance: *const character.CharacterInstance,
@@ -1008,7 +2033,6 @@ fn pivotFor(style: Style, key: RegionKey) [2]f32 {
 
 fn restRotation(style: Style, slot: Slot, view: presentation_view.View) f32 {
     _ = style;
-    const front_foot_rotation = std.math.degreesToRadians(78.0);
     return switch (view) {
         .side => switch (slot) {
             .left_thigh, .right_thigh, .left_shin, .right_shin => std.math.pi / 2.0,
@@ -1026,8 +2050,6 @@ fn restRotation(style: Style, slot: Slot, view: presentation_view.View) f32 {
             .left_shin,
             .right_shin,
             => std.math.pi / 2.0,
-            .left_foot => -front_foot_rotation,
-            .right_foot => front_foot_rotation,
             else => 0,
         },
     };

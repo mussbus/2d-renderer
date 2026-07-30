@@ -122,7 +122,8 @@ The feedback-driven script idles, walks with alternating contacts, jumps from a 
 | Left Shift | Dash when the resolved character capabilities grant it |
 | `E` | Produce an interaction intent; the fixed-position handshake route consumes its press edge |
 | `R` | Reset controller, pending input, animation playback, procedural springs, previous-motion sampling, and interpolation state |
-| `F1` | Toggle authoritative static-collider visualization |
+| `F1` | Cycle visual-truth diagnostics: Off → Rig → Rig + Visual Registration → All Diagnostics → Off |
+| `F4` | Capture one same-state visual-truth bundle; this is a frame diagnostic and never creates `CharacterIntent` |
 | `F2` | Cycle normal speed, quarter speed, and paused |
 | `F3` | Advance exactly one 240 Hz simulation/animation tick while paused |
 | `C` | Cycle the controlled body preset in the foundation playground |
@@ -198,9 +199,10 @@ Completion, cancellation, and reset release that ownership.
 | `T` | Cycle violet cavern / neutral debug environment |
 | `Q` | Cycle automatic / forced-front / forced-side presentation |
 | `P` | Pause/resume |
-| `F1` | Toggle detailed collider visualization |
+| `F1` | Cycle Off / Rig / Rig + Visual Registration / All Diagnostics |
 | `F2` | Cycle normal / quarter-speed / paused time |
 | `F3` | Advance one fixed tick while paused |
+| `F4` | Capture one clean/debug/JSON/summary/manifest visual-truth bundle |
 | `R` | Full integrated reset |
 | Escape | Exit |
 
@@ -230,6 +232,19 @@ camera-resize evidence and debug-only surface/sole/safe-bound/parallax rulers;
 those rulers do not alter controls or simulation.
 
 Foundation reset restores the player spawn, velocity, grounded/support state, air-jump and dash counters, interaction/IK/override ownership, foot locks, animator/procedural/breathing state, body/build/hair selection, per-part override, default loadout, resolved attributes/capabilities, mesh/secondary runtime state, fixed-step clock, pending edges, and camera center. It preserves the current nonzero viewport extent and creates no GPU resource.
+
+VF-01 changes F1 from a toggle to the ordered mode cycle shown above. Reset
+preserves the selected mode, matching the established rule that reset must not
+hide an inspection overlay. F4 is sampled as a pressed/held/released
+frame-level diagnostic edge. Holding it cannot repeat a capture; release and a
+new press are required. F4 never enters `PendingInput` or
+`CharacterIntent`.
+
+Successful F4 captures are finalized under
+`zig-out/manual_debug_captures/<UTC>_<monotonic-index>/`. Manual directory
+names are timestamped; automated Prompt 27 evidence IDs and filenames remain
+deterministic and untimestamped. An incomplete capture remains a hidden
+`.incomplete` directory and is never presented as a complete bundle.
 
 The latest playground input diagnostic is fixed-size and read-only. It exposes `keyboard_left_held`, `keyboard_right_held`, `jump_pressed`, `jump_held`, `jump_released`, `interact_pressed`, `reset_pressed`, `debug_toggle_pressed`, `merged_move_axis`, `substeps_this_frame`, and `pending_edge_count`. Interactive console output is transition-only and bounded by actual control transitions; held state is not printed each frame.
 
@@ -263,3 +278,22 @@ environment presentation owner before the unchanged character snapshot enters
 the controller. `F1` toggles detailed cyan/orange collider outlines, while the
 thin white top edges remain visible as normal product presentation. `O`, `P`,
 `Q`, movement, jump, reset, resize, and Escape retain their existing meanings.
+
+VF-02 adds or remaps no controls. The VF-01 F1 cycle and F4 one-shot bundle
+path now expose authoritative registration mode, policy, target, and residual
+data for migrated components.
+
+For repeatable VF-02 review, the initialization-only diagnostic selector is:
+
+```powershell
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --interactive `
+  --registration-proof-case <body-front|body-side-left|body-side-right|equipped-front|equipped-side-left|equipped-side-right>
+```
+
+It selects existing presets, view overrides, and authoritative controller
+facing before the first simulation tick. It creates no gameplay intent and
+cannot be applied after simulation begins. F4 then captures the ordinary
+production queue and truth snapshot. The current schema-3 bundle identifies
+rendered versus closed-footwear-suppressed records and exports the shared
+anatomy/shoe point-axis evidence; the selector itself adds no presentation
+authority.

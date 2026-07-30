@@ -9,6 +9,7 @@ pub const mesh_vertex_capacity: usize = 8;
 pub const mesh_index_capacity: usize = 18;
 pub const metric_capacity: usize = 32768;
 pub const alpha_threshold: u8 = 8;
+pub const registration_point_capacity: usize = 3;
 
 pub const Owner = enum(u8) {
     anatomy,
@@ -45,6 +46,34 @@ pub const Side = enum(u8) {
     none,
     left,
     right,
+};
+
+pub const RegistrationAuthority = enum(u8) {
+    authoritative_registration,
+    compatibility_adapter,
+    transitional_legacy,
+};
+
+pub const RegistrationBindingMode = enum(u8) {
+    point,
+    point_axis,
+    segment,
+    frame,
+    mesh_bridge,
+};
+
+pub const RegistrationScalePolicy = enum(u8) {
+    point_authored,
+    point_axis_authored,
+    segment_longitudinal_transverse,
+    frame_axes,
+    mesh_bridge,
+};
+
+pub const RegistrationMirroringPolicy = enum(u8) {
+    none,
+    transverse_reflection,
+    view_reflection,
 };
 
 pub const View = enum(u8) {
@@ -172,6 +201,55 @@ pub const WorldGeometry = struct {
     }
 };
 
+pub const RegistrationPoint = struct {
+    source_landmark: LandmarkKind,
+    target_identity: []const u8,
+    source_local: [2]f32,
+    target_world: math.Vec2,
+    transformed_world: math.Vec2,
+    residual_m: f32,
+};
+
+pub const RegistrationAxis = struct {
+    source_start_landmark: LandmarkKind,
+    source_end_landmark: LandmarkKind,
+    reference_identity: []const u8,
+    source_start_local: [2]f32,
+    source_end_local: [2]f32,
+    /// The unnormalized projected target vector. Its magnitude may retain
+    /// view-policy evidence such as front toe-out foreshortening.
+    reference_vector_world: math.Vec2,
+    transformed_start_world: math.Vec2,
+    transformed_end_world: math.Vec2,
+    expected_end_world: math.Vec2,
+    endpoint_residual_m: f32,
+    angular_residual_radians: f32,
+    threshold_radians: f32,
+};
+
+pub const RegistrationEvidence = struct {
+    identity: []const u8,
+    binding_mode: RegistrationBindingMode,
+    authority: RegistrationAuthority = .authoritative_registration,
+    scale_policy: RegistrationScalePolicy,
+    mirroring_policy: RegistrationMirroringPolicy,
+    threshold_m: f32,
+    point_count: u8,
+    points: [registration_point_capacity]RegistrationPoint,
+    maximum_residual_m: f32,
+    axis: ?RegistrationAxis = null,
+};
+
+pub const SubmissionVisibility = enum(u8) {
+    rendered,
+    suppressed_by_closed_footwear,
+};
+
+pub const BaseVisualPolicy = enum(u8) {
+    retain,
+    suppress_covered_foot_pixels,
+};
+
 pub const MeshVertex = struct {
     world: math.Vec2,
     uv: [2]f32,
@@ -281,7 +359,7 @@ pub fn anatomyGeometry(style: []const u8, role: Role, view: View) Geometry {
             .{ .kind = .neck, .visible_uv = .{ 0.50, 0.03 } },
             .{ .kind = .shoulder_left, .visible_uv = .{
                 if (view == .front)
-                    (if (female) -0.155 else -0.160)
+                    (if (female) -0.130 else -0.160)
                 else if (female)
                     0.750
                 else
@@ -290,7 +368,7 @@ pub fn anatomyGeometry(style: []const u8, role: Role, view: View) Geometry {
             } },
             .{ .kind = .shoulder_right, .visible_uv = .{
                 if (view == .front)
-                    (if (female) 1.185 else 1.169)
+                    (if (female) 1.130 else 1.169)
                 else if (female)
                     0.750
                 else
@@ -386,7 +464,7 @@ pub fn anatomyGeometry(style: []const u8, role: Role, view: View) Geometry {
                 else
                     0.50,
                 if (view == .front)
-                    (if (female) 1.10 else 1.045)
+                    (if (female) 1.100 else 1.045)
                 else if (female)
                     0.978
                 else
@@ -398,7 +476,7 @@ pub fn anatomyGeometry(style: []const u8, role: Role, view: View) Geometry {
                 else
                     0.50,
                 if (view == .front)
-                    (if (female) 1.10 else 1.045)
+                    (if (female) 1.100 else 1.045)
                 else if (female)
                     0.978
                 else
@@ -776,6 +854,8 @@ pub const FitContract = struct {
     male_side_scale_y: f32 = 1.0,
     female_front_scale_x: f32 = 1.0,
     female_side_scale_x: f32 = 1.0,
+    female_front_scale_y: f32 = 1.0,
+    female_side_scale_y: f32 = 1.0,
     /// Local-Y attachment response per unit authoritative morphology scale,
     /// plus a nominal authored bias. Used by fitted headwear whose semantic
     /// opening must follow a scalp landmark away from the head bone origin.
@@ -1170,6 +1250,16 @@ pub const TraceRecord = struct {
     /// Rotation of the authoritative attachment/bone transform before the
     /// view-specific authored rest rotation is applied.
     binding_rotation_radians: f32 = 0,
+    /// Present only when final production placement came from the shared
+    /// atlas-to-projected-target registration solver.
+    registration: ?RegistrationEvidence = null,
+    placement_authority: RegistrationAuthority = .transitional_legacy,
+    submission_visibility: SubmissionVisibility = .rendered,
+    base_visual_policy: BaseVisualPolicy = .retain,
+
+    pub fn isRendered(record: TraceRecord) bool {
+        return record.submission_visibility == .rendered;
+    }
 };
 
 pub const Trace = struct {

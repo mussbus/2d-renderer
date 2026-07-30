@@ -150,7 +150,7 @@ Current limitations are intentional:
 
 ## Prompt 25 wardrobe bindings
 
-Wardrobe visuals consume anatomy roles without changing anatomy ownership. One `every_compatible` upper-arm recipe expands to two sleeve instances on the conventional female and four on the existing nonstandard topology. Gloves, lower-leg wear, and shoes use the same role mechanism. The production shoe item resolves exactly one visual for each active semantic foot; selecting or replacing it leaves both canonical foot-binding matrices unchanged.
+Wardrobe visuals consume anatomy roles without changing anatomy ownership. One `every_compatible` upper-arm recipe expands to two sleeve instances on the conventional female and four on the existing nonstandard topology. Gloves, lower-leg wear, and shoes use the same role mechanism. The production shoe item resolves exactly one visual for each active semantic foot; selecting or replacing it leaves both canonical foot-binding matrices unchanged. Closed-footwear metadata may own the visible foot envelope and suppress covered base-foot pixels, but the anatomy foot remains active and its registered ankle, sole-axis constraint, and transformed landmarks remain available to diagnostics. The current shoe declares `ankle` as its exposed anatomy anchor.
 
 Front presentation uses the bounded `FrontAnatomyProjection` of the same active anatomy instances. Side presentation uses the existing evaluated anatomy matrices. View switching therefore changes only which paired art region and projected presentation transform is consumed; it cannot change topology, instance identity, body preset, foot socket, or canonical pose.
 
@@ -169,3 +169,9 @@ Interaction-owned side projection preserves semantic left/right identity and
 the participating right-arm animation/IK plane. Equipment ordering resolves
 through the actual bound anatomy semantic. Neither feature changes topology,
 canonical bones, morphology state, sockets, or base-anatomy ownership.
+
+VF-02 does not change anatomy topology. It consumes the active anatomy and
+presentation transforms as typed targets for a bounded set of point, segment,
+and frame bindings. Left/right part identity remains authoritative before
+mirroring. Registration evidence is presentation metadata and cannot create,
+remove, or rename a bone, part, socket, or rig module.

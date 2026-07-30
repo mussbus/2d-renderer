@@ -625,11 +625,15 @@ fixtures for:
 - simulation-equivalent outcomes under alternate render grouping.
 
 `p27b-coherence-report` executes the same state-conditioned production route
-headlessly and writes raw TXT/JSON measurements. The accepted result is 9,714
-metrics and zero failures. Required thresholds and rationales were frozen
-before correction in
+headlessly and writes raw TXT/JSON measurements. The preserved historical
+final Prompt 27B report recorded 9,714 metrics and zero failures at its
+historical source-art hashes. It is not evidence that fresh current art
+passes. The VF-01 pre-change fresh-current-art run records 9,714 metrics and
+24 failures: the front-foot heel/toe endpoint-height observations differ by
+`-13.645128 px` and `+13.645128 px` across the affected cases. Required
+thresholds and rationales remain frozen in
 [`PROMPT27B_DECISION_RECORD.md`](PROMPT27B_DECISION_RECORD.md). Important
-measured ranges are:
+historical final-Prompt-27B ranges were:
 
 - canonical sole error: 14 required rows, all `0 px`;
 - visual sole midpoint: all `0 px`;
@@ -641,6 +645,19 @@ measured ranges are:
 - ordinary participant overlap: `0`;
 - semantic camera travel: `10.93 m`;
 - semantic adjacent parallax separation: `304.69 px` and `483.92 px`.
+
+The VF-02 owner-review correction preserves both historical reports and reruns
+the same fresh-current-art command without rebaselining. The corrected report
+contains 9,752 metrics and zero failures. The former 24 endpoint failures were
+caused by an independent exact `+/-78` degree wardrobe shoe rotation after
+the anatomy foot had already registered. The front anatomy foot now uses one
+`point_axis` contract: the ankle is its positional target and the authored
+sole axis maps to a horizontal view-space support tangent. The shoe consumes
+that exact target and the registered foot's full authored transverse scale.
+Closed-footwear metadata suppresses covered base-foot pixels but preserves
+their trace evidence. Front sole-back and sole-front are horizontal and all
+24 formerly failing endpoint-height rows measure `0.0 px`. No endpoint
+threshold, ruler, source art, camera, support surface, or baseline changed.
 
 Real D3D12 route and independent readback review:
 
@@ -659,7 +676,8 @@ The route retains the 16 Prompt 27A state-conditioned captures and adds:
 
 `p27b-review` independently parses the real PPM pixels and produces 12 PNG
 review frames, a labeled contact sheet, and raw JSON/TXT pixel metrics. The
-accepted report contains 55 metrics and zero failures. The abrupt-resize
+preserved historical report contains 55 metrics and zero failures; it is
+historical integrity evidence, not a current-art pass. The abrupt-resize
 readback contains complete 49-pixel top/bottom markers, projection errors of
 `0.50/0.23 px`, the unchanged 16 px semantic margins, and a maximum
 subsequent world-camera step of `15.566496 px`. Measured
@@ -792,3 +810,99 @@ The bounded real interactive executable proves startup, D3D12/DXIL
 submission, and non-crashing frame completion. It is not represented as
 physical keyboard/gamepad testing. Automated geometry and pixel checks do not
 claim aesthetic approval.
+
+## VF-01 visual truth debugger and capture bundles
+
+Focused deterministic gate:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1 --summary all --global-cache-dir '.zig-cache\vf01-global'
+```
+
+VF-01 expands this gate to 40 tests. New coverage proves:
+
+- F1 order and wraparound;
+- F1 authoritative-state invariance and reset preservation;
+- nonzero production truth categories;
+- fail-closed debug-command overflow;
+- one-shot F4 edges and held-key suppression;
+- one frozen state across clean/debug queue generation;
+- unchanged simulation tick and all state fingerprints;
+- incomplete-directory hiding and timestamp/counter collision handling;
+- globally monotonic indices across finalized bundles;
+- valid versioned JSON and required top-level schema;
+- severity-sorted summary output;
+- PNG validation, manifest SHA-256 revalidation, and common fingerprint;
+- no embedded NUL or dangling target identities;
+- no post-stabilization queue allocations when capture is inactive; and
+- deterministic, untimestamped automated evidence names.
+
+The real D3D12/DXIL proof uses `--demo foundation --interactive` and the real
+F1/F4 platform path. Synthetic Windows key messages were directed at the
+isolated SDL window to make the run repeatable; this is not claimed as
+physical-keyboard testing. The final evidence set is the ten globally
+monotonic directories ending in `_0020` through `_0029` under
+`zig-out/manual_debug_captures`. It covers five front-idle truth snapshots
+(male, female, face, shoulder, and pelvis/leg inspection), female side idle,
+side walk, airborne/falling, grounded after landing, and All Diagnostics.
+Each directory contains exactly five required files. Independent re-read
+parses every JSON file, recomputes every manifest-listed SHA-256, rejects NUL
+target identities, verifies clean/debug hashes differ, and confirms
+`clean_debug_state_equal=true`.
+
+F4 evidence is diagnostic and is never promoted to a golden by this route.
+At the VF-01 checkpoint, its fresh current-art Prompt 27B result was 9,714
+metrics with 24 front-foot endpoint-height failures. That report is preserved
+as pre-correction evidence; the later VF-02 shoe-authority result is described
+below. Manual visual acceptance remains `[PENDING OWNER REVIEW]`.
+
+## VF-02 authoritative registration
+
+Focused structural coverage:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-registration -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-presentation -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
+```
+
+The registration gate covers point, segment, frame, mesh-bridge schema,
+missing sources/targets, coincident endpoints, nonfinite points, reversed
+endpoint roles, invalid reflection, degenerate frames, excessive residual,
+proximal movement under thickness, front authority bypass, and side semantic
+swaps.
+
+The production VF-01 gate submits both styles in front, side-right, and
+side-left and requires migrated records to be authoritative, have the correct
+binding mode/point count, and remain at or below `0.00001 m`. It also verifies
+schema version 3 authority, orientation-axis, submission-visibility, coverage
+owner, and exposed-anchor fields.
+
+`test-visual-geometry` remains the independent current-pixel ruler. A
+structural registration pass does not imply that silhouette, continuity,
+foot, or compatibility metrics pass. Fresh failures are retained as
+current-art evidence. The initial VF-02 run passed 13/15 tests: the current
+baseline reports eight failure categories, while the pose/morphology sweep
+reported 116 silhouette/continuity/legacy-wardrobe findings. The later
+owner-review correction does not relabel those findings and does not weaken
+either ruler. Its fresh Prompt 27B report independently emits 9,752 metrics
+with zero failures after removal of the second wardrobe shoe orientation
+authority.
+
+Historical real-D3D12/DXIL bundles `_0040` through `_0049` under
+`zig-out/manual_debug_captures` cover male/female front, female side-right,
+female side-left walk/idle, and All Diagnostics. Each contains 26
+authoritative base registrations with zero structural residual failures, but
+its four shoes remain `compatibility_adapter`; this set is not proof of the
+owner-review shoe correction.
+
+The final corrective proof uses `_0068` / `_0069` / `_0070` for male and
+female body-only front / side-left / side-right, and `_0071` / `_0072` /
+`_0073` for the corresponding equipped-foot cases. Body-only frames contain
+four rendered anatomy feet and no shoes. Equipped frames contain four
+authoritative rendered shoes plus four explicitly suppressed registered
+base-foot evidence records. Independent validation recomputes every
+manifest-listed SHA-256 and byte size, confirms clean/debug frame, tick,
+state, and common-fingerprint equality, and measures zero front shoe
+sole-endpoint height delta. These bundles are manual candidates and never
+approved goldens.

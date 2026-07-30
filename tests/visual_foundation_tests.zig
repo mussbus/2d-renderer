@@ -10,6 +10,9 @@ const acceptance_hud = @import("acceptance_hud");
 const foundation_evidence = @import("foundation_evidence");
 const foundation_coherence = @import("foundation_coherence");
 const visual_foundation = @import("visual_foundation");
+const visual_truth = @import("visual_truth");
+const visual_geometry = @import("visual_geometry");
+const debug_draw = @import("debug_draw");
 
 test "Prompt 27 bounded real-art foundation route proves presentation interaction and reset" {
     var scene = try visual_foundation.Scene.init(
@@ -65,6 +68,58 @@ test "interaction presentation data can select front without a second interactio
         synthetic.presentation.viewForRole(.receiver),
     );
     try std.testing.expect(synthetic.presentation.suppress_automatic_view);
+}
+
+test "registration proof cases configure both production styles before simulation" {
+    const cases = [_]visual_foundation.RegistrationProofCase{
+        .body_front,
+        .body_side_left,
+        .body_side_right,
+        .equipped_front,
+        .equipped_side_left,
+        .equipped_side_right,
+    };
+    for (cases) |proof_case| {
+        var scene = try visual_foundation.Scene.init(
+            std.testing.allocator,
+            .measure_only,
+        );
+        defer scene.deinit();
+        try scene.applyRegistrationProofCase(proof_case);
+        const expected_view = proof_case.view();
+        const expected_facing = proof_case.facing();
+        try std.testing.expectEqual(
+            expected_view,
+            scene.integrated.production.male.presentationView(),
+        );
+        try std.testing.expectEqual(
+            expected_view,
+            scene.integrated.production.female.presentationView(),
+        );
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.male.facing);
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.female.facing);
+        var snapshot_builder = input.SnapshotBuilder{};
+        try scene.updateFrame(0, try snapshot_builder.update(.{}));
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.male.facing);
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.female.facing);
+        const expected_male_items: usize = if (proof_case.bodyOnly()) 0 else 3;
+        const expected_female_items: usize = if (proof_case.bodyOnly()) 0 else 5;
+        try std.testing.expectEqual(
+            expected_male_items,
+            scene.integrated.production.male.equipment_loadout.?.equippedItems().len,
+        );
+        try std.testing.expectEqual(
+            expected_female_items,
+            scene.integrated.production.female.equipment_loadout.?.equippedItems().len,
+        );
+        try std.testing.expectError(
+            error.RegistrationProofCaseMustPrecedeSimulation,
+            blk: {
+                scene.integrated.production.simulation_tick = 1;
+                break :blk scene.applyRegistrationProofCase(proof_case);
+            },
+        );
+    }
 }
 
 test "interaction presentation rejects suppression without both role views" {
@@ -1066,5 +1121,713 @@ test "Prompt 27C-R1 presence interaction context follows active ownership and re
     try std.testing.expectEqual(
         interaction.Lifecycle.cancelled,
         scene.manager.last_terminal.?.lifecycle,
+    );
+}
+
+test "VF-01 F1 mode order wraps deterministically" {
+    try std.testing.expectEqual(visual_truth.Mode.rig, visual_truth.Mode.off.next());
+    try std.testing.expectEqual(
+        visual_truth.Mode.rig_registration,
+        visual_truth.Mode.rig.next(),
+    );
+    try std.testing.expectEqual(
+        visual_truth.Mode.all_diagnostics,
+        visual_truth.Mode.rig_registration.next(),
+    );
+    try std.testing.expectEqual(
+        visual_truth.Mode.off,
+        visual_truth.Mode.all_diagnostics.next(),
+    );
+}
+
+test "VF-01 F1 modes preserve authoritative gameplay and survive reset" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    var snapshots = input.SnapshotBuilder{};
+    const authoritative_before = scene.authoritativeInteractionFingerprint();
+
+    inline for (0..3) |_| {
+        const press = try snapshots.update(.{ .keyboard = .{ .f1 = true } });
+        try scene.updateFrame(0, press);
+        const release = try snapshots.update(.{});
+        try scene.updateFrame(0, release);
+    }
+    try std.testing.expectEqual(
+        visual_truth.Mode.all_diagnostics,
+        scene.debug_mode,
+    );
+    try std.testing.expectEqual(
+        authoritative_before,
+        scene.authoritativeInteractionFingerprint(),
+    );
+    try scene.resetWorld();
+    try std.testing.expectEqual(
+        visual_truth.Mode.all_diagnostics,
+        scene.debug_mode,
+    );
+}
+
+test "VF-01 F4 edge is frame-level consumed once and held input does not repeat" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    var snapshots = input.SnapshotBuilder{};
+
+    const first = try snapshots.update(.{ .keyboard = .{ .f4 = true } });
+    try std.testing.expect(first.manual_debug_capture.pressed);
+    try scene.updateFrame(0, first);
+    try std.testing.expect(scene.takeManualCaptureRequest());
+    try std.testing.expect(!scene.takeManualCaptureRequest());
+
+    const held = try snapshots.update(.{ .keyboard = .{ .f4 = true } });
+    try std.testing.expect(!held.manual_debug_capture.pressed);
+    try scene.updateFrame(0, held);
+    try std.testing.expect(!scene.takeManualCaptureRequest());
+
+    _ = try snapshots.update(.{});
+    const second = try snapshots.update(.{ .keyboard = .{ .f4 = true } });
+    try scene.updateFrame(0, second);
+    try std.testing.expect(scene.takeManualCaptureRequest());
+    try std.testing.expectEqual(@as(u64, 2), scene.manual_capture_request_count);
+}
+
+test "VF-01 production snapshot emits every applicable stable truth category" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    scene.setDebugMode(.all_diagnostics);
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    queue.markStabilized();
+    queue.beginFrame();
+    _ = try scene.submit(&queue);
+    _ = queue.prepare();
+
+    const counts = scene.truth_category_counts;
+    try std.testing.expect(counts.physics_root_collider > 0);
+    try std.testing.expect(counts.canonical_skeleton > 0);
+    try std.testing.expect(counts.projected_skeleton > 0);
+    try std.testing.expect(counts.sockets_attachments > 0);
+    try std.testing.expect(counts.module_joints_sockets > 0);
+    try std.testing.expect(counts.component_pivots > 0);
+    try std.testing.expect(counts.atlas_landmarks > 0);
+    try std.testing.expect(counts.alpha_visible_bounds > 0);
+    try std.testing.expect(
+        counts.clothing_hair_anchors + counts.mismatch_errors > 0,
+    );
+    for (scene.truth_snapshot.mismatches[0..scene.truth_snapshot.mismatch_count]) |mismatch| {
+        const identity = mismatch.expected_target.slice();
+        try std.testing.expect(identity.len > 0);
+        try std.testing.expect(std.mem.indexOfScalar(u8, identity, 0) == null);
+        if (std.mem.eql(u8, mismatch.component.slice(), "hair") and
+            mismatch.has_expected_target)
+        {
+            try std.testing.expectEqualStrings("head_hair_anchor", identity);
+        }
+    }
+    try std.testing.expectEqual(
+        @as(u64, 0),
+        queue.lifetime_metrics.cpu_allocations_after_stabilization,
+    );
+}
+
+test "VF-02 production front and reflected side routes use authoritative registration" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    queue.markStabilized();
+
+    try scene.integrated.production.female.setPresentationOverride(.force_front);
+    try scene.integrated.production.male.setPresentationOverride(.force_front);
+    try submitAndExpectRegisteredView(&scene, &queue, .front);
+
+    try scene.integrated.production.female.setPresentationOverride(.force_side);
+    try scene.integrated.production.male.setPresentationOverride(.force_side);
+    try scene.integrated.production.female.setFacing(.right);
+    try scene.integrated.production.male.setFacing(.right);
+    try submitAndExpectRegisteredView(&scene, &queue, .side_right);
+
+    try scene.integrated.production.female.setFacing(.left);
+    try scene.integrated.production.male.setFacing(.left);
+    try submitAndExpectRegisteredView(&scene, &queue, .side_left);
+
+    try std.testing.expectEqual(
+        @as(u64, 0),
+        queue.lifetime_metrics.cpu_allocations_after_stabilization,
+    );
+}
+
+const registered_component_ids = [_][]const u8{
+    "torso",
+    "pelvis",
+    "left_upper_arm",
+    "left_forearm",
+    "right_upper_arm",
+    "right_forearm",
+    "left_thigh",
+    "left_shin",
+    "left_foot",
+    "right_thigh",
+    "right_shin",
+    "right_foot",
+    "nose",
+};
+
+fn submitAndExpectRegisteredView(
+    scene: *visual_foundation.Scene,
+    queue: *render_queue.UnifiedRenderQueue,
+    expected_view: visual_geometry.View,
+) !void {
+    queue.beginFrame();
+    _ = try scene.submit(queue);
+    _ = queue.prepare();
+
+    var female_counts = [_]u8{0} ** registered_component_ids.len;
+    var male_counts = [_]u8{0} ** registered_component_ids.len;
+    var registered_shoe_count: u8 = 0;
+    for (scene.visual_trace.slice()) |record| {
+        const registered_index = registeredComponentIndex(record.stable_id);
+        if (registered_index) |index| {
+            try std.testing.expectEqual(
+                visual_geometry.RegistrationAuthority.authoritative_registration,
+                record.placement_authority,
+            );
+            const registration = record.registration orelse
+                return error.MissingProductionRegistrationEvidence;
+            try std.testing.expectEqual(expected_view, record.view);
+            try std.testing.expect(registration.maximum_residual_m <= registration.threshold_m);
+            try std.testing.expect(std.math.isFinite(registration.maximum_residual_m));
+            const expected_mode: visual_geometry.RegistrationBindingMode =
+                if (std.mem.eql(u8, record.stable_id, "torso") or
+                std.mem.eql(u8, record.stable_id, "pelvis"))
+                    .frame
+                else if (std.mem.endsWith(u8, record.stable_id, "_foot") and
+                expected_view == .front)
+                    .point_axis
+                else if (std.mem.eql(u8, record.stable_id, "nose") or
+                std.mem.endsWith(u8, record.stable_id, "_foot"))
+                    .point
+                else
+                    .segment;
+            try std.testing.expectEqual(expected_mode, registration.binding_mode);
+            try std.testing.expectEqual(
+                @as(u8, switch (expected_mode) {
+                    .point => 1,
+                    .point_axis => 1,
+                    .segment => 2,
+                    .frame => 3,
+                    .mesh_bridge => return error.UnexpectedProductionMeshBridge,
+                }),
+                registration.point_count,
+            );
+            if (record.character_id == scene.integrated.production.female.id.raw()) {
+                female_counts[index] += 1;
+            } else if (record.character_id == scene.integrated.production.male.id.raw()) {
+                male_counts[index] += 1;
+            } else {
+                return error.UnknownProductionRegistrationCharacter;
+            }
+        } else if (std.mem.eql(u8, record.stable_id, "crimson_strap_shoe")) {
+            try std.testing.expectEqual(
+                visual_geometry.RegistrationAuthority.authoritative_registration,
+                record.placement_authority,
+            );
+            const registration = record.registration orelse
+                return error.MissingProductionShoeRegistrationEvidence;
+            try std.testing.expectEqual(expected_view, record.view);
+            try std.testing.expectEqual(
+                visual_geometry.RegistrationBindingMode.point_axis,
+                registration.binding_mode,
+            );
+            try std.testing.expectEqual(
+                visual_geometry.RegistrationScalePolicy.point_axis_authored,
+                registration.scale_policy,
+            );
+            try std.testing.expectEqual(@as(u8, 1), registration.point_count);
+            try std.testing.expectEqual(
+                visual_geometry.LandmarkKind.ankle,
+                registration.points[0].source_landmark,
+            );
+            try std.testing.expect(registration.axis != null);
+            try std.testing.expect(
+                registration.maximum_residual_m <= registration.threshold_m,
+            );
+            registered_shoe_count += 1;
+        } else {
+            try std.testing.expect(record.registration == null);
+            try std.testing.expect(record.placement_authority != .authoritative_registration);
+        }
+    }
+    for (female_counts, male_counts) |female_count, male_count| {
+        try std.testing.expectEqual(@as(u8, 1), female_count);
+        try std.testing.expectEqual(@as(u8, 1), male_count);
+    }
+    try std.testing.expectEqual(@as(u8, 4), registered_shoe_count);
+}
+
+fn registeredComponentIndex(stable_id: []const u8) ?usize {
+    for (registered_component_ids, 0..) |expected, index| {
+        if (std.mem.eql(u8, stable_id, expected)) return index;
+    }
+    return null;
+}
+
+test "VF-01 command buffer overflow fails rather than truncating" {
+    var commands = debug_draw.CommandBuffer{};
+    commands.beginFrame();
+    for (0..debug_draw.command_capacity) |index| {
+        try commands.addMarker(
+            .{ .x = @floatFromInt(index), .y = 0 },
+            visual_truth.colors.canonical,
+        );
+    }
+    try std.testing.expectError(
+        error.DebugCommandCapacityExceeded,
+        commands.addMarker(.{ .x = 0, .y = 1 }, visual_truth.colors.mismatch),
+    );
+    try std.testing.expectEqual(debug_draw.command_capacity, commands.count);
+    try std.testing.expectEqual(@as(u64, 1), commands.overflow_count);
+}
+
+test "VF-01 clean and debug queue generation share one frozen production state" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    scene.manual_capture_pending = true;
+    queue.beginFrame();
+    _ = try scene.submit(&queue);
+    try scene.bindTruthRenderFrame(71);
+    const tick_before = scene.integrated.production.simulation_tick;
+    const live_before = scene.authoritativeInteractionFingerprint();
+    const authoritative = scene.truth_snapshot.authoritative_fingerprint;
+    const presentation = scene.truth_snapshot.presentation_fingerprint;
+    const capture = scene.truth_snapshot.capture_fingerprint;
+
+    _ = try scene.submitManualTruthOverlay(&queue);
+    try scene.refreshTruthSnapshot(71);
+    try std.testing.expectEqual(
+        tick_before,
+        scene.integrated.production.simulation_tick,
+    );
+    try std.testing.expectEqual(
+        live_before,
+        scene.authoritativeInteractionFingerprint(),
+    );
+    try std.testing.expectEqual(
+        authoritative,
+        scene.truth_snapshot.authoritative_fingerprint,
+    );
+    try std.testing.expectEqual(
+        presentation,
+        scene.truth_snapshot.presentation_fingerprint,
+    );
+    try std.testing.expectEqual(
+        capture,
+        scene.truth_snapshot.capture_fingerprint,
+    );
+}
+
+test "VF-01 incomplete bundles stay hidden and timestamp collisions advance counter" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    var base_buffer: [160]u8 = undefined;
+    const base = try vf01TemporaryBase(&tmp, &base_buffer);
+    const timestamp = "20260729T184533.482Z";
+    const first = try visual_truth.Bundle.begin(
+        std.testing.io,
+        base,
+        timestamp,
+        3,
+    );
+    const second = try visual_truth.Bundle.begin(
+        std.testing.io,
+        base,
+        timestamp,
+        3,
+    );
+    try std.testing.expectEqual(@as(u64, 3), first.capture_index);
+    try std.testing.expectEqual(@as(u64, 4), second.capture_index);
+    try std.testing.expect(!first.finalized);
+    try std.testing.expectError(
+        error.FileNotFound,
+        std.Io.Dir.cwd().access(std.testing.io, first.finalDirectory(), .{}),
+    );
+    try std.testing.expect(
+        visual_truth.isManualCaptureId(first.captureId()),
+    );
+}
+
+test "VF-01 bundle schema summary fingerprints and manifest hashes agree" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    var base_buffer: [160]u8 = undefined;
+    const base = try vf01TemporaryBase(&tmp, &base_buffer);
+    const timestamp = "20260729T184534.007Z";
+    var bundle = try visual_truth.Bundle.begin(
+        std.testing.io,
+        base,
+        timestamp,
+        9,
+    );
+    const snapshot = try std.testing.allocator.create(visual_truth.Snapshot);
+    defer std.testing.allocator.destroy(snapshot);
+    snapshot.* = .{
+        .mode = .all_diagnostics,
+        .render_frame = 77,
+        .simulation_tick = 91,
+        .viewport = .{ 1280, 720 },
+        .camera_center = .{ .x = 1.5, .y = -0.25 },
+        .pixels_per_meter = 82,
+        .authoritative_fingerprint = 0x1111222233334444,
+        .presentation_fingerprint = 0x5555666677778888,
+        .capture_fingerprint = 0x9999aaaabbbbcccc,
+        .visual_count = 1,
+        .mismatch_count = 2,
+    };
+    snapshot.visuals[0] = .{
+        .character_id = 1,
+        .stable_id = try visual_truth.Text.init("left_foot"),
+        .owner = .anatomy,
+        .role = .foot,
+        .side = .left,
+        .component_id = 3,
+        .bound_identity = 4,
+        .region_id = 5,
+        .texture_page = 6,
+        .source = .{ .x = 1, .y = 2, .width = 3, .height = 4 },
+        .uv_rect = .{ 0.1, 0.2, 0.3, 0.4 },
+        .world_position = .{ .x = 7, .y = 8 },
+        .rotation = 0.25,
+        .scale = .{ .x = 1.5, .y = 2.5 },
+        .pivot = .{ 0.5, 0.1 },
+        .draw_order_key = .{
+            .scene_layer = 1,
+            .interaction_layer = 2,
+            .actor_layer = 3,
+            .body_part_layer = 4,
+            .submission_index = 5,
+        },
+        .view = .front,
+        .facing = try visual_truth.Text.init("front_identity_preserved"),
+        .alpha_bounds_minimum = .{ .x = 6.5, .y = 7.5 },
+        .alpha_bounds_maximum = .{ .x = 7.5, .y = 8.5 },
+        .landmark_count = 0,
+        .landmarks = undefined,
+        .final_submission_index = 5,
+        .is_mesh = false,
+        .submission_visibility = .suppressed_by_closed_footwear,
+        .placement_authority = .authoritative_registration,
+        .has_registration = true,
+        .registration_identity = try visual_truth.Text.init("left_foot"),
+        .registration_binding_mode = .point_axis,
+        .registration_scale_policy = .point_axis_authored,
+        .registration_mirroring_policy = .view_reflection,
+        .registration_threshold_m = 0.00001,
+        .registration_maximum_residual_m = 0.000001,
+        .registration_axis = .{
+            .source_start_landmark = .sole_back,
+            .source_end_landmark = .sole_front,
+            .reference_identity = "left_foot.support_tangent",
+            .source_start_local = .{ 0.1, 0.2 },
+            .source_end_local = .{ 0.9, 0.2 },
+            .reference_vector_world = .{ .x = -0.275637, .y = 0 },
+            .transformed_start_world = .{ .x = 7.2, .y = 7.5 },
+            .transformed_end_world = .{ .x = 6.8, .y = 7.5 },
+            .expected_end_world = .{ .x = 6.8, .y = 7.5 },
+            .endpoint_residual_m = 0,
+            .angular_residual_radians = 0,
+            .threshold_radians = 0.00001,
+        },
+    };
+    snapshot.mismatches[0] = try vf01Mismatch(
+        "female.left_thigh",
+        "projected_hip",
+        "hip",
+        1.18,
+        .pass,
+    );
+    snapshot.mismatches[1] = try vf01Mismatch(
+        "female.left_upper_arm",
+        "projected_shoulder",
+        "shoulder",
+        13.42,
+        .fail,
+    );
+    const provenance = vf01Provenance(snapshot, timestamp, bundle.capture_index);
+    try writeVf01TestPng(&bundle, "clean.png");
+    try writeVf01TestPng(&bundle, "debug.png");
+    try bundle.writeStateJson(std.testing.io, snapshot, provenance);
+    try bundle.writeSummary(
+        std.testing.io,
+        snapshot,
+        provenance,
+        .{
+            .canonical_skeleton = 2,
+            .projected_skeleton = 2,
+            .mismatch_errors = 1,
+        },
+    );
+    try bundle.finalize(
+        std.testing.allocator,
+        std.testing.io,
+        snapshot,
+        provenance,
+        &.{},
+    );
+    try std.testing.expect(bundle.finalized);
+
+    var state_path_buffer: [384]u8 = undefined;
+    const state_path = try std.fmt.bufPrint(
+        &state_path_buffer,
+        "{s}/state.json",
+        .{bundle.finalDirectory()},
+    );
+    const state = try std.Io.Dir.cwd().readFileAlloc(
+        std.testing.io,
+        state_path,
+        std.testing.allocator,
+        .limited(2 * 1024 * 1024),
+    );
+    defer std.testing.allocator.free(state);
+    var parsed_state = try std.json.parseFromSlice(
+        std.json.Value,
+        std.testing.allocator,
+        state,
+        .{},
+    );
+    defer parsed_state.deinit();
+    const root = parsed_state.value.object;
+    try std.testing.expect(root.get("schema_version") != null);
+    try std.testing.expect(root.get("capture_provenance") != null);
+    try std.testing.expect(root.get("state_identity") != null);
+    try std.testing.expect(root.get("characters") != null);
+    try std.testing.expect(root.get("final_visual_submissions") != null);
+    try std.testing.expect(root.get("mismatches") != null);
+    try std.testing.expectEqual(
+        @as(i64, visual_truth.schema_version),
+        root.get("schema_version").?.integer,
+    );
+    const visual_submission =
+        root.get("final_visual_submissions").?.array.items[0].object;
+    try std.testing.expectEqualStrings(
+        "authoritative_registration",
+        visual_submission.get("placement_authority").?.string,
+    );
+    const registration = visual_submission.get("registration").?.object;
+    try std.testing.expectEqualStrings(
+        "point_axis",
+        registration.get("binding_mode").?.string,
+    );
+    try std.testing.expectEqualStrings(
+        "suppressed_by_closed_footwear",
+        visual_submission.get("submission_visibility").?.string,
+    );
+    try std.testing.expectEqualStrings(
+        "closed_footwear",
+        visual_submission.get("covered_base_visual_owner").?.string,
+    );
+    try std.testing.expectEqualStrings(
+        "ankle",
+        visual_submission.get("exposed_anatomy_anchor").?.string,
+    );
+    const orientation_axis = registration.get("orientation_axis").?.object;
+    try std.testing.expectEqualStrings(
+        "left_foot.support_tangent",
+        orientation_axis.get("reference_identity").?.string,
+    );
+    try std.testing.expect(
+        registration.get("maximum_residual_m").?.float <=
+            registration.get("threshold_m").?.float,
+    );
+    try std.testing.expect(
+        std.mem.indexOf(u8, state, "9999aaaabbbbcccc") != null,
+    );
+
+    var summary_path_buffer: [384]u8 = undefined;
+    const summary_path = try std.fmt.bufPrint(
+        &summary_path_buffer,
+        "{s}/summary.txt",
+        .{bundle.finalDirectory()},
+    );
+    const summary = try std.Io.Dir.cwd().readFileAlloc(
+        std.testing.io,
+        summary_path,
+        std.testing.allocator,
+        .limited(1024 * 1024),
+    );
+    defer std.testing.allocator.free(summary);
+    const failed_position =
+        std.mem.indexOf(u8, summary, "female.left_upper_arm") orelse
+        return error.MissingFailedSummaryEntry;
+    const passed_position =
+        std.mem.indexOf(u8, summary, "female.left_thigh") orelse
+        return error.MissingPassedSummaryEntry;
+    try std.testing.expect(failed_position < passed_position);
+
+    var manifest_path_buffer: [384]u8 = undefined;
+    const manifest_path = try std.fmt.bufPrint(
+        &manifest_path_buffer,
+        "{s}/manifest.json",
+        .{bundle.finalDirectory()},
+    );
+    const manifest = try std.Io.Dir.cwd().readFileAlloc(
+        std.testing.io,
+        manifest_path,
+        std.testing.allocator,
+        .limited(1024 * 1024),
+    );
+    defer std.testing.allocator.free(manifest);
+    var parsed_manifest = try std.json.parseFromSlice(
+        std.json.Value,
+        std.testing.allocator,
+        manifest,
+        .{},
+    );
+    defer parsed_manifest.deinit();
+    const manifest_root = parsed_manifest.value.object;
+    try std.testing.expect(manifest_root.get("bundle_complete").?.bool);
+    try std.testing.expectEqual(
+        @as(usize, 4),
+        manifest_root.get("files").?.array.items.len,
+    );
+    try std.testing.expect(
+        std.mem.indexOf(u8, manifest, "9999aaaabbbbcccc") != null,
+    );
+    const next = try visual_truth.Bundle.begin(
+        std.testing.io,
+        base,
+        "20260729T184535.008Z",
+        0,
+    );
+    try std.testing.expectEqual(@as(u64, 10), next.capture_index);
+}
+
+test "VF-01 automated evidence names remain deterministic and untimestamped" {
+    const names = [_][]const u8{
+        "initial_idle",
+        "walk_right",
+        "airborne_rise",
+        "landing_grounded",
+        "all_diagnostics",
+    };
+    for (names) |name| {
+        try std.testing.expect(!visual_truth.isManualCaptureId(name));
+    }
+    try std.testing.expect(
+        visual_truth.isManualCaptureId("20260729T184533.482Z_0003"),
+    );
+}
+
+fn vf01TemporaryBase(
+    tmp: *const std.testing.TmpDir,
+    buffer: []u8,
+) ![]const u8 {
+    return std.fmt.bufPrint(
+        buffer,
+        ".zig-cache/tmp/{s}/vf01_bundles",
+        .{tmp.sub_path[0..]},
+    );
+}
+
+fn vf01Provenance(
+    snapshot: *const visual_truth.Snapshot,
+    timestamp: []const u8,
+    capture_index: u64,
+) visual_truth.CaptureProvenance {
+    return .{
+        .utc_timestamp = timestamp,
+        .capture_index = capture_index,
+        .git_head = "0e9bfcb733ad24ae167acf8deb43540917cbb641",
+        .staged_dirty = false,
+        .unstaged_dirty = true,
+        .untracked_dirty = false,
+        .build_configuration = "Debug",
+        .executable_arguments = "--demo foundation --scripted-input",
+        .gpu_driver = "direct3d12",
+        .shader_format = "DXIL",
+        .clean_render_frame = snapshot.render_frame,
+        .debug_render_frame = snapshot.render_frame,
+        .clean_simulation_tick = snapshot.simulation_tick,
+        .debug_simulation_tick = snapshot.simulation_tick,
+        .authoritative_before = snapshot.authoritative_fingerprint,
+        .authoritative_after = snapshot.authoritative_fingerprint,
+        .presentation_before = snapshot.presentation_fingerprint,
+        .presentation_after = snapshot.presentation_fingerprint,
+        .capture_before = snapshot.capture_fingerprint,
+        .capture_after = snapshot.capture_fingerprint,
+    };
+}
+
+fn vf01Mismatch(
+    component: []const u8,
+    expected: []const u8,
+    atlas: []const u8,
+    pixel_error: f32,
+    result: visual_truth.MismatchResult,
+) !visual_truth.Mismatch {
+    return .{
+        .character_id = 2,
+        .component = try visual_truth.Text.init(component),
+        .expected_target = try visual_truth.Text.init(expected),
+        .atlas_landmark = try visual_truth.Text.init(atlas),
+        .expected_world = .{ .x = 1, .y = 2 },
+        .transformed_atlas_world = .{ .x = 1.1, .y = 2.1 },
+        .has_expected_target = true,
+        .world_error_m = 0.1,
+        .pixel_error = pixel_error,
+        .threshold_px = 2,
+        .result = result,
+    };
+}
+
+fn writeVf01TestPng(
+    bundle: *const visual_truth.Bundle,
+    filename: []const u8,
+) !void {
+    var path_buffer: [384]u8 = undefined;
+    const path = try bundle.filePath(&path_buffer, filename);
+    var file = try std.Io.Dir.cwd().createFile(std.testing.io, path, .{});
+    defer file.close(std.testing.io);
+    const rgba = [_]u8{ 0x22, 0x44, 0x66, 0xff };
+    try visual_truth.writeRgbaPng(
+        &file,
+        std.testing.io,
+        &rgba,
+        1,
+        1,
+        4,
     );
 }

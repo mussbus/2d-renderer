@@ -8,6 +8,8 @@ const wardrobe_art = @import("wardrobe_art");
 const wardrobe_presentation = @import("wardrobe_presentation");
 const wardrobe_demo = @import("wardrobe_demo");
 const render_queue = @import("render_queue");
+const character_art = @import("character_art");
+const visual_geometry = @import("visual_geometry");
 
 const expected_item_names = [_][]const u8{
     "crimson_wide_brim_hat",
@@ -259,7 +261,14 @@ test "Prompt 25B bilateral footwear receives mirrored submission metadata" {
     );
     defer queue.deinit();
     queue.beginFrame();
-    _ = try scene.wardrobe.submit(&scene.female, &queue);
+    var registered_feet = character_art.RegisteredFeet{};
+    _ = try scene.female_art.submitTracedWithRegisteredFeet(
+        &scene.female,
+        &queue,
+        null,
+        &registered_feet,
+    );
+    _ = try scene.wardrobe.submit(&scene.female, &queue, registered_feet);
 
     const shoe_spec = try visualSpec("crimson_strap_shoe");
     const shoe_visual = try scene.wardrobe_art_definition.resolve(shoe_spec.semantic, true);
@@ -276,8 +285,11 @@ test "Prompt 25B bilateral footwear receives mirrored submission metadata" {
     try std.testing.expectApproxEqAbs(@abs(shoes[0].scale[0]), @abs(shoes[1].scale[0]), 0.000001);
     const left_shoe = if (shoes[0].scale[0] < 0) shoes[0] else shoes[1];
     const right_shoe = if (shoes[0].scale[0] > 0) shoes[0] else shoes[1];
-    try std.testing.expectApproxEqAbs(@as(f32, 0.70), left_shoe.pivot[0], 0.000001);
-    try std.testing.expectApproxEqAbs(@as(f32, 0.70), right_shoe.pivot[0], 0.000001);
+    // The authoritative registration pivot is the alpha-derived ankle
+    // landmark, shared by both mirrored submissions rather than the former
+    // authored compatibility pivot.
+    try std.testing.expectApproxEqAbs(left_shoe.pivot[0], right_shoe.pivot[0], 0.000001);
+    try std.testing.expectApproxEqAbs(left_shoe.pivot[1], right_shoe.pivot[1], 0.000001);
     const left_center = submissionPoint(left_shoe, .{ 0.5, left_shoe.pivot[1] });
     const right_center = submissionPoint(right_shoe, .{ 0.5, right_shoe.pivot[1] });
     // The semantic foot bindings are 0.40 m apart in this neutral front pose.
@@ -285,6 +297,387 @@ test "Prompt 25B bilateral footwear receives mirrored submission metadata" {
     // rejecting the old 0.08 m pile-up. Semantic heel/toe/axis registration
     // is covered by the stronger Prompt 25D production acceptance matrix.
     try std.testing.expect(@abs(left_center[0] - right_center[0]) >= 0.35);
+}
+
+test "VF-02 equipped feet derive ankle and sole orientation from registered anatomy evidence" {
+    try std.testing.expectEqual(
+        @as(f32, 16),
+        character_art.frontFootToeOutDegrees(.male),
+    );
+    try std.testing.expectEqual(
+        @as(f32, 13),
+        character_art.frontFootToeOutDegrees(.female),
+    );
+
+    var scene = try wardrobe_demo.Scene.init(std.testing.allocator);
+    defer scene.deinit();
+    try scene.selectPreset(try scene.catalog.presetId("ivory_blouse_red_shorts"));
+    try scene.female.setPresentationOverride(.force_front);
+
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        128,
+        120,
+        8,
+        wardrobe_demo.combined_art_page_count + 1,
+    );
+    defer queue.deinit();
+    var trace = visual_geometry.Trace{};
+    queue.beginFrame();
+    trace.begin();
+    _ = try scene.submitTraced(&queue, &trace);
+
+    var shoe_count: usize = 0;
+    for (trace.slice(), 0..) |shoe, shoe_index| {
+        if (!std.mem.eql(u8, shoe.stable_id, "crimson_strap_shoe")) continue;
+        shoe_count += 1;
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationAuthority.authoritative_registration,
+            shoe.placement_authority,
+        );
+        const registration = shoe.registration orelse
+            return error.MissingAuthoritativeShoeRegistration;
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationBindingMode.point_axis,
+            registration.binding_mode,
+        );
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationScalePolicy.point_axis_authored,
+            registration.scale_policy,
+        );
+        try std.testing.expectEqual(@as(u8, 1), registration.point_count);
+        try std.testing.expectEqual(
+            visual_geometry.LandmarkKind.ankle,
+            registration.points[0].source_landmark,
+        );
+        const shoe_axis = registration.axis orelse
+            return error.MissingAuthoritativeShoeOrientationAxis;
+        try std.testing.expectEqual(
+            visual_geometry.LandmarkKind.sole_back,
+            shoe_axis.source_start_landmark,
+        );
+        try std.testing.expectEqual(
+            visual_geometry.LandmarkKind.sole_front,
+            shoe_axis.source_end_landmark,
+        );
+
+        var anatomy_foot: ?visual_geometry.TraceRecord = null;
+        for (trace.slice()[0..shoe_index]) |candidate| {
+            if (candidate.character_id != shoe.character_id or
+                candidate.side != shoe.side or
+                candidate.role != .foot or
+                candidate.owner != .anatomy)
+            {
+                continue;
+            }
+            anatomy_foot = candidate;
+        }
+        const foot = anatomy_foot orelse return error.MissingRegisteredAnatomyFootTrace;
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationAuthority.authoritative_registration,
+            foot.placement_authority,
+        );
+        const foot_registration = foot.registration orelse
+            return error.MissingAuthoritativeAnatomyFootRegistration;
+        try std.testing.expectEqual(@as(u8, 1), foot_registration.point_count);
+        try std.testing.expectEqual(
+            visual_geometry.LandmarkKind.ankle,
+            foot_registration.points[0].source_landmark,
+        );
+        const foot_axis = foot_registration.axis orelse
+            return error.MissingAuthoritativeAnatomyFootOrientationAxis;
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationBindingMode.point_axis,
+            foot_registration.binding_mode,
+        );
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationScalePolicy.point_axis_authored,
+            foot_registration.scale_policy,
+        );
+        try std.testing.expectApproxEqAbs(
+            foot_axis.reference_vector_world.x,
+            shoe_axis.reference_vector_world.x,
+            0.000001,
+        );
+        try std.testing.expectApproxEqAbs(
+            foot_axis.reference_vector_world.y,
+            shoe_axis.reference_vector_world.y,
+            0.000001,
+        );
+        try std.testing.expectEqual(
+            visual_geometry.SubmissionVisibility.suppressed_by_closed_footwear,
+            foot.submission_visibility,
+        );
+        try std.testing.expectEqual(
+            visual_geometry.SubmissionVisibility.rendered,
+            shoe.submission_visibility,
+        );
+        try std.testing.expectApproxEqAbs(
+            foot.request.world_position[0],
+            shoe.request.world_position[0],
+            0.000001,
+        );
+        try std.testing.expectApproxEqAbs(
+            foot.request.world_position[1],
+            shoe.request.world_position[1],
+            0.000001,
+        );
+        try std.testing.expectApproxEqAbs(
+            @abs(foot.request.scale[1]),
+            @abs(shoe.request.scale[1]),
+            0.000001,
+        );
+        const shoe_alpha = try scene.wardrobe_art_definition.registrationAlpha(
+            @enumFromInt(shoe.region_id),
+        );
+        const sole_back = shoe.geometry.find(.sole_back) orelse
+            return error.MissingShoeSoleBackLandmark;
+        const sole_front = shoe.geometry.find(.sole_front) orelse
+            return error.MissingShoeSoleFrontLandmark;
+        const sole_back_world = submissionPoint(
+            shoe.request,
+            shoe_alpha.visibleUvToLocal(sole_back.visible_uv),
+        );
+        const sole_front_world = submissionPoint(
+            shoe.request,
+            shoe_alpha.visibleUvToLocal(sole_front.visible_uv),
+        );
+        // Front footwear uses the registered anatomy foot's sole evidence to
+        // select semantic left/right direction, then registers its ground-
+        // contact envelope to the support plane. This is intentionally not an
+        // assertion that heel/toe/sole are independent registration targets.
+        try std.testing.expectApproxEqAbs(
+            sole_back_world[1],
+            sole_front_world[1],
+            0.000001,
+        );
+
+        const submitted = queue.sprite_submissions[shoe.submission_index];
+        try std.testing.expectApproxEqAbs(submitted.rotation, shoe.request.rotation, 0.000001);
+        try std.testing.expectApproxEqAbs(
+            submitted.world_position[0],
+            shoe.request.world_position[0],
+            0.000001,
+        );
+        try std.testing.expectApproxEqAbs(
+            submitted.world_position[1],
+            shoe.request.world_position[1],
+            0.000001,
+        );
+        try std.testing.expectApproxEqAbs(submitted.pivot[0], shoe.request.pivot[0], 0.000001);
+        try std.testing.expectApproxEqAbs(submitted.pivot[1], shoe.request.pivot[1], 0.000001);
+        try std.testing.expectApproxEqAbs(
+            submitted.rotation,
+            foot.request.rotation,
+            0.000001,
+        );
+    }
+    try std.testing.expectEqual(@as(usize, 2), shoe_count);
+}
+
+test "VF-02 front body feet use a horizontal support-tangent point-axis contract" {
+    const male_left = try character_art.frontFootGroundPolicy(.male, .left);
+    const male_right = try character_art.frontFootGroundPolicy(.male, .right);
+    const female_left = try character_art.frontFootGroundPolicy(.female, .left);
+    const female_right = try character_art.frontFootGroundPolicy(.female, .right);
+    try std.testing.expectEqual(@as(f32, 16), male_left.toe_out_degrees);
+    try std.testing.expectEqual(@as(f32, 13), female_left.toe_out_degrees);
+    for ([_]character_art.FrontFootGroundPolicy{
+        male_left,
+        male_right,
+        female_left,
+        female_right,
+    }) |policy| {
+        try std.testing.expectApproxEqAbs(@as(f32, 0), policy.projected_support_tangent.y, 0.000001);
+        try std.testing.expect(
+            @abs(policy.projected_support_tangent.x) >
+                @abs(policy.projected_support_tangent.y),
+        );
+        try std.testing.expectApproxEqAbs(
+            @as(f32, 1),
+            policy.lateral * policy.lateral + policy.depth * policy.depth,
+            0.000001,
+        );
+    }
+    try std.testing.expect(male_left.projected_support_tangent.x < 0);
+    try std.testing.expect(male_right.projected_support_tangent.x > 0);
+    try std.testing.expect(female_left.projected_support_tangent.x < 0);
+    try std.testing.expect(female_right.projected_support_tangent.x > 0);
+    try std.testing.expect(
+        @abs(male_left.projected_support_tangent.x) >
+            @abs(female_left.projected_support_tangent.x),
+    );
+
+    var scene = try wardrobe_demo.Scene.init(std.testing.allocator);
+    defer scene.deinit();
+    try scene.enableVisualQualityAcceptance();
+    try scene.male.setPresentationOverride(.force_front);
+    try scene.female.setPresentationOverride(.force_front);
+
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        128,
+        120,
+        8,
+        wardrobe_demo.combined_art_page_count + 1,
+    );
+    defer queue.deinit();
+    var trace = visual_geometry.Trace{};
+    queue.beginFrame();
+    trace.begin();
+    _ = try scene.submitTraced(&queue, &trace);
+
+    var anatomy_foot_count: usize = 0;
+    for (trace.slice()) |foot| {
+        if (foot.owner != .anatomy or foot.role != .foot) continue;
+        anatomy_foot_count += 1;
+        try std.testing.expectEqual(
+            visual_geometry.SubmissionVisibility.rendered,
+            foot.submission_visibility,
+        );
+        try std.testing.expect(foot.submission_index != std.math.maxInt(u32));
+        const registration = foot.registration orelse
+            return error.MissingAuthoritativeAnatomyFootRegistration;
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationBindingMode.point_axis,
+            registration.binding_mode,
+        );
+        try std.testing.expectEqual(
+            visual_geometry.RegistrationScalePolicy.point_axis_authored,
+            registration.scale_policy,
+        );
+        try std.testing.expectEqual(@as(u8, 1), registration.point_count);
+        try std.testing.expect(
+            registration.points[0].residual_m <= registration.threshold_m,
+        );
+        const axis = registration.axis orelse
+            return error.MissingAuthoritativeAnatomyFootOrientationAxis;
+        try std.testing.expectEqual(
+            visual_geometry.LandmarkKind.sole_back,
+            axis.source_start_landmark,
+        );
+        try std.testing.expectEqual(
+            visual_geometry.LandmarkKind.sole_front,
+            axis.source_end_landmark,
+        );
+        try std.testing.expectApproxEqAbs(
+            @as(f32, 0),
+            axis.reference_vector_world.y,
+            0.000001,
+        );
+        if (foot.side == .left) {
+            try std.testing.expect(axis.reference_vector_world.x < 0);
+            try std.testing.expect(foot.request.scale[0] < 0);
+        } else if (foot.side == .right) {
+            try std.testing.expect(axis.reference_vector_world.x > 0);
+            try std.testing.expect(foot.request.scale[0] > 0);
+        } else {
+            return error.InvalidFrontFootSide;
+        }
+        const alpha = try scene.character_art_definition.registrationAlpha(
+            @enumFromInt(foot.region_id),
+        );
+        const sole_back = foot.geometry.find(.sole_back) orelse
+            return error.MissingFootSoleBackLandmark;
+        const sole_front = foot.geometry.find(.sole_front) orelse
+            return error.MissingFootSoleFrontLandmark;
+        const heel = foot.geometry.find(.heel) orelse
+            return error.MissingFootHeelLandmark;
+        const toe = foot.geometry.find(.toe) orelse
+            return error.MissingFootToeLandmark;
+        const sole_back_world = submissionPoint(
+            foot.request,
+            alpha.visibleUvToLocal(sole_back.visible_uv),
+        );
+        const sole_front_world = submissionPoint(
+            foot.request,
+            alpha.visibleUvToLocal(sole_front.visible_uv),
+        );
+        const heel_world = submissionPoint(
+            foot.request,
+            alpha.visibleUvToLocal(heel.visible_uv),
+        );
+        const toe_world = submissionPoint(
+            foot.request,
+            alpha.visibleUvToLocal(toe.visible_uv),
+        );
+        try std.testing.expectApproxEqAbs(
+            sole_back_world[1],
+            sole_front_world[1],
+            0.000001,
+        );
+        try std.testing.expect(
+            @abs(toe_world[0] - heel_world[0]) >
+                @abs(toe_world[1] - heel_world[1]),
+        );
+        const normalized_rotation = @abs(@mod(
+            foot.request.rotation + std.math.pi,
+            std.math.tau,
+        ) - std.math.pi);
+        const heading_degrees = std.math.radiansToDegrees(normalized_rotation);
+        try std.testing.expect(heading_degrees < 5);
+        try std.testing.expect(
+            heading_degrees < 75 or heading_degrees > 80,
+        );
+    }
+    try std.testing.expectEqual(@as(usize, 4), anatomy_foot_count);
+}
+
+test "VF-02 closed footwear suppression is deterministic and restores on unequip" {
+    var scene = try wardrobe_demo.Scene.init(std.testing.allocator);
+    defer scene.deinit();
+    try scene.enableVisualQualityAcceptance();
+    try scene.female.setPresentationOverride(.force_front);
+
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        128,
+        120,
+        8,
+        wardrobe_demo.combined_art_page_count + 1,
+    );
+    defer queue.deinit();
+    var trace = visual_geometry.Trace{};
+
+    queue.beginFrame();
+    trace.begin();
+    _ = try scene.submitTraced(&queue, &trace);
+    try expectFemaleFootVisibility(
+        &scene,
+        &trace,
+        .rendered,
+        0,
+    );
+
+    try scene.selectPreset(try scene.catalog.presetId("ivory_blouse_red_shorts"));
+    for ([_]humanoid.Facing{ .right, .left, .right }) |facing| {
+        try scene.female.setFacing(facing);
+        try scene.female.setPresentationOverride(if (facing == .right)
+            .force_front
+        else
+            .force_side);
+        queue.beginFrame();
+        trace.begin();
+        _ = try scene.submitTraced(&queue, &trace);
+        try expectFemaleFootVisibility(
+            &scene,
+            &trace,
+            .suppressed_by_closed_footwear,
+            2,
+        );
+    }
+
+    try scene.selectPreset(try scene.catalog.presetId("base_only"));
+    try scene.female.setPresentationOverride(.force_front);
+    queue.beginFrame();
+    trace.begin();
+    _ = try scene.submitTraced(&queue, &trace);
+    try expectFemaleFootVisibility(
+        &scene,
+        &trace,
+        .rendered,
+        0,
+    );
 }
 
 test "Prompt 25A acceptance schedule is deterministic and allocation free" {
@@ -768,6 +1161,46 @@ fn pointDistance(left: [2]f32, right: [2]f32) f32 {
     const x = left[0] - right[0];
     const y = left[1] - right[1];
     return @sqrt(x * x + y * y);
+}
+
+fn expectFemaleFootVisibility(
+    scene: *const wardrobe_demo.Scene,
+    trace: *const visual_geometry.Trace,
+    expected: visual_geometry.SubmissionVisibility,
+    expected_shoes: usize,
+) !void {
+    var anatomy_feet: usize = 0;
+    var shoes: usize = 0;
+    for (trace.slice()) |record| {
+        if (record.character_id != scene.female.id.raw()) continue;
+        if (record.owner == .anatomy and record.role == .foot) {
+            anatomy_feet += 1;
+            try std.testing.expectEqual(expected, record.submission_visibility);
+            if (expected == .rendered) {
+                try std.testing.expect(record.submission_index != std.math.maxInt(u32));
+            } else {
+                try std.testing.expectEqual(
+                    std.math.maxInt(u32),
+                    record.submission_index,
+                );
+                try std.testing.expect(record.registration != null);
+            }
+        }
+        if (record.owner == .equipment and record.role == .shoe) {
+            shoes += 1;
+            try std.testing.expectEqual(
+                visual_geometry.SubmissionVisibility.rendered,
+                record.submission_visibility,
+            );
+            try std.testing.expect(record.submission_index != std.math.maxInt(u32));
+        }
+    }
+    try std.testing.expectEqual(@as(usize, 2), anatomy_feet);
+    try std.testing.expectEqual(expected_shoes, shoes);
+    for ([_]humanoid.AttachmentSemantic{ .left_foot, .right_foot }) |semantic_value| {
+        const key = scene.female.last_submitted_keys[@intFromEnum(semantic_value)];
+        try std.testing.expectEqual(expected == .rendered, key != null);
+    }
 }
 
 fn loadoutFingerprint(loadout: *const equipment.Loadout) u64 {

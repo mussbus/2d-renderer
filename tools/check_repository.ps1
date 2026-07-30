@@ -810,7 +810,7 @@ if (-not $diagnosticsSource.Contains('pub const history_capacity: usize = 32') -
     Write-Error 'Diagnostic history must remain fixed-capacity inline storage with a documented overwrite counter and no allocation path.' -ErrorAction Continue
     $failed = $true
 }
-if (-not $debugDrawSource.Contains('pub const command_capacity: usize = 512') -or
+if (-not $debugDrawSource.Contains('pub const command_capacity: usize = 2048') -or
     -not $debugDrawSource.Contains('commands: [command_capacity]sprite.SpriteRequest') -or
     -not $debugDrawSource.Contains('return error.DebugCommandCapacityExceeded') -or
     [regex]::IsMatch($debugDrawSource, 'SDL_|CreateGPU|ReleaseGPU|DrawGPU|\.alloc\s*\(|\.create\s*\(|ArrayList|HashMap')) {

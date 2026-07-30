@@ -497,13 +497,39 @@ pub const Scene = struct {
         queue: *render_queue.UnifiedRenderQueue,
         trace: ?*visual_geometry.Trace,
     ) !u32 {
-        var submitted = try scene.male_art.submitTraced(&scene.male, queue, trace);
-        submitted += try scene.female_art.submitTraced(&scene.female, queue, trace);
+        var male_registered_feet = character_art.RegisteredFeet{};
+        var female_registered_feet = character_art.RegisteredFeet{};
+        const male_foot_coverage = try scene.wardrobe.baseFootCoverage(&scene.male);
+        const female_foot_coverage = try scene.wardrobe.baseFootCoverage(&scene.female);
+        var submitted = try scene.male_art.submitTracedWithRegisteredFeetAndCoverage(
+            &scene.male,
+            queue,
+            trace,
+            &male_registered_feet,
+            male_foot_coverage,
+        );
+        submitted += try scene.female_art.submitTracedWithRegisteredFeetAndCoverage(
+            &scene.female,
+            queue,
+            trace,
+            &female_registered_feet,
+            female_foot_coverage,
+        );
         const meshes_before = queue.frame_metrics.submitted_meshes;
         if (scene.male.equipment_loadout != null) {
-            submitted += try scene.wardrobe.submitTraced(&scene.male, queue, trace);
+            submitted += try scene.wardrobe.submitTraced(
+                &scene.male,
+                queue,
+                male_registered_feet,
+                trace,
+            );
         }
-        submitted += try scene.wardrobe.submitTraced(&scene.female, queue, trace);
+        submitted += try scene.wardrobe.submitTraced(
+            &scene.female,
+            queue,
+            female_registered_feet,
+            trace,
+        );
         scene.evidence.long_garment_mesh = scene.evidence.long_garment_mesh or
             queue.frame_metrics.submitted_meshes > meshes_before;
         return submitted;

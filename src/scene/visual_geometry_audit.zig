@@ -3,6 +3,7 @@ const math = @import("math");
 const camera2d = @import("camera2d");
 const sprite = @import("sprite_batch");
 const visual = @import("visual_geometry");
+const visual_registration = @import("visual_registration");
 
 pub const maximum_pages: usize = 8;
 
@@ -164,11 +165,87 @@ pub fn evaluateCurrentProduction(
         @floatFromInt(trace.count),
         "components",
     ), 1, @floatFromInt(visual.trace_capacity));
+    try evaluateFrontAnatomyFootRegistration(trace, images, context, report);
     try evaluateFootwear(trace, images, context, report);
     try evaluateGarmentFit(trace, images, context, report);
     try evaluateJointContinuity(trace, images, context, report);
     try evaluateProportions(trace, images, context, report);
     try evaluateFrontSymmetry(trace, images, context, report);
+}
+
+fn evaluateFrontAnatomyFootRegistration(
+    trace: *const visual.Trace,
+    images: *const Images,
+    context: EvaluationContext,
+    report: *visual.Report,
+) !void {
+    for (trace.slice()) |*foot| {
+        if (foot.owner != .anatomy or foot.role != .foot or
+            foot.placement_authority != .authoritative_registration or
+            foot.view != .front)
+        {
+            continue;
+        }
+        try authoritativeAnkleRegistrationMetric(report, context, foot);
+        const registration = foot.registration orelse
+            return error.MissingAuthoritativeRegistrationEvidence;
+        const axis = registration.axis orelse
+            return error.MissingAuthoritativeOrientationAxis;
+        if (axis.source_start_landmark != .sole_back or
+            axis.source_end_landmark != .sole_front or
+            @abs(axis.reference_vector_world.y) > visual_registration.axis_epsilon or
+            (foot.side == .left and axis.reference_vector_world.x >= 0) or
+            (foot.side == .right and axis.reference_vector_world.x <= 0) or
+            foot.side == .none)
+        {
+            return error.InvalidFrontFootSupportTangent;
+        }
+        const alpha = try alphaFor(foot, images);
+        const sole_back = try visual.resolveLandmark(
+            foot.*,
+            alpha,
+            .sole_back,
+            context.camera,
+        );
+        const sole_front = try visual.resolveLandmark(
+            foot.*,
+            alpha,
+            .sole_front,
+            context.camera,
+        );
+        const sole_delta = sole_front.world.sub(sole_back.world);
+        const angle = @abs(std.math.radiansToDegrees(std.math.atan2(
+            sole_delta.y,
+            @abs(sole_delta.x),
+        )));
+        try report.recordMaximum(metric(
+            foot.*,
+            context,
+            "front_sole_support_tangent_angle",
+            angle,
+            "deg",
+        ), 0.01);
+        try report.recordMaximum(metric(
+            foot.*,
+            context,
+            "front_sole_endpoint_height_difference",
+            @abs(sole_front.pixel.y - sole_back.pixel.y),
+            "px",
+        ), visual_registration.structural_epsilon_m * context.camera.pixels_per_meter);
+        const heel = try visual.resolveLandmark(foot.*, alpha, .heel, context.camera);
+        const toe = try visual.resolveLandmark(foot.*, alpha, .toe, context.camera);
+        const heel_to_toe = toe.world.sub(heel.world);
+        try report.recordRange(metric(
+            foot.*,
+            context,
+            "front_heel_to_toe_horizontal_dominance",
+            @abs(heel_to_toe.x) / @max(
+                @abs(heel_to_toe.y),
+                visual_registration.axis_epsilon,
+            ),
+            "ratio",
+        ), 1, std.math.inf(f32));
+    }
 }
 
 fn evaluateFootwear(
@@ -191,6 +268,18 @@ fn evaluateFootwear(
         const foot_alpha = try alphaFor(foot, images);
         const shoe_alpha = try alphaFor(shoe, images);
         const contract = shoe.fit orelse return error.MissingVisualFitContract;
+        if (shoe.base_visual_policy == .suppress_covered_foot_pixels) {
+            try report.recordRange(metric(
+                shoe.*,
+                context,
+                "covered_anatomy_foot_pixels_suppressed",
+                if (foot.submission_visibility == .suppressed_by_closed_footwear)
+                    1
+                else
+                    0,
+                "bool",
+            ), 1, 1);
+        }
 
         try report.append(metric(
             shoe.*,
@@ -206,9 +295,48 @@ fn evaluateFootwear(
             @floatFromInt(shoe.bound_identity),
             "id",
         ));
-        try registrationMetric(report, context, foot, shoe, foot_alpha, shoe_alpha, .ankle, contract.registration_tolerance_px);
-        try registrationMetric(report, context, foot, shoe, foot_alpha, shoe_alpha, .heel, contract.registration_tolerance_px);
-        try registrationMetric(report, context, foot, shoe, foot_alpha, shoe_alpha, .toe, contract.registration_tolerance_px);
+        const authoritative_ankle =
+            shoe.placement_authority == .authoritative_registration and
+            shoe.registration != null and
+            (shoe.registration.?.binding_mode == .point or
+                shoe.registration.?.binding_mode == .point_axis);
+        if (authoritative_ankle) {
+            try authoritativeAnkleRegistrationMetric(report, context, shoe);
+            // Point-axis footwear constrains the ankle and sole orientation.
+            // Heel, toe, sole-back, and sole-front remain transformed evidence
+            // rather than independent endpoint targets.
+            try registrationObservationMetric(
+                report,
+                context,
+                foot,
+                shoe,
+                foot_alpha,
+                shoe_alpha,
+                .ankle,
+            );
+            try registrationObservationMetric(
+                report,
+                context,
+                foot,
+                shoe,
+                foot_alpha,
+                shoe_alpha,
+                .heel,
+            );
+            try registrationObservationMetric(
+                report,
+                context,
+                foot,
+                shoe,
+                foot_alpha,
+                shoe_alpha,
+                .toe,
+            );
+        } else {
+            try registrationMetric(report, context, foot, shoe, foot_alpha, shoe_alpha, .ankle, contract.registration_tolerance_px);
+            try registrationMetric(report, context, foot, shoe, foot_alpha, shoe_alpha, .heel, contract.registration_tolerance_px);
+            try registrationMetric(report, context, foot, shoe, foot_alpha, shoe_alpha, .toe, contract.registration_tolerance_px);
+        }
 
         const foot_heel = try visual.resolveLandmark(foot.*, foot_alpha, .heel, context.camera);
         const foot_toe = try visual.resolveLandmark(foot.*, foot_alpha, .toe, context.camera);
@@ -220,13 +348,21 @@ fn evaluateFootwear(
             shoe_heel.pixel,
             shoe_toe.pixel,
         );
-        try report.recordMaximum(metric(
+        const forward_metric = metric(
             shoe.*,
             context,
             "forward_axis_error",
             forward_angle,
             "deg",
-        ), contract.axis_tolerance_degrees);
+        );
+        if (authoritative_ankle) {
+            try report.append(forward_metric);
+        } else {
+            try report.recordMaximum(
+                forward_metric,
+                contract.axis_tolerance_degrees,
+            );
+        }
 
         const foot_sole_back = try visual.resolveLandmark(foot.*, foot_alpha, .sole_back, context.camera);
         const foot_sole_front = try visual.resolveLandmark(foot.*, foot_alpha, .sole_front, context.camera);
@@ -238,13 +374,18 @@ fn evaluateFootwear(
             shoe_sole_back.pixel,
             shoe_sole_front.pixel,
         );
-        try report.recordMaximum(metric(
+        const sole_metric = metric(
             shoe.*,
             context,
             "sole_axis_error",
             sole_angle,
             "deg",
-        ), contract.sole_tolerance_degrees);
+        );
+        if (authoritative_ankle) {
+            try report.append(sole_metric);
+        } else {
+            try report.recordMaximum(sole_metric, contract.sole_tolerance_degrees);
+        }
 
         const foot_length = visual.distance(foot_heel.pixel, foot_toe.pixel);
         const shoe_length = visual.distance(shoe_heel.pixel, shoe_toe.pixel);
@@ -268,13 +409,22 @@ fn evaluateFootwear(
             contract.coverage_mode,
         );
         if (contract.validate_coverage) {
-            try report.recordRange(metric(
+            const coverage_metric = metric(
                 shoe.*,
                 context,
                 "declared_foot_coverage",
                 stats.coverage(),
                 "ratio",
-            ), contract.minimumCoverage(shoe.view), 1.0);
+            );
+            if (authoritative_ankle) {
+                try report.append(coverage_metric);
+            } else {
+                try report.recordRange(
+                    coverage_metric,
+                    contract.minimumCoverage(shoe.view),
+                    1.0,
+                );
+            }
         }
         if (contract.validate_off_target) {
             try report.recordMaximum(metric(
@@ -874,6 +1024,124 @@ fn registrationMetric(
         },
         tolerance,
     );
+}
+
+fn registrationObservationMetric(
+    report: *visual.Report,
+    context: EvaluationContext,
+    target: *const visual.TraceRecord,
+    attachment: *const visual.TraceRecord,
+    target_alpha: visual.AlphaGeometry,
+    attachment_alpha: visual.AlphaGeometry,
+    kind: visual.LandmarkKind,
+) !void {
+    const target_point = try visual.resolveLandmark(
+        target.*,
+        target_alpha,
+        kind,
+        context.camera,
+    );
+    const attachment_point = try visual.resolveLandmark(
+        attachment.*,
+        attachment_alpha,
+        kind,
+        context.camera,
+    );
+    try report.append(metric(
+        attachment.*,
+        context,
+        switch (kind) {
+            .ankle => "ankle_error",
+            .heel => "heel_error",
+            .toe => "toe_error",
+            else => "landmark_error",
+        },
+        visual.distance(target_point.pixel, attachment_point.pixel),
+        "px evidence",
+    ));
+}
+
+fn authoritativeAnkleRegistrationMetric(
+    report: *visual.Report,
+    context: EvaluationContext,
+    attachment: *const visual.TraceRecord,
+) !void {
+    const registration = attachment.registration orelse
+        return error.MissingAuthoritativeRegistrationEvidence;
+    const point_contract = registration.binding_mode == .point and
+        registration.scale_policy == .point_authored and
+        registration.axis == null;
+    const point_axis_contract = registration.binding_mode == .point_axis and
+        registration.scale_policy == .point_axis_authored and
+        registration.axis != null;
+    if (registration.authority != .authoritative_registration or
+        (!point_contract and !point_axis_contract) or
+        registration.point_count != 1 or
+        registration.points[0].source_landmark != .ankle)
+    {
+        return error.InvalidAuthoritativePointRegistrationEvidence;
+    }
+    const point = registration.points[0];
+    const transformed_array = sprite.localPointToWorld(
+        attachment.request,
+        point.source_local,
+    );
+    const transformed = math.Vec2{
+        .x = transformed_array[0],
+        .y = transformed_array[1],
+    };
+    const final_residual_px = transformed.sub(point.target_world).length() *
+        context.camera.pixels_per_meter;
+    const evidence_residual_px =
+        @abs(final_residual_px -
+            registration.maximum_residual_m * context.camera.pixels_per_meter);
+    try report.recordMaximum(metric(
+        attachment.*,
+        context,
+        "authoritative_ankle_residual",
+        final_residual_px,
+        "px",
+    ), registration.threshold_m * context.camera.pixels_per_meter);
+    try report.recordMaximum(metric(
+        attachment.*,
+        context,
+        "registration_evidence_request_delta",
+        evidence_residual_px,
+        "px",
+    ), registration.threshold_m * context.camera.pixels_per_meter);
+    if (registration.axis) |axis| {
+        const transformed_start = sprite.localPointToWorld(
+            attachment.request,
+            axis.source_start_local,
+        );
+        const transformed_end = sprite.localPointToWorld(
+            attachment.request,
+            axis.source_end_local,
+        );
+        const end_delta = (math.Vec2{
+            .x = transformed_end[0] - axis.transformed_end_world.x,
+            .y = transformed_end[1] - axis.transformed_end_world.y,
+        }).length();
+        const start_delta = (math.Vec2{
+            .x = transformed_start[0] - axis.transformed_start_world.x,
+            .y = transformed_start[1] - axis.transformed_start_world.y,
+        }).length();
+        const request_axis_delta = end_delta + start_delta;
+        try report.recordMaximum(metric(
+            attachment.*,
+            context,
+            "authoritative_orientation_axis_residual",
+            axis.endpoint_residual_m * context.camera.pixels_per_meter,
+            "px",
+        ), registration.threshold_m * context.camera.pixels_per_meter);
+        try report.recordMaximum(metric(
+            attachment.*,
+            context,
+            "orientation_evidence_request_delta",
+            request_axis_delta * context.camera.pixels_per_meter,
+            "px",
+        ), registration.threshold_m * context.camera.pixels_per_meter);
+    }
 }
 
 fn pairedLateralRegistrationMetric(

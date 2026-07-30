@@ -53,7 +53,17 @@ The optional command is:
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 2400 --demo integrated --scripted-input --debug-visualization
 ```
 
-`debug_draw.CommandBuffer` contains 512 inline sprite requests. Overflow increments `overflow_count` and returns `error.DebugCommandCapacityExceeded`; it never grows. Lines, markers, and AABB edges visualize physics/visual roots, collider bounds, ground queries/hits, locked foot targets, pre/post-leg-IK movement, arm segments, the shared hand target, the participant link, and Prompt 25C semantic visual geometry. Debug submission creates no GPU object and uses texture page zero in the authoritative global sprite batch.
+`debug_draw.CommandBuffer` contains 2,048 fixed sprite requests. VF-01
+measured the production All Diagnostics path exceeding the former 512-entry
+capacity at command 513, so the fixed capacity was increased and moved to
+explicit initialization-time diagnostic ownership. Overflow increments
+`overflow_count` and returns `error.DebugCommandCapacityExceeded`; it never
+grows or truncates. Lines, markers, and AABB edges visualize physics/visual
+roots, collider bounds, ground queries/hits, locked foot targets,
+pre/post-leg-IK movement, arm segments, the shared hand target, the
+participant link, and semantic visual geometry. Debug submission creates no
+GPU object and uses texture page zero in the authoritative global sprite
+batch.
 
 Because ordinary and debug sprites are compatible, the Prompt 11
 `integrated` route retains one texture range and one actual
@@ -118,7 +128,98 @@ report records 9,714 passing semantic metrics. Both routes retain the
 131,216-byte initialized/final fixed-buffer value and zero steady-state
 allocation/resource delta.
 
-`F1` still appends detailed collider/debug evidence through the one global
-queue. Persistent white standable tops are ordinary product presentation,
-while cyan/orange collider outlines remain optional diagnostics. Debug
-observation does not become collision, interaction, or renderer authority.
+## VF-01 visual truth debugger
+
+F1 cycles `off`, `rig`, `rig_registration`, and `all_diagnostics`. All modes
+append through the one `UnifiedRenderQueue` and use the production camera,
+character presenter, atlas metadata, and submitted `SpriteRequest`/mesh trace.
+They cannot write controller, collider, pose, view selection, interaction,
+camera, or appearance state.
+
+The stable categories are:
+
+| Category | Color |
+|---|---|
+| Physics root and movement collider | red |
+| Canonical skeleton | yellow |
+| Projected presentation skeleton | cyan |
+| Sockets, attachment points, and component links | green |
+| Rig-module joints and sockets | purple |
+| Final component/sprite pivots | orange |
+| Atlas landmarks | white |
+| Alpha-visible bounds | blue |
+| Clothing/hair anchors and passing registration links | teal |
+| Missing/invalid/failed registration | magenta |
+
+Rig mode shows authoritative roots/colliders, canonical bones/joints,
+canonical sockets, appearance/anatomy attachments, module joints/sockets, and
+available hierarchy links. Rig + Visual Registration adds the exact
+front/side projection used by `character_art.submitTraced`, final pivots,
+alpha-visible bounds, transformed atlas landmarks, and expected-to-visible
+registration lines. All Diagnostics adds the retained static colliders,
+ground/foot/IK/interaction diagnostics, camera-safe bounds, Prompt 27B rulers,
+and character-presence evidence.
+
+One initialization-owned `visual_truth.Snapshot` freezes the exact production
+objects and trace records used for a rendered frame. The overlay and JSON use
+that same snapshot; no parallel placement formula is permitted.
+`character_art.Presentation.projectionFor` is shared by production submission
+and snapshot capture.
+
+F4 first captures the already-prepared clean queue through the production
+D3D12 offscreen target/readback. It then appends All Diagnostics to the same
+frozen snapshot and reads back `debug.png`. There is no fixed tick, animation
+step, camera update, interaction update, or appearance mutation between the
+images. Render frame, simulation tick, live authoritative fingerprint,
+snapshot authoritative fingerprint, presentation fingerprint, and capture
+fingerprint must all compare equal before finalization.
+
+Each finalized bundle contains `clean.png`, `debug.png`, `state.json`,
+`summary.txt`, and `manifest.json`. State schema version 3 records provenance,
+controller/collider data, canonical and projected transforms,
+appearance/anatomy/module hierarchy, actual final visual submissions,
+alpha-visible geometry, orientation-axis evidence, submission visibility,
+closed-footwear coverage ownership, and registration mismatches. The summary is
+severity-sorted and explicitly leaves manual acceptance pending. The manifest
+records byte sizes and SHA-256 values for the four non-self-referential files,
+the common state identity, frame/tick equality, and all source-atlas hashes;
+the manifest identifies its own hash as not applicable because a self-hash is
+self-referential.
+
+Normal F1 execution performs no image decode, persistent GPU creation, file
+I/O, or per-frame allocation. Snapshot, alpha catalog, debug buffer, and
+readback transfer resources are created before stabilization. The explicit
+F4 event may use bounded process/file/hash allocations outside the fixed-tick
+path. Persistent white standable tops remain ordinary presentation; debug
+observation never becomes collision, interaction, or renderer authority.
+
+## VF-02 registration classification
+
+Rig + Visual Registration and All Diagnostics now use the production trace's
+registration evidence for migrated components. Each final visual exported by
+F4 states `authoritative_registration`, `compatibility_adapter`, or
+`transitional_legacy`.
+
+Authoritative entries also export binding mode, registration identity, scale
+policy, mirroring policy, structural threshold, and maximum residual. The
+expected-to-transformed overlay line is built from the same evidence points
+that produced the final request. Compatibility and transitional visuals keep
+the prior alpha-landmark measurement path so their disagreements remain
+visible.
+
+Front anatomy feet and equipped shoes export authoritative `point_axis`
+bindings. Their exported request is the production request: the alpha-derived
+ankle is the sole positional target and `sole_back -> sole_front` is the
+orientation constraint. The front support target is horizontal in view space;
+the retained physical 16/13-degree toe-out policy supplies its semantic
+left/right lateral sign without mapping depth into world Y. The shoe consumes
+the exact registered anatomy-foot `PointAxisTarget` and transverse scale.
+Heel/toe/sole landmarks remain exported transformed evidence, not additional
+registration points.
+
+Schema version 3 also states whether a trace record was rendered or
+`suppressed_by_closed_footwear`, its base-visual policy, the covering owner,
+and the exposed anatomy anchor. A suppressed base foot has no queue
+submission index but retains registration and landmark evidence for F1 and
+JSON. This makes pixel ownership explicit rather than hiding the underlying
+anatomy record.

@@ -480,6 +480,27 @@ test "current Prompt 27C production content satisfies visual geometry" {
     try std.testing.expect(trace.count > 40);
     try expectSemanticSides(&trace, .shoe);
     try std.testing.expect(report.count >= 129);
+    if (report.failure_count != 0) {
+        for (report.metrics[0..report.count]) |entry| {
+            if (entry.outcome != .fail) continue;
+            std.debug.print(
+                "{s}/{s}/{s}/{s}/{s}/{s}/{s}: actual={d:.3} min={?d:.3} max={?d:.3} {s}\n",
+                .{
+                    entry.character_style,
+                    @tagName(entry.view),
+                    entry.outfit,
+                    entry.pose,
+                    @tagName(entry.side),
+                    entry.component,
+                    entry.metric,
+                    entry.actual,
+                    entry.minimum,
+                    entry.maximum,
+                    entry.unit,
+                },
+            );
+        }
+    }
     try std.testing.expectEqual(@as(u32, 0), report.failure_count);
     std.debug.print(
         "Prompt 27C focused production geometry: {d}/{d} PASS\n",
