@@ -17,5 +17,8 @@ The report archive preserves historical evidence without rewriting it to match l
   [`prompt-implementation-reports/exact/027C-implementation-report.md`](prompt-implementation-reports/exact/027C-implementation-report.md).
 - Prompt 27C-R1 has a current exact corrective implementation report at
   [`prompt-implementation-reports/exact/027C-R1-implementation-report.md`](prompt-implementation-reports/exact/027C-R1-implementation-report.md).
+- [`viewport-height-scaling-evidence.md`](viewport-height-scaling-evidence.md)
+  records the current non-historical numeric camera correction evidence and
+  the remaining physical resize review boundary.
 
 Historical report paths, command outputs, and limitations are preserved as written even when a later prompt superseded the visual result. Use the prompt ledger’s supersession links to find current authority.

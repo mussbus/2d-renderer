@@ -999,7 +999,10 @@ if (-not $playgroundSource.Contains('distant_camera_x_factor') -or
 }
 $requiredCameraTestPhrases = @(
     'default camera preserves the original 640 by 480 presentation',
-    'camera keeps zoom at 640 by 480 and two other aspect ratios',
+    'drawable height scales pixel density linearly and preserves vertical world span',
+    'same aspect ratios preserve both world extents and width changes only horizontal visibility',
+    'resized camera keeps uniform axes and inverse-compatible transforms',
+    'resize round trip derives from reference without drift or center movement',
     'positive world Y maps upward',
     'zero and invalid camera state is rejected transactionally',
     'parallax factors produce hand-derived relative camera displacement',
@@ -1010,6 +1013,17 @@ $requiredCameraTestPhrases = @(
 foreach ($phrase in $requiredCameraTestPhrases) {
     if (-not $cameraTestsSource.Contains($phrase)) {
         Write-Error "Required camera deterministic coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'reference_drawable_height',
+    'reference_pixels_per_meter',
+    'reference_vertical_world_span',
+    'pixelsPerMeterForDrawableHeight'
+)) {
+    if (-not $cameraSource.Contains($phrase)) {
+        Write-Error "Required height-relative camera contract is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
 }
@@ -2560,7 +2574,7 @@ Write-Host 'Prompt 11 debug audit passed: debug commands are bounded, allocation
 Write-Host 'Prompt 11 integration-order audit passed: scripted input precedes physics, animation, visual pose systems, interactions/IK, and observation.'
 Write-Host 'Prompt 12 cleanup audit passed: deterministic tests cover debug/read invariance, reset timing, 1,000 interactions, 100,000 ticks, and adversarial render schedules.'
 Write-Host 'Prompt 13 input audit passed: one polled keyboard mapping, focus resynchronization, pending-edge delivery, world-aware reset, intent-owned interaction, debug invariance, zero input GPU ownership, and raw-key scripted equivalence.'
-Write-Host 'Prompt 14 camera audit passed: world-metre submissions, pure camera math, same-zoom resizing, high-DPI drawable tracking, safe zero surfaces, deterministic follow, three-layer parallax, extended collision world, fixed smoke target, and one global draw path.'
+Write-Host 'Camera audit passed: world-metre submissions, pure camera math, height-relative uniform scaling, high-DPI drawable tracking, safe zero surfaces, deterministic follow, three-layer parallax, extended collision world, fixed smoke target, and one global draw path.'
 Write-Host 'Prompt 15 appearance audit passed: stable runtime IDs, variable visuals, bounded attachment hierarchies, optional module-local joints, character-owned mutable state, canonical-rig isolation, and allocation-free hot paths.'
 Write-Host 'Prompt 16 modular-anatomy audit passed: compositional repeated parts, bounded hierarchies, data morphs and presets, face/hair groups, presentation isolation, canonical-authority isolation, and allocation-free hot paths.'
 Write-Host 'Prompt 17 equipment audit passed: extensible typed definitions, anatomy-aware bounded expansion, transactional loadouts, independent coverage/effects, character-owned state, and the global sprite path.'

@@ -1,7 +1,7 @@
 # Current State
 
-Snapshot basis: VF-03 worktree based on HEAD
-`624bf26c73aeea23f16f94c88350bf5a7c646604`, inspected on 2026-07-30.
+Snapshot basis: height-relative camera worktree based on HEAD
+`bbc4f0ffd9328940ceeb269e2bc294bb4914beed`, inspected on 2026-07-31.
 
 Status vocabulary:
 
@@ -20,6 +20,7 @@ Status vocabulary:
 | System | Status | Current evidence and boundary |
 |---|---|---|
 | SDL3 GPU renderer and D3D12/DXIL route | complete | Atlas-backed sprites and deformable meshes use the global unified queue; Prompt 25D goldens and Prompt 26/27 captures were produced through the real production route. |
+| Height-relative production camera | automated complete, owner resize review pending | The 640×480 composition remains 82 px/m and fixes the vertical world span at 480/82 m. Positive drawable heights derive scale as 82×height/480 from actual SDL drawable/swapchain pixels; width changes horizontal visibility only. Zero drawables preserve the last valid camera. |
 | Fixed-step simulation, animation, physics, and controller | complete | One authoritative 240 Hz deterministic simulation; renderer interpolation does not own simulation. |
 | Input and character intent | complete | Keyboard/gamepad state becomes a bounded intent structure; pending edges survive zero-substep frames. |
 | Interactions, handshake, and IK | complete | Interaction coordination owns fixed-root handshakes; visual IK does not replace root physics. Prompt 27 makes view and occlusion policy definition data. |
@@ -50,7 +51,7 @@ Status vocabulary:
 
 ## Current integrated acceptance
 
-VF-01's focused `test-visual-foundation` gate now passes 47/47 tests, including
+The focused `test-visual-foundation` gate now passes 50/50 tests, including
 the VF-02 production-registration and VF-03 component-topology assertions. The
 2,400-frame production route uses:
 

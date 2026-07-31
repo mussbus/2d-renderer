@@ -1137,12 +1137,9 @@ test "Prompt 27B camera safe region accepts exact margins and corrects clipping"
 }
 
 test "Prompt 27B camera safe region remains deterministic at resized viewport" {
-    var first = try camera2d.Camera2D.init(
-        .{ .x = 3, .y = 0 },
-        960,
-        540,
-        camera2d.default_pixels_per_meter,
-    );
+    var first = camera2d.Camera2D.initDefault();
+    try first.setCenter(.{ .x = 3, .y = 0 });
+    try first.setViewport(960, 540);
     var second = first;
     const raised_jump_bounds = foundation_coherence.Bounds{
         .minimum = .{ .x = 1.2, .y = 0.9 },
@@ -1166,12 +1163,65 @@ test "Prompt 27B camera safe region remains deterministic at resized viewport" {
     );
 }
 
+test "height-relative viewport keeps Prompt 27B safe-region center invariant" {
+    var camera = camera2d.Camera2D.initDefault();
+    const bounds = foundation_coherence.Bounds{
+        .minimum = .{ .x = -1, .y = -2 },
+        .maximum = .{ .x = 1, .y = 3 },
+    };
+    _ = try foundation_coherence.applyVerticalSafeRegion(&camera, bounds);
+    const reference_center = camera.center;
+
+    for ([_][2]u32{
+        .{ 960, 540 },
+        .{ 800, 510 },
+        .{ 640, 480 },
+    }) |viewport| {
+        try camera.setViewport(viewport[0], viewport[1]);
+        _ = try foundation_coherence.applyVerticalSafeRegion(&camera, bounds);
+        try std.testing.expect(camera.center.approxEqAbs(reference_center, 0.000001));
+    }
+}
+
+test "Prompt 27B centered resize placement leaves bounded follow-up slack" {
+    var camera = camera2d.Camera2D.initDefault();
+    try camera.setViewport(960, 540);
+    const first_bounds = foundation_coherence.Bounds{
+        .minimum = .{ .x = -1, .y = -2 },
+        .maximum = .{ .x = 1, .y = 3 },
+    };
+    const resize_correction = try foundation_coherence.centerVerticalSafeRegion(
+        &camera,
+        first_bounds,
+    );
+    try std.testing.expect(resize_correction.measurement.passes());
+    try std.testing.expectApproxEqAbs(@as(f32, 0.5), camera.center.y, 0.000001);
+
+    const previous = camera;
+    const next_bounds = foundation_coherence.Bounds{
+        .minimum = first_bounds.minimum.add(.{ .x = 0, .y = 0.25 }),
+        .maximum = first_bounds.maximum.add(.{ .x = 0, .y = 0.25 }),
+    };
+    const follow_up = try foundation_coherence.applyVerticalSafeRegion(
+        &camera,
+        next_bounds,
+    );
+    try std.testing.expect(follow_up.measurement.passes());
+    const camera_step_px = try foundation_coherence.worldCameraVerticalStepPx(
+        previous,
+        camera,
+    );
+    try std.testing.expect(
+        camera_step_px <= foundation_coherence.maximum_camera_step_px,
+    );
+}
+
 test "Prompt 27B abrupt resize separates first-frame reprojection from subsequent camera motion" {
-    var previous = try camera2d.Camera2D.init(
-        .{ .x = 3, .y = 0 },
+    var previous = camera2d.Camera2D.initDefault();
+    try previous.setCenter(.{ .x = 3, .y = 0 });
+    try previous.setViewport(
         foundation_coherence.abrupt_resize_from_width,
         foundation_coherence.abrupt_resize_from_height,
-        camera2d.default_pixels_per_meter,
     );
     var first_post = previous;
     try first_post.setViewport(
@@ -1229,6 +1279,58 @@ test "Prompt 27B abrupt resize separates first-frame reprojection from subsequen
             minimally_invalid,
         ),
     );
+}
+
+test "production scene camera retains drawable-derived scale across later frames" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    var snapshots = input.SnapshotBuilder{};
+
+    const first_snapshot = try snapshots.update(.{});
+    try scene.updateFrame(1.0 / 60.0, first_snapshot);
+    queue.beginFrame();
+    _ = try scene.submit(&queue);
+    _ = queue.prepare();
+    const settled_center = scene.integrated.camera.center;
+
+    const before_zero = scene.integrated.camera;
+    try std.testing.expectError(error.ZeroViewport, scene.applyViewport(1920, 0));
+    try std.testing.expectEqualDeep(before_zero, scene.integrated.camera);
+    try scene.applyViewport(1920, 1080);
+    try std.testing.expectApproxEqAbs(
+        @as(f32, 184.5),
+        scene.integrated.camera.pixels_per_meter,
+        0.00001,
+    );
+    queue.beginFrame();
+    _ = try scene.submit(&queue);
+    _ = queue.prepare();
+    try std.testing.expectEqual(settled_center, scene.integrated.camera.center);
+
+    for (0..8) |_| {
+        const snapshot = try snapshots.update(.{});
+        try scene.updateFrame(1.0 / 60.0, snapshot);
+        queue.beginFrame();
+        _ = try scene.submit(&queue);
+        _ = queue.prepare();
+        try std.testing.expectApproxEqAbs(
+            @as(f32, 184.5),
+            scene.integrated.camera.pixels_per_meter,
+            0.00001,
+        );
+    }
+    try std.testing.expect(scene.integrated.camera.center.isFinite());
 }
 
 test "Prompt 27B transformed parallax rejects zero and reversed displacement" {

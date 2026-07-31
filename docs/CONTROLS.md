@@ -54,7 +54,15 @@ The Prompt 24 visual-inspection route is:
 
 `Q` cycles automatic, force side, and force front. `H` toggles bald/buzz hair for the controlled male. These are frame-level presentation commands: neither changes gameplay facing or constructs a gameplay intent. The scripted acceptance route uses exactly 360 frames and requires `--scripted-input` instead of `--interactive`.
 
-The visible playground window is resizable. Larger drawable pixel dimensions reveal more world at the same 82 pixels per metre. Minimize can temporarily produce no drawable and safely skips presentation; restore or repeated resize events refresh the high-DPI pixel dimensions without recreating unrelated GPU resources.
+The visible playground window is resizable. Its 640×480 reference composition
+uses 82 pixels per metre; every valid high-DPI drawable derives its scale as
+`82 * drawable_height / 480`. Taller resolutions increase rendered pixel
+detail while keeping the vertical world span fixed, and wider aspect ratios
+expose additional horizontal world without stretching. Minimize can
+temporarily produce no drawable and safely skips presentation while retaining
+the last valid camera. Restore or repeated resize events refresh the drawable
+pixel dimensions without recreating unrelated GPU resources. There are no
+manual zoom controls.
 
 ## Controller demonstration
 

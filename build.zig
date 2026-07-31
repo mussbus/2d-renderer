@@ -1063,6 +1063,7 @@ pub fn build(b: *std.Build) void {
     visual_foundation_module.addImport("render_queue", render_queue_module);
     visual_foundation_module.addImport("deformable_mesh", deformable_mesh_module);
     visual_foundation_module.addImport("debug_draw", debug_draw_module);
+    visual_foundation_module.addImport("camera2d", camera2d_module);
     visual_foundation_module.addImport("visual_geometry", visual_geometry_module);
     visual_foundation_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
     visual_foundation_module.addImport("visual_truth", visual_truth_module);
@@ -1218,6 +1219,26 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("visual_registration", visual_registration_module);
     test_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     test_module.addImport("anatomy_evidence", anatomy_evidence_module);
+    const camera_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/camera_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    camera_test_module.addImport("math", math_module);
+    camera_test_module.addImport("camera2d", camera2d_module);
+    camera_test_module.addImport("input", input_module);
+    camera_test_module.addImport("collision_world", collision_world_module);
+    camera_test_module.addImport("character_controller", character_controller_module);
+    const camera_tests = b.addTest(.{
+        .name = "camera-tests",
+        .root_module = camera_test_module,
+    });
+    const run_camera_tests = b.addRunArtifact(camera_tests);
+    const camera_test_step = b.step(
+        "test-camera",
+        "Run focused height-relative viewport, camera transform, and simulation-invariance tests",
+    );
+    camera_test_step.dependOn(&run_camera_tests.step);
     const art_test_module = b.createModule(.{
         .root_source_file = b.path("tests/art_pipeline_tests.zig"),
         .target = target,

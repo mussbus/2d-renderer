@@ -985,8 +985,14 @@ pub const GpuDemo = struct {
 
     fn applyDrawableSize(self: *GpuDemo, pixel_width: u32, pixel_height: u32) !void {
         if (pixel_width == 0 or pixel_height == 0) return error.ZeroDrawableSize;
-        if (self.drawable_width != pixel_width or self.drawable_height != pixel_height or !self.drawable_available) {
-            try self.visible_camera.setViewport(pixel_width, pixel_height);
+        const changed = self.drawable_width != pixel_width or
+            self.drawable_height != pixel_height or
+            !self.drawable_available;
+        // Scene publication can replace visible_camera before submission.
+        // Reapply the acquired swapchain dimensions every frame so the GPU
+        // always receives the authoritative drawable-derived scale.
+        try self.visible_camera.setViewport(pixel_width, pixel_height);
+        if (changed) {
             self.drawable_width = pixel_width;
             self.drawable_height = pixel_height;
             self.drawable_available = true;
@@ -1207,6 +1213,15 @@ pub const GpuDemo = struct {
             foundation_scene.?.setDebugMode(
                 if (integrated_debug_enabled) .all_diagnostics else .off,
             );
+            if (self.drawable_available and
+                (foundation_scene.?.integrated.camera.viewport_width != self.drawable_width or
+                    foundation_scene.?.integrated.camera.viewport_height != self.drawable_height))
+            {
+                try foundation_scene.?.applyViewport(
+                    self.drawable_width,
+                    self.drawable_height,
+                );
+            }
             if (capture_manual_bundle) {
                 try foundation_scene.?.requestManualDebugCapture();
             }
@@ -1307,6 +1322,15 @@ pub const GpuDemo = struct {
             }
             environment_scene = try environment_demo.Scene.init(humanoid_allocator.allocator());
             environment_scene.?.detailed_debug_enabled = integrated_debug_enabled;
+            if (self.drawable_available and
+                (environment_scene.?.camera.viewport_width != self.drawable_width or
+                    environment_scene.?.camera.viewport_height != self.drawable_height))
+            {
+                try environment_scene.?.applyViewport(
+                    self.drawable_width,
+                    self.drawable_height,
+                );
+            }
             self.visible_camera = environment_scene.?.camera;
             try self.runArtTextureFaultChecks(
                 &environment_scene.?.production.character_art_definition.art,
@@ -1811,6 +1835,15 @@ pub const GpuDemo = struct {
                 },
                 .foundation => {
                     const scene = foundation_scene.?;
+                    if (self.drawable_available and
+                        (scene.integrated.camera.viewport_width != self.drawable_width or
+                            scene.integrated.camera.viewport_height != self.drawable_height))
+                    {
+                        try scene.applyViewport(
+                            self.drawable_width,
+                            self.drawable_height,
+                        );
+                    }
                     const now_ticks_ns = c.SDL_GetTicksNS();
                     const measured_delta = @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;
                     last_ticks_ns = now_ticks_ns;
@@ -1914,6 +1947,15 @@ pub const GpuDemo = struct {
                 },
                 .environment => {
                     const scene = &environment_scene.?;
+                    if (self.drawable_available and
+                        (scene.camera.viewport_width != self.drawable_width or
+                            scene.camera.viewport_height != self.drawable_height))
+                    {
+                        try scene.applyViewport(
+                            self.drawable_width,
+                            self.drawable_height,
+                        );
+                    }
                     const now_ticks_ns = c.SDL_GetTicksNS();
                     const measured_delta =
                         @as(f64, @floatFromInt(now_ticks_ns - last_ticks_ns)) / 1_000_000_000.0;

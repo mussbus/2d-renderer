@@ -238,19 +238,20 @@ pub fn main(init: std.process.Init) !void {
                 abrupt,
             );
         } else {
-            const camera_step_px = if (previous_camera.viewport_width ==
-                scene.integrated.camera.viewport_width and
-                previous_camera.viewport_height ==
-                    scene.integrated.camera.viewport_height)
-                try coherence.worldCameraVerticalStepPx(
-                    previous_camera,
-                    scene.integrated.camera,
-                )
-            else
+            const viewport_changed = previous_camera.viewport_width !=
+                scene.integrated.camera.viewport_width or
+                previous_camera.viewport_height !=
+                    scene.integrated.camera.viewport_height;
+            const camera_step_px = if (viewport_changed)
                 @abs(
                     scene.integrated.camera.center.y -
                         previous_camera.center.y,
-                ) * scene.integrated.camera.pixels_per_meter;
+                ) * scene.integrated.camera.pixels_per_meter
+            else
+                try coherence.worldCameraVerticalStepPx(
+                    previous_camera,
+                    scene.integrated.camera,
+                );
             route_metric = makeMetric(
                 "route_frame",
                 "camera",
@@ -261,18 +262,28 @@ pub fn main(init: std.process.Init) !void {
                 "",
                 "camera",
                 "none",
-                "vertical_step",
+                if (viewport_changed)
+                    "viewport_reprojection_world_delta"
+                else
+                    "vertical_step",
                 camera_step_px,
                 "px/render",
-                "semantic_camera",
+                if (viewport_changed)
+                    "drawable_viewport_reprojection"
+                else
+                    "semantic_camera",
             );
             route_metric.render_frame = @intCast(frame_index);
             route_metric.simulation_tick =
                 scene.integrated.production.simulation_tick;
-            try report.maximum(
-                route_metric,
-                coherence.maximum_camera_step_px,
-            );
+            if (viewport_changed) {
+                try report.append(route_metric);
+            } else {
+                try report.maximum(
+                    route_metric,
+                    coherence.maximum_camera_step_px,
+                );
+            }
         }
         previous_camera = scene.integrated.camera;
 

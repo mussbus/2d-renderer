@@ -192,7 +192,7 @@ The final visual pass records the GPU driver, resolution, and build mode, then v
 - Debug display identifies bones, colliders, hand sockets, and the shared interaction target.
 - Alpha edges blend correctly and no body part is rendered through a per-sprite command submission path.
 - The Prompt 19 mixed route visibly interleaves a cape, body sprites, topology-expanded sleeves, fitted torso garment, and rigid clasp according to authored integer layers. The two-arm and four-arm characters must show two and four distinct sleeve instances, mirrored facing, build/breathing response, and deterministic cape removal/restoration.
-- Drag the visible window through wide, tall, and square aspect ratios. Character size must remain constant while larger drawable dimensions reveal more world.
+- Drag the visible window through wide, tall, and square aspect ratios. The vertical world boundaries must remain fixed as drawable height changes; character pixel height must scale linearly with drawable height. Equal-height wider windows may reveal more horizontal world, but no aspect ratio may stretch X versus Y.
 - Minimize and restore repeatedly, including on a high-DPI display when available. A zero drawable must skip safely, restoration must resume, and no unrelated persistent GPU resource count may change.
 - Walk far left in the playground. The camera must follow without moving the physics root, and distant cave, midground pillars, and gameplay geometry must show clearly different horizontal response.
 
@@ -238,7 +238,21 @@ zig build run -- --frames 1800 --demo playground --scripted-input
 
 It must demonstrate idle, left and right movement, release deceleration, opposing-key neutrality, measured short and held jumps, landing, debug on/off, controller-driven approach, exactly one E request and handshake completion while E stays held, one R reset, and a stable initial final state. It reports two characters, five environment colliders, 14 cave-layer sprites, 49 ordinary sprites, one texture page/range/actual draw, zero input-created GPU resources, and zero steady-state mapping/intent/playground allocation growth. Missing milestones or cleanup evidence returns nonzero.
 
-Prompt 14 adds 12 grouped deterministic tests, bringing the aggregate count from 193 to 205. Pure camera cases cover the original 640×480 mapping, known offsets, positive-Y-up clip behavior, 640×480 plus 1280×720 and 800×800 viewports, nonzero finite validation, transactional zero-size rejection, exact 16-byte uniform values, hand-derived parallax displacement, and bit-deterministic repeated dead-zone updates. Integration cases prove resize changes presentation without changing controller state, camera following cannot change a 720-tick physics replay, the playground keeps both raised platforms while extending its floor to `[-32, 32] m`, cave submissions contain distinct distant/midground/gameplay factors in world metres, and the bounded raw-input route crosses more than 20 metres deterministically.
+Prompt 14 originally added 12 grouped deterministic tests around a fixed
+82-pixel-per-metre resize policy. The current height-relative presentation
+decision deliberately supersedes that one assertion while preserving its
+640×480 mapping, positive-Y-up transforms, zero-size rejection, GPU uniform,
+parallax, follow, physics-invariance, extended-world, and traversal coverage.
+The focused `zig build test-camera` route now also covers the 720/1080/1440/
+2160 linear scales, fixed vertical span, equal-aspect world extents,
+width-only aspect behavior, uniform X/Y mapping, inverse transforms, a
+multi-size round trip, and zero-height recovery.
+
+Camera scalar/world comparisons use `1e-5`. The 4K uniform-axis pixel-delta
+comparison uses `0.0001 px`: subtracting nearby `f32` presentation coordinates
+whose magnitudes are in the thousands produced `0.00002 px` cancellation in
+the focused run, and the selected bound remains four orders of magnitude below
+one physical pixel.
 
 Prompt 14's bounded GPU-backed route is:
 
@@ -337,7 +351,29 @@ scene/topology initialization. It reports actual sprite/mesh instance, range,
 draw, and upload peaks. The interactive companion is
 `zig build run -- --demo foundation --interactive`.
 
-Resize verification is split deliberately: pure tests use synthetic nonzero viewports and compare authoritative state plus pending edge counts exactly; the SDL route feeds real resize/pixel-size/restore events through drawable-size refresh and the same camera setter. Neither form claims physical manual resizing unless it was actually performed.
+Resize verification is split deliberately: pure tests use synthetic viewports
+and compare controller, animation, world transform, appearance/loadout state,
+camera center, and pending edges across the atomic camera update. The
+production-scene test continues update/submission work after a 1920×1080
+resize to prove later camera publication retains 184.5 px/m. The SDL route
+feeds real resize/pixel-size/restore events through `SDL_GetWindowSizeInPixels`
+and confirms acquired swapchain dimensions again before GPU encoding. A zero
+drawable skips without deriving scale. Neither form claims physical manual
+resizing or a visible 4K window unless it was actually performed.
+
+The active Prompt 27B scripted fixture retains its 960×540, 800×510, 640×480
+incremental sequence and the separately classified direct 960×540-to-640×480
+transition in their original route phases. Every viewport-change frame is
+classified as instantaneous viewport reprojection instead of ordinary
+same-viewport world-camera motion. On the first submitted frame at a
+non-reference height, a submitted-bounds correction that is independently
+required uses the available safe-region interval symmetrically so later bound
+changes have head and foot slack. If identical bounds are already safe, resize
+leaves the camera center exactly unchanged. Later frames at that viewport
+return to nearest-edge correction and retain the unchanged 16 px/render limit.
+Returning to 640×480 does not invoke the non-reference recenter. Registration,
+ground alignment, secondary motion, physics, animation, and interaction
+behavior remain unchanged.
 
 Prompt 11's GPU-backed evidence run is:
 

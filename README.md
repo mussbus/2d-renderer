@@ -223,7 +223,11 @@ Prompt 27C-R1 owner/manual visual acceptance remains
 
 Walk right toward the passive character and stop near the authored handshake position. Both characters must be grounded and facing one another; spacing remains deliberately strict, and pressing `E` never snaps or warps either root. The raised platforms, short/held jump behavior, foot planting, arm IK, reset, and debug overlay all use the production runtime paths.
 
-The window can be resized without changing character scale. Walk left beyond the original view to exercise camera following and the distant, midground, and gameplay cave layers.
+The window uses a fixed vertical composition: 640×480 is the 82 px/m
+reference, and drawable height scales character/world pixels linearly while
+preserving vertical world bounds. Wider aspect ratios expose more horizontal
+world without stretching. Walk left beyond the original view to exercise
+camera following and the distant, midground, and gameplay cave layers.
 
 The bounded automated route uses synthetic raw key state through the identical keyboard mapping:
 

@@ -6,6 +6,10 @@ const character_controller = @import("character_controller");
 const input = @import("input");
 
 const tolerance: f32 = 0.00001;
+// World-to-presentation subtracts nearby f32 values whose magnitude reaches
+// thousands at 4K. 0.0001 px covers that observed cancellation error while
+// remaining four orders of magnitude below one physical pixel.
+const presentation_pixel_tolerance: f32 = 0.0001;
 
 fn expectVec(expected: math.Vec2, actual: math.Vec2) !void {
     try std.testing.expect(expected.approxEqAbs(actual, tolerance));
@@ -14,6 +18,17 @@ fn expectVec(expected: math.Vec2, actual: math.Vec2) !void {
 test "default camera preserves the original 640 by 480 presentation" {
     const camera = camera2d.Camera2D.initDefault();
     try camera.validate();
+    try std.testing.expectApproxEqAbs(
+        camera2d.reference_pixels_per_meter,
+        camera.pixels_per_meter,
+        tolerance,
+    );
+    const extents = try camera.worldHalfExtents();
+    try std.testing.expectApproxEqAbs(
+        camera2d.reference_vertical_world_span,
+        extents.y * 2,
+        tolerance,
+    );
     try expectVec(.{ .x = 320, .y = 240 }, try camera.worldToPresentation(camera.center, 1));
     try expectVec(math.Vec2.zero, try camera.worldToClip(camera.center, 1));
     try expectVec(.{ .x = 320, .y = 105 }, try camera.worldToPresentation(math.Vec2.zero, 1));
@@ -25,27 +40,133 @@ test "default camera preserves the original 640 by 480 presentation" {
     try std.testing.expect(clip.y > 0);
 }
 
-test "camera keeps zoom at 640 by 480 and two other aspect ratios" {
+test "drawable height scales pixel density linearly and preserves vertical world span" {
     var camera = camera2d.Camera2D.initDefault();
-    const viewports = [_][2]u32{
-        .{ 640, 480 },
-        .{ 1280, 720 },
-        .{ 800, 800 },
+    const cases = [_]struct {
+        width: u32,
+        height: u32,
+        pixels_per_meter: f32,
+    }{
+        .{ .width = 640, .height = 480, .pixels_per_meter = 82.0 },
+        .{ .width = 1280, .height = 720, .pixels_per_meter = 123.0 },
+        .{ .width = 1920, .height = 1080, .pixels_per_meter = 184.5 },
+        .{ .width = 2560, .height = 1440, .pixels_per_meter = 246.0 },
+        .{ .width = 3840, .height = 2160, .pixels_per_meter = 369.0 },
     };
-    for (viewports) |viewport| {
-        try camera.setViewport(viewport[0], viewport[1]);
+
+    for (cases) |case| {
+        try camera.setViewport(case.width, case.height);
         const center = try camera.worldToPresentation(camera.center, 1);
-        try std.testing.expectApproxEqAbs(@as(f32, @floatFromInt(viewport[0])) * 0.5, center.x, tolerance);
-        try std.testing.expectApproxEqAbs(@as(f32, @floatFromInt(viewport[1])) * 0.5, center.y, tolerance);
-        const one_meter_right = try camera.worldToPresentation(camera.center.add(.{ .x = 1, .y = 0 }), 1);
-        try std.testing.expectApproxEqAbs(camera2d.default_pixels_per_meter, one_meter_right.x - center.x, tolerance);
-        const extents = try camera.worldHalfExtents();
         try std.testing.expectApproxEqAbs(
-            @as(f32, @floatFromInt(viewport[0])) * 0.5 / camera2d.default_pixels_per_meter,
-            extents.x,
+            @as(f32, @floatFromInt(case.width)) * 0.5,
+            center.x,
             tolerance,
         );
+        try std.testing.expectApproxEqAbs(
+            @as(f32, @floatFromInt(case.height)) * 0.5,
+            center.y,
+            tolerance,
+        );
+        try std.testing.expectApproxEqAbs(case.pixels_per_meter, camera.pixels_per_meter, tolerance);
+        const extents = try camera.worldHalfExtents();
+        try std.testing.expectApproxEqAbs(
+            camera2d.reference_vertical_world_span,
+            extents.y * 2,
+            tolerance,
+        );
+        std.debug.print(
+            "camera_scaling_evidence viewport={d}x{d} ppm={d:.6} vertical_span_m={d:.9} horizontal_span_m={d:.9} center=[{d:.6},{d:.6}] reference_height_m=1.000000 reference_height_px={d:.3}\n",
+            .{
+                case.width,
+                case.height,
+                camera.pixels_per_meter,
+                extents.y * 2,
+                extents.x * 2,
+                camera.center.x,
+                camera.center.y,
+                camera.pixels_per_meter,
+            },
+        );
     }
+}
+
+test "same aspect ratios preserve both world extents and width changes only horizontal visibility" {
+    var camera = camera2d.Camera2D.initDefault();
+    var expected_16_by_9_extents: ?math.Vec2 = null;
+    for ([_][2]u32{
+        .{ 1280, 720 },
+        .{ 1920, 1080 },
+        .{ 3840, 2160 },
+    }) |viewport| {
+        try camera.setViewport(viewport[0], viewport[1]);
+        const extents = try camera.worldHalfExtents();
+        if (expected_16_by_9_extents) |expected| {
+            try expectVec(expected, extents);
+        } else {
+            expected_16_by_9_extents = extents;
+        }
+    }
+
+    try camera.setViewport(960, 1080);
+    const narrow = try camera.worldHalfExtents();
+    try camera.setViewport(1920, 1080);
+    const standard = try camera.worldHalfExtents();
+    try camera.setViewport(2560, 1080);
+    const wide = try camera.worldHalfExtents();
+    try std.testing.expectApproxEqAbs(narrow.y, standard.y, tolerance);
+    try std.testing.expectApproxEqAbs(standard.y, wide.y, tolerance);
+    try std.testing.expect(narrow.x < standard.x);
+    try std.testing.expect(standard.x < wide.x);
+    std.debug.print(
+        "camera_aspect_evidence height=1080 vertical_span_m={d:.9} widths=[960,1920,2560] horizontal_spans_m=[{d:.9},{d:.9},{d:.9}]\n",
+        .{ standard.y * 2, narrow.x * 2, standard.x * 2, wide.x * 2 },
+    );
+}
+
+test "resized camera keeps uniform axes and inverse-compatible transforms" {
+    var camera = camera2d.Camera2D.initDefault();
+    for ([_][2]u32{
+        .{ 1280, 720 },
+        .{ 1024, 1024 },
+        .{ 3840, 2160 },
+    }) |viewport| {
+        try camera.setViewport(viewport[0], viewport[1]);
+        const center = try camera.worldToPresentation(camera.center, 1);
+        const right = try camera.worldToPresentation(camera.center.add(.{ .x = 1, .y = 0 }), 1);
+        const up = try camera.worldToPresentation(camera.center.add(.{ .x = 0, .y = 1 }), 1);
+        try std.testing.expectApproxEqAbs(
+            right.x - center.x,
+            up.y - center.y,
+            presentation_pixel_tolerance,
+        );
+        try std.testing.expectApproxEqAbs(
+            camera.pixels_per_meter,
+            right.x - center.x,
+            presentation_pixel_tolerance,
+        );
+
+        const world = camera.center.add(.{ .x = 1.75, .y = -0.625 });
+        const round_trip = try camera.presentationToWorld(try camera.worldToPresentation(world, 1));
+        try expectVec(world, round_trip);
+    }
+}
+
+test "resize round trip derives from reference without drift or center movement" {
+    var camera = camera2d.Camera2D.initDefault();
+    const original = camera;
+    for ([_][2]u32{
+        .{ 640, 480 },
+        .{ 1280, 720 },
+        .{ 1920, 1080 },
+        .{ 3840, 2160 },
+        .{ 1024, 1024 },
+        .{ 640, 480 },
+    }) |viewport| {
+        try camera.setViewport(viewport[0], viewport[1]);
+    }
+    try std.testing.expectApproxEqAbs(camera2d.reference_pixels_per_meter, camera.pixels_per_meter, tolerance);
+    try expectVec(original.center, camera.center);
+    try expectVec(try original.worldHalfExtents(), try camera.worldHalfExtents());
 }
 
 test "positive world Y maps upward in presentation and clip space" {
@@ -70,10 +191,17 @@ test "zero and invalid camera state is rejected transactionally" {
     const before = camera;
     try std.testing.expectError(error.ZeroViewport, camera.setViewport(0, 720));
     try std.testing.expectEqualDeep(before, camera);
+    try std.testing.expectError(error.ZeroViewport, camera.setViewport(1280, 0));
+    try std.testing.expectEqualDeep(before, camera);
+    try std.testing.expectError(error.ZeroViewport, camera2d.pixelsPerMeterForDrawableHeight(0));
+    try camera.setViewport(1920, 1080);
+    try std.testing.expectApproxEqAbs(@as(f32, 184.5), camera.pixels_per_meter, tolerance);
+    try camera.validate();
+    const before_invalid_center = camera;
     try std.testing.expectError(error.NonFiniteCameraCenter, camera.setCenter(.{ .x = 0, .y = std.math.nan(f32) }));
-    try std.testing.expectEqualDeep(before, camera);
+    try std.testing.expectEqualDeep(before_invalid_center, camera);
     try std.testing.expectError(error.InvalidPixelsPerMeter, camera.setPixelsPerMeter(-1));
-    try std.testing.expectEqualDeep(before, camera);
+    try std.testing.expectEqualDeep(before_invalid_center, camera);
     try std.testing.expectError(error.InvalidCameraXFactor, camera.worldToPresentation(math.Vec2.zero, -0.01));
     try std.testing.expectError(error.InvalidCameraXFactor, camera.worldToPresentation(math.Vec2.zero, 1.01));
 }

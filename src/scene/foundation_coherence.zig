@@ -291,21 +291,54 @@ pub fn applyVerticalSafeRegion(
     camera: *camera2d.Camera2D,
     bounds: Bounds,
 ) !CameraCorrection {
+    return applyVerticalSafeRegionWithPlacement(camera, bounds, .nearest);
+}
+
+pub fn centerVerticalSafeRegion(
+    camera: *camera2d.Camera2D,
+    bounds: Bounds,
+) !CameraCorrection {
+    return applyVerticalSafeRegionWithPlacement(camera, bounds, .centered);
+}
+
+const VerticalSafeRegionPlacement = enum {
+    nearest,
+    centered,
+};
+
+fn applyVerticalSafeRegionWithPlacement(
+    camera: *camera2d.Camera2D,
+    bounds: Bounds,
+    placement: VerticalSafeRegionPlacement,
+) !CameraCorrection {
     try bounds.validate();
-    const half_height =
-        @as(f32, @floatFromInt(camera.viewport_height)) * 0.5;
+    try camera.validate();
+    const half_height_world =
+        @as(f32, @floatFromInt(camera.viewport_height)) *
+        0.5 /
+        camera.pixels_per_meter;
+    // Prompt 27B's 16 px margins are part of the 640x480 reference
+    // composition. Keep their world size constant as drawable height scales,
+    // otherwise resizing alone would move the camera center.
+    const minimum_top_headroom_world =
+        minimum_top_headroom_px / camera2d.reference_pixels_per_meter;
+    const minimum_bottom_clearance_world =
+        minimum_bottom_clearance_px / camera2d.reference_pixels_per_meter;
     const lower_center_y = bounds.maximum.y -
-        (half_height - minimum_top_headroom_px) / camera.pixels_per_meter;
+        (half_height_world - minimum_top_headroom_world);
     const upper_center_y = bounds.minimum.y +
-        (half_height - minimum_bottom_clearance_px) / camera.pixels_per_meter;
+        (half_height_world - minimum_bottom_clearance_world);
     if (lower_center_y > upper_center_y) return error.VisibleBoundsExceedSafeViewport;
 
     const previous_center_y = camera.center.y;
-    const corrected_center_y = std.math.clamp(
-        previous_center_y,
-        lower_center_y,
-        upper_center_y,
-    );
+    const corrected_center_y = switch (placement) {
+        .nearest => std.math.clamp(
+            previous_center_y,
+            lower_center_y,
+            upper_center_y,
+        ),
+        .centered => lower_center_y + (upper_center_y - lower_center_y) * 0.5,
+    };
     try camera.setCenter(.{
         .x = camera.center.x,
         .y = corrected_center_y,

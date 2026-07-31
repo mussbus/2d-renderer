@@ -9,6 +9,7 @@ These records capture conclusions and maintainable rationale. Existing milestone
 | [ADR-003](ADR-003-directional-side-presentation.md) | Side presentation declares mirror-safe, authored-directional, or mixed-fragment policy |
 | [ADR-004](ADR-004-visual-fit-is-not-gameplay-collision.md) | Visual fit geometry is distinct from gameplay collision |
 | [ADR-005](ADR-005-editor-uses-production-schema.md) | Future editors export the ordinary validated production schema |
+| [ADR-006](ADR-006-height-relative-viewport-scaling.md) | Derive one uniform production-camera scale from drawable height and the 640×480 reference |
 
 Related historical decisions:
 

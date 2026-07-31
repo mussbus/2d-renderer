@@ -20,6 +20,7 @@ const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_demo = @import("wardrobe_demo");
 const render_queue = @import("render_queue");
 const debug_draw = @import("debug_draw");
+const camera2d = @import("camera2d");
 const visual_geometry = @import("visual_geometry");
 const visual_geometry_overlay = @import("visual_geometry_overlay");
 const visual_truth = @import("visual_truth");
@@ -438,6 +439,7 @@ pub const Scene = struct {
     parallax_trace: environment_theme.ParallaxTrace = .{},
     female_ground_alignment_y: f32 = 0,
     male_ground_alignment_y: f32 = 0,
+    viewport_recenter_pending: bool = false,
     partner_motion: PartnerMotion = .stopped,
     partner_motion_target_x: f32 = foundation_playground.partner_spawn.x,
     debug_counts: foundation_evidence.DebugCounts = .{},
@@ -1167,10 +1169,27 @@ pub const Scene = struct {
             scene.visual_trace,
             production.female.id.raw(),
         );
-        _ = try foundation_coherence.applyVerticalSafeRegion(
-            &scene.integrated.camera,
-            female.world,
-        );
+        if (scene.viewport_recenter_pending) {
+            const nearest = try foundation_coherence.applyVerticalSafeRegion(
+                &scene.integrated.camera,
+                female.world,
+            );
+            // A drawable change alone cannot move the camera. Balance the
+            // interval only when this frame's submitted bounds independently
+            // required a safe-region correction.
+            if (nearest.delta_px > 0) {
+                _ = try foundation_coherence.centerVerticalSafeRegion(
+                    &scene.integrated.camera,
+                    female.world,
+                );
+            }
+            scene.viewport_recenter_pending = false;
+        } else {
+            _ = try foundation_coherence.applyVerticalSafeRegion(
+                &scene.integrated.camera,
+                female.world,
+            );
+        }
     }
 
     fn measureCharacterPresence(scene: *Scene) !void {
@@ -1424,9 +1443,15 @@ pub const Scene = struct {
 
     pub fn applyViewport(scene: *Scene, width: u32, height: u32) !void {
         const before = scene.authoritativeInteractionFingerprint();
+        const changed = width != scene.integrated.camera.viewport_width or
+            height != scene.integrated.camera.viewport_height;
         try scene.integrated.applyViewport(width, height);
         if (before != scene.authoritativeInteractionFingerprint()) {
             return error.VisualFoundationResizeChangedAuthoritativeState;
+        }
+        if (changed) {
+            scene.viewport_recenter_pending =
+                height != camera2d.reference_drawable_height;
         }
         scene.evidence.resize_invariant = true;
     }

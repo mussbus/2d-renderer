@@ -1,9 +1,15 @@
 const std = @import("std");
 const math = @import("math");
 
-pub const default_viewport_width: u32 = 640;
-pub const default_viewport_height: u32 = 480;
-pub const default_pixels_per_meter: f32 = 82.0;
+pub const reference_drawable_width: u32 = 640;
+pub const reference_drawable_height: u32 = 480;
+pub const reference_pixels_per_meter: f32 = 82.0;
+pub const reference_vertical_world_span: f32 =
+    @as(f32, @floatFromInt(reference_drawable_height)) / reference_pixels_per_meter;
+
+pub const default_viewport_width: u32 = reference_drawable_width;
+pub const default_viewport_height: u32 = reference_drawable_height;
+pub const default_pixels_per_meter: f32 = reference_pixels_per_meter;
 pub const default_center = math.Vec2{
     .x = 0,
     .y = (default_viewport_height / 2 - 105) / default_pixels_per_meter,
@@ -55,8 +61,10 @@ pub const Camera2D = struct {
 
     pub fn setViewport(camera: *Camera2D, width: u32, height: u32) !void {
         if (width == 0 or height == 0) return error.ZeroViewport;
+        const pixels_per_meter = try pixelsPerMeterForDrawableHeight(height);
         camera.viewport_width = width;
         camera.viewport_height = height;
+        camera.pixels_per_meter = pixels_per_meter;
     }
 
     pub fn setPixelsPerMeter(camera: *Camera2D, pixels_per_meter: f32) !void {
@@ -114,6 +122,17 @@ pub const Camera2D = struct {
         };
     }
 };
+
+pub fn pixelsPerMeterForDrawableHeight(drawable_height: u32) !f32 {
+    if (drawable_height == 0) return error.ZeroViewport;
+    const pixels_per_meter = reference_pixels_per_meter *
+        @as(f32, @floatFromInt(drawable_height)) /
+        @as(f32, @floatFromInt(reference_drawable_height));
+    if (!std.math.isFinite(pixels_per_meter) or pixels_per_meter <= 0) {
+        return error.InvalidPixelsPerMeter;
+    }
+    return pixels_per_meter;
+}
 
 pub const HorizontalFollower = struct {
     dead_zone_half_width: f32,

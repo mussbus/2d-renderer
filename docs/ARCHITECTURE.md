@@ -40,9 +40,29 @@ The root transform combines only physics root position and facing. Animation and
 
 ## Camera, viewport, and parallax ownership
 
-`src/graphics/camera2d.zig` owns presentation state: a finite world-space center, nonzero drawable-pixel width and height, and a positive pixels-per-metre zoom. It imports only the renderer-independent math module. `worldToPresentation`, `presentationToWorld`, `worldToClip`, visible half-extents, the 16-byte GPU uniform, and deterministic horizontal following are therefore testable without SDL, a window, or a GPU.
+`src/graphics/camera2d.zig` owns presentation state: a finite world-space center, nonzero drawable-pixel width and height, and a positive pixels-per-metre scale. It imports only the renderer-independent math module. `worldToPresentation`, `presentationToWorld`, `worldToClip`, visible half-extents, the 16-byte GPU uniform, and deterministic horizontal following are therefore testable without SDL, a window, or a GPU.
 
-The default camera uses 82 pixels per metre and center `(0, 135 / 82) m`. At 640×480 this maps world origin to the previous `(320, 105)` presentation point, so existing scenes remain visually comparable. Resizing changes only the half-width and half-height visible in world metres. Zoom and character size do not change, so a larger window reveals more world instead of stretching it.
+The immutable reference presentation is 640×480 at 82 pixels per metre with
+center `(0, 135 / 82) m`. It maps world origin to the established `(320, 105)`
+presentation point and fixes the vertical world span at `480 / 82`, or
+approximately `5.85365854 m`. Every valid viewport update atomically derives
+the effective scale from drawable height:
+
+```text
+pixels_per_metre = 82 * drawable_height / 480
+```
+
+This derivation always starts from the reference values; it never compounds
+from the previous resize. X and Y share that one scale. Resolution changes at
+one aspect ratio therefore preserve both world extents while increasing pixel
+detail, and aspect-ratio changes alter only horizontal visibility. Manual zoom
+remains deferred. This policy supersedes Prompt 14's fixed-pixel-density
+resize behavior; its fixed 640×480 capture composition remains identical.
+The Prompt 27B 16-pixel top/bottom safe-region margins are likewise reference
+composition values: they are converted through 82 px/m to constant world
+margins, then rendered at the effective scale. This prevents a resolution
+change by itself from moving the camera center while leaving the 640×480 ruler
+exactly unchanged.
 
 Visible windows are created with `SDL_WINDOW_RESIZABLE`. SDL window-resize, drawable-pixel-size, minimize, and restore events refresh `SDL_GetWindowSizeInPixels`; the dimensions returned by `SDL_WaitAndAcquireGPUSwapchainTexture` are the final per-frame authority. A zero or absent swapchain texture skips drawing without changing the last valid camera. Restoration applies the new nonzero pixel extent. Resize handling updates scalar camera state only and does not recreate shaders, textures, buffers, samplers, or pipelines.
 
@@ -138,7 +158,19 @@ The branches share stable item definitions and loadout identity only. The visual
 
 The integrated route uses canonical roots and the existing right-arm/hand socket for handshake IK. Morphology, clothing, equipment properties, and secondary motion do not rewrite participant roots or the authored `3.72 m` eligibility geometry. The nonstandard showcase retains the canonical skeleton but is not inserted into the two-participant interaction candidate set; arbitrary noncanonical interaction binding remains outside this milestone rather than being approximated.
 
-Viewport changes update only the camera viewport scalars. The scene compares controller, interaction, appearance selection, loadout fingerprint, capability state, and pending-edge count before and after every synthetic resize. A real SDL resize reaches the same camera method after drawable-pixel refresh. Neither route reinitializes characters or GPU resources.
+Viewport changes update only the camera's presentation dimensions and the
+height-derived pixels-per-metre scale. The scene compares controller,
+interaction, animation, appearance selection, loadout fingerprint, capability
+state, character transform, and pending-edge count before and after synthetic
+resizes. The SDL event path re-queries `SDL_GetWindowSizeInPixels`; the render
+path also consumes the width and height returned with the acquired swapchain
+texture. Those drawable dimensions update `GpuDemo`'s single stored viewport
+authority. Production foundation/environment scenes synchronize from that
+authority before later per-frame camera publication, and acquired dimensions
+are reapplied before GPU encoding. A zero or minimized drawable marks
+presentation unavailable and preserves the last valid camera; no scale or
+projection is calculated until a later positive drawable size arrives.
+Neither route reinitializes characters or GPU resources.
 
 Reset has one owner, `Scene.resetWorld`. It clears the manager, controller velocity/jump/dash state, animation and procedural state, foot locks, IK/overrides, breathing phase, appearance selection and overrides, resolved-instance secondary/mesh state, pending edges, fixed-step clock, and camera center. It then reapplies the authored initial body/build/hair configuration and atomically restores the equipment definition's default loadout and resolved properties. Viewport dimensions remain the current window dimensions; camera tracking restarts from the authored center.
 
@@ -438,11 +470,16 @@ state.
 
 The route retains its incremental 960×540 to 800×510 to 640×480 resize and
 also performs one separately identified direct 960×540 to 640×480 event.
-That event's first submitted frame is classified as instantaneous viewport
+Every changed-viewport frame is classified as instantaneous viewport
 reprojection: its finite head/foot projection must satisfy the unchanged
-16 px margins immediately. The first frame is not misreported as ordinary
-world-camera motion; every subsequent same-viewport camera-center step still
-must satisfy the unchanged 16 px/render bound.
+safe-region contract immediately. The first submitted frame at a
+non-reference height uses the available vertical interval symmetrically only
+when its submitted bounds independently require a safe-region correction,
+giving later bound changes head and foot slack. Already-safe identical bounds
+leave camera center unchanged; subsequent frames return to nearest-edge
+correction. A resize is not misreported as ordinary world-camera motion, while
+every same-viewport camera-center step still must satisfy the unchanged
+16 px/render bound.
 
 Environment submission exposes typed far, midground, and gameplay trace
 records containing the actual anchors and camera factors used by production.
