@@ -391,6 +391,15 @@ pub fn build(b: *std.Build) void {
     anatomy_module.addImport("skeleton", skeleton_module);
     anatomy_module.addImport("appearance", appearance_module);
     anatomy_module.addImport("fault_injection", fault_injection_module);
+    const component_graph_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/component_graph.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    component_graph_module.addImport("math", math_module);
+    component_graph_module.addImport("skeleton", skeleton_module);
+    component_graph_module.addImport("appearance", appearance_module);
+    component_graph_module.addImport("anatomy", anatomy_module);
     const character_properties_module = b.createModule(.{
         .root_source_file = b.path("src/scene/character_properties.zig"),
         .target = target,
@@ -453,6 +462,7 @@ pub fn build(b: *std.Build) void {
     humanoid_module.addImport("pose", pose_module);
     humanoid_module.addImport("appearance", appearance_module);
     humanoid_module.addImport("anatomy", anatomy_module);
+    humanoid_module.addImport("component_graph", component_graph_module);
     humanoid_module.addImport("sprite_batch", sprite_batch_module);
     humanoid_module.addImport("fault_injection", fault_injection_module);
     const events_module = b.createModule(.{
@@ -533,6 +543,7 @@ pub fn build(b: *std.Build) void {
     character_module.addImport("humanoid", humanoid_module);
     character_module.addImport("appearance", appearance_module);
     character_module.addImport("anatomy", anatomy_module);
+    character_module.addImport("component_graph", component_graph_module);
     character_module.addImport("equipment", equipment_module);
     character_module.addImport("character_properties", character_properties_module);
     character_module.addImport("deformation", deformation_module);
@@ -618,6 +629,7 @@ pub fn build(b: *std.Build) void {
     character_art_module.addImport("visual_geometry", visual_geometry_module);
     character_art_module.addImport("visual_registration", visual_registration_module);
     character_art_module.addImport("image_decode", image_decode_module);
+    character_art_module.addImport("anatomy", anatomy_module);
     const wardrobe_catalog_module = b.createModule(.{
         .root_source_file = b.path("src/scene/wardrobe_catalog.zig"),
         .target = target,
@@ -767,6 +779,7 @@ pub fn build(b: *std.Build) void {
     visual_truth_module.addImport("skeleton", skeleton_module);
     visual_truth_module.addImport("appearance", appearance_module);
     visual_truth_module.addImport("anatomy", anatomy_module);
+    visual_truth_module.addImport("component_graph", component_graph_module);
     visual_truth_module.addImport("character", character_module);
     visual_truth_module.addImport("humanoid", humanoid_module);
     visual_truth_module.addImport("character_art", character_art_module);
@@ -829,6 +842,7 @@ pub fn build(b: *std.Build) void {
     modular_body_demo_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
     modular_body_demo_module.addImport("appearance", appearance_module);
     modular_body_demo_module.addImport("anatomy", anatomy_module);
+    modular_body_demo_module.addImport("component_graph", component_graph_module);
     modular_body_demo_module.addImport("humanoid", humanoid_module);
     modular_body_demo_module.addImport("authored_clips", authored_clips_module);
     modular_body_demo_module.addImport("character", character_module);
@@ -994,6 +1008,7 @@ pub fn build(b: *std.Build) void {
     environment_demo_module.addImport("deformable_mesh", deformable_mesh_module);
     environment_demo_module.addImport("collision_world", collision_world_module);
     environment_demo_module.addImport("visual_geometry", visual_geometry_module);
+    environment_demo_module.addImport("modular_body_demo", modular_body_demo_module);
     const foundation_evidence_module = b.createModule(.{
         .root_source_file = b.path("src/scene/foundation_evidence.zig"),
         .target = target,
@@ -1051,6 +1066,7 @@ pub fn build(b: *std.Build) void {
     visual_foundation_module.addImport("visual_geometry", visual_geometry_module);
     visual_foundation_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
     visual_foundation_module.addImport("visual_truth", visual_truth_module);
+    visual_foundation_module.addImport("modular_body_demo", modular_body_demo_module);
     const controller_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/controller_demo.zig"),
         .target = target,
@@ -1144,6 +1160,7 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("pose", pose_module);
     test_module.addImport("appearance", appearance_module);
     test_module.addImport("anatomy", anatomy_module);
+    test_module.addImport("component_graph", component_graph_module);
     test_module.addImport("equipment", equipment_module);
     test_module.addImport("character_properties", character_properties_module);
     test_module.addImport("deformation", deformation_module);
@@ -1246,6 +1263,28 @@ pub fn build(b: *std.Build) void {
         "Run the Prompt 24 view-policy, character-art, interaction, and steady-state tests",
     );
     presentation_test_step.dependOn(&run_presentation_tests.step);
+    const component_graph_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/component_graph_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    component_graph_test_module.addImport("math", math_module);
+    component_graph_test_module.addImport("anatomy", anatomy_module);
+    component_graph_test_module.addImport("appearance", appearance_module);
+    component_graph_test_module.addImport("component_graph", component_graph_module);
+    component_graph_test_module.addImport("humanoid", humanoid_module);
+    component_graph_test_module.addImport("modular_body_demo", modular_body_demo_module);
+    component_graph_test_module.addImport("presentation_pose", presentation_pose_module);
+    const component_graph_tests = b.addTest(.{
+        .name = "component-graph-tests",
+        .root_module = component_graph_test_module,
+    });
+    const run_component_graph_tests = b.addRunArtifact(component_graph_tests);
+    const component_graph_test_step = b.step(
+        "test-component-graph",
+        "Run VF-03 typed topology, optional module, projection, and fail-closed tests",
+    );
+    component_graph_test_step.dependOn(&run_component_graph_tests.step);
     const wardrobe_test_module = b.createModule(.{
         .root_source_file = b.path("tests/wardrobe_tests.zig"),
         .target = target,
@@ -1507,6 +1546,8 @@ pub fn build(b: *std.Build) void {
     visual_foundation_test_module.addImport("visual_truth", visual_truth_module);
     visual_foundation_test_module.addImport("visual_geometry", visual_geometry_module);
     visual_foundation_test_module.addImport("debug_draw", debug_draw_module);
+    visual_foundation_test_module.addImport("anatomy", anatomy_module);
+    visual_foundation_test_module.addImport("character_art", character_art_module);
     const visual_foundation_tests = b.addTest(.{
         .name = "visual-foundation-tests",
         .root_module = visual_foundation_test_module,

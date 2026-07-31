@@ -175,3 +175,41 @@ presentation transforms as typed targets for a bounded set of point, segment,
 and frame bindings. Left/right part identity remains authoritative before
 mirroring. Registration evidence is presentation metadata and cannot create,
 remove, or rename a bone, part, socket, or rig module.
+
+## VF-03 typed component topology
+
+Anatomy part definitions now carry component metadata: semantic role/tags,
+point/segment/frame/mesh binding mode, allowed parent-socket role, connection
+support, view requirements, maximum instance count, child policy, optional
+rig-module template, and material/morphology declaration names. Part sockets
+carry stable owner, role, accepted child tag, capacity, connection support,
+and local frame.
+
+`component_graph.Definition` compiles these records together with appearance
+visuals and rig modules. It does not copy them into another mutable
+hierarchy. Runtime compatibility validates the original definition owners and
+topology fingerprint.
+
+Current direct typed proofs are:
+
+- head eye socket → eye → eye brow socket → eyebrow;
+- head scalp socket → hair;
+- torso arm socket → explicit extra-arm module;
+- pelvis tail socket → explicit tail module;
+- head horn sockets → optional horns.
+
+Standard core torso/head/pelvis and two-arm/two-leg components retain
+compatibility-adapter roots where the established attachment hierarchy still
+owns placement. Topology is immutable after initialization. No fixed-tick
+path creates a part, socket, joint, or module.
+
+VF-03-R1 makes the optional-arm proof a direct production consumer of this
+topology. One active arm resolves exactly three graph-bound visuals: upper arm
+shoulder → elbow, forearm elbow → wrist, and hand wrist → hand-tip. The
+presentation evaluator supplies those projected endpoints; anatomy's
+connection evaluator supplies the parent/child root proof. A continuous root
+must be within its unchanged epsilon, while the technical intentional-gap
+root must measure `0.07–0.09 m` around its `0.08 m` target. The offset is
+world-metre data, so parent morphology scale does not inflate or shrink it.
+Inactive modules remain explicit definitions but resolve zero active visuals,
+joints, sockets, or submissions.

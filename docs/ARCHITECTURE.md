@@ -627,3 +627,63 @@ The fixed trace is initialization-owned and heap-backed to keep the enlarged
 bounded diagnostic structure off the Windows Debug stack. Atlas-alpha scan
 scratch is initialization-only and freed immediately. Neither choice adds a
 steady-state allocation or GPU resource.
+
+### VF-03 immutable component topology
+
+VF-03 compiles the existing appearance and anatomy definitions into
+`component_graph.Definition`. The graph is a bounded facade, not a third
+editable hierarchy: appearance still owns visual attachments and rig-module
+members, anatomy still owns part evaluation and active presets, and the graph
+is the one inspection/validation authority that joins their identities,
+parents, typed sockets, connection modes, bound visuals, and optional module
+ownership. Owner tokens and a topology fingerprint reject mutation after
+initialization.
+
+Sockets declare accepted child tags and roles, capacity, supported
+connections, and local frames. Components declare point/segment/frame/mesh
+binding, maximum multiplicity, child policy, required/projected views,
+optional module template, and typed material/morphology extension names.
+`continuous`, `intentional_gap`, `hidden`, and `soft_bridge` are explicit
+data; alpha overlap never selects a connection mode.
+
+`FrontAnatomyProjection` evaluates component/socket transforms in immutable
+definition order after the ordinary front/side appearance projection has
+resolved canonical bones, attachment points, module joints/sockets, and
+visual-parent sources. Direct point-bound eye, eyebrow, and hair visuals use
+the projected component transform and the existing point-registration
+solver. The standard controller, pose, animation, IK, collision, interaction,
+camera, unified queue, and GPU resource authorities are unchanged.
+
+VF-01 schema 4 exports this compiled topology. The expanded bounded snapshot
+is filled in place to avoid Windows Debug stack copies and performs no
+steady-state heap allocation. Optional module joints are all explicit at
+initialization; no runtime joint creation exists.
+
+### VF-03-R1 graph-to-production invariant
+
+The original VF-03 graph could declare an optional component's bound visuals
+without proving that `character_art` resolved and submitted them. R1 makes the
+production trace a required cross-layer result. For every active optional arm:
+
+```text
+declared graph visuals
+  == resolved active visuals
+  == expected submissions
+  == actual final submissions
+```
+
+The bounded value is three. `character_art` builds upper-arm, forearm, and
+hand requests from the already-projected module endpoints and submits them to
+the existing `UnifiedRenderQueue`. The same trace record owns component,
+module, parent, and joint identities; placement authority; world transform;
+visible bounds; graph-bound visual index; and final submission index.
+`visual_truth` validates and exports that record; it does not reconstruct
+placement.
+
+Continuous and intentional-gap roots share one projection/submission path.
+Continuous reanchors the module root to the projected torso socket.
+Intentional-gap applies the declared vector in world metres, then projects it
+with the current front/side/reflected transform. Gap pixels are observation
+data derived from the captured camera, never placement authority. Inactive
+modules retain immutable definition data but produce no active projected
+members and no queue submissions.

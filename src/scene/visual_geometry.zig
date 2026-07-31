@@ -1256,10 +1256,36 @@ pub const TraceRecord = struct {
     placement_authority: RegistrationAuthority = .transitional_legacy,
     submission_visibility: SubmissionVisibility = .rendered,
     base_visual_policy: BaseVisualPolicy = .retain,
+    graph_binding: ?GraphBindingEvidence = null,
 
     pub fn isRendered(record: TraceRecord) bool {
         return record.submission_visibility == .rendered;
     }
+};
+
+pub const GraphEndpointKind = enum(u8) {
+    module_joint,
+    module_socket,
+};
+
+/// Cross-layer identity carried by an optional-module production submission.
+/// The renderer, VF-01 snapshot, F1 overlay, and validation all consume this
+/// same record rather than inferring graph ownership from a debug name.
+pub const GraphBindingEvidence = struct {
+    component_id: u16,
+    component_identity: []const u8,
+    parent_component_id: u16,
+    parent_component_identity: []const u8,
+    module_id: u16,
+    module_identity: []const u8,
+    graph_visual_index: u8,
+    source_identity: []const u8,
+    start_kind: GraphEndpointKind,
+    start_global_index: u16,
+    start_identity: []const u8,
+    end_kind: GraphEndpointKind,
+    end_global_index: u16,
+    end_identity: []const u8,
 };
 
 pub const Trace = struct {

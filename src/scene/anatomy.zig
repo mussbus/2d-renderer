@@ -108,6 +108,65 @@ pub const BodyPartParent = union(enum) {
     module_socket: u16,
 };
 
+pub const BindingMode = enum(u8) {
+    point,
+    segment,
+    frame,
+    mesh,
+};
+
+pub const ConnectionMode = enum(u8) {
+    continuous,
+    intentional_gap,
+    hidden,
+    soft_bridge,
+};
+
+pub const ConnectionModeSupport = packed struct(u8) {
+    continuous: bool = true,
+    intentional_gap: bool = false,
+    hidden: bool = false,
+    soft_bridge: bool = false,
+    reserved: u4 = 0,
+
+    pub fn supports(value: ConnectionModeSupport, mode: ConnectionMode) bool {
+        return switch (mode) {
+            .continuous => value.continuous,
+            .intentional_gap => value.intentional_gap,
+            .hidden => value.hidden,
+            .soft_bridge => value.soft_bridge,
+        };
+    }
+};
+
+pub const ViewSupport = packed struct(u8) {
+    front: bool = true,
+    side_left: bool = true,
+    side_right: bool = true,
+    reserved: u5 = 0,
+
+    pub fn contains(support: ViewSupport, required: ViewSupport) bool {
+        return (!required.front or support.front) and
+            (!required.side_left or support.side_left) and
+            (!required.side_right or support.side_right);
+    }
+};
+
+pub const RigModuleTemplate = enum(u8) {
+    shoulder_elbow_wrist_hand,
+};
+
+pub const ComponentMetadataInput = struct {
+    binding_mode: BindingMode = .point,
+    allowed_parent_socket_role: ?[]const u8 = null,
+    supported_connections: ConnectionModeSupport = .{},
+    required_views: ViewSupport = .{},
+    projected_views: ViewSupport = .{},
+    rig_module_template: ?RigModuleTemplate = null,
+    material_slot: ?[]const u8 = null,
+    morphology_response: ?[]const u8 = null,
+};
+
 pub const ValidationMetadataInput = struct {
     maximum_instances: u16 = maximum_part_instances,
     allow_children: bool = true,
@@ -117,6 +176,9 @@ pub const ChildSocketInput = struct {
     stable_id: []const u8,
     local_to_part: math.Transform2D,
     accepted_child_tag: ?[]const u8 = null,
+    role: ?[]const u8 = null,
+    capacity: u16 = 1,
+    supported_connections: ConnectionModeSupport = .{},
 };
 
 pub const MorphBindingInput = struct {
@@ -136,6 +198,7 @@ pub const BodyPartDefinitionInput = struct {
     morphology_bindings: []const MorphBindingInput,
     breathing_binding: deformation.BreathingBinding = .{},
     validation: ValidationMetadataInput = .{},
+    component: ComponentMetadataInput = .{},
 };
 
 pub const VisualVariantInput = struct {
@@ -154,6 +217,38 @@ pub const BodyPartInstanceInput = struct {
     base_render_layer: u16,
     articulation_module: ?[]const u8 = null,
     presentation_variants: []const VisualVariantInput,
+    connection: ConnectionInput = .{ .continuous = .{} },
+    topology_status: TopologyStatus = .compatibility_adapter,
+};
+
+pub const ContinuousConnectionInput = struct {
+    maximum_gap: f32 = 0.02,
+};
+
+pub const IntentionalGapConnectionInput = struct {
+    minimum_gap: f32,
+    maximum_gap: f32,
+};
+
+pub const HiddenConnectionInput = struct {
+    hider_component: []const u8,
+};
+
+pub const SoftBridgeConnectionInput = struct {
+    bridge_component: []const u8,
+};
+
+pub const ConnectionInput = union(ConnectionMode) {
+    continuous: ContinuousConnectionInput,
+    intentional_gap: IntentionalGapConnectionInput,
+    hidden: HiddenConnectionInput,
+    soft_bridge: SoftBridgeConnectionInput,
+};
+
+pub const TopologyStatus = enum(u8) {
+    direct,
+    compatibility_adapter,
+    transitional,
 };
 
 pub const MorphologyChannelInput = struct {
@@ -220,6 +315,9 @@ pub const DefinitionSocket = struct {
     stable_id: skeleton.DebugName,
     local_to_part: math.Transform2D,
     accepted_child_tag: ?skeleton.DebugName,
+    role: ?skeleton.DebugName,
+    capacity: u16,
+    supported_connections: ConnectionModeSupport,
 };
 
 pub const MorphBinding = struct {
@@ -243,6 +341,14 @@ pub const BodyPartDefinition = struct {
     morph_binding_count: u16,
     breathing_binding: deformation.BreathingBinding,
     validation: ValidationMetadata,
+    binding_mode: BindingMode,
+    allowed_parent_socket_role: ?skeleton.DebugName,
+    supported_connections: ConnectionModeSupport,
+    required_views: ViewSupport,
+    projected_views: ViewSupport,
+    rig_module_template: ?RigModuleTemplate,
+    material_slot: ?skeleton.DebugName,
+    morphology_response: ?skeleton.DebugName,
 };
 
 pub const InstanceSocket = struct {
@@ -251,6 +357,33 @@ pub const InstanceSocket = struct {
     owner: BodyPartInstanceId,
     local_to_part: math.Transform2D,
     accepted_child_tag: ?skeleton.DebugName,
+    role: ?skeleton.DebugName,
+    capacity: u16,
+    supported_connections: ConnectionModeSupport,
+};
+
+pub const ContinuousConnection = struct {
+    maximum_gap: f32,
+};
+
+pub const IntentionalGapConnection = struct {
+    minimum_gap: f32,
+    maximum_gap: f32,
+};
+
+pub const HiddenConnection = struct {
+    hider_component: BodyPartInstanceId,
+};
+
+pub const SoftBridgeConnection = struct {
+    bridge_component: BodyPartInstanceId,
+};
+
+pub const Connection = union(ConnectionMode) {
+    continuous: ContinuousConnection,
+    intentional_gap: IntentionalGapConnection,
+    hidden: HiddenConnection,
+    soft_bridge: SoftBridgeConnection,
 };
 
 pub const VisualVariant = struct {
@@ -275,6 +408,8 @@ pub const BodyPartInstance = struct {
     visual_variant_start: u16,
     visual_variant_count: u16,
     hierarchy_depth: u8,
+    connection: Connection,
+    topology_status: TopologyStatus,
 };
 
 pub const MorphologyChannel = struct {
@@ -502,6 +637,7 @@ pub const Definition = struct {
             const socket_start = definition_socket_cursor;
             for (input.child_sockets) |socket_input| {
                 if (!socket_input.local_to_part.isFinite()) return error.NonFiniteTransform;
+                if (socket_input.capacity == 0) return error.InvalidSocketCapacity;
                 const socket_id = try skeleton.DebugName.init(socket_input.stable_id);
                 for (definition_sockets[socket_start..definition_socket_cursor]) |*existing| {
                     if (socket_id.eql(&existing.stable_id)) return error.DuplicatePartSocketId;
@@ -510,6 +646,9 @@ pub const Definition = struct {
                     .stable_id = socket_id,
                     .local_to_part = socket_input.local_to_part,
                     .accepted_child_tag = if (socket_input.accepted_child_tag) |value| try skeleton.DebugName.init(value) else null,
+                    .role = if (socket_input.role) |value| try skeleton.DebugName.init(value) else null,
+                    .capacity = socket_input.capacity,
+                    .supported_connections = socket_input.supported_connections,
                 };
                 definition_socket_cursor += 1;
             }
@@ -553,7 +692,27 @@ pub const Definition = struct {
                     .maximum_instances = input.validation.maximum_instances,
                     .allow_children = input.validation.allow_children,
                 },
+                .binding_mode = input.component.binding_mode,
+                .allowed_parent_socket_role = if (input.component.allowed_parent_socket_role) |value|
+                    try skeleton.DebugName.init(value)
+                else
+                    null,
+                .supported_connections = input.component.supported_connections,
+                .required_views = input.component.required_views,
+                .projected_views = input.component.projected_views,
+                .rig_module_template = input.component.rig_module_template,
+                .material_slot = if (input.component.material_slot) |value|
+                    try skeleton.DebugName.init(value)
+                else
+                    null,
+                .morphology_response = if (input.component.morphology_response) |value|
+                    try skeleton.DebugName.init(value)
+                else
+                    null,
             };
+            if (!part_definitions[index].projected_views.contains(
+                part_definitions[index].required_views,
+            )) return error.UnsupportedComponentProjection;
         }
 
         var total_instance_sockets: usize = 0;
@@ -613,6 +772,9 @@ pub const Definition = struct {
                     .owner = @enumFromInt(index),
                     .local_to_part = socket.local_to_part,
                     .accepted_child_tag = socket.accepted_child_tag,
+                    .role = socket.role,
+                    .capacity = socket.capacity,
+                    .supported_connections = socket.supported_connections,
                 };
                 instance_socket_cursor += 1;
             }
@@ -667,9 +829,12 @@ pub const Definition = struct {
                 .visual_variant_start = @intCast(visual_variant_start),
                 .visual_variant_count = @intCast(input.presentation_variants.len),
                 .hierarchy_depth = 0,
+                .connection = .{ .continuous = .{ .maximum_gap = 0.02 } },
+                .topology_status = input.topology_status,
             };
         }
 
+        var socket_child_counts = [_]u16{0} ** maximum_part_sockets;
         for (inputs.part_instances, 0..) |input, index| {
             part_instances[index].parent = switch (input.parent) {
                 .attachment_point => |name| .{ .attachment_point = try findAttachmentPoint(appearance_definition.attachment_points, name) },
@@ -690,6 +855,28 @@ pub const Definition = struct {
                             accepted,
                         )) return error.ChildTagRejected;
                     }
+                    const parent_socket = instance_sockets[global_socket_id.index()];
+                    const child_definition = part_definitions[
+                        part_instances[index].definition.index()
+                    ];
+                    if (child_definition.allowed_parent_socket_role) |required_role| {
+                        const socket_role = parent_socket.role orelse
+                            return error.ParentSocketRoleMismatch;
+                        if (!required_role.eql(&socket_role)) {
+                            return error.ParentSocketRoleMismatch;
+                        }
+                    }
+                    socket_child_counts[global_socket_id.index()] =
+                        std.math.add(
+                            u16,
+                            socket_child_counts[global_socket_id.index()],
+                            1,
+                        ) catch return error.SocketCapacityExceeded;
+                    if (socket_child_counts[global_socket_id.index()] >
+                        parent_socket.capacity)
+                    {
+                        return error.SocketCapacityExceeded;
+                    }
                     break :parent .{ .body_part_socket = global_socket_id };
                 },
                 .module_socket => |member| .{ .module_socket = try findModuleSocketGlobal(
@@ -699,6 +886,35 @@ pub const Definition = struct {
                     member,
                 ) },
             };
+            part_instances[index].connection = try resolveConnection(
+                input.connection,
+                part_instances,
+                index,
+            );
+            const connection_mode = std.meta.activeTag(
+                part_instances[index].connection,
+            );
+            const child_definition = part_definitions[
+                part_instances[index].definition.index()
+            ];
+            if (!child_definition.supported_connections.supports(connection_mode)) {
+                return error.UnsupportedConnectionMode;
+            }
+            const has_component_parent = switch (part_instances[index].parent) {
+                .body_part_socket => |socket_id| parent: {
+                    if (!instance_sockets[socket_id.index()].supported_connections.supports(
+                        connection_mode,
+                    )) return error.UnsupportedConnectionMode;
+                    break :parent true;
+                },
+                .attachment_point, .module_socket => false,
+            };
+            if (has_component_parent or connection_mode != .continuous) {
+                try validateConnectionGeometry(
+                    part_instances[index].connection,
+                    part_instances[index].local_to_parent.translation.length(),
+                );
+            }
         }
         try resolvePartHierarchy(part_instances, instance_sockets, instance_evaluation_order);
 
@@ -1291,7 +1507,11 @@ pub const Runtime = struct {
                 .body_part_socket => |id| runtime.socket_world[id.index()],
                 .module_socket => |global_index| try appearance_runtime.moduleSocketWorldGlobal(appearance_definition, global_index),
             };
-            const binding_world = parent_world.mul(try part.local_to_parent.localToParent());
+            const binding_world = try connectionBindingWorld(
+                parent_world,
+                part.local_to_parent,
+                part.connection,
+            );
             const world = binding_world.mul(try runtime.part_deformation_local[part.id.index()].localToParent());
             runtime.part_binding_world[part.id.index()] = binding_world;
             runtime.part_world[part.id.index()] = world;
@@ -1587,6 +1807,97 @@ fn definitionHasTag(
         if (accepted.eql(tag)) return true;
     }
     return false;
+}
+
+fn resolveConnection(
+    input: ConnectionInput,
+    parts: []const BodyPartInstance,
+    child_index: usize,
+) !Connection {
+    return switch (input) {
+        .continuous => |value| .{ .continuous = .{
+            .maximum_gap = value.maximum_gap,
+        } },
+        .intentional_gap => |value| .{ .intentional_gap = .{
+            .minimum_gap = value.minimum_gap,
+            .maximum_gap = value.maximum_gap,
+        } },
+        .hidden => |value| .{ .hidden = .{
+            .hider_component = try referencedComponent(
+                parts,
+                child_index,
+                value.hider_component,
+            ),
+        } },
+        .soft_bridge => |value| .{ .soft_bridge = .{
+            .bridge_component = referencedComponent(
+                parts,
+                child_index,
+                value.bridge_component,
+            ) catch return error.SoftBridgeMissing,
+        } },
+    };
+}
+
+fn referencedComponent(
+    parts: []const BodyPartInstance,
+    child_index: usize,
+    name: []const u8,
+) !BodyPartInstanceId {
+    const result = try findPartInstance(parts, name);
+    if (result.index() == child_index) return error.BodyPartSelfReference;
+    return result;
+}
+
+pub fn validateConnectionGeometry(connection: Connection, measured_gap: f32) !void {
+    if (!std.math.isFinite(measured_gap)) return error.InvalidConnectionBounds;
+    switch (connection) {
+        .continuous => |value| {
+            if (!std.math.isFinite(value.maximum_gap) or
+                value.maximum_gap < 0 or
+                measured_gap > value.maximum_gap)
+            {
+                return error.ContinuousConnectionGapExceeded;
+            }
+        },
+        .intentional_gap => |value| {
+            if (!std.math.isFinite(value.minimum_gap) or
+                !std.math.isFinite(value.maximum_gap) or
+                value.minimum_gap < 0 or
+                value.maximum_gap < value.minimum_gap or
+                measured_gap < value.minimum_gap or
+                measured_gap > value.maximum_gap)
+            {
+                return error.InvalidIntentionalGapBounds;
+            }
+        },
+        .hidden, .soft_bridge => {},
+    }
+}
+
+/// Applies component connection placement to a parent transform. Intentional
+/// gaps are authored in world metres: parent rotation changes their direction,
+/// while parent morphology scale cannot silently change their measured length.
+/// The child basis still inherits the complete parent basis so component scale
+/// and orientation remain unchanged.
+pub fn connectionBindingWorld(
+    parent_world: math.Mat3,
+    local_to_parent: math.Transform2D,
+    connection: Connection,
+) !math.Mat3 {
+    var result = parent_world.mul(try local_to_parent.localToParent());
+    switch (connection) {
+        .intentional_gap => {
+            const direction = math.Mat3.rotation(
+                parent_world.rotationRadians(),
+            ).transformDirection(local_to_parent.translation);
+            const endpoint = parent_world.translationPart().add(direction);
+            result.values[6] = endpoint.x;
+            result.values[7] = endpoint.y;
+        },
+        .continuous, .hidden, .soft_bridge => {},
+    }
+    return result;
 }
 
 fn resolvePartHierarchy(

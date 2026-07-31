@@ -8,6 +8,7 @@ test {
     _ = @import("skeleton_tests.zig");
     _ = @import("appearance_tests.zig");
     _ = @import("anatomy_tests.zig");
+    _ = @import("component_graph_tests.zig");
     _ = @import("equipment_tests.zig");
     _ = @import("character_properties_tests.zig");
     _ = @import("deformation_tests.zig");

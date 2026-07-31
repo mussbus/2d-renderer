@@ -4,6 +4,7 @@ const collider = @import("collider");
 const skeleton = @import("skeleton");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
+const component_graph = @import("component_graph");
 const character = @import("character");
 const humanoid = @import("humanoid");
 const character_art = @import("character_art");
@@ -14,7 +15,7 @@ const debug_draw = @import("debug_draw");
 const visual_geometry = @import("visual_geometry");
 const visual_geometry_overlay = @import("visual_geometry_overlay");
 
-pub const schema_version: u32 = 3;
+pub const schema_version: u32 = 4;
 pub const character_capacity: usize = 2;
 pub const mismatch_capacity: usize = visual_geometry.trace_capacity *
     visual_geometry.landmark_capacity;
@@ -134,12 +135,35 @@ pub const AttachmentPoint = struct {
 pub const Part = struct {
     index: u16,
     name: Text,
+    definition_name: Text,
+    semantic_role: Text,
     parent_part: ?u16,
+    parent_socket: ?u16,
     hierarchy_depth: u8,
     active: bool,
     articulation_module: ?u16,
+    binding_mode: anatomy.BindingMode,
+    connection_mode: anatomy.ConnectionMode,
+    measured_gap_m: f32,
+    minimum_gap_m: f32,
+    maximum_gap_m: f32,
+    topology_status: anatomy.TopologyStatus,
+    material_slot: Text,
+    morphology_response: Text,
+    required_views: anatomy.ViewSupport,
+    selected_variant: Text,
+    bound_visual_count: u8,
+    bound_visuals: [8]Text,
     canonical_world: Transform,
     projected_world: Transform,
+    connection_parent_endpoint: math.Vec2,
+    connection_child_endpoint: math.Vec2,
+    connection_gap_vector: math.Vec2,
+    target_gap_m: f32,
+    acceptance_gap_px: f32,
+    connection_result: MismatchResult,
+    parent_socket_name: Text,
+    child_root_name: Text,
 };
 
 pub const PartSocket = struct {
@@ -147,6 +171,10 @@ pub const PartSocket = struct {
     name: Text,
     owner_part: u16,
     accepted_child_tag: Text,
+    role: Text,
+    capacity: u16,
+    occupancy: u16,
+    supported_connections: anatomy.ConnectionModeSupport,
     canonical_world: Transform,
     projected_world: Transform,
 };
@@ -155,6 +183,8 @@ pub const ModuleJoint = struct {
     index: u16,
     name: Text,
     module_index: u16,
+    owner_component: ?u16,
+    active: bool,
     parent_joint: ?u16,
     canonical_world: Transform,
     projected_world: Transform,
@@ -164,6 +194,8 @@ pub const ModuleSocket = struct {
     index: u16,
     name: Text,
     module_index: u16,
+    owner_component: ?u16,
+    active: bool,
     parent_joint: ?u16,
     canonical_world: Transform,
     projected_world: Transform,
@@ -268,6 +300,24 @@ pub const Visual = struct {
     registration_threshold_m: f32 = 0,
     registration_maximum_residual_m: f32 = 0,
     registration_axis: ?visual_geometry.RegistrationAxis = null,
+    graph_binding: ?VisualGraphBinding = null,
+};
+
+pub const VisualGraphBinding = struct {
+    component_id: u16,
+    component_identity: Text,
+    parent_component_id: u16,
+    parent_component_identity: Text,
+    module_id: u16,
+    module_identity: Text,
+    graph_visual_index: u8,
+    source_identity: Text,
+    start_kind: visual_geometry.GraphEndpointKind,
+    start_global_index: u16,
+    start_identity: Text,
+    end_kind: visual_geometry.GraphEndpointKind,
+    end_global_index: u16,
+    end_identity: Text,
 };
 
 pub const Mismatch = struct {
@@ -326,6 +376,11 @@ pub const Snapshot = struct {
     authoritative_fingerprint: u64 = 0,
     presentation_fingerprint: u64 = 0,
     capture_fingerprint: u64 = 0,
+    active_optional_modules: u8 = 0,
+    expected_optional_visual_submissions: u8 = 0,
+    actual_optional_visual_submissions: u8 = 0,
+    missing_optional_visual_submissions: u8 = 0,
+    orphan_optional_visual_submissions: u8 = 0,
 
     pub fn build(
         snapshot: *Snapshot,
@@ -350,20 +405,28 @@ pub const Snapshot = struct {
         snapshot.character_count = character_capacity;
         snapshot.visual_count = 0;
         snapshot.mismatch_count = 0;
+        snapshot.active_optional_modules = 0;
+        snapshot.expected_optional_visual_submissions = 0;
+        snapshot.actual_optional_visual_submissions = 0;
+        snapshot.missing_optional_visual_submissions = 0;
+        snapshot.orphan_optional_visual_submissions = 0;
         snapshot.authoritative_fingerprint = 0;
         snapshot.presentation_fingerprint = 0;
         snapshot.capture_fingerprint = 0;
         for (characters, presentations, 0..) |instance, presentation, index| {
-            snapshot.characters[index] = try captureCharacter(
+            try captureCharacter(
+                &snapshot.characters[index],
                 instance,
                 presentation,
                 if (instance.controller != null) .controlled else .passive,
+                camera.pixels_per_meter,
             );
         }
         for (trace.slice()) |record| {
             try snapshot.appendVisual(record, alpha_catalog);
             try snapshot.appendMismatches(record, alpha_catalog, camera);
         }
+        try snapshot.validateOptionalArmGraphToSubmission();
         snapshot.authoritative_fingerprint = snapshot.hashAuthoritative();
         snapshot.presentation_fingerprint = snapshot.hashPresentation();
         snapshot.capture_fingerprint = snapshot.hashCapture();
@@ -489,6 +552,29 @@ pub const Snapshot = struct {
                 0,
             .registration_axis = if (record.registration) |registration|
                 registration.axis
+            else
+                null,
+            .graph_binding = if (record.graph_binding) |binding|
+                VisualGraphBinding{
+                    .component_id = binding.component_id,
+                    .component_identity = try Text.init(
+                        binding.component_identity,
+                    ),
+                    .parent_component_id = binding.parent_component_id,
+                    .parent_component_identity = try Text.init(
+                        binding.parent_component_identity,
+                    ),
+                    .module_id = binding.module_id,
+                    .module_identity = try Text.init(binding.module_identity),
+                    .graph_visual_index = binding.graph_visual_index,
+                    .source_identity = try Text.init(binding.source_identity),
+                    .start_kind = binding.start_kind,
+                    .start_global_index = binding.start_global_index,
+                    .start_identity = try Text.init(binding.start_identity),
+                    .end_kind = binding.end_kind,
+                    .end_global_index = binding.end_global_index,
+                    .end_identity = try Text.init(binding.end_identity),
+                }
             else
                 null,
         };
@@ -625,6 +711,57 @@ pub const Snapshot = struct {
             }
             snapshot.mismatches[snapshot.mismatch_count] = mismatch;
             snapshot.mismatch_count += 1;
+        }
+    }
+
+    fn validateOptionalArmGraphToSubmission(snapshot: *Snapshot) !void {
+        for (snapshot.characters[0..snapshot.character_count]) |truth| {
+            for ([_][]const u8{ "extra_arm", "extra_arm_second" }) |name| {
+                const part = truth.partByName(name) orelse
+                    return error.OptionalArmComponentMissingFromTruth;
+                var actual: usize = 0;
+                for (snapshot.visuals[0..snapshot.visual_count]) |visual| {
+                    const binding = visual.graph_binding orelse continue;
+                    if (visual.character_id != truth.id or
+                        binding.component_id != part.index)
+                    {
+                        continue;
+                    }
+                    actual += 1;
+                    if (!part.active) {
+                        snapshot.orphan_optional_visual_submissions += 1;
+                        return error.InactiveOptionalArmProducedSubmission;
+                    }
+                    if (visual.final_submission_index == std.math.maxInt(u32)) {
+                        snapshot.missing_optional_visual_submissions += 1;
+                        return error.OptionalArmFinalSubmissionMissing;
+                    }
+                    if (part.articulation_module == null or
+                        binding.module_id != part.articulation_module.?)
+                    {
+                        return error.OptionalArmModuleOwnershipMismatch;
+                    }
+                }
+                if (!part.active) {
+                    if (actual != 0) return error.InactiveOptionalArmProducedSubmission;
+                    continue;
+                }
+                snapshot.active_optional_modules += 1;
+                snapshot.expected_optional_visual_submissions +=
+                    part.bound_visual_count;
+                snapshot.actual_optional_visual_submissions +=
+                    @intCast(actual);
+                if (actual != part.bound_visual_count) {
+                    snapshot.missing_optional_visual_submissions +=
+                        @intCast(part.bound_visual_count -| actual);
+                    return error.OptionalArmFinalSubmissionMissing;
+                }
+            }
+        }
+        if (snapshot.missing_optional_visual_submissions != 0 or
+            snapshot.orphan_optional_visual_submissions != 0)
+        {
+            return error.OptionalArmGraphSubmissionIntegrityFailed;
         }
     }
 
@@ -782,7 +919,10 @@ pub const Snapshot = struct {
                     try commands.addLine(
                         truth.parts[parent].canonical_world.position,
                         part.canonical_world.position,
-                        colors.socket,
+                        if (part.connection_mode == .intentional_gap)
+                            colors.module
+                        else
+                            colors.socket,
                     );
                     counts.sockets_attachments += 1;
                 }
@@ -792,19 +932,23 @@ pub const Snapshot = struct {
                 counts.sockets_attachments += 1;
             }
             for (truth.module_joints[0..truth.module_joint_count]) |joint| {
-                try commands.addMarker(joint.canonical_world.position, colors.module);
+                const color = if (joint.active) colors.module else colors.inactive;
+                try commands.addMarker(joint.canonical_world.position, color);
                 counts.module_joints_sockets += 1;
                 if (joint.parent_joint) |parent| {
                     try commands.addLine(
                         truth.module_joints[parent].canonical_world.position,
                         joint.canonical_world.position,
-                        colors.module,
+                        color,
                     );
                     counts.module_joints_sockets += 1;
                 }
             }
             for (truth.module_sockets[0..truth.module_socket_count]) |socket_value| {
-                try commands.addMarker(socket_value.canonical_world.position, colors.module);
+                try commands.addMarker(
+                    socket_value.canonical_world.position,
+                    if (socket_value.active) colors.module else colors.inactive,
+                );
                 counts.module_joints_sockets += 1;
             }
         }
@@ -828,6 +972,69 @@ pub const Snapshot = struct {
                 try commands.addMarker(bone.projected_world.position, colors.projected);
                 counts.projected_skeleton += 1;
             }
+            for (truth.parts[0..truth.part_count]) |part| {
+                if (!isOptionalArmPart(part) or
+                    part.articulation_module == null or
+                    part.parent_socket == null)
+                {
+                    continue;
+                }
+                if (!part.active) {
+                    counts.sockets_attachments += try commands.addLabel(
+                        part.connection_parent_endpoint.add(.{ .x = 0.03, .y = 0.08 }),
+                        "INACTIVE",
+                        colors.inactive,
+                    );
+                    continue;
+                }
+                const color = connectionColor(part);
+                try commands.addLine(
+                    part.connection_parent_endpoint,
+                    part.connection_child_endpoint,
+                    color,
+                );
+                try commands.addMarker(part.connection_parent_endpoint, color);
+                try commands.addMarker(part.connection_child_endpoint, color);
+                counts.sockets_attachments += 3;
+                const label = switch (part.connection_result) {
+                    .fail => "INVALID",
+                    .not_applicable => "INACTIVE",
+                    .pass => switch (part.connection_mode) {
+                        .continuous => "CONT",
+                        .intentional_gap => "INT_GAP",
+                        .hidden => "HIDDEN",
+                        .soft_bridge => "SOFT_BRIDGE",
+                    },
+                };
+                counts.sockets_attachments += try commands.addLabel(
+                    part.connection_parent_endpoint
+                        .add(part.connection_gap_vector.scale(0.5))
+                        .add(.{ .x = 0.03, .y = 0.08 }),
+                    label,
+                    color,
+                );
+            }
+            for (truth.module_joints[0..truth.module_joint_count]) |joint| {
+                if (!joint.active) continue;
+                try commands.addMarker(joint.projected_world.position, colors.module);
+                counts.module_joints_sockets += 1;
+                if (joint.parent_joint) |parent| {
+                    try commands.addLine(
+                        truth.module_joints[parent].projected_world.position,
+                        joint.projected_world.position,
+                        colors.module,
+                    );
+                    counts.module_joints_sockets += 1;
+                }
+            }
+            for (truth.module_sockets[0..truth.module_socket_count]) |socket_value| {
+                if (!socket_value.active) continue;
+                try commands.addMarker(
+                    socket_value.projected_world.position,
+                    colors.module,
+                );
+                counts.module_joints_sockets += 1;
+            }
         }
         for (snapshot.visuals[0..snapshot.visual_count]) |visual| {
             try commands.addMarker(visual.world_position, colors.pivot);
@@ -842,6 +1049,27 @@ pub const Snapshot = struct {
             for (visual.landmarks[0..visual.landmark_count]) |landmark| {
                 try commands.addMarker(landmark.world, colors.landmark);
                 counts.atlas_landmarks += 1;
+            }
+            if (visual.graph_binding != null) {
+                var identity_buffer: [24]u8 = undefined;
+                const identity = try std.fmt.bufPrint(
+                    &identity_buffer,
+                    "{s}{d}",
+                    .{
+                        switch (visual.role) {
+                            .upper_arm => "U",
+                            .forearm => "F",
+                            .hand => "H",
+                            else => "V",
+                        },
+                        visual.final_submission_index,
+                    },
+                );
+                counts.component_pivots += try commands.addLabel(
+                    visual.world_position.add(.{ .x = 0.03, .y = 0.06 }),
+                    identity,
+                    colors.pivot,
+                );
             }
         }
         for (snapshot.mismatches[0..snapshot.mismatch_count]) |mismatch| {
@@ -858,6 +1086,21 @@ pub const Snapshot = struct {
                 counts.clothing_hair_anchors += 1;
             }
         }
+    }
+
+    fn connectionColor(part: Part) debug_draw.Color {
+        if (!part.active) return colors.inactive;
+        if (part.connection_result == .fail) return colors.invalid;
+        return switch (part.connection_mode) {
+            .continuous => colors.continuous,
+            .intentional_gap => colors.intentional_gap,
+            .hidden, .soft_bridge => colors.module,
+        };
+    }
+
+    fn isOptionalArmPart(part: Part) bool {
+        return std.mem.eql(u8, part.name.slice(), "extra_arm") or
+            std.mem.eql(u8, part.name.slice(), "extra_arm_second");
     }
 
     fn hashAuthoritative(snapshot: *const Snapshot) u64 {
@@ -895,8 +1138,41 @@ pub const Snapshot = struct {
                 hashValue(&hash, bone.projected_world);
             }
             for (truth.parts[0..truth.part_count]) |part| {
+                hashBytes(&hash, part.name.slice());
+                hashBytes(&hash, part.definition_name.slice());
+                hashBytes(&hash, part.semantic_role.slice());
+                hashOptionalValue(&hash, part.parent_part);
+                hashOptionalValue(&hash, part.parent_socket);
                 hashValue(&hash, part.active);
+                hashValue(&hash, part.binding_mode);
+                hashValue(&hash, part.connection_mode);
+                hashValue(&hash, part.measured_gap_m);
+                hashValue(&hash, part.minimum_gap_m);
+                hashValue(&hash, part.maximum_gap_m);
+                hashValue(&hash, part.connection_parent_endpoint);
+                hashValue(&hash, part.connection_child_endpoint);
+                hashValue(&hash, part.connection_gap_vector);
+                hashValue(&hash, part.target_gap_m);
+                hashValue(&hash, part.acceptance_gap_px);
+                hashValue(&hash, part.connection_result);
+                hashValue(&hash, part.topology_status);
+                hashBytes(&hash, part.selected_variant.slice());
+                for (part.bound_visuals[0..part.bound_visual_count]) |visual| {
+                    hashBytes(&hash, visual.slice());
+                }
                 hashValue(&hash, part.projected_world);
+            }
+            for (truth.module_joints[0..truth.module_joint_count]) |joint| {
+                hashValue(&hash, joint.module_index);
+                hashOptionalValue(&hash, joint.owner_component);
+                hashValue(&hash, joint.active);
+                hashValue(&hash, joint.projected_world);
+            }
+            for (truth.module_sockets[0..truth.module_socket_count]) |socket_value| {
+                hashValue(&hash, socket_value.module_index);
+                hashOptionalValue(&hash, socket_value.owner_component);
+                hashValue(&hash, socket_value.active);
+                hashValue(&hash, socket_value.projected_world);
             }
         }
         for (snapshot.visuals[0..snapshot.visual_count]) |visual| {
@@ -912,7 +1188,24 @@ pub const Snapshot = struct {
             hashValue(&hash, visual.base_visual_policy);
             hashValue(&hash, visual.placement_authority);
             hashValue(&hash, visual.registration_maximum_residual_m);
+            if (visual.graph_binding) |binding| {
+                hashValue(&hash, @as(u8, 1));
+                hashValue(&hash, binding.component_id);
+                hashValue(&hash, binding.module_id);
+                hashValue(&hash, binding.graph_visual_index);
+                hashValue(&hash, binding.start_kind);
+                hashValue(&hash, binding.start_global_index);
+                hashValue(&hash, binding.end_kind);
+                hashValue(&hash, binding.end_global_index);
+            } else {
+                hashValue(&hash, @as(u8, 0));
+            }
         }
+        hashValue(&hash, snapshot.active_optional_modules);
+        hashValue(&hash, snapshot.expected_optional_visual_submissions);
+        hashValue(&hash, snapshot.actual_optional_visual_submissions);
+        hashValue(&hash, snapshot.missing_optional_visual_submissions);
+        hashValue(&hash, snapshot.orphan_optional_visual_submissions);
         return hash;
     }
 
@@ -1111,7 +1404,7 @@ pub const Bundle = struct {
         try writeFileFmt(
             &file,
             io,
-            "capture: {s}\nmode: {s}\ncharacters: {d}\nvisuals: {d}\nmismatches: {d}\ndebug_commands: {d}\nclean_debug_state_match: {}\nmanual_visual_acceptance: [PENDING OWNER REVIEW]\n\n",
+            "capture: {s}\nmode: {s}\ncharacters: {d}\nvisuals: {d}\nmismatches: {d}\ndebug_commands: {d}\nclean_debug_state_match: {}\nactive_optional_modules: {d}\nexpected_optional_visual_submissions: {d}\nactual_optional_visual_submissions: {d}\nmissing_optional_visual_submissions: {d}\norphan_optional_visual_submissions: {d}\nmanual_visual_acceptance: [PENDING OWNER REVIEW]\n\n",
             .{
                 bundle.captureId(),
                 @tagName(snapshot.mode),
@@ -1120,6 +1413,11 @@ pub const Bundle = struct {
                 snapshot.mismatch_count,
                 counts.total(),
                 provenance.statesMatch(),
+                snapshot.active_optional_modules,
+                snapshot.expected_optional_visual_submissions,
+                snapshot.actual_optional_visual_submissions,
+                snapshot.missing_optional_visual_submissions,
+                snapshot.orphan_optional_visual_submissions,
             },
         );
         for (snapshot.characters[0..snapshot.character_count]) |truth| {
@@ -1137,6 +1435,27 @@ pub const Bundle = struct {
                     truth.selected_hair.slice(),
                 },
             );
+            for ([_][]const u8{ "extra_arm", "extra_arm_second" }) |name| {
+                const part = truth.partByName(name) orelse continue;
+                try writeFileFmt(
+                    &file,
+                    io,
+                    "  {s}: active={} connection_mode={s} parent_socket={s} child_root={s} target_gap_m={d:.3} measured_gap_m={d:.3} gap_px={d:.3} accepted_range_m={d:.3}-{d:.3} result={s}\n",
+                    .{
+                        part.name.slice(),
+                        part.active,
+                        @tagName(part.connection_mode),
+                        part.parent_socket_name.slice(),
+                        part.child_root_name.slice(),
+                        part.target_gap_m,
+                        part.measured_gap_m,
+                        part.acceptance_gap_px,
+                        part.minimum_gap_m,
+                        part.maximum_gap_m,
+                        upperResult(part.connection_result),
+                    },
+                );
+            }
         }
         try file.writeStreamingAll(io, "\nregistration disagreements, sorted by severity:\n");
         var ranked: [64]u16 = undefined;
@@ -1189,6 +1508,7 @@ pub const Bundle = struct {
         }
         try validatePngFile(allocator, io, bundle, "clean.png");
         try validatePngFile(allocator, io, bundle, "debug.png");
+        try validateJsonFile(allocator, io, bundle, "state.json");
         try bundle.writeManifest(
             io,
             snapshot,
@@ -1196,6 +1516,7 @@ pub const Bundle = struct {
             &evidence,
             source_assets,
         );
+        try validateJsonFile(allocator, io, bundle, "manifest.json");
         for (evidence) |expected| {
             var path_buffer: [384]u8 = undefined;
             const path = try bundle.filePath(&path_buffer, expected.name);
@@ -1395,6 +1716,10 @@ const Colors = struct {
     projected: debug_draw.Color = .{ 0.15, 0.95, 1.0, 1 },
     socket: debug_draw.Color = .{ 0.25, 1.0, 0.35, 1 },
     module: debug_draw.Color = .{ 0.72, 0.35, 1.0, 1 },
+    continuous: debug_draw.Color = .{ 0.18, 1.0, 0.42, 1 },
+    intentional_gap: debug_draw.Color = .{ 1.0, 0.62, 0.08, 1 },
+    invalid: debug_draw.Color = .{ 1.0, 0.08, 0.08, 1 },
+    inactive: debug_draw.Color = .{ 0.42, 0.46, 0.52, 0.82 },
     pivot: debug_draw.Color = .{ 1.0, 0.52, 0.08, 1 },
     landmark: debug_draw.Color = .{ 0.95, 0.95, 0.95, 1 },
     alpha: debug_draw.Color = .{ 0.20, 0.62, 1.0, 0.90 },
@@ -1405,10 +1730,12 @@ const Colors = struct {
 pub const colors = Colors{};
 
 fn captureCharacter(
+    result: *Character,
     instance: *const character.CharacterInstance,
     presentation: character_art.Presentation,
     role: CharacterRole,
-) !Character {
+    pixels_per_meter: f32,
+) !void {
     const definition = &instance.definition.skeleton_definition;
     const projection = try presentation.projectionFor(instance);
     const anatomy_definition = instance.definition.anatomy_definition orelse
@@ -1420,7 +1747,7 @@ fn captureCharacter(
         anatomy_definition,
         anatomy_runtime,
     );
-    var result = Character{
+    result.* = .{
         .id = instance.id.raw(),
         .role = role,
         .root = instance.world_position,
@@ -1531,29 +1858,154 @@ fn captureCharacter(
         };
     }
 
-    result.part_count = anatomy_definition.part_instances.len;
+    const graph_definition = instance.definition.component_graph_definition orelse
+        return error.CharacterHasNoComponentGraph;
+    const graph = try graph_definition.view(
+        appearance_definition,
+        anatomy_definition,
+    );
+    const selected_profile = anatomy_runtime.selected_presentation_profile;
+    const selected_profile_name = anatomy_definition.presentation_profiles[
+        selected_profile.index()
+    ].stable_id.slice();
+
+    result.part_count = graph.componentCount();
     for (anatomy_definition.part_instances, 0..) |part, index| {
         const active = try anatomy_runtime.isPartActive(anatomy_definition, part.id);
+        const graph_component = try graph.component(part.id);
+        const part_definition = graph_component.definition;
+        const bound_visuals = try graph.boundVisuals(part.id, selected_profile);
+        if (bound_visuals.len > result.parts[index].bound_visuals.len) {
+            return error.ComponentBoundVisualCapacityExceeded;
+        }
+        var connection_minimum: f32 = 0;
+        var connection_maximum: f32 = 0;
+        switch (part.connection) {
+            .continuous => |value| connection_maximum = value.maximum_gap,
+            .intentional_gap => |value| {
+                connection_minimum = value.minimum_gap;
+                connection_maximum = value.maximum_gap;
+            },
+            .hidden, .soft_bridge => {},
+        }
+        var parent_endpoint = anatomy_projection.part_binding_world[index]
+            .translationPart();
+        var child_endpoint = parent_endpoint;
+        var parent_socket_name = try Text.init("root_attachment");
+        var child_root_name = try Text.init(part.stable_id.slice());
+        if (graph_component.parent_socket) |parent_socket_id| {
+            const parent_socket = anatomy_definition.instance_sockets[
+                parent_socket_id.index()
+            ];
+            parent_endpoint = anatomy_projection.socket_world[
+                parent_socket_id.index()
+            ].translationPart();
+            parent_socket_name = try Text.init(parent_socket.stable_id.slice());
+            child_endpoint = anatomy_projection.part_binding_world[index]
+                .translationPart();
+            if (part.articulation_module) |module_id| {
+                const module = appearance_definition.rig_modules[
+                    module_id.index()
+                ];
+                if (module.joint_count == 0) return error.RigModuleJointMissing;
+                const root_joint = appearance_definition.module_joints[
+                    module.joint_start
+                ];
+                if (root_joint.parent_joint_global != appearance.no_index) {
+                    return error.InvalidRigModuleJointChain;
+                }
+                child_endpoint = projection.module_joint_world[
+                    module.joint_start
+                ].translationPart();
+                child_root_name = try Text.init(root_joint.debug_name.slice());
+            }
+        }
+        const gap_vector = child_endpoint.sub(parent_endpoint);
+        const measured_gap = gap_vector.length();
+        const target_gap: f32 = switch (part.connection) {
+            .intentional_gap => component_graph.measuredGap(part),
+            .continuous, .hidden, .soft_bridge => 0,
+        };
+        const connection_result: MismatchResult = if (!active)
+            .not_applicable
+        else switch (part.connection) {
+            .continuous => |value| if (measured_gap <= value.maximum_gap)
+                .pass
+            else
+                .fail,
+            .intentional_gap => |value| if (measured_gap >= value.minimum_gap and
+                measured_gap <= value.maximum_gap)
+                .pass
+            else
+                .fail,
+            .hidden, .soft_bridge => .not_applicable,
+        };
         result.parts[index] = .{
             .index = @intCast(index),
             .name = try Text.init(part.stable_id.slice()),
-            .parent_part = switch (part.parent) {
-                .body_part_socket => |socket_id| @intCast(anatomy_definition.instance_sockets[socket_id.index()].owner.index()),
-                .attachment_point, .module_socket => null,
-            },
+            .definition_name = try Text.init(part_definition.stable_id.slice()),
+            .semantic_role = try Text.init(part_definition.type_tag.slice()),
+            .parent_part = if (graph_component.parent_component) |parent|
+                @intCast(parent.index())
+            else
+                null,
+            .parent_socket = if (graph_component.parent_socket) |socket_id|
+                @intCast(socket_id.index())
+            else
+                null,
             .hierarchy_depth = part.hierarchy_depth,
             .active = active,
             .articulation_module = if (part.articulation_module) |module_id|
                 @intCast(module_id.index())
             else
                 null,
+            .binding_mode = part_definition.binding_mode,
+            .connection_mode = std.meta.activeTag(part.connection),
+            .measured_gap_m = measured_gap,
+            .minimum_gap_m = connection_minimum,
+            .maximum_gap_m = connection_maximum,
+            .topology_status = part.topology_status,
+            .material_slot = if (part_definition.material_slot) |name|
+                try Text.init(name.slice())
+            else
+                try Text.init("none"),
+            .morphology_response = if (part_definition.morphology_response) |name|
+                try Text.init(name.slice())
+            else
+                try Text.init("none"),
+            .required_views = part_definition.required_views,
+            .selected_variant = try Text.init(selected_profile_name),
+            .bound_visual_count = @intCast(bound_visuals.len),
+            .bound_visuals = undefined,
             .canonical_world = try Transform.fromWorld(anatomy_runtime.part_world[index]),
             .projected_world = try Transform.fromWorld(anatomy_projection.part_world[index]),
+            .connection_parent_endpoint = parent_endpoint,
+            .connection_child_endpoint = child_endpoint,
+            .connection_gap_vector = gap_vector,
+            .target_gap_m = target_gap,
+            .acceptance_gap_px = measured_gap * pixels_per_meter,
+            .connection_result = connection_result,
+            .parent_socket_name = parent_socket_name,
+            .child_root_name = child_root_name,
         };
+        for (bound_visuals, 0..) |visual_id, visual_index| {
+            result.parts[index].bound_visuals[visual_index] = try Text.init(
+                appearance_definition.visuals[visual_id.index()].debug_name.slice(),
+            );
+        }
     }
 
     result.part_socket_count = anatomy_definition.instance_sockets.len;
     for (anatomy_definition.instance_sockets, 0..) |socket_value, index| {
+        var occupancy: u16 = 0;
+        for (anatomy_definition.part_instances) |part| {
+            switch (part.parent) {
+                .body_part_socket => |parent_socket| {
+                    if (parent_socket == socket_value.id) occupancy += 1;
+                },
+                .attachment_point, .module_socket => {},
+            }
+        }
         result.part_sockets[index] = .{
             .index = @intCast(index),
             .name = try Text.init(socket_value.stable_id.slice()),
@@ -1562,6 +2014,13 @@ fn captureCharacter(
                 try Text.init(tag.slice())
             else
                 try Text.init("any"),
+            .role = if (socket_value.role) |socket_role|
+                try Text.init(socket_role.slice())
+            else
+                try Text.init("untyped"),
+            .capacity = socket_value.capacity,
+            .occupancy = occupancy,
+            .supported_connections = socket_value.supported_connections,
             .canonical_world = try Transform.fromWorld(anatomy_runtime.socket_world[index]),
             .projected_world = try Transform.fromWorld(anatomy_projection.socket_world[index]),
         };
@@ -1569,10 +2028,22 @@ fn captureCharacter(
 
     result.module_joint_count = appearance_definition.module_joints.len;
     for (appearance_definition.module_joints, 0..) |joint, index| {
+        const owner_component = componentForModule(
+            anatomy_definition,
+            joint.module_id,
+        );
         result.module_joints[index] = .{
             .index = @intCast(index),
             .name = try Text.init(joint.debug_name.slice()),
             .module_index = @intCast(joint.module_id.index()),
+            .owner_component = if (owner_component) |owner|
+                @intCast(owner.index())
+            else
+                null,
+            .active = if (owner_component) |owner|
+                try anatomy_runtime.isPartActive(anatomy_definition, owner)
+            else
+                false,
             .parent_joint = if (joint.parent_joint_global == appearance.no_index)
                 null
             else
@@ -1588,10 +2059,22 @@ fn captureCharacter(
 
     result.module_socket_count = appearance_definition.module_sockets.len;
     for (appearance_definition.module_sockets, 0..) |socket_value, index| {
+        const owner_component = componentForModule(
+            anatomy_definition,
+            socket_value.module_id,
+        );
         result.module_sockets[index] = .{
             .index = @intCast(index),
             .name = try Text.init(socket_value.debug_name.slice()),
             .module_index = @intCast(socket_value.module_id.index()),
+            .owner_component = if (owner_component) |owner|
+                @intCast(owner.index())
+            else
+                null,
+            .active = if (owner_component) |owner|
+                try anatomy_runtime.isPartActive(anatomy_definition, owner)
+            else
+                false,
             .parent_joint = if (socket_value.parent_joint_global == appearance.no_index)
                 null
             else
@@ -1604,7 +2087,6 @@ fn captureCharacter(
             ),
         };
     }
-    return result;
 }
 
 fn expectedBoneSemantic(
@@ -1665,6 +2147,16 @@ fn expectedBoneSemantic(
         },
         else => null,
     };
+}
+
+fn componentForModule(
+    definition: anatomy.DefinitionView,
+    module_id: appearance.RigModuleId,
+) ?anatomy.BodyPartInstanceId {
+    for (definition.part_instances) |part| {
+        if (part.articulation_module == module_id) return part.id;
+    }
+    return null;
 }
 
 fn directAtlasLandmark(
@@ -1805,12 +2297,17 @@ fn writeStateDocument(
     try writeFileFmt(
         file,
         io,
-        "  \"state_identity\": {{\n    \"authoritative_fingerprint\": \"{x:0>16}\",\n    \"presentation_fingerprint\": \"{x:0>16}\",\n    \"capture_fingerprint\": \"{x:0>16}\",\n    \"clean_debug_states_match\": {}\n  }},\n  \"characters\": [\n",
+        "  \"state_identity\": {{\n    \"authoritative_fingerprint\": \"{x:0>16}\",\n    \"presentation_fingerprint\": \"{x:0>16}\",\n    \"capture_fingerprint\": \"{x:0>16}\",\n    \"clean_debug_states_match\": {}\n  }},\n  \"optional_arm_submission_integrity\": {{\"active_optional_modules\": {d}, \"expected_optional_visual_submissions\": {d}, \"actual_optional_visual_submissions\": {d}, \"missing_optional_visual_submissions\": {d}, \"orphan_optional_visual_submissions\": {d}}},\n  \"characters\": [\n",
         .{
             snapshot.authoritative_fingerprint,
             snapshot.presentation_fingerprint,
             snapshot.capture_fingerprint,
             provenance.statesMatch(),
+            snapshot.active_optional_modules,
+            snapshot.expected_optional_visual_submissions,
+            snapshot.actual_optional_visual_submissions,
+            snapshot.missing_optional_visual_submissions,
+            snapshot.orphan_optional_visual_submissions,
         },
     );
     for (snapshot.characters[0..snapshot.character_count], 0..) |truth, character_index| {
@@ -1937,7 +2434,7 @@ fn writeStateDocument(
             );
         }
         try file.writeStreamingAll(io, "      ]},\n");
-        try writeComponentData(file, io, truth);
+        try writeComponentData(file, io, truth, snapshot);
         try writeFileFmt(
             file,
             io,
@@ -2060,6 +2557,54 @@ fn writeStateDocument(
         } else {
             try file.writeStreamingAll(io, "null");
         }
+        try file.writeStreamingAll(io, ", \"graph_binding\": ");
+        if (visual.graph_binding) |binding| {
+            try writeFileFmt(
+                file,
+                io,
+                "{{\"component_id\": {d}, \"component_identity\": ",
+                .{binding.component_id},
+            );
+            try writeJsonString(file, io, binding.component_identity.slice());
+            try writeFileFmt(
+                file,
+                io,
+                ", \"parent_component_id\": {d}, \"parent_component_identity\": ",
+                .{binding.parent_component_id},
+            );
+            try writeJsonString(file, io, binding.parent_component_identity.slice());
+            try writeFileFmt(
+                file,
+                io,
+                ", \"module_id\": {d}, \"module_identity\": ",
+                .{binding.module_id},
+            );
+            try writeJsonString(file, io, binding.module_identity.slice());
+            try writeFileFmt(
+                file,
+                io,
+                ", \"graph_bound_visual_index\": {d}, \"source_identity\": ",
+                .{binding.graph_visual_index},
+            );
+            try writeJsonString(file, io, binding.source_identity.slice());
+            try writeFileFmt(
+                file,
+                io,
+                ", \"start\": {{\"kind\": \"{s}\", \"global_index\": {d}, \"identity\": ",
+                .{ @tagName(binding.start_kind), binding.start_global_index },
+            );
+            try writeJsonString(file, io, binding.start_identity.slice());
+            try writeFileFmt(
+                file,
+                io,
+                "}}, \"end\": {{\"kind\": \"{s}\", \"global_index\": {d}, \"identity\": ",
+                .{ @tagName(binding.end_kind), binding.end_global_index },
+            );
+            try writeJsonString(file, io, binding.end_identity.slice());
+            try file.writeStreamingAll(io, "}, \"submission_present\": true}");
+        } else {
+            try file.writeStreamingAll(io, "null");
+        }
         try writeFileFmt(
             file,
             io,
@@ -2125,7 +2670,12 @@ fn writeStateDocument(
     try file.writeStreamingAll(io, "  ]\n}\n");
 }
 
-fn writeComponentData(file: *std.Io.File, io: std.Io, truth: Character) !void {
+fn writeComponentData(
+    file: *std.Io.File,
+    io: std.Io,
+    truth: Character,
+    snapshot: *const Snapshot,
+) !void {
     try file.writeStreamingAll(io, "      \"component_topology\": {\n        \"attachment_points\": [\n");
     for (truth.attachments[0..truth.attachment_count], 0..) |point, index| {
         try writeFileFmt(file, io, "          {{\"index\": {d}, \"name\": ", .{point.index});
@@ -2146,18 +2696,104 @@ fn writeComponentData(file: *std.Io.File, io: std.Io, truth: Character) !void {
     for (truth.parts[0..truth.part_count], 0..) |part, index| {
         try writeFileFmt(file, io, "          {{\"index\": {d}, \"name\": ", .{part.index});
         try writeJsonString(file, io, part.name.slice());
+        try file.writeStreamingAll(io, ", \"definition\": ");
+        try writeJsonString(file, io, part.definition_name.slice());
+        try file.writeStreamingAll(io, ", \"semantic_role\": ");
+        try writeJsonString(file, io, part.semantic_role.slice());
         try file.writeStreamingAll(io, ", \"parent_part\": ");
         if (part.parent_part) |parent| {
             try writeFileFmt(file, io, "{d}", .{parent});
         } else {
             try file.writeStreamingAll(io, "null");
         }
+        try file.writeStreamingAll(io, ", \"parent_socket\": ");
+        if (part.parent_socket) |parent_socket| {
+            try writeFileFmt(file, io, "{d}", .{parent_socket});
+        } else {
+            try file.writeStreamingAll(io, "null");
+        }
         try writeFileFmt(
             file,
             io,
-            ", \"active\": {}, \"hierarchy_depth\": {d}, \"connection_type\": \"legacy_topology_unspecified\", \"articulation_module\": ",
-            .{ part.active, part.hierarchy_depth },
+            ", \"active\": {}, \"hierarchy_depth\": {d}, \"binding_mode\": \"{s}\", \"connection_mode\": \"{s}\", \"measured_gap_m\": {d:.9}, \"minimum_gap_m\": {d:.9}, \"maximum_gap_m\": {d:.9}, \"topology_status\": \"{s}\", \"material_slot\": ",
+            .{
+                part.active,
+                part.hierarchy_depth,
+                @tagName(part.binding_mode),
+                @tagName(part.connection_mode),
+                part.measured_gap_m,
+                part.minimum_gap_m,
+                part.maximum_gap_m,
+                @tagName(part.topology_status),
+            },
         );
+        try writeJsonString(file, io, part.material_slot.slice());
+        try file.writeStreamingAll(io, ", \"morphology_response\": ");
+        try writeJsonString(file, io, part.morphology_response.slice());
+        try writeFileFmt(
+            file,
+            io,
+            ", \"required_views\": {{\"front\": {}, \"side_left\": {}, \"side_right\": {}}}, \"selected_variant\": ",
+            .{
+                part.required_views.front,
+                part.required_views.side_left,
+                part.required_views.side_right,
+            },
+        );
+        try writeJsonString(file, io, part.selected_variant.slice());
+        try file.writeStreamingAll(io, ", \"bound_visuals\": [");
+        for (part.bound_visuals[0..part.bound_visual_count], 0..) |visual_name, visual_index| {
+            try writeJsonString(file, io, visual_name.slice());
+            if (visual_index + 1 != part.bound_visual_count) {
+                try file.writeStreamingAll(io, ", ");
+            }
+        }
+        try file.writeStreamingAll(io, "], \"bound_visual_submission_status\": [");
+        for (part.bound_visuals[0..part.bound_visual_count], 0..) |visual_name, visual_index| {
+            var final_submission: ?u32 = null;
+            for (snapshot.visuals[0..snapshot.visual_count]) |visual| {
+                const binding = visual.graph_binding orelse continue;
+                if (visual.character_id == truth.id and
+                    binding.component_id == part.index and
+                    std.mem.eql(
+                        u8,
+                        visual.stable_id.slice(),
+                        visual_name.slice(),
+                    ))
+                {
+                    final_submission = visual.final_submission_index;
+                    break;
+                }
+            }
+            try file.writeStreamingAll(io, "{\"visual_identity\": ");
+            try writeJsonString(file, io, visual_name.slice());
+            try writeFileFmt(
+                file,
+                io,
+                ", \"classification\": \"{s}\", \"submission_present\": {}, \"final_submission_index\": ",
+                .{
+                    if (!part.active)
+                        "inactive"
+                    else if (final_submission != null)
+                        "submitted"
+                    else
+                        "missing",
+                    final_submission != null,
+                },
+            );
+            if (final_submission) |submission_index| {
+                try writeFileFmt(file, io, "{d}", .{submission_index});
+            } else {
+                try file.writeStreamingAll(io, "null");
+            }
+            try writeFileFmt(
+                file,
+                io,
+                "}}{s}",
+                .{if (visual_index + 1 == part.bound_visual_count) "" else ", "},
+            );
+        }
+        try file.writeStreamingAll(io, "], \"articulation_module\": ");
         if (part.articulation_module) |module| {
             try writeFileFmt(file, io, "{d}", .{module});
         } else {
@@ -2167,6 +2803,29 @@ fn writeComponentData(file: *std.Io.File, io: std.Io, truth: Character) !void {
         try writeTransformJson(file, io, part.canonical_world);
         try file.writeStreamingAll(io, ", \"projected_world\": ");
         try writeTransformJson(file, io, part.projected_world);
+        try file.writeStreamingAll(io, ", \"connection_proof\": {\"parent_socket\": ");
+        try writeJsonString(file, io, part.parent_socket_name.slice());
+        try file.writeStreamingAll(io, ", \"child_root\": ");
+        try writeJsonString(file, io, part.child_root_name.slice());
+        try writeFileFmt(
+            file,
+            io,
+            ", \"parent_endpoint\": [{d:.9}, {d:.9}], \"child_endpoint\": [{d:.9}, {d:.9}], \"target_gap_m\": {d:.9}, \"measured_gap_m\": {d:.9}, \"gap_vector\": [{d:.9}, {d:.9}], \"acceptance_camera_gap_px\": {d:.6}, \"accepted_range_m\": [{d:.9}, {d:.9}], \"result\": \"{s}\"}}",
+            .{
+                part.connection_parent_endpoint.x,
+                part.connection_parent_endpoint.y,
+                part.connection_child_endpoint.x,
+                part.connection_child_endpoint.y,
+                part.target_gap_m,
+                part.measured_gap_m,
+                part.connection_gap_vector.x,
+                part.connection_gap_vector.y,
+                part.acceptance_gap_px,
+                part.minimum_gap_m,
+                part.maximum_gap_m,
+                @tagName(part.connection_result),
+            },
+        );
         try writeFileFmt(file, io, "}}{s}\n", .{if (index + 1 == truth.part_count) "" else ","});
     }
     try file.writeStreamingAll(io, "        ],\n        \"part_sockets\": [\n");
@@ -2175,6 +2834,21 @@ fn writeComponentData(file: *std.Io.File, io: std.Io, truth: Character) !void {
         try writeJsonString(file, io, socket_value.name.slice());
         try writeFileFmt(file, io, ", \"owner_part\": {d}, \"accepted_child_tag\": ", .{socket_value.owner_part});
         try writeJsonString(file, io, socket_value.accepted_child_tag.slice());
+        try file.writeStreamingAll(io, ", \"role\": ");
+        try writeJsonString(file, io, socket_value.role.slice());
+        try writeFileFmt(
+            file,
+            io,
+            ", \"capacity\": {d}, \"occupancy\": {d}, \"supported_connections\": {{\"continuous\": {}, \"intentional_gap\": {}, \"hidden\": {}, \"soft_bridge\": {}}}",
+            .{
+                socket_value.capacity,
+                socket_value.occupancy,
+                socket_value.supported_connections.continuous,
+                socket_value.supported_connections.intentional_gap,
+                socket_value.supported_connections.hidden,
+                socket_value.supported_connections.soft_bridge,
+            },
+        );
         try file.writeStreamingAll(io, ", \"canonical_world\": ");
         try writeTransformJson(file, io, socket_value.canonical_world);
         try file.writeStreamingAll(io, ", \"projected_world\": ");
@@ -2185,7 +2859,13 @@ fn writeComponentData(file: *std.Io.File, io: std.Io, truth: Character) !void {
     for (truth.module_joints[0..truth.module_joint_count], 0..) |joint, index| {
         try writeFileFmt(file, io, "          {{\"index\": {d}, \"name\": ", .{joint.index});
         try writeJsonString(file, io, joint.name.slice());
-        try writeFileFmt(file, io, ", \"module\": {d}, \"parent_joint\": ", .{joint.module_index});
+        try writeFileFmt(file, io, ", \"module\": {d}, \"owner_component\": ", .{joint.module_index});
+        if (joint.owner_component) |owner| {
+            try writeFileFmt(file, io, "{d}", .{owner});
+        } else {
+            try file.writeStreamingAll(io, "null");
+        }
+        try writeFileFmt(file, io, ", \"active\": {}, \"parent_joint\": ", .{joint.active});
         if (joint.parent_joint) |parent| {
             try writeFileFmt(file, io, "{d}", .{parent});
         } else {
@@ -2201,7 +2881,13 @@ fn writeComponentData(file: *std.Io.File, io: std.Io, truth: Character) !void {
     for (truth.module_sockets[0..truth.module_socket_count], 0..) |socket_value, index| {
         try writeFileFmt(file, io, "          {{\"index\": {d}, \"name\": ", .{socket_value.index});
         try writeJsonString(file, io, socket_value.name.slice());
-        try writeFileFmt(file, io, ", \"module\": {d}, \"parent_joint\": ", .{socket_value.module_index});
+        try writeFileFmt(file, io, ", \"module\": {d}, \"owner_component\": ", .{socket_value.module_index});
+        if (socket_value.owner_component) |owner| {
+            try writeFileFmt(file, io, "{d}", .{owner});
+        } else {
+            try file.writeStreamingAll(io, "null");
+        }
+        try writeFileFmt(file, io, ", \"active\": {}, \"parent_joint\": ", .{socket_value.active});
         if (socket_value.parent_joint) |parent| {
             try writeFileFmt(file, io, "{d}", .{parent});
         } else {
@@ -2366,6 +3052,30 @@ fn validatePngFile(
     }
 }
 
+fn validateJsonFile(
+    allocator: std.mem.Allocator,
+    io: std.Io,
+    bundle: *const Bundle,
+    filename: []const u8,
+) !void {
+    var path_buffer: [384]u8 = undefined;
+    const path = try bundle.filePath(&path_buffer, filename);
+    const bytes = try std.Io.Dir.cwd().readFileAlloc(
+        io,
+        path,
+        allocator,
+        .limited(16 * 1024 * 1024),
+    );
+    defer allocator.free(bytes);
+    var parsed = std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        bytes,
+        .{},
+    ) catch return error.InvalidManualCaptureJson;
+    parsed.deinit();
+}
+
 const png_signature = [_]u8{ 137, 80, 78, 71, 13, 10, 26, 10 };
 const png_deflate_block_max: usize = 65_535;
 
@@ -2402,6 +3112,15 @@ const fnv_prime: u64 = 1099511628211;
 fn hashValue(hash: *u64, value: anytype) void {
     for (std.mem.asBytes(&value)) |byte| {
         hash.* = (hash.* ^ byte) *% fnv_prime;
+    }
+}
+
+fn hashOptionalValue(hash: *u64, value: anytype) void {
+    if (value) |payload| {
+        hashValue(hash, @as(u8, 1));
+        hashValue(hash, payload);
+    } else {
+        hashValue(hash, @as(u8, 0));
     }
 }
 

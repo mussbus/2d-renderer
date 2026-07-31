@@ -93,3 +93,17 @@ VF-02 validates a `mesh_bridge` registration definition as an explicit future
 schema boundary, but migrates no production garment mesh. Existing deformable
 mesh topology, deformation, resource lifetime, and unified-queue submission
 remain unchanged and are classified compatibility placement in VF-01 output.
+
+VF-03 makes mesh/bridge a typed component binding declaration and adds
+`soft_bridge` connection ownership. A soft-bridge connection must name an
+existing bridge component whose definition supports mesh binding; missing
+bridges fail initialization. This milestone does not migrate a production
+garment, create topology at runtime, or alter mesh GPU resources. The typed
+extension point is exportable through VF-01 schema 4 for a later explicitly
+authorized fitted-garment or bridge milestone.
+
+VF-03-R1 changes no mesh topology, garment bridge, or GPU mesh resource. Its
+optional-arm proof is three ordinary production sprite submissions using the
+existing unified queue. `soft_bridge` remains schema/validation
+infrastructure only; the visible `0.08 m` proof intentionally contains no
+bridge.

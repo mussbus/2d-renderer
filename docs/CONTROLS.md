@@ -297,3 +297,22 @@ production queue and truth snapshot. The current schema-3 bundle identifies
 rendered versus closed-footwear-suppressed records and exports the shared
 anatomy/shoe point-axis evidence; the selector itself adds no presentation
 authority.
+
+VF-03 adds or remaps no interactive controls. For repeatable component-graph
+review, use the initialization-only diagnostic selector:
+
+```powershell
+& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --interactive `
+  --component-proof-case <disabled|continuous-front|intentional-gap-front|continuous-side-left|continuous-side-right|intentional-gap-side-left|intentional-gap-side-right|two-modules> `
+  --capture-manual-bundle
+```
+
+The selector chooses the bounded optional-arm preset, connection policy, and
+presentation view before the first simulation tick. Active front and side
+cases submit the optional upper arm, forearm, and hand through the real
+character-art queue. `--capture-manual-bundle` invokes the same one-shot
+frame-level capture request as F4; it does not create gameplay intent or a
+parallel renderer. F1 still owns the four diagnostic modes and F4 still
+captures exactly one same-state bundle per physical press. VF-03 bundles use
+schema 4 and ordinary timestamped manual naming; automated Prompt evidence
+names remain deterministic and untimestamped.

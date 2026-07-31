@@ -54,6 +54,8 @@ pub const Initialization = struct {
     female_spawn: math.Vec2 = .{ .x = -1.02, .y = 1.05 },
     male_facing: humanoid.Facing = .left,
     female_facing: humanoid.Facing = .left,
+    optional_arm_root_contract: modular_body_demo.OptionalArmRootContract =
+        .standard,
 };
 
 pub const Evidence = struct {
@@ -137,7 +139,11 @@ pub const Scene = struct {
         errdefer character_art_definition.deinit();
         var wardrobe_art_definition = try wardrobe_art.Definition.init(allocator);
         errdefer wardrobe_art_definition.deinit();
-        var definition = try modular_body_demo.initDefinition(allocator);
+        var definition =
+            try modular_body_demo.initDefinitionWithOptionalArmRootContract(
+                allocator,
+                configuration.optional_arm_root_contract,
+            );
         errdefer definition.deinit();
         var catalog = try wardrobe_catalog.Catalog.init(allocator, &definition);
         errdefer catalog.deinit();

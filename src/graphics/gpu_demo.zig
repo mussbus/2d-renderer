@@ -1002,6 +1002,8 @@ pub const GpuDemo = struct {
         integrated_debug_enabled: bool,
         interactive_enabled: bool,
         registration_proof_case: ?visual_foundation.RegistrationProofCase,
+        component_proof_case: ?visual_foundation.ComponentProofCase,
+        capture_manual_bundle: bool,
     ) !void {
         self.visible_camera = camera2d.Camera2D.initDefault();
         if (self.drawable_available) try self.visible_camera.setViewport(self.drawable_width, self.drawable_height);
@@ -1185,21 +1187,29 @@ pub const GpuDemo = struct {
                 try self.allocator.create(visual_foundation.Scene);
             errdefer self.allocator.destroy(allocated_foundation_scene);
             allocated_foundation_scene.* =
-                try visual_foundation.Scene.initWithDiagnosticAllocator(
+                try visual_foundation.Scene
+                    .initWithDiagnosticAllocatorAndComponentProof(
                     humanoid_allocator.allocator(),
                     self.allocator,
                     if (scripted_input_enabled)
                         .enforce_acceptance
                     else
                         .measure_only,
+                    component_proof_case,
                 );
             foundation_scene = allocated_foundation_scene;
             if (registration_proof_case) |proof_case| {
                 try foundation_scene.?.applyRegistrationProofCase(proof_case);
             }
+            if (component_proof_case) |proof_case| {
+                try foundation_scene.?.applyComponentProofCase(proof_case);
+            }
             foundation_scene.?.setDebugMode(
                 if (integrated_debug_enabled) .all_diagnostics else .off,
             );
+            if (capture_manual_bundle) {
+                try foundation_scene.?.requestManualDebugCapture();
+            }
             if (!scripted_input_enabled) platform_input = sdl_input.PlatformInput.init();
             if (self.resource_metrics.gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.FoundationInitializationCreatedGpuResources;
@@ -2060,7 +2070,7 @@ pub const GpuDemo = struct {
                         const driver = std.mem.span(
                             @as([*:0]const u8, @ptrCast(driver_pointer)),
                         );
-                        var argument_buffer: [128]u8 = undefined;
+                        var argument_buffer: [192]u8 = undefined;
                         var proof_argument_buffer: [64]u8 = undefined;
                         const proof_argument = if (registration_proof_case) |proof_case|
                             try std.fmt.bufPrint(
@@ -2070,9 +2080,18 @@ pub const GpuDemo = struct {
                             )
                         else
                             "";
+                        var component_argument_buffer: [64]u8 = undefined;
+                        const component_argument = if (component_proof_case) |proof_case|
+                            try std.fmt.bufPrint(
+                                &component_argument_buffer,
+                                " --component-proof-case {s}",
+                                .{proof_case.cliName()},
+                            )
+                        else
+                            "";
                         const arguments = try std.fmt.bufPrint(
                             &argument_buffer,
-                            "--demo foundation {s}{s}{s}",
+                            "--demo foundation {s}{s}{s}{s}{s}",
                             .{
                                 if (scripted_input_enabled)
                                     "--scripted-input"
@@ -2083,6 +2102,11 @@ pub const GpuDemo = struct {
                                 else
                                     "",
                                 proof_argument,
+                                component_argument,
+                                if (capture_manual_bundle)
+                                    " --capture-manual-bundle"
+                                else
+                                    "",
                             },
                         );
                         const provenance = visual_truth.CaptureProvenance{

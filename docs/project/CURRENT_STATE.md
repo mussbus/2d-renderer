@@ -1,7 +1,7 @@
 # Current State
 
-Snapshot basis: VF-02 worktree based on HEAD
-`0e9bfcb733ad24ae167acf8deb43540917cbb641`, inspected on 2026-07-30.
+Snapshot basis: VF-03 worktree based on HEAD
+`624bf26c73aeea23f16f94c88350bf5a7c646604`, inspected on 2026-07-30.
 
 Status vocabulary:
 
@@ -40,7 +40,8 @@ Status vocabulary:
 | Prompt 27C production anatomy | superseded torso result | The anatomy ruler, limb/joint/foot corrections, 102-case matrix, and evidence route remain protected; the original torso pixels were owner-rejected and are preserved only as negative evidence. |
 | Prompt 27C-R1 torso/presence corrective pass | complete, owner review pending | Restores the pre-27C chest identity with 2,743 bounded shoulder pixels and zero outside-page changes; preserves the component page; classifies every review visual; and separates interactive presence measurement from fail-closed scripted acceptance without changing thresholds. |
 | VF-01 visual truth debugger | automated complete, owner review pending | F1 exposes canonical/projected rig and final atlas-registration truth through one production snapshot; F4 atomically writes same-state D3D12 clean/debug bundles with JSON, summary, manifest, and source hashes. |
-| VF-02 authoritative rig-to-art registration | structural implementation complete, owner review pending | One fail-closed point/segment/frame solver owns final placement for both arms, forearms, thighs, shins, feet, torso, pelvis, and nose across both styles and front/side-left/side-right. VF-01 exports exact evidence and authority classification. Current silhouette/compatibility rulers still report failures. |
+| VF-02 authoritative rig-to-art registration | automated complete, owner review pending | One fail-closed point/point-axis/segment/frame solver owns final placement for both arms, forearms, thighs, shins, feet, shoes, torso, pelvis, and nose across both styles and front/side-left/side-right. The fresh fail-closed Prompt 27B ruler passes 9,752 metrics with zero failures. |
+| VF-03 typed modular component graph | automated complete after R1, owner review pending | One immutable compiled graph facade exposes typed component parents/sockets, connection modes, selected visuals, and explicit optional rig modules. R1 requires each active optional arm's three declared visuals to become exactly three graph-linked production submissions and supplies visibly distinct continuous/intentional-gap front and side D3D12/DXIL proof. |
 | Semantic body-relative garment depth schema | documented only | Current content resolves numeric visual layers. Required reusable depth relations are defined in [AUTHORING_CONTRACTS.md](AUTHORING_CONTRACTS.md), but no current accepted item requires a runtime extension. |
 | Authored side-left/side-right garment variants | documented only | Current production side art is mirror-safe. Directional and mixed-fragment policies are defined for future content. |
 | First-class collar coverage and shoulder-slope contour | documented only | Current validator has point/span fit and per-item coverage zones, but not the richer semantic contour contract required by a future editor. |
@@ -49,8 +50,8 @@ Status vocabulary:
 
 ## Current integrated acceptance
 
-VF-01's focused `test-visual-foundation` gate now passes 41/41 tests, including
-the VF-02 production-registration assertions. The
+VF-01's focused `test-visual-foundation` gate now passes 47/47 tests, including
+the VF-02 production-registration and VF-03 component-topology assertions. The
 2,400-frame production route uses:
 
 - two production characters;
@@ -110,6 +111,36 @@ physical ground-plane policy, while front projection maps its signed lateral
 component to a horizontal support tangent. Heel/toe/sole landmarks remain
 transformed, non-target evidence.
 
+VF-03 compiles the established appearance/anatomy definitions into one
+immutable component inspection authority. Typed socket roles/tags/capacities
+and explicit connection modes fail closed at initialization. The conventional
+and angular faces expose head → eye → eyebrow chains with one bound visual per
+eyebrow child; hair follows the typed scalp relationship. The nonstandard
+technical preset exports explicit shoulder/elbow/wrist/hand-tip arm modules,
+including one continuous and one declared `0.08 m` intentional-gap
+connection. Standard two-arm characters remain unchanged.
+
+The original automated VF-03 proof passed because it validated declared
+optional-arm `bound_visuals` without requiring the production slot resolver
+to submit them. Clean captures showed only the standard arms, side proof
+modules were inactive, and the continuous/gap pixels were indistinguishable.
+R1 closes that gap: active optional modules now submit upper arm, forearm, and
+hand through `character_art` using the projected shoulder/elbow/wrist/hand-tip
+chain. The invariant is declared = resolved = expected = actual, with exactly
+three submissions per active module. Inactive modules explicitly have no
+final indices and are not classified missing.
+
+Corrective D3D12/DXIL bundles `_0083`, `_0091–_0097` cover disabled,
+continuous/intentional-gap front, both active side directions, reflection,
+and two modules. Singles contain exactly three submissions; `_0097` contains
+six. The `0.08 m` gap remains within `0.07–0.09 m` and derives approximately
+`6.56 px` from the captured `82 px/m` camera. Every accepted schema-4
+manifest, file hash/size, and clean/debug state identity validates.
+Historical `_0074–_0082` are unchanged. Invalid-JSON `_0084–_0090` attempts
+are preserved but are not completion evidence. A fresh current-art Prompt
+27B report remains fail-closed and passes 9,752 metrics with zero failures.
+The current aggregate is `428/428`.
+
 Prompt 27C extends the focused visual-geometry gate to 158/158 checks and the
 Debug aggregate to 386/386 tests. Its final semantic report contains 102
 cases, 2,450 production trace records, 3,788 metrics, and zero failures; the
@@ -158,6 +189,9 @@ These are diagnostic candidates, not approved goldens.
 - Prompt 27C-R1 classified provenance, changed-pixel torso audit,
   native/enlarged/directional/composite/diff review, and explicit
   measure-only interactive presence route.
+- VF-03 compiled component graph, typed-socket and connection fixtures,
+  child-follow proof, explicit optional arm modules, and schema-4 D3D12
+  capture route.
 
 Prompt 27 changed the visible `--demo foundation` CLI owner to
 `visual_foundation.Scene`. The older procedural Prompt 22 scene remains a
@@ -176,6 +210,9 @@ current rendered application.
 - VF-01 truth bundles await owner/manual review and are not approved goldens.
 - VF-02 registration bundles await owner/manual review and are not approved
   goldens.
+- VF-03-R1 rendered optional-arm bundles await owner/manual review and are not
+  approved goldens. Historical `_0074–_0082` and invalid corrective attempts
+  `_0084–_0090` remain preserved diagnostic candidates.
 - The preserved pre-correction fresh-current-art Prompt 27B report has 24
   front-foot endpoint-height failures. The owner-review correction resolves
   that policy defect in a new 9,752-metric zero-failure run; neither report is
@@ -211,8 +248,9 @@ The impact and intended future milestones are in
 
 ## Next authorized milestone
 
-VF-02 is the current bounded registration milestone. Prompt 27A, Prompt 27B,
-Prompt 27C-R1, VF-01, and VF-02 owner/manual visual acceptance remains
-`[PENDING OWNER REVIEW]`. VF-03, Prompt 28, gameplay vertical slice, editor,
-combat, mission, or other expansion has not started. Future work requires an
+VF-03-R1 is the current bounded rendered-topology correction and is stopped for owner
+review. Prompt 27A, Prompt 27B, Prompt 27C-R1, VF-01, VF-02, and VF-03
+owner/manual visual acceptance remains `[PENDING OWNER REVIEW]`. Prompt 28,
+gameplay vertical slice, editor, combat, mission, broad production migration,
+materials, and morphology expansion have not started. Future work requires an
 explicit user request and must preserve the existing authority boundaries.

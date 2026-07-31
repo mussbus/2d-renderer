@@ -117,8 +117,10 @@ test "character art definitions cover both views bald buzz cut and long hair" {
     const male = try character_art.Presentation.init(&art, &definition, .male, 1);
     const female = try character_art.Presentation.init(&art, &definition, .female, 1);
     try std.testing.expectEqual(character_art.texture_page_count, art.art.pages.len);
-    try std.testing.expectEqual(@as(usize, 68), art.art.regions.len);
-    try std.testing.expectEqual(@as(usize, 96), art.art.bindings.len);
+    try std.testing.expectEqual(@as(usize, 72), art.art.regions.len);
+    // VF-03-R1 adds six optional-arm production bindings per
+    // style/view combination without adding atlas regions.
+    try std.testing.expectEqual(@as(usize, 128), art.art.bindings.len);
     try std.testing.expect(male.hasHair(.bald));
     try std.testing.expect(male.hasHair(.buzz_cut));
     try std.testing.expect(!male.hasHair(.long));

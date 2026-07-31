@@ -83,6 +83,7 @@ collider-data authority.
 | Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig), [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
 | Skeleton, poses, clips, state machine | [`src/animation/skeleton.zig`](../../src/animation/skeleton.zig), [`src/animation/pose.zig`](../../src/animation/pose.zig), [`src/animation/clip.zig`](../../src/animation/clip.zig), [`src/animation/state_machine.zig`](../../src/animation/state_machine.zig) |
 | Anatomy identity/runtime | [`src/scene/anatomy.zig`](../../src/scene/anatomy.zig), production definitions in [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
+| VF-03 compiled component-topology authority | [`src/scene/component_graph.zig`](../../src/scene/component_graph.zig), compiled from immutable appearance/anatomy definitions |
 | Body presets/morphology | Anatomy/body-preset and morphology declarations in [`src/scene/anatomy.zig`](../../src/scene/anatomy.zig) and [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
 | Appearance semantics and attachment points | [`src/scene/appearance.zig`](../../src/scene/appearance.zig) |
 | Base character presentation | [`src/scene/character_art.zig`](../../src/scene/character_art.zig), [`src/scene/presentation_pose.zig`](../../src/scene/presentation_pose.zig), [`src/scene/presentation_view.zig`](../../src/scene/presentation_view.zig) |
@@ -107,6 +108,8 @@ collider-data authority.
 | Gameplay facing | `humanoid.Facing` on the character instance | Sprite scale sign, shoe orientation, or atlas layout |
 | Presentation view | `presentation_view.View` resolved from character state and optional interaction role claim | Filename or texture-page choice |
 | Anatomical left/right identity | Typed anatomy part instance | Final mirrored quad or screen position |
+| Runtime component topology | Compiled immutable `component_graph.Definition` over appearance/anatomy owners | Alpha overlap, draw order, or runtime-created joints |
+| Component connection semantics | Explicit `continuous`, `intentional_gap`, `hidden`, or `soft_bridge` data on the instance/socket contract | Whether adjacent sprite alpha happens to overlap |
 | Equipment item identity | Typed `EquipmentItemId` in the loadout | Visual component, atlas region, or garment color |
 | Visual fragment identity | Currently typed `ItemVisualRecipeId` + component; future stable authored fragment ID is documented | Draw order or source rectangle |
 | Atlas-region identity | Typed art-pack region ID selected through semantic/view binding | Logical item or theme ID |
@@ -212,3 +215,19 @@ the shoe visible-envelope ownership, suppresses only covered base-foot
 pixels, and retains the hidden base-foot trace. Other wardrobe and unmigrated
 character visuals remain explicitly classified compatibility or transitional
 paths; they are not silently described as authoritative.
+
+VF-03 compiles one inspectable topology facade from the existing appearance
+and anatomy records. It exports component parents, typed sockets, connection
+modes, selected visuals, and explicit module ownership through VF-01 schema
+4. Front and side projection resolve component/module/visual-parent sources
+without creating runtime joints. Direct eye, eyebrow, and hair visuals use
+their projected component targets through the shared point-registration
+solver. Existing standard character, equipment, controller, interaction,
+queue, and GPU authorities remain unchanged.
+
+VF-03-R1 closes the facade-to-render boundary: an active optional arm's three
+declared graph visuals must resolve to three production `character_art`
+submissions, each bound to the exported projected module chain. Final trace,
+F1, JSON, summary, and validation consume those same request records. The
+technical arm uses the existing atlas, global queue, D3D12 renderer, and
+resource ownership; no graph-only or overlay-only renderer exists.

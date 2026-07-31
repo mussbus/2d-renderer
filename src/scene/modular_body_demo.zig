@@ -13,6 +13,12 @@ const fault_injection = @import("fault_injection");
 pub const required_frames: u32 = 240;
 pub const character_count: usize = 3;
 
+pub const OptionalArmRootContract = enum(u8) {
+    standard,
+    primary_continuous,
+    primary_intentional_gap,
+};
+
 pub const long_hair_secondary_motion = attachment_secondary_motion.Definition{
     .dynamic_point_count = 3,
     .rest_offsets = .{
@@ -107,6 +113,8 @@ const Part = enum(usize) {
     left_eye,
     right_eye,
     eyebrows,
+    left_eyebrow,
+    right_eyebrow,
     nose,
     mouth,
     left_ear,
@@ -114,6 +122,8 @@ const Part = enum(usize) {
     angular_left_eye,
     angular_right_eye,
     angular_eyebrows,
+    angular_left_eyebrow,
+    angular_right_eyebrow,
     angular_nose,
     angular_mouth,
     angular_left_ear,
@@ -161,6 +171,10 @@ const dual_anatomy_parts = conventional_core_parts ++ [_][]const u8{ "left_breas
 const dual_penis_parts = conventional_core_parts ++ [_][]const u8{ "pectoral", "penis_a", "penis_b" };
 const triple_breast_parts = conventional_core_parts ++ [_][]const u8{ "left_breast", "right_breast", "center_breast", "vulva" };
 const nonstandard_parts = conventional_core_parts ++ [_][]const u8{ "extra_arm", "extra_arm_second", "tail", "left_horn", "right_horn" };
+const optional_arm_primary_parts = conventional_male_parts ++
+    [_][]const u8{"extra_arm"};
+const optional_arm_both_parts = conventional_male_parts ++
+    [_][]const u8{ "extra_arm", "extra_arm_second" };
 
 pub const Scene = struct {
     definition: humanoid.HumanoidDefinition,
@@ -179,7 +193,11 @@ pub const Scene = struct {
     }
 
     fn initWithInjector(allocator: std.mem.Allocator, injector: ?fault_injection.Injector) !Scene {
-        var definition = try initDefinitionWithInjector(allocator, injector);
+        var definition = try initDefinitionWithInjector(
+            allocator,
+            injector,
+            .standard,
+        );
         errdefer definition.deinit();
         var shared_animations = try authored.Definitions.init(allocator, &definition.skeleton_definition, null);
         errdefer shared_animations.deinit();
@@ -318,7 +336,7 @@ pub const Scene = struct {
         if (anatomy_definition.faces.len < 2) return error.DistinctFaceDefinitionsMissing;
         const male_runtime = scene.conventional_male.character.anatomy_runtime.?;
         const female_runtime = scene.conventional_female.character.anatomy_runtime.?;
-        for ([_][]const u8{ "left_eye", "right_eye", "eyebrows", "nose", "mouth", "left_ear", "right_ear" }) |name| {
+        for ([_][]const u8{ "left_eye", "right_eye", "left_eyebrow", "right_eyebrow", "nose", "mouth", "left_ear", "right_ear" }) |name| {
             const part_id = try anatomy_definition.partInstanceId(name);
             if (!try male_runtime.isPartActive(anatomy_definition, part_id) or
                 try female_runtime.isPartActive(anatomy_definition, part_id))
@@ -326,12 +344,20 @@ pub const Scene = struct {
                 return error.DistinctFaceSelectionIncorrect;
             }
         }
-        for ([_][]const u8{ "angular_left_eye", "angular_right_eye", "angular_eyebrows", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear" }) |name| {
+        for ([_][]const u8{ "angular_left_eye", "angular_right_eye", "angular_left_eyebrow", "angular_right_eyebrow", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear" }) |name| {
             const part_id = try anatomy_definition.partInstanceId(name);
             if (try male_runtime.isPartActive(anatomy_definition, part_id) or
                 !try female_runtime.isPartActive(anatomy_definition, part_id))
             {
                 return error.DistinctFaceSelectionIncorrect;
+            }
+        }
+        for ([_][]const u8{ "eyebrows", "angular_eyebrows" }) |name| {
+            const part_id = try anatomy_definition.partInstanceId(name);
+            if (try male_runtime.isPartActive(anatomy_definition, part_id) or
+                try female_runtime.isPartActive(anatomy_definition, part_id))
+            {
+                return error.LegacyCombinedEyebrowSelected;
             }
         }
         const appearance_definition = scene.definition.visual_definition.view();
@@ -361,12 +387,20 @@ pub const Scene = struct {
 };
 
 pub fn initDefinition(allocator: std.mem.Allocator) !humanoid.HumanoidDefinition {
-    return initDefinitionWithInjector(allocator, null);
+    return initDefinitionWithInjector(allocator, null, .standard);
+}
+
+pub fn initDefinitionWithOptionalArmRootContract(
+    allocator: std.mem.Allocator,
+    root_contract: OptionalArmRootContract,
+) !humanoid.HumanoidDefinition {
+    return initDefinitionWithInjector(allocator, null, root_contract);
 }
 
 fn initDefinitionWithInjector(
     allocator: std.mem.Allocator,
     injector: ?fault_injection.Injector,
+    root_contract: OptionalArmRootContract,
 ) !humanoid.HumanoidDefinition {
     const bones = humanoid.boneInputs();
     const sockets = humanoid.socketInputs();
@@ -387,18 +421,35 @@ fn initDefinitionWithInjector(
         .{ .debug_name = "tail_mid", .parent_joint = "tail_root", .rest_local = math.Transform2D.init(.{ .x = 0.52, .y = 0 }, 0.35, math.Vec2.one) },
         .{ .debug_name = "tail_tip", .parent_joint = "tail_mid", .rest_local = math.Transform2D.init(.{ .x = 0.44, .y = 0 }, 0.28, math.Vec2.one) },
     };
+    const primary_module_root = if (root_contract ==
+        .primary_intentional_gap)
+        math.Transform2D.init(
+            .{ .x = 0.5682, .y = 0.1382 },
+            -0.55,
+            math.Vec2.one,
+        )
+    else
+        math.Transform2D.init(
+            .{ .x = 0.50, .y = 0.18 },
+            -0.55,
+            math.Vec2.one,
+        );
     const rig_modules = [_]appearance.RigModuleInput{
         .{
             .debug_name = "extra_arm_module",
             .parent_attachment_point = "chest",
-            .local_to_attachment_point = math.Transform2D.init(.{ .x = 0.08, .y = 0.05 }, 0.35, math.Vec2.one),
+            .local_to_attachment_point = primary_module_root,
             .joints = &extra_arm_joints,
             .sockets = &extra_arm_sockets,
         },
         .{
             .debug_name = "extra_arm_module_second",
             .parent_attachment_point = "chest",
-            .local_to_attachment_point = math.Transform2D.init(.{ .x = -0.08, .y = 0.05 }, 2.79, math.Vec2.one),
+            .local_to_attachment_point = math.Transform2D.init(
+                .{ .x = -0.5682, .y = 0.1382 },
+                3.69,
+                math.Vec2.one,
+            ),
             .joints = &extra_arm_joints,
             .sockets = &extra_arm_sockets,
         },
@@ -412,7 +463,7 @@ fn initDefinitionWithInjector(
     };
 
     const canonical_visuals = humanoid.attachmentInputs();
-    var visuals: [45]appearance.VisualAttachmentInput = undefined;
+    var visuals: [49]appearance.VisualAttachmentInput = undefined;
     @memcpy(visuals[0..canonical_visuals.len], &canonical_visuals);
     var visual_cursor: usize = canonical_visuals.len;
     visuals[visual_cursor] = extraVisual("torso_modest", .{ .canonical_bone = 2 }, math.Transform2D.init(.{ .x = 0, .y = 0.56 }, 0, math.Vec2.one), .{ .x = 0.90, .y = 1.20 }, .{ 0.5, 0.5 }, .{ 0.25, 0.55, 0.95, 1 }, 31, "torso");
@@ -423,6 +474,8 @@ fn initDefinitionWithInjector(
         .{ "left_eye", .{ .x = -0.13, .y = 0.08 }, .{ .x = 0.09, .y = 0.07 }, .{ 0.15, 0.25, 0.55, 1 }, 44 },
         .{ "right_eye", .{ .x = 0.13, .y = 0.08 }, .{ .x = 0.09, .y = 0.07 }, .{ 0.15, 0.25, 0.55, 1 }, 44 },
         .{ "eyebrows", .{ .x = 0, .y = 0.18 }, .{ .x = 0.34, .y = 0.035 }, .{ 0.18, 0.10, 0.06, 1 }, 45 },
+        .{ "left_eyebrow", .{ .x = -0.13, .y = 0.18 }, .{ .x = 0.17, .y = 0.035 }, .{ 0.18, 0.10, 0.06, 1 }, 45 },
+        .{ "right_eyebrow", .{ .x = 0.13, .y = 0.18 }, .{ .x = 0.17, .y = 0.035 }, .{ 0.18, 0.10, 0.06, 1 }, 45 },
         .{ "nose", .{ .x = 0, .y = -0.01 }, .{ .x = 0.07, .y = 0.13 }, .{ 0.72, 0.42, 0.28, 1 }, 45 },
         .{ "mouth", .{ .x = 0, .y = -0.16 }, .{ .x = 0.20, .y = 0.045 }, .{ 0.65, 0.12, 0.18, 1 }, 46 },
         .{ "left_ear", .{ .x = -0.34, .y = 0 }, .{ .x = 0.07, .y = 0.16 }, .{ 0.82, 0.62, 0.45, 1 }, 42 },
@@ -445,6 +498,8 @@ fn initDefinitionWithInjector(
         .{ "angular_left_eye", math.Transform2D.init(.{ .x = -0.16, .y = 0.10 }, 0.16, math.Vec2.one), .{ .x = 0.13, .y = 0.055 }, .{ 0.10, 0.62, 0.38, 1 }, 44 },
         .{ "angular_right_eye", math.Transform2D.init(.{ .x = 0.16, .y = 0.10 }, -0.16, math.Vec2.one), .{ .x = 0.13, .y = 0.055 }, .{ 0.10, 0.62, 0.38, 1 }, 44 },
         .{ "angular_eyebrows", math.Transform2D.init(.{ .x = 0, .y = 0.22 }, 0, math.Vec2.one), .{ .x = 0.40, .y = 0.025 }, .{ 0.08, 0.05, 0.03, 1 }, 45 },
+        .{ "angular_left_eyebrow", math.Transform2D.init(.{ .x = -0.16, .y = 0.22 }, 0.08, math.Vec2.one), .{ .x = 0.20, .y = 0.025 }, .{ 0.08, 0.05, 0.03, 1 }, 45 },
+        .{ "angular_right_eyebrow", math.Transform2D.init(.{ .x = 0.16, .y = 0.22 }, -0.08, math.Vec2.one), .{ .x = 0.20, .y = 0.025 }, .{ 0.08, 0.05, 0.03, 1 }, 45 },
         .{ "angular_nose", math.Transform2D.init(.{ .x = 0, .y = -0.02 }, 0, math.Vec2.one), .{ .x = 0.045, .y = 0.18 }, .{ 0.66, 0.48, 0.34, 1 }, 45 },
         .{ "angular_mouth", math.Transform2D.init(.{ .x = 0, .y = -0.19 }, 0, math.Vec2.one), .{ .x = 0.30, .y = 0.025 }, .{ 0.52, 0.10, 0.38, 1 }, 46 },
         .{ "angular_left_ear", math.Transform2D.init(.{ .x = -0.37, .y = 0.02 }, -0.10, math.Vec2.one), .{ .x = 0.10, .y = 0.22 }, .{ 0.78, 0.58, 0.42, 1 }, 42 },
@@ -554,21 +609,59 @@ fn initDefinitionWithInjector(
     };
 
     const pelvis_sockets = [_]anatomy.ChildSocketInput{
-        .{ .stable_id = "genital_a", .local_to_part = math.Transform2D.init(.{ .x = -0.10, .y = -0.10 }, 0, math.Vec2.one), .accepted_child_tag = "adult_anatomy" },
-        .{ .stable_id = "genital_b", .local_to_part = math.Transform2D.init(.{ .x = 0.10, .y = -0.10 }, 0, math.Vec2.one), .accepted_child_tag = "adult_anatomy" },
-        .{ .stable_id = "vulva_region", .local_to_part = math.Transform2D.init(.{ .x = 0, .y = -0.08 }, 0, math.Vec2.one), .accepted_child_tag = "adult_anatomy" },
+        .{ .stable_id = "genital_a", .local_to_part = math.Transform2D.init(.{ .x = -0.10, .y = -0.10 }, 0, math.Vec2.one), .accepted_child_tag = "adult_anatomy", .role = "pelvis_anatomy" },
+        .{ .stable_id = "genital_b", .local_to_part = math.Transform2D.init(.{ .x = 0.10, .y = -0.10 }, 0, math.Vec2.one), .accepted_child_tag = "adult_anatomy", .role = "pelvis_anatomy" },
+        .{ .stable_id = "vulva_region", .local_to_part = math.Transform2D.init(.{ .x = 0, .y = -0.08 }, 0, math.Vec2.one), .accepted_child_tag = "adult_anatomy", .role = "pelvis_anatomy" },
+        .{ .stable_id = "left_leg", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "leg", .role = "pelvis_leg" },
+        .{ .stable_id = "right_leg", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "leg", .role = "pelvis_leg" },
+        .{ .stable_id = "tail", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "tail", .role = "pelvis_tail" },
     };
     const torso_sockets = [_]anatomy.ChildSocketInput{
-        .{ .stable_id = "chest_left", .local_to_part = math.Transform2D.init(.{ .x = -0.18, .y = 0.20 }, 0, math.Vec2.one), .accepted_child_tag = "chest_anatomy" },
-        .{ .stable_id = "chest_right", .local_to_part = math.Transform2D.init(.{ .x = 0.18, .y = 0.20 }, 0, math.Vec2.one), .accepted_child_tag = "chest_anatomy" },
-        .{ .stable_id = "chest_center", .local_to_part = math.Transform2D.init(.{ .x = 0, .y = 0.18 }, 0, math.Vec2.one), .accepted_child_tag = "chest_anatomy" },
+        .{ .stable_id = "chest_left", .local_to_part = math.Transform2D.init(.{ .x = -0.18, .y = 0.20 }, 0, math.Vec2.one), .accepted_child_tag = "chest_anatomy", .role = "torso_anatomy" },
+        .{ .stable_id = "chest_right", .local_to_part = math.Transform2D.init(.{ .x = 0.18, .y = 0.20 }, 0, math.Vec2.one), .accepted_child_tag = "chest_anatomy", .role = "torso_anatomy" },
+        .{ .stable_id = "chest_center", .local_to_part = math.Transform2D.init(.{ .x = 0, .y = 0.18 }, 0, math.Vec2.one), .accepted_child_tag = "chest_anatomy", .role = "torso_anatomy", .capacity = 2 },
+        .{ .stable_id = "left_arm", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "arm", .role = "torso_arm" },
+        .{ .stable_id = "right_arm", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "arm", .role = "torso_arm" },
+        .{
+            .stable_id = "extra_arm_right",
+            .local_to_part = math.Transform2D.init(
+                .{ .x = 0.50, .y = 0.18 },
+                -0.55,
+                math.Vec2.one,
+            ),
+            .accepted_child_tag = "arm",
+            .role = "torso_arm",
+            .supported_connections = .{
+                .continuous = true,
+                .intentional_gap = true,
+            },
+        },
+        .{
+            .stable_id = "extra_arm_left",
+            .local_to_part = math.Transform2D.init(
+                .{ .x = -0.50, .y = 0.18 },
+                3.69,
+                math.Vec2.one,
+            ),
+            .accepted_child_tag = "arm",
+            .role = "torso_arm",
+            .supported_connections = .{ .continuous = true, .intentional_gap = true },
+        },
     };
     const head_sockets = [_]anatomy.ChildSocketInput{
-        .{ .stable_id = "face", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "face_feature" },
-        .{ .stable_id = "scalp", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "hair" },
-        .{ .stable_id = "horn_left", .local_to_part = math.Transform2D.init(.{ .x = -0.20, .y = 0.30 }, 0, math.Vec2.one), .accepted_child_tag = "horn" },
-        .{ .stable_id = "horn_right", .local_to_part = math.Transform2D.init(.{ .x = 0.20, .y = 0.30 }, 0, math.Vec2.one), .accepted_child_tag = "horn" },
+        .{ .stable_id = "face", .local_to_part = math.Transform2D.identity(), .accepted_child_tag = "face_feature", .role = "head_face", .capacity = 10 },
+        .{ .stable_id = "left_eye", .local_to_part = math.Transform2D.init(.{ .x = -0.42, .y = 0.02 }, 0, math.Vec2.one), .accepted_child_tag = "eye", .role = "head_eye", .capacity = 2 },
+        .{ .stable_id = "right_eye", .local_to_part = math.Transform2D.init(.{ .x = -0.14, .y = 0.02 }, 0, math.Vec2.one), .accepted_child_tag = "eye", .role = "head_eye", .capacity = 2 },
+        .{ .stable_id = "scalp", .local_to_part = math.Transform2D.init(.{ .x = -0.28, .y = 0.25 }, 0, math.Vec2.one), .accepted_child_tag = "hair", .role = "head_scalp", .capacity = 3 },
+        .{ .stable_id = "horn_left", .local_to_part = math.Transform2D.init(.{ .x = -0.20, .y = 0.30 }, 0, math.Vec2.one), .accepted_child_tag = "horn", .role = "head_horn" },
+        .{ .stable_id = "horn_right", .local_to_part = math.Transform2D.init(.{ .x = 0.20, .y = 0.30 }, 0, math.Vec2.one), .accepted_child_tag = "horn", .role = "head_horn" },
     };
+    const eye_sockets = [_]anatomy.ChildSocketInput{.{
+        .stable_id = "brow",
+        .local_to_part = math.Transform2D.init(.{ .x = 0, .y = 0.10 }, 0, math.Vec2.one),
+        .accepted_child_tag = "eyebrow",
+        .role = "eye_brow",
+    }};
     const torso_morph = [_]anatomy.MorphBindingInput{
         .{ .channel = "shoulder_width", .scale_per_unit = .{ .x = 1, .y = 0 } },
         .{ .channel = "torso_width", .scale_per_unit = .{ .x = 1, .y = 0 } },
@@ -608,7 +701,7 @@ fn initDefinitionWithInjector(
     const horn_morph = [_]anatomy.MorphBindingInput{
         .{ .channel = "horn_scale", .scale_per_unit = math.Vec2.one },
     };
-    const part_definitions = [_]anatomy.BodyPartDefinitionInput{
+    var part_definitions = [_]anatomy.BodyPartDefinitionInput{
         partDefinition("pelvis_part", "core", "pelvis", &.{ "core_humanoid", "pelvis" }, &pelvis_sockets, &.{}),
         breathingPartDefinition(
             "torso_part",
@@ -637,6 +730,8 @@ fn initDefinitionWithInjector(
         partDefinition("thigh_part", "limb", "thigh", &.{ "core_humanoid", "leg" }, &.{}, &thigh_morph),
         partDefinition("shin_part", "limb", "lower_leg", &.{ "core_humanoid", "leg" }, &.{}, &shin_morph),
         partDefinition("foot_part", "limb", "foot", &.{ "core_humanoid", "foot" }, &.{}, &foot_morph),
+        partDefinition("eye_part", "face", "eye", &.{ "face_feature", "eye" }, &eye_sockets, &.{}),
+        partDefinition("eyebrow_part", "face", "eyebrow", &.{ "face_feature", "eyebrow" }, &.{}, &.{}),
         partDefinition("face_feature_part", "face", "feature", &.{"face_feature"}, &.{}, &.{}),
         partDefinition("hair_part", "appearance", "hair", &.{"hair"}, &.{}, &.{}),
         breathingPartDefinition(
@@ -663,6 +758,38 @@ fn initDefinitionWithInjector(
         partDefinition("tail_part", "optional_appendage", "tail", &.{ "tail", "articulated_module" }, &.{}, &tail_morph),
         partDefinition("horn_part", "optional_head", "horn", &.{"horn"}, &.{}, &horn_morph),
     };
+    part_definitions[0].component.binding_mode = .frame;
+    part_definitions[0].component.material_slot = "skin";
+    part_definitions[0].component.morphology_response = "declared_bindings";
+    part_definitions[1].component.binding_mode = .frame;
+    part_definitions[1].component.material_slot = "skin";
+    part_definitions[1].component.morphology_response = "declared_bindings";
+    part_definitions[2].component.binding_mode = .frame;
+    part_definitions[2].component.material_slot = "skin";
+    part_definitions[2].component.morphology_response = "declared_bindings";
+    for (part_definitions[3..9]) |*definition| {
+        definition.component.binding_mode = .segment;
+        definition.component.material_slot = "skin";
+        definition.component.morphology_response = "declared_bindings";
+    }
+    part_definitions[9].component.allowed_parent_socket_role = "head_eye";
+    part_definitions[9].component.material_slot = "face";
+    part_definitions[10].component.allowed_parent_socket_role = "eye_brow";
+    part_definitions[10].component.material_slot = "face";
+    part_definitions[12].component.allowed_parent_socket_role = "head_scalp";
+    part_definitions[12].component.material_slot = "hair";
+    part_definitions[17].component.allowed_parent_socket_role = "torso_arm";
+    part_definitions[17].component.binding_mode = .segment;
+    part_definitions[17].component.supported_connections = .{
+        .continuous = true,
+        .intentional_gap = true,
+    };
+    part_definitions[17].component.rig_module_template =
+        .shoulder_elbow_wrist_hand;
+    part_definitions[18].component.allowed_parent_socket_role = "pelvis_tail";
+    part_definitions[18].component.binding_mode = .segment;
+    part_definitions[19].component.allowed_parent_socket_role = "head_horn";
+    part_definitions[19].component.binding_mode = .segment;
 
     var variant_visual_storage: [part_count][profile_names.len][maximum_visuals_per_variant][]const u8 = undefined;
     var variants: [part_count][profile_names.len]anatomy.VisualVariantInput = undefined;
@@ -684,18 +811,32 @@ fn initDefinitionWithInjector(
     setInstance(&part_instances, &variants, &variant_visual_storage, .right_thigh, "right_thigh", "thigh_part", .{ .attachment_point = "right_ankle" }, "right_leg", 50, null, &.{"right_thigh"});
     setInstance(&part_instances, &variants, &variant_visual_storage, .right_shin, "right_shin", "shin_part", .{ .attachment_point = "right_ankle" }, "right_leg", 51, null, &.{"right_shin"});
     setInstance(&part_instances, &variants, &variant_visual_storage, .right_foot, "right_foot", "foot_part", .{ .attachment_point = "right_foot" }, "right_foot", 52, null, &.{"right_foot"});
+    setInstance(&part_instances, &variants, &variant_visual_storage, .left_eye, "left_eye", "eye_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "left_eye" } }, "head", 44, null, &.{"left_eye"});
+    part_instances[@intFromEnum(Part.left_eye)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .right_eye, "right_eye", "eye_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "right_eye" } }, "head", 44, null, &.{"right_eye"});
+    part_instances[@intFromEnum(Part.right_eye)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .left_eyebrow, "left_eyebrow", "eyebrow_part", .{ .body_part_socket = .{ .part_instance = "left_eye", .socket = "brow" } }, "head", 45, null, &.{"left_eyebrow"});
+    part_instances[@intFromEnum(Part.left_eyebrow)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .right_eyebrow, "right_eyebrow", "eyebrow_part", .{ .body_part_socket = .{ .part_instance = "right_eye", .socket = "brow" } }, "head", 45, null, &.{"right_eyebrow"});
+    part_instances[@intFromEnum(Part.right_eyebrow)].topology_status = .direct;
     for ([_]struct { Part, []const u8, []const u8 }{
-        .{ .left_eye, "left_eye", "left_eye" },
-        .{ .right_eye, "right_eye", "right_eye" },
         .{ .eyebrows, "eyebrows", "eyebrows" },
         .{ .nose, "nose", "nose" },
         .{ .mouth, "mouth", "mouth" },
         .{ .left_ear, "left_ear", "left_ear" },
         .{ .right_ear, "right_ear", "right_ear" },
     }) |entry| setInstance(&part_instances, &variants, &variant_visual_storage, entry[0], entry[1], "face_feature_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "face" } }, "head", 45, null, &.{entry[2]});
+    setInstance(&part_instances, &variants, &variant_visual_storage, .angular_left_eye, "angular_left_eye", "eye_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "left_eye" } }, "head", 44, null, &.{"angular_left_eye"});
+    part_instances[@intFromEnum(Part.angular_left_eye)].local_to_parent.translation.x = -0.02;
+    part_instances[@intFromEnum(Part.angular_left_eye)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .angular_right_eye, "angular_right_eye", "eye_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "right_eye" } }, "head", 44, null, &.{"angular_right_eye"});
+    part_instances[@intFromEnum(Part.angular_right_eye)].local_to_parent.translation.x = 0.02;
+    part_instances[@intFromEnum(Part.angular_right_eye)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .angular_left_eyebrow, "angular_left_eyebrow", "eyebrow_part", .{ .body_part_socket = .{ .part_instance = "angular_left_eye", .socket = "brow" } }, "head", 45, null, &.{"angular_left_eyebrow"});
+    part_instances[@intFromEnum(Part.angular_left_eyebrow)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .angular_right_eyebrow, "angular_right_eyebrow", "eyebrow_part", .{ .body_part_socket = .{ .part_instance = "angular_right_eye", .socket = "brow" } }, "head", 45, null, &.{"angular_right_eyebrow"});
+    part_instances[@intFromEnum(Part.angular_right_eyebrow)].topology_status = .direct;
     for ([_]struct { Part, []const u8, []const u8 }{
-        .{ .angular_left_eye, "angular_left_eye", "angular_left_eye" },
-        .{ .angular_right_eye, "angular_right_eye", "angular_right_eye" },
         .{ .angular_eyebrows, "angular_eyebrows", "angular_eyebrows" },
         .{ .angular_nose, "angular_nose", "angular_nose" },
         .{ .angular_mouth, "angular_mouth", "angular_mouth" },
@@ -703,8 +844,11 @@ fn initDefinitionWithInjector(
         .{ .angular_right_ear, "angular_right_ear", "angular_right_ear" },
     }) |entry| setInstance(&part_instances, &variants, &variant_visual_storage, entry[0], entry[1], "face_feature_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "face" } }, "head", 45, null, &.{entry[2]});
     setInstance(&part_instances, &variants, &variant_visual_storage, .short_hair, "short_hair", "hair_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "scalp" } }, "head", 41, null, &.{"short_hair"});
+    part_instances[@intFromEnum(Part.short_hair)].topology_status = .direct;
     setInstance(&part_instances, &variants, &variant_visual_storage, .long_hair, "long_hair", "hair_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "scalp" } }, "head", 41, null, &.{"long_hair"});
+    part_instances[@intFromEnum(Part.long_hair)].topology_status = .direct;
     setInstance(&part_instances, &variants, &variant_visual_storage, .ponytail_hair, "ponytail_hair", "hair_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "scalp" } }, "head", 41, null, &.{"ponytail_hair"});
+    part_instances[@intFromEnum(Part.ponytail_hair)].topology_status = .direct;
     setInstance(&part_instances, &variants, &variant_visual_storage, .left_breast, "left_breast", "breast_part", .{ .body_part_socket = .{ .part_instance = "torso", .socket = "chest_left" } }, "torso", 32, null, &.{});
     setInstance(&part_instances, &variants, &variant_visual_storage, .right_breast, "right_breast", "breast_part", .{ .body_part_socket = .{ .part_instance = "torso", .socket = "chest_right" } }, "torso", 32, null, &.{});
     setInstance(&part_instances, &variants, &variant_visual_storage, .center_breast, "center_breast", "breast_part", .{ .body_part_socket = .{ .part_instance = "torso", .socket = "chest_center" } }, "torso", 32, null, &.{});
@@ -712,16 +856,33 @@ fn initDefinitionWithInjector(
     setInstance(&part_instances, &variants, &variant_visual_storage, .penis_a, "penis_a", "penis_part", .{ .body_part_socket = .{ .part_instance = "pelvis", .socket = "genital_a" } }, "pelvis", 33, null, &.{});
     setInstance(&part_instances, &variants, &variant_visual_storage, .penis_b, "penis_b", "penis_part", .{ .body_part_socket = .{ .part_instance = "pelvis", .socket = "genital_b" } }, "pelvis", 33, null, &.{});
     setInstance(&part_instances, &variants, &variant_visual_storage, .vulva, "vulva", "vulva_part", .{ .body_part_socket = .{ .part_instance = "pelvis", .socket = "vulva_region" } }, "pelvis", 33, null, &.{});
-    setInstance(&part_instances, &variants, &variant_visual_storage, .extra_arm, "extra_arm", "extra_arm_part", .{ .attachment_point = "chest" }, "right_arm", 23, "extra_arm_module", &.{ "extra_upper_arm", "extra_forearm", "extra_hand" });
-    part_instances[@intFromEnum(Part.extra_arm)].local_to_parent = math.Transform2D.init(.{ .x = 0.08, .y = 0.05 }, 0.35, math.Vec2.one);
-    setInstance(&part_instances, &variants, &variant_visual_storage, .extra_arm_second, "extra_arm_second", "extra_arm_part", .{ .attachment_point = "chest" }, "left_arm", 57, "extra_arm_module_second", &.{ "extra_second_upper_arm", "extra_second_forearm", "extra_second_hand" });
-    part_instances[@intFromEnum(Part.extra_arm_second)].local_to_parent = math.Transform2D.init(.{ .x = -0.08, .y = 0.05 }, 2.79, math.Vec2.one);
-    setInstance(&part_instances, &variants, &variant_visual_storage, .tail, "tail", "tail_part", .{ .attachment_point = "waist_pelvis" }, "pelvis", 18, "tail_module", &.{ "tail_root_visual", "tail_mid_visual", "tail_tip_visual" });
+    setInstance(&part_instances, &variants, &variant_visual_storage, .extra_arm, "extra_arm", "extra_arm_part", .{ .body_part_socket = .{ .part_instance = "torso", .socket = "extra_arm_right" } }, "right_arm", 23, "extra_arm_module", &.{ "extra_upper_arm", "extra_forearm", "extra_hand" });
+    if (root_contract == .primary_intentional_gap) {
+        part_instances[@intFromEnum(Part.extra_arm)].local_to_parent.translation.x =
+            0.08;
+        part_instances[@intFromEnum(Part.extra_arm)].connection = .{
+            .intentional_gap = .{
+                .minimum_gap = 0.07,
+                .maximum_gap = 0.09,
+            },
+        };
+    }
+    part_instances[@intFromEnum(Part.extra_arm)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .extra_arm_second, "extra_arm_second", "extra_arm_part", .{ .body_part_socket = .{ .part_instance = "torso", .socket = "extra_arm_left" } }, "left_arm", 57, "extra_arm_module_second", &.{ "extra_second_upper_arm", "extra_second_forearm", "extra_second_hand" });
+    part_instances[@intFromEnum(Part.extra_arm_second)].local_to_parent.translation.x = 0.08;
+    part_instances[@intFromEnum(Part.extra_arm_second)].connection = .{
+        .intentional_gap = .{ .minimum_gap = 0.07, .maximum_gap = 0.09 },
+    };
+    part_instances[@intFromEnum(Part.extra_arm_second)].topology_status = .direct;
+    setInstance(&part_instances, &variants, &variant_visual_storage, .tail, "tail", "tail_part", .{ .body_part_socket = .{ .part_instance = "pelvis", .socket = "tail" } }, "pelvis", 18, "tail_module", &.{ "tail_root_visual", "tail_mid_visual", "tail_tip_visual" });
+    part_instances[@intFromEnum(Part.tail)].topology_status = .direct;
     setInstance(&part_instances, &variants, &variant_visual_storage, .left_horn, "left_horn", "horn_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "horn_left" } }, "head", 43, null, &.{"left_horn_visual"});
+    part_instances[@intFromEnum(Part.left_horn)].topology_status = .direct;
     setInstance(&part_instances, &variants, &variant_visual_storage, .right_horn, "right_horn", "horn_part", .{ .body_part_socket = .{ .part_instance = "head", .socket = "horn_right" } }, "head", 43, null, &.{"right_horn_visual"});
+    part_instances[@intFromEnum(Part.right_horn)].topology_status = .direct;
 
-    const face_features = [_][]const u8{ "left_eye", "right_eye", "eyebrows", "nose", "mouth", "left_ear", "right_ear" };
-    const angular_face_features = [_][]const u8{ "angular_left_eye", "angular_right_eye", "angular_eyebrows", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear" };
+    const face_features = [_][]const u8{ "left_eye", "right_eye", "left_eyebrow", "right_eyebrow", "nose", "mouth", "left_ear", "right_ear" };
+    const angular_face_features = [_][]const u8{ "angular_left_eye", "angular_right_eye", "angular_left_eyebrow", "angular_right_eyebrow", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear" };
     const faces = [_]anatomy.FaceDefinitionInput{
         .{ .stable_id = "conventional_face", .head_part = "head", .feature_parts = &face_features },
         .{ .stable_id = "angular_face", .head_part = "head", .feature_parts = &angular_face_features },
@@ -741,6 +902,8 @@ fn initDefinitionWithInjector(
         .{ .stable_id = "two_penises", .active_parts = &dual_penis_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "athletic", .global_build = 50, .presentation_profile = "modest", .front_shoulder_half_span_metres = 0.425 },
         .{ .stable_id = "three_breasts", .active_parts = &triple_breast_parts, .faces = &angular_face, .hair = "long_rigid", .morphology_preset = "curvy", .global_build = 50, .presentation_profile = "modest", .front_shoulder_half_span_metres = 0.425 },
         .{ .stable_id = "nonstandard_humanoid", .active_parts = &nonstandard_parts, .faces = &conventional_face, .hair = "ponytail", .morphology_preset = "athletic", .global_build = 70, .presentation_profile = "simplified", .front_shoulder_half_span_metres = 0.42 },
+        .{ .stable_id = "optional_arm_primary_proof", .active_parts = &optional_arm_primary_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "average", .global_build = 50, .presentation_profile = "simplified", .front_shoulder_half_span_metres = 0.36 },
+        .{ .stable_id = "optional_arm_two_module_proof", .active_parts = &optional_arm_both_parts, .faces = &conventional_face, .hair = "short_rigid", .morphology_preset = "average", .global_build = 50, .presentation_profile = "simplified", .front_shoulder_half_span_metres = 0.36 },
     };
 
     return humanoid.HumanoidDefinition.initFromVisualDefinitionAndAnatomy(

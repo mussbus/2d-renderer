@@ -84,6 +84,13 @@ pub const Scene = struct {
     evidence: Evidence,
 
     pub fn init(allocator: std.mem.Allocator) !Scene {
+        return initWithOptionalArmRootContract(allocator, .standard);
+    }
+
+    pub fn initWithOptionalArmRootContract(
+        allocator: std.mem.Allocator,
+        root_contract: @import("modular_body_demo").OptionalArmRootContract,
+    ) !Scene {
         const world_inputs = foundation_playground.worldColliderInputs();
         var production = try wardrobe_demo.Scene.initWithConfiguration(allocator, .{
             .collider_inputs = &world_inputs,
@@ -91,6 +98,7 @@ pub const Scene = struct {
             .female_spawn = foundation_playground.player_spawn,
             .male_facing = .right,
             .female_facing = .right,
+            .optional_arm_root_contract = root_contract,
         });
         errdefer production.deinit();
         try production.enableVisualQualityAcceptance();

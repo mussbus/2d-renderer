@@ -193,3 +193,17 @@ Use the
 [test evidence](../../TESTING.md#vf-02-authoritative-registration).
 The exact implementation report is archived in
 [`exact/VF-02-implementation-report.md`](exact/VF-02-implementation-report.md).
+
+### VF-03
+
+VF-03 compiles the existing appearance/anatomy definitions into one
+immutable typed component-topology facade. It validates typed sockets,
+connection modes, explicit optional modules, view support, and runtime
+immutability; routes eye/eyebrow/hair child-follow through production
+registration; and exports schema-4 F1/F4 evidence. Manual visual acceptance
+remains pending. Use the
+[prompt record](../../prompts/VF-03-typed-modular-component-graph.md),
+[decision record](../../VF03_DECISION_RECORD.md), and
+[test evidence](../../TESTING.md#vf-03-typed-component-graph).
+The exact implementation report is archived in
+[`exact/VF-03-implementation-report.md`](exact/VF-03-implementation-report.md).

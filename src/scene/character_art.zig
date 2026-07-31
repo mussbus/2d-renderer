@@ -12,6 +12,7 @@ const sprite = @import("sprite_batch");
 const visual_geometry = @import("visual_geometry");
 const visual_registration = @import("visual_registration");
 const image_decode = @import("image_decode");
+const anatomy = @import("anatomy");
 
 pub const male_page_id: art_pack.TexturePageId = @enumFromInt(41);
 pub const female_page_id: art_pack.TexturePageId = @enumFromInt(42);
@@ -155,6 +156,14 @@ const Slot = enum(u8) {
     left_ear,
     right_ear,
     hair,
+    left_eyebrow,
+    right_eyebrow,
+    extra_upper_arm,
+    extra_forearm,
+    extra_hand,
+    extra_second_upper_arm,
+    extra_second_forearm,
+    extra_second_hand,
 };
 
 const slot_count = std.enums.values(Slot).len;
@@ -194,6 +203,8 @@ const RegionKey = enum(u8) {
     front_hair,
     side_training_vest,
     front_training_vest,
+    front_left_brow,
+    front_right_brow,
 };
 
 const region_key_count = std.enums.values(RegionKey).len;
@@ -543,10 +554,20 @@ pub const Presentation = struct {
         registered_feet.begin();
         const view = instance.presentationView();
         const projection = try presentation.projectionFor(instance);
+        var anatomy_projection: ?presentation_pose.FrontAnatomyProjection = if (instance.definition.anatomy_definition) |anatomy_definition| if (instance.character.anatomy_runtime) |anatomy_runtime|
+            try presentation_pose.FrontAnatomyProjection.init(
+                projection,
+                anatomy_definition,
+                anatomy_runtime,
+            )
+        else
+            null else null;
 
         instance.last_submitted_keys =
             [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
         var submitted: u32 = 0;
+        var optional_submissions: [6]OptionalArmSubmission = undefined;
+        var optional_submission_count: usize = 0;
         for (instance.definition.attachments) |attachment| {
             const binding = presentation.bindings[attachment.id.index()];
             if (!binding.active) continue;
@@ -566,6 +587,7 @@ pub const Presentation = struct {
                 binding.slot,
                 view,
                 projection,
+                if (anatomy_projection) |*value| value else null,
             );
             const sprite_transform = try humanoid.spriteTransform(world);
             const rest_rotation = presentationRestRotation(
@@ -592,7 +614,7 @@ pub const Presentation = struct {
                 .scale = world_size.toArray(),
                 .pivot = selected.visual.pivot,
                 .uv_rect = selected.visual.uv_rect,
-                .tint = .{ 1, 1, 1, 1 },
+                .tint = technicalTint(binding.slot),
                 .texture_page = presentation.renderer_page_offset + selected.visual.texture_page,
                 .order = order,
             };
@@ -713,6 +735,12 @@ pub const Presentation = struct {
             }
             const pixel_policy = foot_coverage.forSlot(binding.slot);
             const suppressed = pixel_policy == .suppress_covered_pixels;
+            const graph_binding = try graphBindingEvidence(
+                instance,
+                attachment,
+                binding.slot,
+                projection,
+            );
             const submission_index: u32 = if (suppressed)
                 std.math.maxInt(u32)
             else
@@ -773,15 +801,38 @@ pub const Presentation = struct {
                         .suppressed_by_closed_footwear
                     else
                         .rendered,
+                    .graph_binding = graph_binding,
                 });
             }
             if (key) |submitted_key| {
                 if (attachment.canonical_semantic) |raw_semantic| {
                     instance.last_submitted_keys[raw_semantic] = submitted_key;
                 }
+                if (graph_binding) |binding_evidence| {
+                    if (optional_submission_count == optional_submissions.len) {
+                        return error.OptionalArmSubmissionCapacityExceeded;
+                    }
+                    optional_submissions[optional_submission_count] = .{
+                        .visual_id = attachment.id,
+                        .component_id = @enumFromInt(binding_evidence.component_id),
+                        .module_id = @enumFromInt(binding_evidence.module_id),
+                        .start_kind = binding_evidence.start_kind,
+                        .start_global_index = binding_evidence.start_global_index,
+                        .end_kind = binding_evidence.end_kind,
+                        .end_global_index = binding_evidence.end_global_index,
+                        .view = view,
+                        .submission_index = submission_index,
+                    };
+                    optional_submission_count += 1;
+                }
                 submitted += 1;
             }
         }
+        _ = try validateOptionalArmSubmissions(
+            instance,
+            view,
+            optional_submissions[0..optional_submission_count],
+        );
         try registered_feet.validateComplete();
         return submitted;
     }
@@ -794,7 +845,7 @@ pub const Presentation = struct {
         instance: *const character.CharacterInstance,
     ) !presentation_pose.FrontProjection {
         _ = presentation;
-        return switch (instance.presentationView()) {
+        var result = switch (instance.presentationView()) {
             .front => projection: {
                 var front = try presentation_pose.FrontProjection.init(
                     &instance.definition.skeleton_definition,
@@ -836,6 +887,17 @@ pub const Presentation = struct {
                     instance.facing == .left,
                 ),
         };
+        const anatomy_definition = instance.definition.anatomy_definition orelse
+            return error.CharacterHasNoAnatomy;
+        const anatomy_runtime = instance.character.anatomy_runtime orelse
+            return error.CharacterHasNoAnatomy;
+        try result.bindActiveOptionalArmModules(
+            instance.definition.visual_definition,
+            instance.character.appearance_runtime,
+            anatomy_definition,
+            anatomy_runtime,
+        );
+        return result;
     }
 };
 
@@ -847,6 +909,8 @@ fn geometryForSlot(
     return switch (slot) {
         .left_eye,
         .right_eye,
+        .left_eyebrow,
+        .right_eyebrow,
         .eyebrows,
         .nose,
         .mouth,
@@ -860,6 +924,20 @@ fn geometryForSlot(
             geometryRole(slot),
             view,
         ),
+    };
+}
+
+fn technicalTint(slot: Slot) [4]f32 {
+    return switch (slot) {
+        .extra_upper_arm,
+        .extra_forearm,
+        .extra_hand,
+        => .{ 0.32, 1.0, 0.92, 1.0 },
+        .extra_second_upper_arm,
+        .extra_second_forearm,
+        .extra_second_hand,
+        => .{ 1.0, 0.36, 0.88, 1.0 },
+        else => .{ 1, 1, 1, 1 },
     };
 }
 
@@ -893,6 +971,21 @@ fn productionRegistration(
             geometry,
             legacy_request,
         ),
+        .extra_upper_arm,
+        .extra_forearm,
+        .extra_hand,
+        .extra_second_upper_arm,
+        .extra_second_forearm,
+        .extra_second_hand,
+        => try optionalArmSegmentRegistration(
+            instance,
+            slot,
+            view,
+            projection,
+            selected,
+            geometry,
+            legacy_request,
+        ),
         .left_foot, .right_foot => try footRegistration(
             instance,
             slot,
@@ -903,14 +996,32 @@ fn productionRegistration(
             geometry,
             legacy_request,
         ),
-        .nose => try facePointRegistration(
+        .left_eye,
+        .right_eye,
+        .left_eyebrow,
+        .right_eyebrow,
+        .nose,
+        => try componentPointRegistration(
             instance,
             attachment,
+            slot,
             view,
             projection,
             selected,
             geometry,
             legacy_request,
+            .center,
+        ),
+        .hair => try componentPointRegistration(
+            instance,
+            attachment,
+            slot,
+            view,
+            projection,
+            selected,
+            geometry,
+            legacy_request,
+            .proximal,
         ),
         .torso, .pelvis => try frameRegistration(
             instance,
@@ -923,6 +1034,536 @@ fn productionRegistration(
         ),
         else => null,
     };
+}
+
+const ModuleEndpointKind = enum(u8) {
+    joint,
+    socket,
+};
+
+const OptionalArmContract = struct {
+    component_name: []const u8,
+    module_name: []const u8,
+    start_kind: ModuleEndpointKind,
+    start_name: []const u8,
+    end_kind: ModuleEndpointKind,
+    end_name: []const u8,
+    source_start: visual_geometry.LandmarkKind,
+    source_end: visual_geometry.LandmarkKind,
+};
+
+fn optionalArmContract(slot: Slot) ?OptionalArmContract {
+    return switch (slot) {
+        .extra_upper_arm => .{
+            .component_name = "extra_arm",
+            .module_name = "extra_arm_module",
+            .start_kind = .joint,
+            .start_name = "shoulder",
+            .end_kind = .joint,
+            .end_name = "elbow",
+            .source_start = .shoulder,
+            .source_end = .elbow,
+        },
+        .extra_forearm => .{
+            .component_name = "extra_arm",
+            .module_name = "extra_arm_module",
+            .start_kind = .joint,
+            .start_name = "elbow",
+            .end_kind = .joint,
+            .end_name = "wrist",
+            .source_start = .elbow,
+            .source_end = .wrist,
+        },
+        .extra_hand => .{
+            .component_name = "extra_arm",
+            .module_name = "extra_arm_module",
+            .start_kind = .joint,
+            .start_name = "wrist",
+            .end_kind = .socket,
+            .end_name = "hand_tip",
+            .source_start = .wrist,
+            .source_end = .fingertip,
+        },
+        .extra_second_upper_arm => .{
+            .component_name = "extra_arm_second",
+            .module_name = "extra_arm_module_second",
+            .start_kind = .joint,
+            .start_name = "shoulder",
+            .end_kind = .joint,
+            .end_name = "elbow",
+            .source_start = .shoulder,
+            .source_end = .elbow,
+        },
+        .extra_second_forearm => .{
+            .component_name = "extra_arm_second",
+            .module_name = "extra_arm_module_second",
+            .start_kind = .joint,
+            .start_name = "elbow",
+            .end_kind = .joint,
+            .end_name = "wrist",
+            .source_start = .elbow,
+            .source_end = .wrist,
+        },
+        .extra_second_hand => .{
+            .component_name = "extra_arm_second",
+            .module_name = "extra_arm_module_second",
+            .start_kind = .joint,
+            .start_name = "wrist",
+            .end_kind = .socket,
+            .end_name = "hand_tip",
+            .source_start = .wrist,
+            .source_end = .fingertip,
+        },
+        else => null,
+    };
+}
+
+pub const OptionalArmSubmission = struct {
+    visual_id: appearance.VisualAttachmentId,
+    component_id: anatomy.BodyPartInstanceId,
+    module_id: appearance.RigModuleId,
+    start_kind: visual_geometry.GraphEndpointKind,
+    start_global_index: u16,
+    end_kind: visual_geometry.GraphEndpointKind,
+    end_global_index: u16,
+    view: presentation_view.View,
+    submission_index: u32,
+};
+
+pub const OptionalArmSubmissionCounts = struct {
+    active_modules: u8 = 0,
+    expected_submissions: u8 = 0,
+    actual_submissions: u8 = 0,
+    missing_submissions: u8 = 0,
+    orphan_submissions: u8 = 0,
+};
+
+fn optionalArmSegmentRegistration(
+    instance: *const character.CharacterInstance,
+    slot: Slot,
+    view: presentation_view.View,
+    projection: presentation_pose.FrontProjection,
+    selected: ViewBinding,
+    geometry: visual_geometry.Geometry,
+    legacy_request: sprite.SpriteRequest,
+) !visual_registration.Placement {
+    const contract = optionalArmContract(slot) orelse
+        return error.MissingOptionalArmRegistrationContract;
+    const source_proximal = try visual_registration.sourcePoint(
+        selected.alpha,
+        geometry,
+        contract.source_start,
+        .proximal,
+    );
+    const source_distal = try visual_registration.sourcePoint(
+        selected.alpha,
+        geometry,
+        contract.source_end,
+        .distal,
+    );
+    const module = try findModuleByName(
+        instance.definition.visual_definition,
+        contract.module_name,
+    );
+    const start = try moduleEndpoint(
+        instance.definition.visual_definition,
+        projection,
+        module,
+        contract.start_kind,
+        contract.start_name,
+        .proximal,
+    );
+    const end = try moduleEndpoint(
+        instance.definition.visual_definition,
+        projection,
+        module,
+        contract.end_kind,
+        contract.end_name,
+        .distal,
+    );
+    const source_axis = source_distal.local.sub(source_proximal.local);
+    const transverse_scale = if (@abs(source_axis.x) >= @abs(source_axis.y))
+        @abs(legacy_request.scale[1])
+    else
+        @abs(legacy_request.scale[0]);
+    const reflect_transverse = view == .side and instance.facing == .left;
+    return visual_registration.solveSegment(
+        .{
+            .identity = instance.definition.visual_definition.visuals[
+                try optionalVisualIdForSlot(
+                    instance.definition.visual_definition,
+                    slot,
+                )
+            ].debug_name.slice(),
+            .binding_mode = .segment,
+            .scale_policy = .segment_longitudinal_transverse,
+            .mirroring_policy = if (reflect_transverse)
+                .transverse_reflection
+            else
+                .none,
+            .allows_reflection = true,
+        },
+        legacy_request,
+        source_proximal,
+        source_distal,
+        start.target,
+        end.target,
+        transverse_scale,
+        reflect_transverse,
+    );
+}
+
+const ResolvedModuleEndpoint = struct {
+    kind: visual_geometry.GraphEndpointKind,
+    global_index: u16,
+    identity: []const u8,
+    target: visual_registration.TargetPoint,
+};
+
+fn moduleEndpoint(
+    definition: appearance.DefinitionView,
+    projection: presentation_pose.FrontProjection,
+    module: appearance.RigModule,
+    kind: ModuleEndpointKind,
+    name: []const u8,
+    role: visual_registration.EndpointRole,
+) !ResolvedModuleEndpoint {
+    return switch (kind) {
+        .joint => {
+            for (0..module.joint_count) |local_index| {
+                const global_index: u16 = @intCast(
+                    module.joint_start + local_index,
+                );
+                const joint = &definition.module_joints[global_index];
+                if (!std.mem.eql(u8, joint.debug_name.slice(), name)) continue;
+                const world = projection.module_joint_world[global_index]
+                    .translationPart();
+                return .{
+                    .kind = .module_joint,
+                    .global_index = global_index,
+                    .identity = joint.debug_name.slice(),
+                    .target = try visual_registration.targetPoint(
+                        joint.debug_name.slice(),
+                        world,
+                        role,
+                    ),
+                };
+            }
+            return error.RigModuleJointMissing;
+        },
+        .socket => {
+            for (0..module.socket_count) |local_index| {
+                const global_index: u16 = @intCast(
+                    module.socket_start + local_index,
+                );
+                const socket_value = &definition.module_sockets[global_index];
+                if (!std.mem.eql(u8, socket_value.debug_name.slice(), name)) continue;
+                const world = projection.module_socket_world[global_index]
+                    .translationPart();
+                return .{
+                    .kind = .module_socket,
+                    .global_index = global_index,
+                    .identity = socket_value.debug_name.slice(),
+                    .target = try visual_registration.targetPoint(
+                        socket_value.debug_name.slice(),
+                        world,
+                        role,
+                    ),
+                };
+            }
+            return error.RigModuleEndSocketMissing;
+        },
+    };
+}
+
+fn findModuleByName(
+    definition: appearance.DefinitionView,
+    name: []const u8,
+) !appearance.RigModule {
+    for (definition.rig_modules) |module| {
+        if (std.mem.eql(u8, module.debug_name.slice(), name)) return module;
+    }
+    return error.InvalidRigModuleId;
+}
+
+fn optionalVisualIdForSlot(
+    definition: appearance.DefinitionView,
+    slot: Slot,
+) !usize {
+    for (definition.visuals) |visual| {
+        if (std.mem.eql(u8, visual.debug_name.slice(), @tagName(slot))) {
+            return visual.id.index();
+        }
+    }
+    return error.MissingOptionalArmVisualIdentity;
+}
+
+fn graphBindingEvidence(
+    instance: *const character.CharacterInstance,
+    attachment: appearance.VisualAttachment,
+    slot: Slot,
+    projection: presentation_pose.FrontProjection,
+) !?visual_geometry.GraphBindingEvidence {
+    const contract = optionalArmContract(slot) orelse return null;
+    const anatomy_definition = instance.definition.anatomy_definition orelse
+        return error.CharacterHasNoAnatomy;
+    const graph_definition = instance.definition.component_graph_definition orelse
+        return error.CharacterHasNoComponentGraph;
+    const graph = try graph_definition.view(
+        instance.definition.visual_definition,
+        anatomy_definition,
+    );
+    const anatomy_runtime = instance.character.anatomy_runtime orelse
+        return error.CharacterHasNoAnatomy;
+    const component_id = try anatomy_definition.partInstanceId(
+        contract.component_name,
+    );
+    const component = try graph.component(component_id);
+    const module_id = component.instance.articulation_module orelse
+        return error.RequiredRigModuleMissing;
+    const module = instance.definition.visual_definition.rig_modules[
+        module_id.index()
+    ];
+    if (!std.mem.eql(u8, module.debug_name.slice(), contract.module_name)) {
+        return error.OptionalArmModuleOwnershipMismatch;
+    }
+    const parent_component = component.parent_component orelse
+        return error.OptionalArmParentComponentMissing;
+    const visuals = try graph.boundVisuals(
+        component_id,
+        anatomy_runtime.selected_presentation_profile,
+    );
+    var graph_visual_index: ?u8 = null;
+    for (visuals, 0..) |visual_id, index| {
+        if (visual_id != attachment.id) continue;
+        if (graph_visual_index != null) return error.DuplicateOptionalArmGraphVisual;
+        graph_visual_index = @intCast(index);
+    }
+    const resolved_index = graph_visual_index orelse
+        return error.OptionalArmVisualNotDeclaredByGraph;
+    const start = try moduleEndpoint(
+        instance.definition.visual_definition,
+        projection,
+        module,
+        contract.start_kind,
+        contract.start_name,
+        .proximal,
+    );
+    const end = try moduleEndpoint(
+        instance.definition.visual_definition,
+        projection,
+        module,
+        contract.end_kind,
+        contract.end_name,
+        .distal,
+    );
+    return .{
+        .component_id = @intCast(component_id.index()),
+        .component_identity = anatomy_definition.part_instances[
+            component_id.index()
+        ].stable_id.slice(),
+        .parent_component_id = @intCast(parent_component.index()),
+        .parent_component_identity = anatomy_definition.part_instances[
+            parent_component.index()
+        ].stable_id.slice(),
+        .module_id = @intCast(module_id.index()),
+        .module_identity = instance.definition.visual_definition.rig_modules[
+            module_id.index()
+        ].debug_name.slice(),
+        .graph_visual_index = resolved_index,
+        .source_identity = instance.definition.visual_definition.visuals[
+            attachment.id.index()
+        ].debug_name.slice(),
+        .start_kind = start.kind,
+        .start_global_index = start.global_index,
+        .start_identity = start.identity,
+        .end_kind = end.kind,
+        .end_global_index = end.global_index,
+        .end_identity = end.identity,
+    };
+}
+
+pub fn validateOptionalArmSubmissions(
+    instance: *const character.CharacterInstance,
+    view: presentation_view.View,
+    submissions: []const OptionalArmSubmission,
+) !OptionalArmSubmissionCounts {
+    if (submissions.len > 6) return error.OptionalArmSubmissionCapacityExceeded;
+    const anatomy_definition = instance.definition.anatomy_definition orelse
+        return error.CharacterHasNoAnatomy;
+    const anatomy_runtime = instance.character.anatomy_runtime orelse
+        return error.CharacterHasNoAnatomy;
+    const graph_definition = instance.definition.component_graph_definition orelse
+        return error.CharacterHasNoComponentGraph;
+    const graph = try graph_definition.view(
+        instance.definition.visual_definition,
+        anatomy_definition,
+    );
+    var result = OptionalArmSubmissionCounts{
+        .actual_submissions = @intCast(submissions.len),
+    };
+    for ([_][]const u8{ "extra_arm", "extra_arm_second" }) |component_name| {
+        const component_id = try anatomy_definition.partInstanceId(component_name);
+        const component = try graph.component(component_id);
+        const active = try anatomy_runtime.isPartActive(
+            anatomy_definition,
+            component_id,
+        );
+        const required_view = switch (view) {
+            .front => anatomy.ViewSupport{ .front = true, .side_left = false, .side_right = false },
+            .side => if (instance.facing == .left)
+                anatomy.ViewSupport{ .front = false, .side_left = true, .side_right = false }
+            else
+                anatomy.ViewSupport{ .front = false, .side_left = false, .side_right = true },
+        };
+        if (active and !component.definition.projected_views.contains(required_view)) {
+            return error.UnsupportedOptionalArmRequiredView;
+        }
+        const declared = try graph.boundVisuals(
+            component_id,
+            anatomy_runtime.selected_presentation_profile,
+        );
+        if (declared.len != 3) return error.OptionalArmDeclaredVisualCountMismatch;
+        if (active) {
+            result.active_modules += 1;
+            result.expected_submissions += @intCast(declared.len);
+        }
+        var component_actual: usize = 0;
+        for (submissions) |submission| {
+            if (submission.component_id != component_id) continue;
+            component_actual += 1;
+            if (!active) return error.InactiveOptionalArmProducedSubmission;
+            if (submission.view != view) return error.OptionalArmSubmissionViewMismatch;
+            const module_id = component.instance.articulation_module orelse
+                return error.RequiredRigModuleMissing;
+            if (submission.module_id != module_id) {
+                return error.OptionalArmModuleOwnershipMismatch;
+            }
+            var declared_match_count: usize = 0;
+            for (declared) |visual_id| {
+                declared_match_count += @intFromBool(visual_id == submission.visual_id);
+            }
+            if (declared_match_count != 1) {
+                return error.OptionalArmVisualNotDeclaredByGraph;
+            }
+            const visual = instance.definition.visual_definition.visuals[
+                submission.visual_id.index()
+            ];
+            const slot = optionalSlotForName(visual.debug_name.slice()) orelse
+                return error.MissingOptionalArmVisualIdentity;
+            const contract = optionalArmContract(slot).?;
+            if (!std.mem.eql(u8, contract.component_name, component_name)) {
+                return error.OptionalArmComponentOwnershipMismatch;
+            }
+            const module = instance.definition.visual_definition.rig_modules[
+                module_id.index()
+            ];
+            const expected_start = try moduleEndpointIndex(
+                instance.definition.visual_definition,
+                module,
+                contract.start_kind,
+                contract.start_name,
+            );
+            const expected_end = try moduleEndpointIndex(
+                instance.definition.visual_definition,
+                module,
+                contract.end_kind,
+                contract.end_name,
+            );
+            if (submission.start_kind != expected_start.kind or
+                submission.start_global_index != expected_start.global_index or
+                submission.end_kind != expected_end.kind or
+                submission.end_global_index != expected_end.global_index)
+            {
+                return error.OptionalArmJointBindingMismatch;
+            }
+            if (submission.submission_index == std.math.maxInt(u32)) {
+                return error.OptionalArmFinalSubmissionMissing;
+            }
+        }
+        for (declared) |visual_id| {
+            var matches: usize = 0;
+            for (submissions) |submission| {
+                if (submission.component_id == component_id and
+                    submission.visual_id == visual_id)
+                {
+                    matches += 1;
+                }
+            }
+            if (active and matches == 0) {
+                return error.OptionalArmFinalSubmissionMissing;
+            }
+            if (matches > 1) return error.DuplicateOptionalArmVisualSubmission;
+        }
+        if (active and component_actual != declared.len) {
+            return error.OptionalArmFinalSubmissionMissing;
+        }
+        if (!active and component_actual != 0) {
+            return error.InactiveOptionalArmProducedSubmission;
+        }
+    }
+    for (submissions) |submission| {
+        const component_name = anatomy_definition.part_instances[
+            submission.component_id.index()
+        ].stable_id.slice();
+        if (!std.mem.eql(u8, component_name, "extra_arm") and
+            !std.mem.eql(u8, component_name, "extra_arm_second"))
+        {
+            return error.OrphanOptionalArmSubmission;
+        }
+    }
+    return result;
+}
+
+const ModuleEndpointIndex = struct {
+    kind: visual_geometry.GraphEndpointKind,
+    global_index: u16,
+};
+
+fn moduleEndpointIndex(
+    definition: appearance.DefinitionView,
+    module: appearance.RigModule,
+    kind: ModuleEndpointKind,
+    name: []const u8,
+) !ModuleEndpointIndex {
+    return switch (kind) {
+        .joint => {
+            for (definition.module_joints[module.joint_start .. module.joint_start + module.joint_count], 0..) |joint, local_index| {
+                if (std.mem.eql(u8, joint.debug_name.slice(), name)) {
+                    return .{
+                        .kind = .module_joint,
+                        .global_index = @intCast(module.joint_start + local_index),
+                    };
+                }
+            }
+            return error.RigModuleJointMissing;
+        },
+        .socket => {
+            for (definition.module_sockets[module.socket_start .. module.socket_start + module.socket_count], 0..) |socket_value, local_index| {
+                if (std.mem.eql(u8, socket_value.debug_name.slice(), name)) {
+                    return .{
+                        .kind = .module_socket,
+                        .global_index = @intCast(module.socket_start + local_index),
+                    };
+                }
+            }
+            return error.RigModuleEndSocketMissing;
+        },
+    };
+}
+
+fn optionalSlotForName(name: []const u8) ?Slot {
+    inline for ([_]Slot{
+        .extra_upper_arm,
+        .extra_forearm,
+        .extra_hand,
+        .extra_second_upper_arm,
+        .extra_second_forearm,
+        .extra_second_hand,
+    }) |slot| {
+        if (std.mem.eql(u8, name, @tagName(slot))) return slot;
+    }
+    return null;
 }
 
 const SegmentContract = struct {
@@ -1200,14 +1841,16 @@ pub fn frontFootGroundPolicy(
     };
 }
 
-fn facePointRegistration(
+fn componentPointRegistration(
     instance: *const character.CharacterInstance,
     attachment: appearance.VisualAttachment,
+    slot: Slot,
     view: presentation_view.View,
     projection: presentation_pose.FrontProjection,
     selected: ViewBinding,
     geometry: visual_geometry.Geometry,
     legacy_request: sprite.SpriteRequest,
+    source_landmark: visual_geometry.LandmarkKind,
 ) !visual_registration.Placement {
     const anatomy_definition = instance.definition.anatomy_definition orelse
         return error.CharacterHasNoAnatomy;
@@ -1229,7 +1872,7 @@ fn facePointRegistration(
     const source = try visual_registration.sourcePoint(
         selected.alpha,
         geometry,
-        .center,
+        source_landmark,
         .point,
     );
     const target = try visual_registration.targetPoint(
@@ -1246,7 +1889,7 @@ fn facePointRegistration(
     }
     return visual_registration.solvePoint(
         .{
-            .identity = @tagName(Slot.nose),
+            .identity = @tagName(slot),
             .binding_mode = .point,
             .scale_policy = .point_authored,
             .mirroring_policy = if (scale.x < 0) .view_reflection else .none,
@@ -1553,7 +2196,11 @@ fn geometrySide(slot: Slot) visual_geometry.Side {
         .left_shin,
         .left_foot,
         .left_eye,
+        .left_eyebrow,
         .left_ear,
+        .extra_second_upper_arm,
+        .extra_second_forearm,
+        .extra_second_hand,
         => .left,
         .right_upper_arm,
         .right_forearm,
@@ -1562,7 +2209,11 @@ fn geometrySide(slot: Slot) visual_geometry.Side {
         .right_shin,
         .right_foot,
         .right_eye,
+        .right_eyebrow,
         .right_ear,
+        .extra_upper_arm,
+        .extra_forearm,
+        .extra_hand,
         => .right,
         else => .none,
     };
@@ -1573,9 +2224,21 @@ fn geometryRole(slot: Slot) visual_geometry.Role {
         .head => .head,
         .torso => .torso,
         .pelvis => .pelvis,
-        .left_upper_arm, .right_upper_arm => .upper_arm,
-        .left_forearm, .right_forearm => .forearm,
-        .left_hand, .right_hand => .hand,
+        .left_upper_arm,
+        .right_upper_arm,
+        .extra_upper_arm,
+        .extra_second_upper_arm,
+        => .upper_arm,
+        .left_forearm,
+        .right_forearm,
+        .extra_forearm,
+        .extra_second_forearm,
+        => .forearm,
+        .left_hand,
+        .right_hand,
+        .extra_hand,
+        .extra_second_hand,
+        => .hand,
         .left_thigh, .right_thigh => .thigh,
         .left_shin, .right_shin => .shin,
         .left_foot, .right_foot => .foot,
@@ -1586,7 +2249,18 @@ fn geometryRole(slot: Slot) visual_geometry.Role {
 
 fn ownerForSlot(slot: Slot) visual_geometry.Owner {
     return switch (slot) {
-        .pelvis, .hair, .left_eye, .right_eye, .eyebrows, .nose, .mouth, .left_ear, .right_ear => .base_presentation,
+        .pelvis,
+        .hair,
+        .left_eye,
+        .right_eye,
+        .left_eyebrow,
+        .right_eyebrow,
+        .eyebrows,
+        .nose,
+        .mouth,
+        .left_ear,
+        .right_ear,
+        => .base_presentation,
         else => .anatomy,
     };
 }
@@ -1597,6 +2271,11 @@ fn boundIdentityForSlot(
     attachment: appearance.VisualAttachment,
 ) u32 {
     if (instance.definition.anatomy_definition) |definition| {
+        if (optionalArmContract(slot)) |contract| {
+            const part_id = definition.partInstanceId(contract.component_name) catch
+                return @intCast(attachment.id.index());
+            return @intCast(part_id.index());
+        }
         for (definition.part_instances) |part| {
             if (std.mem.eql(u8, part.stable_id.slice(), @tagName(slot))) {
                 return @intCast(@intFromEnum(part.id));
@@ -1657,12 +2336,36 @@ fn presentationVisualWorld(
     slot: Slot,
     view: presentation_view.View,
     projection: presentation_pose.FrontProjection,
+    anatomy_projection: ?*const presentation_pose.FrontAnatomyProjection,
 ) !math.Mat3 {
     if (attachment.canonical_semantic != null) {
         return projection.visualWorld(
             instance.character.appearance_runtime,
             attachment,
         );
+    }
+    if (optionalArmContract(slot) != null) {
+        return projection.visualWorld(
+            instance.character.appearance_runtime,
+            attachment,
+        );
+    }
+
+    if (anatomy_projection) |projected| {
+        if (try directPointComponentIndexForVisual(instance, attachment.id)) |part_index| {
+            if (attachment.id.index() >= instance.character.appearance_runtime.visual_states.len) {
+                return error.InvalidVisualAttachmentId;
+            }
+            const state = instance.character.appearance_runtime.visual_states[attachment.id.index()];
+            var world = projected.part_world[part_index]
+                .mul(try state.local_deformation.localToParent());
+            if (attachment.secondary_motion) |motion_definition| {
+                world = world.mul(
+                    try (try state.secondary.resolvedTransform(motion_definition)).localToParent(),
+                );
+            }
+            return world;
+        }
     }
 
     const head = try instance.definition.attachment(.head);
@@ -1681,6 +2384,34 @@ fn presentationVisualWorld(
         world = world.mul(try (try state.secondary.resolvedTransform(motion_definition)).localToParent());
     }
     return world;
+}
+
+fn directPointComponentIndexForVisual(
+    instance: *const character.CharacterInstance,
+    visual_id: appearance.VisualAttachmentId,
+) !?usize {
+    const appearance_definition = instance.definition.visual_definition;
+    const anatomy_definition = instance.definition.anatomy_definition orelse return null;
+    const graph_definition = instance.definition.component_graph_definition orelse return null;
+    const anatomy_runtime = instance.character.anatomy_runtime orelse return null;
+    const graph = try graph_definition.view(appearance_definition, anatomy_definition);
+    for (anatomy_definition.part_instances) |part| {
+        const component = try graph.component(part.id);
+        if (component.definition.binding_mode != .point or
+            part.topology_status != .direct or
+            !try anatomy_runtime.isPartActive(anatomy_definition, part.id))
+        {
+            continue;
+        }
+        const visuals = try graph.boundVisuals(
+            part.id,
+            anatomy_runtime.selected_presentation_profile,
+        );
+        for (visuals) |candidate| {
+            if (candidate == visual_id) return part.id.index();
+        }
+    }
+    return null;
 }
 
 fn presentationRestRotation(
@@ -1785,7 +2516,7 @@ fn sideBodyPartLayer(
 }
 
 fn sideFeatureVisible(slot: Slot) bool {
-    return slot != .left_eye and slot != .left_ear;
+    return slot != .left_eye and slot != .left_eyebrow and slot != .left_ear;
 }
 
 fn mirrorsFrontRegion(slot: Slot) bool {
@@ -1796,6 +2527,9 @@ fn mirrorsFrontRegion(slot: Slot) bool {
         .left_thigh,
         .left_shin,
         .left_foot,
+        .extra_second_upper_arm,
+        .extra_second_forearm,
+        .extra_second_hand,
         => true,
         else => false,
     };
@@ -1804,11 +2538,16 @@ fn mirrorsFrontRegion(slot: Slot) bool {
 fn slotForAttachment(style: Style, attachment: appearance.VisualAttachment) ?Slot {
     if (attachment.canonical_semantic) |raw_semantic| return @enumFromInt(raw_semantic);
     const name = attachment.debug_name.slice();
+    if (optionalSlotForName(name)) |slot| return slot;
     return switch (style) {
         .male => if (std.mem.eql(u8, name, "left_eye"))
             .left_eye
         else if (std.mem.eql(u8, name, "right_eye"))
             .right_eye
+        else if (std.mem.eql(u8, name, "left_eyebrow"))
+            .left_eyebrow
+        else if (std.mem.eql(u8, name, "right_eyebrow"))
+            .right_eyebrow
         else if (std.mem.eql(u8, name, "eyebrows"))
             .eyebrows
         else if (std.mem.eql(u8, name, "nose"))
@@ -1827,6 +2566,10 @@ fn slotForAttachment(style: Style, attachment: appearance.VisualAttachment) ?Slo
             .left_eye
         else if (std.mem.eql(u8, name, "angular_right_eye"))
             .right_eye
+        else if (std.mem.eql(u8, name, "angular_left_eyebrow"))
+            .left_eyebrow
+        else if (std.mem.eql(u8, name, "angular_right_eyebrow"))
+            .right_eyebrow
         else if (std.mem.eql(u8, name, "angular_eyebrows"))
             .eyebrows
         else if (std.mem.eql(u8, name, "angular_nose"))
@@ -1872,14 +2615,26 @@ fn keyForSlot(slot: Slot, view: presentation_view.View) RegionKey {
             .pelvis => .side_pelvis,
             .torso => .side_torso,
             .head => .side_head,
-            .left_upper_arm, .right_upper_arm => .side_upper_arm,
-            .left_forearm, .right_forearm => .side_forearm,
-            .left_hand, .right_hand => .side_hand,
+            .left_upper_arm,
+            .right_upper_arm,
+            .extra_upper_arm,
+            .extra_second_upper_arm,
+            => .side_upper_arm,
+            .left_forearm,
+            .right_forearm,
+            .extra_forearm,
+            .extra_second_forearm,
+            => .side_forearm,
+            .left_hand,
+            .right_hand,
+            .extra_hand,
+            .extra_second_hand,
+            => .side_hand,
             .left_thigh, .right_thigh => .side_thigh,
             .left_shin, .right_shin => .side_shin,
             .left_foot, .right_foot => .side_foot,
             .left_eye, .right_eye => .side_eye,
-            .eyebrows => .side_brow,
+            .eyebrows, .left_eyebrow, .right_eyebrow => .side_brow,
             .nose => .side_nose,
             .mouth => .side_mouth,
             .left_ear, .right_ear => .side_ear,
@@ -1889,14 +2644,28 @@ fn keyForSlot(slot: Slot, view: presentation_view.View) RegionKey {
             .pelvis => .front_pelvis,
             .torso => .front_torso,
             .head => .front_head,
-            .left_upper_arm, .right_upper_arm => .front_upper_arm,
-            .left_forearm, .right_forearm => .front_forearm,
-            .left_hand, .right_hand => .front_hand,
+            .left_upper_arm,
+            .right_upper_arm,
+            .extra_upper_arm,
+            .extra_second_upper_arm,
+            => .front_upper_arm,
+            .left_forearm,
+            .right_forearm,
+            .extra_forearm,
+            .extra_second_forearm,
+            => .front_forearm,
+            .left_hand,
+            .right_hand,
+            .extra_hand,
+            .extra_second_hand,
+            => .front_hand,
             .left_thigh, .right_thigh => .front_thigh,
             .left_shin, .right_shin => .front_shin,
             .left_foot, .right_foot => .front_foot,
             .left_eye => .front_left_eye,
             .right_eye => .front_right_eye,
+            .left_eyebrow => .front_left_brow,
+            .right_eyebrow => .front_right_brow,
             .eyebrows => .front_brows,
             .nose => .front_nose,
             .mouth => .front_mouth,
@@ -1986,6 +2755,7 @@ fn authoredSize(style: Style, key: RegionKey) [2]f32 {
         .front_left_eye, .front_right_eye => .{ 0.13, 0.085 },
         .side_brow => .{ 0.16, 0.045 },
         .front_brows => .{ 0.35, 0.055 },
+        .front_left_brow, .front_right_brow => .{ 0.175, 0.055 },
         .side_nose => .{ 0.08, 0.15 },
         .front_nose => .{ 0.08, 0.14 },
         .side_mouth => .{ 0.13, 0.055 },
@@ -2041,10 +2811,16 @@ fn restRotation(style: Style, slot: Slot, view: presentation_view.View) f32 {
         .front => switch (slot) {
             .left_upper_arm,
             .right_upper_arm,
+            .extra_upper_arm,
+            .extra_second_upper_arm,
             .left_forearm,
             .right_forearm,
+            .extra_forearm,
+            .extra_second_forearm,
             .left_hand,
             .right_hand,
+            .extra_hand,
+            .extra_second_hand,
             .left_thigh,
             .right_thigh,
             .left_shin,
@@ -2095,6 +2871,8 @@ fn baseSourceRect(style: Style, key: RegionKey) ?art_pack.PixelRect {
             .front_left_eye => rect(291, 680, 356, 731),
             .front_right_eye => rect(445, 680, 509, 731),
             .front_brows => rect(608, 701, 768, 720),
+            .front_left_brow => rect(608, 701, 688, 720),
+            .front_right_brow => rect(688, 701, 768, 720),
             .front_nose => rect(871, 665, 933, 743),
             .front_mouth => rect(1047, 697, 1126, 731),
             .front_left_ear => rect(1237, 664, 1288, 754),
@@ -2133,6 +2911,8 @@ fn baseSourceRect(style: Style, key: RegionKey) ?art_pack.PixelRect {
             .front_left_eye => rect(256, 675, 337, 739),
             .front_right_eye => rect(443, 675, 524, 739),
             .front_brows => rect(578, 697, 766, 724),
+            .front_left_brow => rect(578, 697, 672, 724),
+            .front_right_brow => rect(672, 697, 766, 724),
             .front_nose => rect(822, 665, 886, 750),
             .front_mouth => rect(981, 680, 1077, 735),
             .front_left_ear => rect(1199, 655, 1258, 743),

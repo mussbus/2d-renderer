@@ -223,3 +223,45 @@ and the exposed anatomy anchor. A suppressed base foot has no queue
 submission index but retains registration and landmark evidence for F1 and
 JSON. This makes pixel ownership explicit rather than hiding the underlying
 anatomy record.
+
+## VF-03 component-graph diagnostics
+
+VF-01 schema version 4 adds compiled component topology without changing the
+F1/F4 controls. Every anatomy part exports definition, semantic role,
+binding mode, active state, parent component/socket, connection mode and gap
+bounds, topology status, selected view variant, bound visuals, material-slot
+declaration, morphology-response declaration, and optional module owner.
+Typed sockets export owner, role, accepted child tag, capacity/occupancy, and
+supported connection modes. Rig joints and sockets export their owning
+component.
+
+F1 draws component nodes, typed parent-child edges, sockets, module members,
+and intentional-gap lines from the same frozen truth snapshot written by F4.
+The declared gap line remains visible through empty pixels so it cannot be
+confused with missing registration. Direct eye, eyebrow, and hair visuals
+also export authoritative point-registration evidence and zero structural
+residual.
+
+The initialization-only `--component-proof-case` selector creates no
+`CharacterIntent`, changes no fixed-tick authority, and allocates no
+per-frame graph. VF-03-R1 defines the optional-arm proof cases as `disabled`,
+`continuous-front`, `intentional-gap-front`, `continuous-side-left`,
+`continuous-side-right`, `intentional-gap-side-left`,
+`intentional-gap-side-right`, and `two-modules`. Active cases render the
+technical arm through production; `--capture-manual-bundle` requests the same
+one-shot bundle as F4.
+
+Schema 4 now exports, for each optional binding, stable visual, component,
+module, parent, start, and end identities; view/reflection; projected
+transform; placement authority; graph-bound visual index; submission
+presence; and final submission index. Active records require a valid final
+index; inactive records explicitly say `inactive` and have none. Summary
+totals report active modules and expected, actual, missing, and orphan
+optional submissions.
+
+F1 uses stable categories for continuous, intentional-gap, invalid, and
+inactive records. It draws the torso socket, child root,
+shoulder/elbow/wrist/hand-tip chain, module and graph edges, final visual
+bounds, start/end landmarks, identities, and final indices. The
+intentional-gap line and both endpoints pass through the visible empty span.
+Continuous reports zero gap and does not draw a false separation.

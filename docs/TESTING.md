@@ -906,3 +906,64 @@ manifest-listed SHA-256 and byte size, confirms clean/debug frame, tick,
 state, and common-fingerprint equality, and measures zero front shoe
 sole-endpoint height delta. These bundles are manual candidates and never
 approved goldens.
+
+## VF-03 typed component graph
+
+`zig build test-component-graph` covers the compiled immutable graph, typed
+socket roles/tags/capacities, selected bound visuals, eye → eyebrow
+child-follow, scalp → hair, explicit shoulder/elbow/wrist/hand-tip arm
+modules, front/side-left/side-right projection, the `0.08 m`
+intentional-gap contract, and runtime topology-fingerprint compatibility.
+
+The fail-closed fixture matrix covers unknown parent socket, invalid child
+tag, socket capacity, component multiplicity, forbidden children,
+self-parenting, cycles, inactive parents, duplicate component/socket IDs,
+unsupported connection, invalid intentional-gap bounds, missing soft bridge,
+missing module joint/end socket, unsupported front projection, child-follow
+drift, and post-initialization topology mutation. Fixtures use local
+definitions rather than production stable IDs.
+
+The production visual-foundation gate verifies schema-4 graph export,
+component/socket/module debug categories, one bound visual per eyebrow child,
+authoritative point registration for eye/brow/hair, unchanged frozen-state
+identity, and zero post-stabilization queue allocation.
+
+VF-03-R1 adds the cross-layer invariant that an active optional module's three
+declared graph visuals resolve to exactly three final production
+submissions. Observable tests assert component/module ownership,
+shoulder→elbow, elbow→wrist, and wrist→hand-tip bindings, final submission
+indices, nonempty visible alpha bounds, view/reflection persistence, inactive
+zero-submission behavior, and fail-closed duplicate/wrong-owner/wrong-joint
+fixtures. The focused totals are now `6/6` component-graph tests and `47/47`
+visual-foundation tests.
+
+Connection tests independently verify epsilon/zero continuous success,
+`0.08 m` continuous rejection, `0.08 m` intentional-gap success, below
+`0.07 m` and above `0.09 m` rejection, morphology-scale invariance in world
+metres, and reflected direction with invariant magnitude. Capture pixels use
+the exported camera:
+
+```text
+gap_px = measured_gap_m × pixels_per_meter
+```
+
+Historical `_0074–_0082` remain unchanged. The accepted corrective
+real-D3D12/DXIL bundles are:
+
+- `_0083`: disabled front, `0` active modules and `0` submissions;
+- `_0091`: continuous front, `1` module and `3` submissions;
+- `_0092`: intentional-gap front, `0.08000003 m` / `6.560002 px`;
+- `_0093`: continuous side-left, `3` submissions;
+- `_0094`: continuous side-right, `3` submissions;
+- `_0095`: intentional-gap side-left, `0.08000008 m` / `6.560007 px`;
+- `_0096`: intentional-gap side-right, `0.08000003 m` / `6.560002 px`;
+- `_0097`: two modules, `6` submissions with continuous and
+  intentional-gap roots.
+
+All eight accepted bundles are schema 4, JSON-parseable, manifest-complete,
+SHA-256/size valid, actual `direct3d12`/DXIL, and clean/debug frame, tick,
+state, and common fingerprint identical. Missing and orphan submission counts
+are zero. `_0084–_0090` are preserved invalid-JSON diagnostic candidates;
+they are not completion evidence. Bundle finalization now parses generated
+state and manifest JSON before rename. Manual visual acceptance is
+`[PENDING OWNER REVIEW]`.

@@ -62,6 +62,48 @@ pub const CommandBuffer = struct {
         try buffer.addLine(.{ .x = minimum.x, .y = maximum.y }, minimum, color);
     }
 
+    /// Adds a tiny bounded 3x5 diagnostic label using the same debug sprite
+    /// command buffer. This is intentionally allocation-free and returns the
+    /// exact number of commands appended for capacity accounting.
+    pub fn addLabel(
+        buffer: *CommandBuffer,
+        origin: math.Vec2,
+        text: []const u8,
+        color: Color,
+    ) !u32 {
+        const pixel_size: f32 = 1.25 / 82.0;
+        const advance: f32 = 4.25 / 82.0;
+        var appended: u32 = 0;
+        for (text, 0..) |raw, character_index| {
+            const glyph = labelGlyph(toUpper(raw));
+            for (0..5) |row| {
+                for (0..3) |column| {
+                    const bit: u4 = @intCast(row * 3 + column);
+                    if (glyph & (@as(u16, 1) << bit) == 0) continue;
+                    try buffer.append(.{
+                        .world_position = .{
+                            origin.x +
+                                @as(f32, @floatFromInt(character_index)) *
+                                    advance +
+                                @as(f32, @floatFromInt(column)) * pixel_size,
+                            origin.y -
+                                @as(f32, @floatFromInt(row)) * pixel_size,
+                        },
+                        .rotation = 0,
+                        .scale = .{ pixel_size, pixel_size },
+                        .pivot = .{ 0.5, 0.5 },
+                        .uv_rect = .{ 0, 0, 0.5, 0.5 },
+                        .tint = color,
+                        .texture_page = 0,
+                        .order = debugOrder(buffer.count),
+                    });
+                    appended += 1;
+                }
+            }
+        }
+        return appended;
+    }
+
     pub fn submit(buffer: *const CommandBuffer, batch: *sprite.SpriteBatch) !u32 {
         for (buffer.commands[0..buffer.count]) |command| try batch.submit(command);
         return @intCast(buffer.count);
@@ -81,6 +123,37 @@ pub const CommandBuffer = struct {
         buffer.count += 1;
     }
 };
+
+fn toUpper(value: u8) u8 {
+    return if (value >= 'a' and value <= 'z') value - ('a' - 'A') else value;
+}
+
+fn glyphRows(a: u3, b: u3, c: u3, d: u3, e: u3) u16 {
+    return @as(u16, a) |
+        (@as(u16, b) << 3) |
+        (@as(u16, c) << 6) |
+        (@as(u16, d) << 9) |
+        (@as(u16, e) << 12);
+}
+
+fn labelGlyph(value: u8) u16 {
+    return switch (value) {
+        'A' => glyphRows(0b010, 0b101, 0b111, 0b101, 0b101),
+        'C' => glyphRows(0b011, 0b100, 0b100, 0b100, 0b011),
+        'D' => glyphRows(0b110, 0b101, 0b101, 0b101, 0b110),
+        'E' => glyphRows(0b111, 0b100, 0b110, 0b100, 0b111),
+        'G' => glyphRows(0b011, 0b100, 0b101, 0b101, 0b011),
+        'I' => glyphRows(0b111, 0b010, 0b010, 0b010, 0b111),
+        'L' => glyphRows(0b100, 0b100, 0b100, 0b100, 0b111),
+        'N' => glyphRows(0b101, 0b111, 0b111, 0b111, 0b101),
+        'O' => glyphRows(0b010, 0b101, 0b101, 0b101, 0b010),
+        'P' => glyphRows(0b110, 0b101, 0b110, 0b100, 0b100),
+        'T' => glyphRows(0b111, 0b010, 0b010, 0b010, 0b010),
+        'V' => glyphRows(0b101, 0b101, 0b101, 0b101, 0b010),
+        ' ', '_' => 0,
+        else => glyphRows(0b111, 0b001, 0b010, 0, 0b010),
+    };
+}
 
 fn debugOrder(index: usize) sprite.OrderInput {
     return .{

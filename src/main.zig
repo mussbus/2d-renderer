@@ -10,6 +10,8 @@ const Options = struct {
     debug_visualization: bool = false,
     interactive: bool = false,
     registration_proof_case: ?@import("visual_foundation").RegistrationProofCase = null,
+    component_proof_case: ?@import("visual_foundation").ComponentProofCase = null,
+    capture_manual_bundle: bool = false,
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -33,6 +35,8 @@ pub fn main(init: std.process.Init) !void {
         options.debug_visualization,
         options.interactive,
         options.registration_proof_case,
+        options.component_proof_case,
+        options.capture_manual_bundle,
     );
 }
 
@@ -137,8 +141,17 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 try @import("visual_foundation").RegistrationProofCase.parse(
                     arguments[index],
                 );
+        } else if (std.mem.eql(u8, argument, "--component-proof-case")) {
+            index += 1;
+            if (index >= arguments.len) return error.MissingComponentProofCase;
+            options.component_proof_case =
+                try @import("visual_foundation").ComponentProofCase.parse(
+                    arguments[index],
+                );
+        } else if (std.mem.eql(u8, argument, "--capture-manual-bundle")) {
+            options.capture_manual_bundle = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation|art-assets|character-presentation|wardrobe|visual-quality|anatomy-quality|environment>, --scripted-input, --debug-visualization, --interactive, --registration-proof-case <body-front|body-side-left|body-side-right|equipped-front|equipped-side-left|equipped-side-right>", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|humanoid|animation|controller|secondary-motion|multi-character|handshake|handshake-ik|foot-planting|integrated|playground|modular-body|equipment|properties|breathing|mesh-attachments|attachment-secondary|side-scroller|foundation|art-assets|character-presentation|wardrobe|visual-quality|anatomy-quality|environment>, --scripted-input, --debug-visualization, --interactive, --registration-proof-case <body-front|body-side-left|body-side-right|equipped-front|equipped-side-left|equipped-side-right>, --component-proof-case <eye-eyebrow|scalp-hair|extra-arm|continuous|intentional-gap|front|side-left|side-right|disabled|continuous-front|intentional-gap-front|continuous-side-left|continuous-side-right|intentional-gap-side-left|intentional-gap-side-right|two-modules>, --capture-manual-bundle", .{argument});
             return error.UnknownArgument;
         }
     }
@@ -162,6 +175,21 @@ fn parseOptions(arguments: []const []const u8) !Options {
         (options.demo != .foundation or !options.interactive))
     {
         return error.RegistrationProofCaseRequiresInteractiveFoundation;
+    }
+    if (options.component_proof_case != null and
+        (options.demo != .foundation or !options.interactive))
+    {
+        return error.ComponentProofCaseRequiresInteractiveFoundation;
+    }
+    if (options.component_proof_case != null and
+        options.registration_proof_case != null)
+    {
+        return error.ProofCasesAreMutuallyExclusive;
+    }
+    if (options.capture_manual_bundle and
+        (options.demo != .foundation or !options.interactive))
+    {
+        return error.ManualBundleCaptureRequiresInteractiveFoundation;
     }
     if (options.demo == .foundation and options.scripted_input and
         options.maximum_frames != @import("visual_foundation").required_frames)

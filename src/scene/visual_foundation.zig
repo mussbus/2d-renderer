@@ -24,6 +24,7 @@ const visual_geometry = @import("visual_geometry");
 const visual_geometry_overlay = @import("visual_geometry_overlay");
 const visual_truth = @import("visual_truth");
 const foundation_coherence = @import("foundation_coherence");
+const modular_body_demo = @import("modular_body_demo");
 
 pub const required_frames: u32 = 2_400;
 pub const character_count: u32 = 2;
@@ -132,6 +133,134 @@ pub const RegistrationProofCase = enum(u8) {
             .equipped_front,
             .equipped_side_right,
             => .right,
+        };
+    }
+};
+
+pub const ComponentProofCase = enum(u8) {
+    eye_eyebrow,
+    scalp_hair,
+    extra_arm,
+    continuous,
+    intentional_gap,
+    front,
+    side_left,
+    side_right,
+    disabled,
+    continuous_front,
+    intentional_gap_front,
+    continuous_side_left,
+    continuous_side_right,
+    intentional_gap_side_left,
+    intentional_gap_side_right,
+    two_modules,
+
+    pub fn parse(text: []const u8) !ComponentProofCase {
+        inline for (std.meta.fields(ComponentProofCase)) |field| {
+            const value: ComponentProofCase = @enumFromInt(field.value);
+            if (std.mem.eql(u8, text, value.cliName())) return value;
+        }
+        return error.UnknownComponentProofCase;
+    }
+
+    pub fn cliName(value: ComponentProofCase) []const u8 {
+        return switch (value) {
+            .eye_eyebrow => "eye-eyebrow",
+            .scalp_hair => "scalp-hair",
+            .extra_arm => "extra-arm",
+            .continuous => "continuous",
+            .intentional_gap => "intentional-gap",
+            .front => "front",
+            .side_left => "side-left",
+            .side_right => "side-right",
+            .disabled => "disabled",
+            .continuous_front => "continuous-front",
+            .intentional_gap_front => "intentional-gap-front",
+            .continuous_side_left => "continuous-side-left",
+            .continuous_side_right => "continuous-side-right",
+            .intentional_gap_side_left => "intentional-gap-side-left",
+            .intentional_gap_side_right => "intentional-gap-side-right",
+            .two_modules => "two-modules",
+        };
+    }
+
+    pub fn usesNonstandardMale(value: ComponentProofCase) bool {
+        return switch (value) {
+            .extra_arm,
+            .continuous,
+            .intentional_gap,
+            .continuous_front,
+            .intentional_gap_front,
+            .continuous_side_left,
+            .continuous_side_right,
+            .intentional_gap_side_left,
+            .intentional_gap_side_right,
+            .two_modules,
+            => true,
+            .eye_eyebrow,
+            .scalp_hair,
+            .front,
+            .side_left,
+            .side_right,
+            .disabled,
+            => false,
+        };
+    }
+
+    pub fn view(value: ComponentProofCase) presentation_view.View {
+        return switch (value) {
+            .side_left,
+            .side_right,
+            .continuous_side_left,
+            .continuous_side_right,
+            .intentional_gap_side_left,
+            .intentional_gap_side_right,
+            => .side,
+            else => .front,
+        };
+    }
+
+    pub fn facing(value: ComponentProofCase) humanoid.Facing {
+        return switch (value) {
+            .side_left,
+            .continuous_side_left,
+            .intentional_gap_side_left,
+            => .left,
+            else => .right,
+        };
+    }
+
+    pub fn rootContract(
+        value: ComponentProofCase,
+    ) modular_body_demo.OptionalArmRootContract {
+        return switch (value) {
+            .intentional_gap_front,
+            .intentional_gap_side_left,
+            .intentional_gap_side_right,
+            => .primary_intentional_gap,
+            .continuous_front,
+            .continuous_side_left,
+            .continuous_side_right,
+            => .primary_continuous,
+            else => .standard,
+        };
+    }
+
+    fn maleBodyPreset(value: ComponentProofCase) []const u8 {
+        return switch (value) {
+            .extra_arm,
+            .continuous,
+            .intentional_gap,
+            => "nonstandard_humanoid",
+            .continuous_front,
+            .intentional_gap_front,
+            .continuous_side_left,
+            .continuous_side_right,
+            .intentional_gap_side_left,
+            .intentional_gap_side_right,
+            => "optional_arm_primary_proof",
+            .two_modules => "optional_arm_two_module_proof",
+            else => "conventional_male",
         };
     }
 };
@@ -315,6 +444,7 @@ pub const Scene = struct {
     debug_enabled_ticks: u32 = 0,
     reset_generation: u32 = 0,
     evidence: Evidence = .{},
+    component_proof_root_contract: modular_body_demo.OptionalArmRootContract = .standard,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -332,7 +462,29 @@ pub const Scene = struct {
         diagnostic_allocator: std.mem.Allocator,
         presence_validation_policy: PresenceValidationPolicy,
     ) !Scene {
-        var integrated = try environment_demo.Scene.init(allocator);
+        return initWithDiagnosticAllocatorAndComponentProof(
+            allocator,
+            diagnostic_allocator,
+            presence_validation_policy,
+            null,
+        );
+    }
+
+    pub fn initWithDiagnosticAllocatorAndComponentProof(
+        allocator: std.mem.Allocator,
+        diagnostic_allocator: std.mem.Allocator,
+        presence_validation_policy: PresenceValidationPolicy,
+        component_proof_case: ?ComponentProofCase,
+    ) !Scene {
+        const root_contract = if (component_proof_case) |proof_case|
+            proof_case.rootContract()
+        else
+            modular_body_demo.OptionalArmRootContract.standard;
+        var integrated =
+            try environment_demo.Scene.initWithOptionalArmRootContract(
+                allocator,
+                root_contract,
+            );
         errdefer integrated.deinit();
         try integrated.production.male.setFacing(.left);
         try configureLineup(&integrated.production);
@@ -365,6 +517,7 @@ pub const Scene = struct {
             .truth_snapshot = truth_snapshot,
             .debug_commands = debug_commands,
             .visual_trace = visual_trace,
+            .component_proof_root_contract = root_contract,
         };
         scene.evidence.white_surface_count = @intCast(scene.integrated.environment.surfaces.count);
         scene.observePresentation();
@@ -401,13 +554,7 @@ pub const Scene = struct {
             scene.setDebugMode(scene.debug_mode.next());
         }
         if (snapshot.manual_debug_capture.pressed) {
-            if (scene.manual_capture_pending) return error.ManualCaptureRequestAlreadyPending;
-            scene.manual_capture_pending = true;
-            scene.manual_capture_request_count = std.math.add(
-                u64,
-                scene.manual_capture_request_count,
-                1,
-            ) catch return error.ManualCaptureRequestOverflow;
+            try scene.requestManualDebugCapture();
         }
         if (snapshot.time_mode_cycle.pressed) {
             scene.time_mode = switch (scene.time_mode) {
@@ -648,6 +795,21 @@ pub const Scene = struct {
         const pending = scene.manual_capture_pending;
         scene.manual_capture_pending = false;
         return pending;
+    }
+
+    /// Queues the same frame-level diagnostic event as an F4 press. This
+    /// exists for deterministic evidence automation and deliberately bypasses
+    /// CharacterIntent and authoritative simulation.
+    pub fn requestManualDebugCapture(scene: *Scene) !void {
+        if (scene.manual_capture_pending) {
+            return error.ManualCaptureRequestAlreadyPending;
+        }
+        scene.manual_capture_pending = true;
+        scene.manual_capture_request_count = std.math.add(
+            u64,
+            scene.manual_capture_request_count,
+            1,
+        ) catch return error.ManualCaptureRequestOverflow;
     }
 
     pub fn bindTruthRenderFrame(scene: *Scene, render_frame: u64) !void {
@@ -1310,6 +1472,51 @@ pub const Scene = struct {
         try scene.integrated.production.female.setFacing(facing);
         try scene.integrated.production.male.setPresentationOverride(view_override);
         try scene.integrated.production.female.setPresentationOverride(view_override);
+        scene.observePresentation();
+    }
+
+    pub fn applyComponentProofCase(
+        scene: *Scene,
+        proof_case: ComponentProofCase,
+    ) !void {
+        if (scene.integrated.production.frame_index != 0 or
+            scene.integrated.production.simulation_tick != 0)
+        {
+            return error.ComponentProofCaseMustPrecedeSimulation;
+        }
+        const production = &scene.integrated.production;
+        const definition = production.definition.anatomy_definition.?.view();
+        const base = try production.catalog.presetId("base_only");
+        try production.selectMalePreset(base);
+        try production.selectPreset(base);
+        if (scene.component_proof_root_contract != proof_case.rootContract()) {
+            return error.ComponentProofTopologyMismatch;
+        }
+        try production.male.selectBodyPreset(try definition.bodyPresetId(
+            proof_case.maleBodyPreset(),
+        ));
+        try production.female.selectBodyPreset(
+            try definition.bodyPresetId("conventional_female"),
+        );
+        try production.male.selectHair(try definition.hairDefinitionId(
+            if (proof_case.usesNonstandardMale())
+                "ponytail"
+            else
+                "short_rigid",
+        ));
+        try production.female.selectHair(
+            try definition.hairDefinitionId("long_rigid"),
+        );
+
+        const view_override: presentation_view.DebugOverride =
+            if (proof_case.view() == .front) .force_front else .force_side;
+        const facing = proof_case.facing();
+        try production.male.setFacing(facing);
+        production.female.controller.?.state.facing =
+            if (facing == .left) .left else .right;
+        try production.female.setFacing(facing);
+        try production.male.setPresentationOverride(view_override);
+        try production.female.setPresentationOverride(view_override);
         scene.observePresentation();
     }
 

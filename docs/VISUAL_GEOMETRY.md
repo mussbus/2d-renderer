@@ -236,3 +236,28 @@ Historical Prompt 25D and Prompt 27C reports remain immutable. Fresh
 current-art runs after VF-02 may fail because final pixels now follow
 projected targets; those failures must be reported, not normalized by
 changing landmark thresholds or substituting an older report.
+
+VF-03 adds typed component topology to the same evidence path. Direct eye,
+eyebrow, and hair components use point registration from their atlas
+landmark to the active projected component target, so final pixels and graph
+links share one transform. Connection validation is separate from pixel
+overlap: `continuous` enforces its bounded maximum, while
+`intentional_gap` enforces declared minimum and maximum distance and remains
+visually linked in F1. Schema 4 records both registration residuals and
+topology/gap data without changing Prompt 27B thresholds or historical
+reports.
+
+VF-03-R1 requires geometry evidence to reach final production submission.
+For an active optional arm, three declared bindings must have three nonempty,
+traceable visible bounds and three valid final indices. The upper arm consumes
+projected shoulder/elbow endpoints, the forearm consumes elbow/wrist, and the
+hand consumes wrist/hand-tip. Wrong, duplicate, missing, inactive, and orphan
+cross-layer records fail closed.
+
+Connection geometry remains independent of alpha overlap. Continuous accepts
+only its existing epsilon-bounded root coincidence and rejects `0.08 m`.
+Intentional-gap accepts `0.08 m` only within `0.07–0.09 m`; lower and upper
+out-of-range fixtures fail. The world-metre vector survives front,
+side-left, side-right, reflection, and morphology projection. Capture
+observation converts it with `measured_gap_m × pixels_per_meter`; this value
+does not feed placement.

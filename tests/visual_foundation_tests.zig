@@ -13,6 +13,8 @@ const visual_foundation = @import("visual_foundation");
 const visual_truth = @import("visual_truth");
 const visual_geometry = @import("visual_geometry");
 const debug_draw = @import("debug_draw");
+const anatomy = @import("anatomy");
+const character_art = @import("character_art");
 
 test "Prompt 27 bounded real-art foundation route proves presentation interaction and reset" {
     var scene = try visual_foundation.Scene.init(
@@ -122,6 +124,392 @@ test "registration proof cases configure both production styles before simulatio
     }
 }
 
+test "component proof cases select bounded graph content and view before simulation" {
+    const cases = [_]visual_foundation.ComponentProofCase{
+        .eye_eyebrow,
+        .scalp_hair,
+        .extra_arm,
+        .continuous,
+        .intentional_gap,
+        .front,
+        .side_left,
+        .side_right,
+    };
+    for (cases) |proof_case| {
+        var scene = try visual_foundation.Scene.init(
+            std.testing.allocator,
+            .measure_only,
+        );
+        defer scene.deinit();
+        try scene.applyComponentProofCase(proof_case);
+        try std.testing.expectEqual(
+            proof_case.view(),
+            scene.integrated.production.male.presentationView(),
+        );
+        try std.testing.expectEqual(
+            proof_case.view(),
+            scene.integrated.production.female.presentationView(),
+        );
+        try std.testing.expectEqual(
+            proof_case.facing(),
+            scene.integrated.production.male.facing,
+        );
+        try std.testing.expectEqual(
+            proof_case.facing(),
+            scene.integrated.production.female.facing,
+        );
+        const definition = scene.integrated.production.definition
+            .anatomy_definition.?.view();
+        const male_runtime = scene.integrated.production.male.character
+            .anatomy_runtime.?;
+        const expected_body = if (proof_case.usesNonstandardMale())
+            "nonstandard_humanoid"
+        else
+            "conventional_male";
+        try std.testing.expectEqual(
+            try definition.bodyPresetId(expected_body),
+            male_runtime.selected_body_preset,
+        );
+        try std.testing.expectEqual(@as(usize, 0), scene.integrated.production
+            .male.equipment_loadout.?.equippedItems().len);
+        try std.testing.expectEqual(@as(usize, 0), scene.integrated.production
+            .female.equipment_loadout.?.equippedItems().len);
+        try std.testing.expectError(
+            error.ComponentProofCaseMustPrecedeSimulation,
+            blk: {
+                scene.integrated.production.simulation_tick = 1;
+                break :blk scene.applyComponentProofCase(proof_case);
+            },
+        );
+    }
+}
+
+test "VF-01 truth snapshot exports typed graph ownership and connection modes" {
+    var scene = try visual_foundation.Scene.init(
+        std.testing.allocator,
+        .measure_only,
+    );
+    defer scene.deinit();
+    try scene.applyComponentProofCase(.intentional_gap);
+    scene.setDebugMode(.rig);
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    queue.beginFrame();
+    _ = try scene.submit(&queue);
+    try std.testing.expect(scene.truth_snapshot_valid);
+
+    const male_id = scene.integrated.production.male.id.raw();
+    var male_truth: ?*const visual_truth.Character = null;
+    for (scene.truth_snapshot.characters[0..scene.truth_snapshot.character_count]) |*truth| {
+        if (truth.id == male_id) male_truth = truth;
+    }
+    const truth = male_truth orelse return error.MaleTruthMissing;
+    const detached = truth.partByName("extra_arm_second") orelse
+        return error.IntentionalGapTruthMissing;
+    try std.testing.expect(detached.active);
+    try std.testing.expectEqual(
+        @import("anatomy").ConnectionMode.intentional_gap,
+        detached.connection_mode,
+    );
+    try std.testing.expectEqual(
+        @import("anatomy").TopologyStatus.direct,
+        detached.topology_status,
+    );
+    try std.testing.expect(detached.parent_socket != null);
+    try std.testing.expect(detached.articulation_module != null);
+    try std.testing.expectApproxEqAbs(
+        @as(f32, 0.08),
+        detached.measured_gap_m,
+        0.00001,
+    );
+}
+
+test "VF-03-R1 active optional arms produce graph-bound production submissions in every proof view" {
+    const cases = [_]visual_foundation.ComponentProofCase{
+        .continuous_front,
+        .intentional_gap_front,
+        .continuous_side_left,
+        .continuous_side_right,
+        .intentional_gap_side_left,
+        .intentional_gap_side_right,
+    };
+    var projected_roots: [cases.len]math.Vec2 = undefined;
+    for (cases, 0..) |proof_case, case_index| {
+        var scene = try visual_foundation.Scene
+            .initWithDiagnosticAllocatorAndComponentProof(
+            std.testing.allocator,
+            std.testing.allocator,
+            .measure_only,
+            proof_case,
+        );
+        defer scene.deinit();
+        try scene.applyComponentProofCase(proof_case);
+        scene.setDebugMode(.rig_registration);
+        var queue = try render_queue.UnifiedRenderQueue.init(
+            std.testing.allocator,
+            render_queue.default_entry_capacity,
+            render_queue.default_sprite_capacity,
+            render_queue.default_mesh_capacity,
+            visual_foundation.configured_texture_page_count,
+        );
+        defer queue.deinit();
+        queue.beginFrame();
+        _ = try scene.submit(&queue);
+
+        try std.testing.expectEqual(@as(u8, 1), scene.truth_snapshot.active_optional_modules);
+        try std.testing.expectEqual(
+            @as(u8, 3),
+            scene.truth_snapshot.expected_optional_visual_submissions,
+        );
+        try std.testing.expectEqual(
+            @as(u8, 3),
+            scene.truth_snapshot.actual_optional_visual_submissions,
+        );
+        try std.testing.expectEqual(
+            @as(u8, 0),
+            scene.truth_snapshot.missing_optional_visual_submissions,
+        );
+        try std.testing.expectEqual(
+            @as(u8, 0),
+            scene.truth_snapshot.orphan_optional_visual_submissions,
+        );
+
+        const truth = maleTruth(&scene) orelse return error.MaleTruthMissing;
+        const component = truth.partByName("extra_arm") orelse
+            return error.OptionalArmTruthMissing;
+        try std.testing.expect(component.active);
+        projected_roots[case_index] = component.connection_child_endpoint;
+        const intentional = switch (proof_case) {
+            .intentional_gap_front,
+            .intentional_gap_side_left,
+            .intentional_gap_side_right,
+            => true,
+            else => false,
+        };
+        try std.testing.expectEqual(
+            if (intentional)
+                anatomy.ConnectionMode.intentional_gap
+            else
+                anatomy.ConnectionMode.continuous,
+            component.connection_mode,
+        );
+        try std.testing.expectEqual(
+            visual_truth.MismatchResult.pass,
+            component.connection_result,
+        );
+        try std.testing.expectApproxEqAbs(
+            if (intentional) @as(f32, 0.08) else 0,
+            component.measured_gap_m,
+            0.00001,
+        );
+        try std.testing.expectApproxEqAbs(
+            component.measured_gap_m * scene.integrated.camera.pixels_per_meter,
+            component.acceptance_gap_px,
+            0.0001,
+        );
+
+        const expected_names = [_][]const u8{
+            "extra_upper_arm",
+            "extra_forearm",
+            "extra_hand",
+        };
+        const expected_starts = [_][]const u8{ "shoulder", "elbow", "wrist" };
+        const expected_ends = [_][]const u8{ "elbow", "wrist", "hand_tip" };
+        var found: [expected_names.len]bool = .{ false, false, false };
+        for (scene.truth_snapshot.visuals[0..scene.truth_snapshot.visual_count]) |visual| {
+            if (visual.character_id != truth.id) continue;
+            const binding = visual.graph_binding orelse continue;
+            if (binding.component_id != component.index) continue;
+            var expected_index: ?usize = null;
+            for (expected_names, 0..) |name, index| {
+                if (std.mem.eql(u8, visual.stable_id.slice(), name)) {
+                    expected_index = index;
+                    break;
+                }
+            }
+            const index = expected_index orelse
+                return error.UnexpectedOptionalArmVisual;
+            try std.testing.expect(!found[index]);
+            found[index] = true;
+            try std.testing.expectEqualStrings(
+                "extra_arm",
+                binding.component_identity.slice(),
+            );
+            try std.testing.expectEqualStrings(
+                "extra_arm_module",
+                binding.module_identity.slice(),
+            );
+            try std.testing.expectEqualStrings(
+                expected_starts[index],
+                binding.start_identity.slice(),
+            );
+            try std.testing.expectEqualStrings(
+                expected_ends[index],
+                binding.end_identity.slice(),
+            );
+            try std.testing.expectEqual(
+                visual_geometry.RegistrationAuthority.authoritative_registration,
+                visual.placement_authority,
+            );
+            try std.testing.expect(
+                visual.final_submission_index != std.math.maxInt(u32),
+            );
+            try std.testing.expect(
+                visual.alpha_bounds_maximum.x >
+                    visual.alpha_bounds_minimum.x and
+                    visual.alpha_bounds_maximum.y >
+                        visual.alpha_bounds_minimum.y,
+            );
+            var passed_targets: usize = 0;
+            for (scene.truth_snapshot.mismatches[0..scene.truth_snapshot.mismatch_count]) |mismatch| {
+                if (mismatch.character_id == truth.id and
+                    std.mem.eql(
+                        u8,
+                        mismatch.component.slice(),
+                        visual.stable_id.slice(),
+                    ) and mismatch.result == .pass)
+                {
+                    passed_targets += 1;
+                }
+            }
+            try std.testing.expect(passed_targets >= 2);
+        }
+        for (found) |value| try std.testing.expect(value);
+    }
+    try std.testing.expect(
+        !projected_roots[0].approxEqAbs(projected_roots[2], 0.00001),
+    );
+    try std.testing.expect(
+        !projected_roots[2].approxEqAbs(projected_roots[3], 0.00001),
+    );
+}
+
+test "VF-03-R1 disabled and two-module proofs enforce zero-or-exact production counts" {
+    const cases = [_]struct {
+        proof: visual_foundation.ComponentProofCase,
+        modules: u8,
+        submissions: u8,
+    }{
+        .{ .proof = .disabled, .modules = 0, .submissions = 0 },
+        .{ .proof = .two_modules, .modules = 2, .submissions = 6 },
+    };
+    for (cases) |case| {
+        var scene = try visual_foundation.Scene
+            .initWithDiagnosticAllocatorAndComponentProof(
+            std.testing.allocator,
+            std.testing.allocator,
+            .measure_only,
+            case.proof,
+        );
+        defer scene.deinit();
+        try scene.applyComponentProofCase(case.proof);
+        scene.setDebugMode(.rig_registration);
+        var queue = try render_queue.UnifiedRenderQueue.init(
+            std.testing.allocator,
+            render_queue.default_entry_capacity,
+            render_queue.default_sprite_capacity,
+            render_queue.default_mesh_capacity,
+            visual_foundation.configured_texture_page_count,
+        );
+        defer queue.deinit();
+        queue.beginFrame();
+        _ = try scene.submit(&queue);
+        try std.testing.expectEqual(
+            case.modules,
+            scene.truth_snapshot.active_optional_modules,
+        );
+        try std.testing.expectEqual(
+            case.submissions,
+            scene.truth_snapshot.expected_optional_visual_submissions,
+        );
+        try std.testing.expectEqual(
+            case.submissions,
+            scene.truth_snapshot.actual_optional_visual_submissions,
+        );
+        try std.testing.expectEqual(
+            @as(u8, 0),
+            scene.truth_snapshot.missing_optional_visual_submissions,
+        );
+        try std.testing.expectEqual(
+            @as(u8, 0),
+            scene.truth_snapshot.orphan_optional_visual_submissions,
+        );
+    }
+}
+
+test "VF-03-R1 cross-layer validator rejects duplicate module and joint ownership defects" {
+    var scene = try visual_foundation.Scene
+        .initWithDiagnosticAllocatorAndComponentProof(
+        std.testing.allocator,
+        std.testing.allocator,
+        .measure_only,
+        .continuous_front,
+    );
+    defer scene.deinit();
+    try scene.applyComponentProofCase(.continuous_front);
+    scene.setDebugMode(.rig_registration);
+    var queue = try render_queue.UnifiedRenderQueue.init(
+        std.testing.allocator,
+        render_queue.default_entry_capacity,
+        render_queue.default_sprite_capacity,
+        render_queue.default_mesh_capacity,
+        visual_foundation.configured_texture_page_count,
+    );
+    defer queue.deinit();
+    queue.beginFrame();
+    _ = try scene.submit(&queue);
+
+    var records: [6]character_art.OptionalArmSubmission = undefined;
+    const count = try collectMaleOptionalSubmissions(&scene, &records);
+    try std.testing.expectEqual(@as(usize, 3), count);
+    const male = &scene.integrated.production.male;
+    _ = try character_art.validateOptionalArmSubmissions(
+        male,
+        .front,
+        records[0..count],
+    );
+
+    records[count] = records[0];
+    try std.testing.expectError(
+        error.DuplicateOptionalArmVisualSubmission,
+        character_art.validateOptionalArmSubmissions(
+            male,
+            .front,
+            records[0 .. count + 1],
+        ),
+    );
+
+    const original_module = records[0].module_id;
+    records[0].module_id =
+        try scene.integrated.production.definition.visual_definition
+            .rigModuleId("extra_arm_module_second");
+    try std.testing.expectError(
+        error.OptionalArmModuleOwnershipMismatch,
+        character_art.validateOptionalArmSubmissions(
+            male,
+            .front,
+            records[0..count],
+        ),
+    );
+    records[0].module_id = original_module;
+
+    records[0].end_global_index += 1;
+    try std.testing.expectError(
+        error.OptionalArmJointBindingMismatch,
+        character_art.validateOptionalArmSubmissions(
+            male,
+            .front,
+            records[0..count],
+        ),
+    );
+}
+
 test "interaction presentation rejects suppression without both role views" {
     try std.testing.expectError(
         error.SuppressedInteractionViewMissing,
@@ -146,6 +534,43 @@ fn validObservation() foundation_evidence.Observation {
         .theme = "violet_crystal_ruin",
         .texture_pages = 9,
     };
+}
+
+fn maleTruth(
+    scene: *const visual_foundation.Scene,
+) ?*const visual_truth.Character {
+    const male_id = scene.integrated.production.male.id.raw();
+    for (scene.truth_snapshot.characters[0..scene.truth_snapshot.character_count]) |*truth| {
+        if (truth.id == male_id) return truth;
+    }
+    return null;
+}
+
+fn collectMaleOptionalSubmissions(
+    scene: *const visual_foundation.Scene,
+    output: *[6]character_art.OptionalArmSubmission,
+) !usize {
+    const male = &scene.integrated.production.male;
+    var count: usize = 0;
+    for (scene.truth_snapshot.visuals[0..scene.truth_snapshot.visual_count]) |visual| {
+        if (visual.character_id != male.id.raw()) continue;
+        const binding = visual.graph_binding orelse continue;
+        if (count == output.len) return error.OptionalArmSubmissionCapacityExceeded;
+        output[count] = .{
+            .visual_id = try scene.integrated.production.definition
+                .visual_definition.visualId(visual.stable_id.slice()),
+            .component_id = @enumFromInt(binding.component_id),
+            .module_id = @enumFromInt(binding.module_id),
+            .start_kind = binding.start_kind,
+            .start_global_index = binding.start_global_index,
+            .end_kind = binding.end_kind,
+            .end_global_index = binding.end_global_index,
+            .view = male.presentationView(),
+            .submission_index = visual.final_submission_index,
+        };
+        count += 1;
+    }
+    return count;
 }
 
 test "Prompt 27A stop front predicate rejects side view and residual velocity" {
@@ -1235,7 +1660,7 @@ test "VF-01 production snapshot emits every applicable stable truth category" {
         if (std.mem.eql(u8, mismatch.component.slice(), "hair") and
             mismatch.has_expected_target)
         {
-            try std.testing.expectEqualStrings("head_hair_anchor", identity);
+            try std.testing.expect(std.mem.endsWith(u8, identity, "hair"));
         }
     }
     try std.testing.expectEqual(
@@ -1308,6 +1733,7 @@ fn submitAndExpectRegisteredView(
     var female_counts = [_]u8{0} ** registered_component_ids.len;
     var male_counts = [_]u8{0} ** registered_component_ids.len;
     var registered_shoe_count: u8 = 0;
+    var registered_graph_point_count: u8 = 0;
     for (scene.visual_trace.slice()) |record| {
         const registered_index = registeredComponentIndex(record.stable_id);
         if (registered_index) |index| {
@@ -1350,6 +1776,23 @@ fn submitAndExpectRegisteredView(
             } else {
                 return error.UnknownProductionRegistrationCharacter;
             }
+        } else if (isGraphPointComponent(record.stable_id)) {
+            try std.testing.expectEqual(
+                visual_geometry.RegistrationAuthority.authoritative_registration,
+                record.placement_authority,
+            );
+            const registration = record.registration orelse
+                return error.MissingComponentGraphPointRegistrationEvidence;
+            try std.testing.expectEqual(expected_view, record.view);
+            try std.testing.expectEqual(
+                visual_geometry.RegistrationBindingMode.point,
+                registration.binding_mode,
+            );
+            try std.testing.expectEqual(@as(u8, 1), registration.point_count);
+            try std.testing.expect(
+                registration.maximum_residual_m <= registration.threshold_m,
+            );
+            registered_graph_point_count += 1;
         } else if (std.mem.eql(u8, record.stable_id, "crimson_strap_shoe")) {
             try std.testing.expectEqual(
                 visual_geometry.RegistrationAuthority.authoritative_registration,
@@ -1381,11 +1824,23 @@ fn submitAndExpectRegisteredView(
             try std.testing.expect(record.placement_authority != .authoritative_registration);
         }
     }
+    try std.testing.expectEqual(
+        @as(u8, if (expected_view == .front) 10 else 6),
+        registered_graph_point_count,
+    );
     for (female_counts, male_counts) |female_count, male_count| {
         try std.testing.expectEqual(@as(u8, 1), female_count);
         try std.testing.expectEqual(@as(u8, 1), male_count);
     }
     try std.testing.expectEqual(@as(u8, 4), registered_shoe_count);
+}
+
+fn isGraphPointComponent(stable_id: []const u8) bool {
+    return std.mem.eql(u8, stable_id, "left_eye") or
+        std.mem.eql(u8, stable_id, "right_eye") or
+        std.mem.eql(u8, stable_id, "left_eyebrow") or
+        std.mem.eql(u8, stable_id, "right_eyebrow") or
+        std.mem.eql(u8, stable_id, "hair");
 }
 
 fn registeredComponentIndex(stable_id: []const u8) ?usize {

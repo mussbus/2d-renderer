@@ -185,3 +185,38 @@ side-right tests require the same stable components and targets.
 The existing whole-character ground-alignment pass remains after character
 submission. It translates the queue request and both sides of registration
 evidence together, so it cannot hide or change a structural residual.
+
+## VF-03 component projection
+
+Front, side-right, and side-left presentation resolve all current appearance
+transform-source categories before evaluating typed component parents and
+sockets. Component view requirements are validated at graph compilation;
+unsupported front or side sources fail instead of disappearing.
+
+Eyes are point-bound to typed head-eye sockets. Each eyebrow is a separate
+bounded atlas region and point-bound visual owned by the brow socket of its
+eye component. Moving, rotating, or scaling the eye component therefore
+moves the eyebrow child without an independent head offset. Hair is
+point-bound to the typed scalp component relationship and retains its
+attachment-owned secondary deformation after the anchor.
+
+These direct point visuals use the same registration request observed by
+production, VF-01, JSON, and validation. Inactive legacy combined-brow
+attachments remain transitional compatibility data and are not selected by
+current face presets.
+
+VF-03-R1 adds production presentation for optional arm visuals. Front,
+side-left, and side-right all resolve the same stable component, module,
+shoulder, elbow, wrist, hand-tip, and visual identities. Reflection changes
+the projected world chain and signed presentation scale without swapping
+graph ownership. Each visual's segment transform is calculated once from the
+projected endpoints and is shared by final submission, trace, diagnostics,
+and JSON.
+
+Paired continuous and intentional-gap cases use the same character, camera,
+viewport, module, arm pose, animation state, and draw order. Continuous puts
+the child root on the torso socket. Intentional-gap applies only the declared
+`0.08 m` root vector, leaving visible empty pixels before the upper-arm
+proximal boundary. Technical tints and deterministic socket locations keep
+the optional chain visible without changing canonical pose, animation, or IK
+authority.

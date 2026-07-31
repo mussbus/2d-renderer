@@ -4,6 +4,7 @@ const skeleton = @import("skeleton");
 const pose = @import("pose");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
+const component_graph = @import("component_graph");
 const sprite = @import("sprite_batch");
 const fault_injection = @import("fault_injection");
 
@@ -117,6 +118,7 @@ pub const HumanoidDefinition = struct {
     skeleton_definition: skeleton.SkeletonDefinition,
     visual_definition: appearance.Definition,
     anatomy_definition: ?anatomy.Definition,
+    component_graph_definition: ?component_graph.Definition,
     attachments: []const RenderAttachment,
     attachment_semantic_indices: [canonical_attachment_semantic_count]?VisualAttachmentId,
 
@@ -220,6 +222,13 @@ pub const HumanoidDefinition = struct {
                 injector,
             );
         }
+        const component_graph_definition = if (anatomy_definition) |*value|
+            try component_graph.Definition.init(
+                visual_definition.view(),
+                value.view(),
+            )
+        else
+            null;
 
         var lookup = [_]?VisualAttachmentId{null} ** canonical_attachment_semantic_count;
         for (visual_definition.visuals) |visual| {
@@ -243,6 +252,7 @@ pub const HumanoidDefinition = struct {
             .skeleton_definition = skeleton_definition,
             .visual_definition = visual_definition,
             .anatomy_definition = anatomy_definition,
+            .component_graph_definition = component_graph_definition,
             .attachments = visual_definition.visuals,
             .attachment_semantic_indices = lookup,
         };

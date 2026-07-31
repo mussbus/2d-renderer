@@ -131,19 +131,21 @@ test "faces and hair are per-head groups with independently addressable features
     defer runtime.deinit();
 
     try runtime.selectBodyPreset(anatomy_definition, try anatomy_definition.bodyPresetId("conventional_male"));
-    for ([_][]const u8{ "head", "left_eye", "right_eye", "eyebrows", "nose", "mouth", "left_ear", "right_ear", "long_hair" }) |name| {
+    for ([_][]const u8{ "head", "left_eye", "right_eye", "left_eyebrow", "right_eyebrow", "nose", "mouth", "left_ear", "right_ear", "long_hair" }) |name| {
         try expectActive(&runtime, anatomy_definition, name, !std.mem.eql(u8, name, "long_hair"));
     }
-    for ([_][]const u8{ "angular_left_eye", "angular_right_eye", "angular_eyebrows", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear" }) |name| {
+    try expectActive(&runtime, anatomy_definition, "eyebrows", false);
+    for ([_][]const u8{ "angular_left_eye", "angular_right_eye", "angular_left_eyebrow", "angular_right_eyebrow", "angular_eyebrows", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear" }) |name| {
         try expectActive(&runtime, anatomy_definition, name, false);
     }
     try runtime.selectBodyPreset(anatomy_definition, try anatomy_definition.bodyPresetId("conventional_female"));
-    for ([_][]const u8{ "left_eye", "right_eye", "eyebrows", "nose", "mouth", "left_ear", "right_ear", "short_hair" }) |name| {
+    for ([_][]const u8{ "left_eye", "right_eye", "left_eyebrow", "right_eyebrow", "eyebrows", "nose", "mouth", "left_ear", "right_ear", "short_hair" }) |name| {
         try expectActive(&runtime, anatomy_definition, name, false);
     }
-    for ([_][]const u8{ "head", "angular_left_eye", "angular_right_eye", "angular_eyebrows", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear", "long_hair" }) |name| {
+    for ([_][]const u8{ "head", "angular_left_eye", "angular_right_eye", "angular_left_eyebrow", "angular_right_eyebrow", "angular_nose", "angular_mouth", "angular_left_ear", "angular_right_ear", "long_hair" }) |name| {
         try expectActive(&runtime, anatomy_definition, name, true);
     }
+    try expectActive(&runtime, anatomy_definition, "angular_eyebrows", false);
     try runtime.selectHair(anatomy_definition, try anatomy_definition.hairDefinitionId("ponytail"));
     try expectActive(&runtime, anatomy_definition, "long_hair", false);
     try expectActive(&runtime, anatomy_definition, "ponytail_hair", true);
@@ -162,7 +164,7 @@ test "two facial configurations use shared modular data and derive distinct inde
     const conventional_face = try faceByName(anatomy_definition, "conventional_face");
     const angular_face = try faceByName(anatomy_definition, "angular_face");
     try std.testing.expectEqual(conventional_face.head_part, angular_face.head_part);
-    try std.testing.expectEqual(@as(u16, 7), conventional_face.feature_count);
+    try std.testing.expectEqual(@as(u16, 8), conventional_face.feature_count);
     try std.testing.expectEqual(conventional_face.feature_count, angular_face.feature_count);
     const conventional_features = anatomy_definition.face_features[conventional_face.feature_start .. conventional_face.feature_start + conventional_face.feature_count];
     const angular_features = anatomy_definition.face_features[angular_face.feature_start .. angular_face.feature_start + angular_face.feature_count];

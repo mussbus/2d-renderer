@@ -5,6 +5,7 @@ const attachment_secondary_motion = @import("attachment_secondary_motion");
 const humanoid = @import("humanoid");
 const appearance = @import("appearance");
 const anatomy = @import("anatomy");
+const component_graph = @import("component_graph");
 const equipment = @import("equipment");
 const properties = @import("character_properties");
 const skeleton = @import("skeleton");
@@ -336,6 +337,7 @@ pub const HumanoidDefinitionView = struct {
     skeleton_definition: skeleton.SkeletonDefinition,
     visual_definition: appearance.DefinitionView,
     anatomy_definition: ?anatomy.DefinitionView,
+    component_graph_definition: ?component_graph.Definition,
     attachments: []const humanoid.RenderAttachment,
     attachment_semantic_indices: [humanoid.canonical_attachment_semantic_count]?humanoid.VisualAttachmentId,
     owner_token: usize,
@@ -345,6 +347,7 @@ pub const HumanoidDefinitionView = struct {
             .skeleton_definition = definition.skeleton_definition,
             .visual_definition = definition.visual_definition.view(),
             .anatomy_definition = if (definition.anatomy_definition) |*value| value.view() else null,
+            .component_graph_definition = definition.component_graph_definition,
             .attachments = definition.attachments,
             .attachment_semantic_indices = definition.attachment_semantic_indices,
             .owner_token = definition.skeleton_definition.compatibilityToken(),

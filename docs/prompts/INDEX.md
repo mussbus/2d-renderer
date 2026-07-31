@@ -44,6 +44,7 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 | 27C-R1 | Owner-rejected torso and interactive presence crash | automated corrective pass complete; owner review pending | copied exact user request | [record](027C-R1-owner-rejected-torso-presence.md) | worktree on `3259f79` |
 | VF-01 | Visual truth debugger and manual capture bundles | automated complete; owner review pending | exact active handoff package | [record](VF-01-visual-truth-debugger.md) | worktree on `0e9bfcb` |
 | VF-02 | Authoritative rig-to-art registration | automated implementation complete; owner review pending | exact active handoff package | [record](VF-02-authoritative-rig-to-art-registration.md) | worktree on `0e9bfcb` |
+| VF-03 | Typed modular component graph and optional rig modules | automated implementation complete; owner review pending | exact active handoff package | [record](VF-03-typed-modular-component-graph.md) | worktree on `624bf26` |
 
 ## Evidence and reports
 
@@ -55,5 +56,6 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
   [`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md);
   Prompts 27A and 27B are implemented; Prompt 27C's rejected torso result is
   superseded by the bounded 27C-R1 corrective pass. VF-01 is implemented as a
-  diagnostic milestone and VF-02 implements bounded production registration.
-  VF-03, Prompt 27D, and later work have not started.
+  diagnostic milestone, VF-02 implements bounded production registration, and
+  VF-03 implements the typed immutable component graph. Prompt 27D, Prompt 28,
+  and later work have not started.

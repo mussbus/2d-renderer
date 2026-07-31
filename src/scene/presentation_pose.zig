@@ -21,10 +21,13 @@ pub const FrontProjection = struct {
         [_]math.Mat3{math.Mat3.identity()} ** appearance.maximum_total_module_joints,
     module_socket_world: [appearance.maximum_total_module_sockets]math.Mat3 =
         [_]math.Mat3{math.Mat3.identity()} ** appearance.maximum_total_module_sockets,
+    visual_world: [appearance.maximum_visual_attachments]math.Mat3 =
+        [_]math.Mat3{math.Mat3.identity()} ** appearance.maximum_visual_attachments,
     bone_count: usize = 0,
     attachment_point_count: usize = 0,
     module_joint_count: usize = 0,
     module_socket_count: usize = 0,
+    visual_count: usize = 0,
 
     pub fn init(
         skeleton_definition: *const skeleton.SkeletonDefinition,
@@ -83,6 +86,7 @@ pub const FrontProjection = struct {
             .attachment_point_count = appearance_definition.attachment_points.len,
             .module_joint_count = appearance_definition.module_joints.len,
             .module_socket_count = appearance_definition.module_sockets.len,
+            .visual_count = appearance_definition.visuals.len,
         };
         const character_matrix = math.Mat3.translation(world_position);
         for (skeleton_definition.evaluation_order) |bone_index| {
@@ -129,6 +133,131 @@ pub const FrontProjection = struct {
                 projection.module_joint_world[module_socket.parent_joint_global];
             projection.module_socket_world[global_index] =
                 parent_world.mul(try module_socket.local_to_parent.localToParent());
+        }
+
+        for (appearance_definition.visual_evaluation_order) |raw_index| {
+            const visual = appearance_definition.visuals[raw_index];
+            const source_world = switch (visual.transform_source) {
+                .canonical_bone => |bone_index| projection.bone_world[bone_index],
+                .attachment_point => |point_id| projection.attachment_point_world[point_id.index()],
+                .module_joint => |global_index| projection.module_joint_world[global_index],
+                .module_socket => |global_index| projection.module_socket_world[global_index],
+                .visual_attachment => |parent_id| projection.visual_world[parent_id.index()],
+            };
+            const state = appearance_runtime.visual_states[visual.id.index()];
+            const base_world = source_world
+                .mul(try visual.local_to_source.localToParent())
+                .mul(try state.local_deformation.localToParent());
+            projection.visual_world[visual.id.index()] = if (visual.secondary_motion) |motion_definition|
+                base_world.mul(try (try state.secondary.resolvedTransform(
+                    motion_definition,
+                )).localToParent())
+            else
+                base_world;
+        }
+    }
+
+    /// Re-anchors an active typed optional-arm module to its compiled
+    /// component parent socket. This is a presentation projection operation:
+    /// canonical pose and appearance runtime data remain unchanged, while the
+    /// projected module joints, module sockets, and dependent production
+    /// visuals share the exact component-graph connection endpoint.
+    pub fn bindActiveOptionalArmModules(
+        projection: *FrontProjection,
+        appearance_definition: appearance.DefinitionView,
+        appearance_runtime: appearance.Runtime,
+        anatomy_definition: anatomy.DefinitionView,
+        anatomy_runtime: anatomy.Runtime,
+    ) !void {
+        const anatomy_projection = try FrontAnatomyProjection.init(
+            projection.*,
+            anatomy_definition,
+            anatomy_runtime,
+        );
+        for (anatomy_definition.part_instances) |part| {
+            if (!try anatomy_runtime.isPartActive(anatomy_definition, part.id)) {
+                continue;
+            }
+            const part_definition = anatomy_definition.part_definitions[
+                part.definition.index()
+            ];
+            if (part_definition.rig_module_template !=
+                .shoulder_elbow_wrist_hand)
+            {
+                continue;
+            }
+            const module_id = part.articulation_module orelse
+                return error.RequiredRigModuleMissing;
+            const module = appearance_definition.rig_modules[module_id.index()];
+            const root_world = anatomy_projection.part_binding_world[
+                part.id.index()
+            ];
+            for (appearance_definition.module_joint_evaluation_order) |global_index| {
+                const joint = appearance_definition.module_joints[global_index];
+                if (joint.module_id != module_id) continue;
+                const parent_world = if (joint.parent_joint_global == appearance.no_index)
+                    root_world
+                else
+                    projection.module_joint_world[joint.parent_joint_global];
+                projection.module_joint_world[global_index] = parent_world.mul(
+                    try appearance_runtime.module_joint_local[global_index]
+                        .localToParent(),
+                );
+            }
+            for (appearance_definition.module_sockets, 0..) |socket_value, global_index| {
+                if (socket_value.module_id != module_id) continue;
+                const parent_world = if (socket_value.parent_joint_global ==
+                    appearance.no_index)
+                    root_world
+                else
+                    projection.module_joint_world[
+                        socket_value.parent_joint_global
+                    ];
+                projection.module_socket_world[global_index] = parent_world.mul(
+                    try socket_value.local_to_parent.localToParent(),
+                );
+            }
+            _ = module;
+        }
+        try projection.rebuildVisualWorlds(
+            appearance_definition,
+            appearance_runtime,
+        );
+    }
+
+    fn rebuildVisualWorlds(
+        projection: *FrontProjection,
+        appearance_definition: appearance.DefinitionView,
+        appearance_runtime: appearance.Runtime,
+    ) !void {
+        for (appearance_definition.visual_evaluation_order) |raw_index| {
+            const visual = appearance_definition.visuals[raw_index];
+            const source_world = switch (visual.transform_source) {
+                .canonical_bone => |bone_index| projection.bone_world[bone_index],
+                .attachment_point => |point_id| projection.attachment_point_world[
+                    point_id.index()
+                ],
+                .module_joint => |global_index| projection.module_joint_world[
+                    global_index
+                ],
+                .module_socket => |global_index| projection.module_socket_world[
+                    global_index
+                ],
+                .visual_attachment => |parent_id| projection.visual_world[
+                    parent_id.index()
+                ],
+            };
+            const state = appearance_runtime.visual_states[visual.id.index()];
+            const base_world = source_world
+                .mul(try visual.local_to_source.localToParent())
+                .mul(try state.local_deformation.localToParent());
+            projection.visual_world[visual.id.index()] =
+                if (visual.secondary_motion) |motion_definition|
+                    base_world.mul(try (try state.secondary.resolvedTransform(
+                        motion_definition,
+                    )).localToParent())
+                else
+                    base_world;
         }
     }
 
@@ -343,6 +472,9 @@ pub const FrontProjection = struct {
         for (projection.module_socket_world[0..projection.module_socket_count]) |*world| {
             world.* = reflection.mul(world.*);
         }
+        for (projection.visual_world[0..projection.visual_count]) |*world| {
+            world.* = reflection.mul(world.*);
+        }
         return projection;
     }
 
@@ -365,19 +497,10 @@ pub const FrontProjection = struct {
         visual: appearance.VisualAttachment,
     ) !math.Mat3 {
         if (visual.id.index() >= runtime.visual_states.len) return error.InvalidVisualAttachmentId;
-        const source_world = switch (visual.transform_source) {
-            .canonical_bone => |bone_index| projection.bone_world[bone_index],
-            .attachment_point => |point_id| projection.attachment_point_world[point_id.index()],
-            .module_joint, .module_socket, .visual_attachment => return error.UnsupportedFrontProjectionSource,
-        };
-        const state = runtime.visual_states[visual.id.index()];
-        const base_world = source_world
-            .mul(try visual.local_to_source.localToParent())
-            .mul(try state.local_deformation.localToParent());
-        return if (visual.secondary_motion) |motion_definition|
-            base_world.mul(try (try state.secondary.resolvedTransform(motion_definition)).localToParent())
-        else
-            base_world;
+        if (visual.id.index() >= projection.visual_count) {
+            return error.InvalidVisualAttachmentId;
+        }
+        return projection.visual_world[visual.id.index()];
     }
 
     fn moduleOrigin(
@@ -420,8 +543,11 @@ pub const FrontAnatomyProjection = struct {
                 .body_part_socket => |id| projection.socket_world[id.index()],
                 .module_socket => |global_index| try front.moduleSocketWorldGlobal(global_index),
             };
-            const binding_world =
-                parent_world.mul(try part.local_to_parent.localToParent());
+            const binding_world = try anatomy.connectionBindingWorld(
+                parent_world,
+                part.local_to_parent,
+                part.connection,
+            );
             const world = binding_world.mul(try (try runtime.resolvedDeformationForPart(
                 definition,
                 part.id,
