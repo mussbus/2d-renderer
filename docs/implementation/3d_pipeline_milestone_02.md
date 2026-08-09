@@ -287,6 +287,11 @@ Requirements:
 
 Instantiate 5 spine controls: 4 regional + 1 whole-spine curve/global concept. Do not implement spline IK yet.
 
+Torso structural note: The torso component is a semantic/geometry owner, not a single deformation bone. 
+Broad torso deformation is structurally driven by the pelvis, seven-bone spine chain, clavicles, and scapulae. 
+Chest, ribcage, abdomen, waist, back, pectoral, and related torso morphology will attach to this structure in later milestones. 
+M02 must not invent a monolithic torso deformation bone unless a later reviewed requirement establishes one.
+
 ### 10.2 Shoulder girdle and arms
 
 Per side structurally represent:
