@@ -1,0 +1,21 @@
+{
+  "schema_identity": { "schema_id": "canonical_creature_schema", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "asset_identity": { "asset_id": "invalid_socket_mount", "display_name": "Invalid Socket Mount", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "compiler_identity": { "compiler_id": "m01_canonical_compiler", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "components": [
+    { "component_id": "body", "display_name": "Body", "component_type": "body_type", "parent_component_id": null, "semantic_tags": [], "requirement": "required", "default_state": "enabled", "multiplicity": { "minimum": 1, "maximum": 1 }, "compatibility": { "profiles": [], "required_tags": [] } },
+    { "component_id": "head", "display_name": "Head", "component_type": "head_type", "parent_component_id": "body", "semantic_tags": [], "requirement": "required", "default_state": "enabled", "multiplicity": { "minimum": 1, "maximum": 1 }, "compatibility": { "profiles": [], "required_tags": [] } }
+  ],
+  "bones": [
+    { "bone_id": "skeleton_root", "display_name": "Skeleton Root", "parent_bone_id": null, "deforms_mesh": false, "local_rest_transform": { "translation_m": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1] }, "semantic_tags": [], "mirror_bone_id": null, "display_length_m": null }
+  ],
+  "anchors": [
+    { "anchor_id": "head_socket_anchor", "display_name": "Head Socket Anchor", "owner_component_id": "body", "driver": { "type": "component", "id": "body" }, "local_transform": { "translation_m": [0, 1, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1] }, "semantic_tags": [] }
+  ],
+  "sockets": [
+    { "socket_id": "head_socket", "anchor_id": "head_socket_anchor", "accepted_component_types": ["head_type"], "accepted_tags": [], "capacity": 1, "attachment_requirement": "optional", "compatibility": { "profiles": [], "required_tags": [] } }
+  ],
+  "attachments": [
+    { "attachment_id": "head_attachment", "parent_socket_id": "head_socket", "child_component_id": "head", "child_mount_anchor_id": "missing_mount_anchor", "compatibility_profiles": [] }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema_identity": { "schema_id": "canonical_creature_schema", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "asset_identity": { "asset_id": "invalid_dependency_cycle", "display_name": "Invalid Dependency Cycle", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "compiler_identity": { "compiler_id": "m01_canonical_compiler", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "components": [
+    { "component_id": "body", "display_name": "Body", "component_type": "body_type", "parent_component_id": null, "semantic_tags": [], "requirement": "required", "default_state": "enabled", "multiplicity": { "minimum": 1, "maximum": 1 }, "compatibility": { "profiles": [], "required_tags": [] } }
+  ],
+  "bones": [
+    { "bone_id": "skeleton_root", "display_name": "Skeleton Root", "parent_bone_id": null, "deforms_mesh": false, "local_rest_transform": { "translation_m": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1] }, "semantic_tags": [], "mirror_bone_id": null, "display_length_m": null }
+  ],
+  "morphology_parameters": [
+    { "parameter_id": "cyclic_value", "display_name": "Cyclic Value", "category": "appearance", "unit": "normalized", "ranges": { "default_value": { "value_type": "float", "value": 0.5 }, "recommended": null, "hard": { "value_type": "float", "minimum": 0, "maximum": 1 } }, "response_curve": { "curve_type": "linear" }, "symmetry": { "symmetry_type": "centered" }, "topology_policy": "preserve_existing_topology", "binding_ids": [] }
+  ],
+  "morphology_dependencies": [
+    { "dependency_id": "self_cycle", "kind": "derived_value", "input_parameter_ids": ["cyclic_value"], "output_parameter_id": "cyclic_value", "source_binding_ids": [], "resolution_stage": "mesh_morphology" }
+  ]
+}

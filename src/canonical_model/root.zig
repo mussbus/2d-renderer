@@ -1,0 +1,39 @@
+pub const attachment = @import("attachment.zig");
+pub const component = @import("component.zig");
+pub const coordinate = @import("coordinate.zig");
+pub const definition = @import("definition.zig");
+pub const diagnostics = @import("diagnostics.zig");
+pub const identity = @import("identity.zig");
+pub const hashing = @import("hashing.zig");
+pub const material = @import("material.zig");
+pub const math3d = @import("math3d.zig");
+pub const morphology = @import("morphology.zig");
+pub const normalization = @import("normalization.zig");
+pub const parsing = @import("parsing.zig");
+pub const rig = @import("rig.zig");
+pub const semantics = @import("semantics.zig");
+pub const serialization = @import("serialization.zig");
+pub const trace = @import("trace.zig");
+pub const validation = @import("validation.zig");
+pub const visibility = @import("visibility.zig");
+
+test {
+    _ = attachment;
+    _ = component;
+    _ = coordinate;
+    _ = definition;
+    _ = diagnostics;
+    _ = identity;
+    _ = hashing;
+    _ = material;
+    _ = math3d;
+    _ = morphology;
+    _ = normalization;
+    _ = parsing;
+    _ = rig;
+    _ = semantics;
+    _ = serialization;
+    _ = trace;
+    _ = validation;
+    _ = visibility;
+}

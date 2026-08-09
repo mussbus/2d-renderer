@@ -170,6 +170,35 @@ pub fn build(b: *std.Build) void {
     const gpu_smoke_step = b.step("gpu-smoke", "Require and verify D3D12/DXIL rendering with GPU readback");
     gpu_smoke_step.dependOn(&gpu_smoke_command.step);
 
+    const canonical_model_module = b.createModule(.{
+        .root_source_file = b.path("src/canonical_model/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const canonical_model_core_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_model_core_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_model_core_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_model_phase_c_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_model_phase_c_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_model_phase_c_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_model_phase_de_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_model_phase_de_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_model_phase_de_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_model_phase_f_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_model_phase_f_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_model_phase_f_test_module.addImport("canonical_model", canonical_model_module);
     const test_module = b.createModule(.{
         .root_source_file = b.path("tests/test_all.zig"),
         .target = target,
@@ -1642,6 +1671,50 @@ pub fn build(b: *std.Build) void {
         "Validate Prompt 27B captures, pixel rulers, and review package",
     );
     p27b_review_step.dependOn(&p27b_review_package.step);
+    const canonical_model_core_tests = b.addTest(.{
+        .name = "canonical-model-core-tests",
+        .root_module = canonical_model_core_test_module,
+    });
+    const run_canonical_model_core_tests = b.addRunArtifact(canonical_model_core_tests);
+    const canonical_model_core_test_step = b.step(
+        "test-canonical-model-core",
+        "Run renderer-independent canonical model core-record tests",
+    );
+    canonical_model_core_test_step.dependOn(&run_canonical_model_core_tests.step);
+
+    const canonical_model_phase_c_tests = b.addTest(.{
+        .name = "canonical-model-phase-c-tests",
+        .root_module = canonical_model_phase_c_test_module,
+    });
+    const run_canonical_model_phase_c_tests = b.addRunArtifact(canonical_model_phase_c_tests);
+    const canonical_model_phase_c_test_step = b.step(
+        "test-canonical-model-phase-c",
+        "Run renderer-independent morphology, material, visibility, and coverage record tests",
+    );
+    canonical_model_phase_c_test_step.dependOn(&run_canonical_model_phase_c_tests.step);
+
+    const canonical_model_phase_de_tests = b.addTest(.{
+        .name = "canonical-model-phase-de-tests",
+        .root_module = canonical_model_phase_de_test_module,
+    });
+    const run_canonical_model_phase_de_tests = b.addRunArtifact(canonical_model_phase_de_tests);
+    const canonical_model_phase_de_test_step = b.step(
+        "test-canonical-model-phase-de",
+        "Run renderer-independent canonical normalization, hashing, validation, and trace tests",
+    );
+    canonical_model_phase_de_test_step.dependOn(&run_canonical_model_phase_de_tests.step);
+
+    const canonical_model_phase_f_tests = b.addTest(.{
+        .name = "canonical-model-phase-f-tests",
+        .root_module = canonical_model_phase_f_test_module,
+    });
+    const run_canonical_model_phase_f_tests = b.addRunArtifact(canonical_model_phase_f_tests);
+    const canonical_model_phase_f_test_step = b.step(
+        "test-canonical-model-phase-f",
+        "Run renderer-independent M01 proof-fixture and determinism acceptance tests",
+    );
+    canonical_model_phase_f_test_step.dependOn(&run_canonical_model_phase_f_tests.step);
+
     const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");
@@ -1652,6 +1725,10 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_visual_geometry_tests.step);
     test_step.dependOn(&run_environment_tests.step);
     test_step.dependOn(&run_visual_foundation_tests.step);
+    test_step.dependOn(&run_canonical_model_core_tests.step);
+    test_step.dependOn(&run_canonical_model_phase_c_tests.step);
+    test_step.dependOn(&run_canonical_model_phase_de_tests.step);
+    test_step.dependOn(&run_canonical_model_phase_f_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });
     format.setName("verify Zig formatting");
@@ -1668,6 +1745,10 @@ pub fn build(b: *std.Build) void {
     check_step.dependOn(&run_visual_geometry_tests.step);
     check_step.dependOn(&run_environment_tests.step);
     check_step.dependOn(&run_visual_foundation_tests.step);
+    check_step.dependOn(&run_canonical_model_core_tests.step);
+    check_step.dependOn(&run_canonical_model_phase_c_tests.step);
+    check_step.dependOn(&run_canonical_model_phase_de_tests.step);
+    check_step.dependOn(&run_canonical_model_phase_f_tests.step);
     check_step.dependOn(&environment_art_audit.step);
     check_step.dependOn(&p27c_art_audit.step);
     check_step.dependOn(&p27c_r1_torso_audit.step);

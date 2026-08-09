@@ -1,0 +1,15 @@
+{
+  "schema_identity": { "schema_id": "canonical_creature_schema", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "asset_identity": { "asset_id": "invalid_joint_range", "display_name": "Invalid Joint Range", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "compiler_identity": { "compiler_id": "m01_canonical_compiler", "version": { "major": 1, "minor": 0, "patch": 0 } },
+  "components": [
+    { "component_id": "body", "display_name": "Body", "component_type": "body_type", "parent_component_id": null, "semantic_tags": [], "requirement": "required", "default_state": "enabled", "multiplicity": { "minimum": 1, "maximum": 1 }, "compatibility": { "profiles": [], "required_tags": [] } }
+  ],
+  "bones": [
+    { "bone_id": "skeleton_root", "display_name": "Skeleton Root", "parent_bone_id": null, "deforms_mesh": false, "local_rest_transform": { "translation_m": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1] }, "semantic_tags": [], "mirror_bone_id": null, "display_length_m": null },
+    { "bone_id": "spine_01", "display_name": "Spine", "parent_bone_id": "skeleton_root", "deforms_mesh": true, "local_rest_transform": { "translation_m": [0, 0.4, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1] }, "semantic_tags": [], "mirror_bone_id": null, "display_length_m": 0.3 }
+  ],
+  "joints": [
+    { "joint_id": "spine_joint", "display_name": "Spine Joint", "parent_bone_id": "skeleton_root", "child_bone_id": "spine_01", "joint_type": "multi_axis", "preferred_range": { "x": { "minimum_radians": 0.25, "maximum_radians": -0.25 }, "y": null, "z": null }, "hard_range": { "x": { "minimum_radians": -0.5, "maximum_radians": 0.5 }, "y": null, "z": null }, "preferred_bend_direction": [1, 0, 0], "swing_twist": null, "limit_behavior": { "stiffness": 0.8 }, "mobility_profile_override": null }
+  ]
+}
