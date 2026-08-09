@@ -1,309 +1,440 @@
 # 3D Model Pipeline — Codex Start Here
 
 **Status:** Active implementation handoff  
-**Current milestone:** M01 — Canonical Model Data Foundation  
-**Owner-review gate:** Required before M02  
+**Current milestone:** M02 — `human_base` Structural Definition  
+**Accepted foundation:** M01 — Canonical Model Data Foundation  
+**Testing foundation:** M01.5 — Tiered verification / test-streamlining pass  
+**Next milestone:** M03 — Canonical Human Mesh & Surface Foundation  
+**Owner-review gate:** Required before advancing from the current milestone  
 **Primary runtime boundary:** The current production runtime remains 2D-only. Canonical 3D authoring, validation, and representation generation are offline/build-time concerns unless a later milestone explicitly changes that boundary.
 
 ---
 
 ## 1. Purpose
 
-This file is the short entry point for Codex work on the new canonical 3D model pipeline.
+This file is the stable entry point for Codex work on the canonical 3D model pipeline.
 
-Do not treat this file as the full specification. Its job is to define:
+It is intentionally **not** a milestone specification. Its job is to define:
 
-- which documents are authoritative;
-- what Codex should read first;
-- which milestone is currently active;
-- what Codex may and may not change;
-- how implementation assumptions, validation, evidence, and owner review must be handled.
+- authority and document precedence;
+- the current pipeline status;
+- what Codex must read before milestone work;
+- implementation rules that apply across milestones;
+- test/verification policy;
+- review evidence requirements;
+- stop/escalation behavior;
+- the boundary between the current milestone and the next one.
 
-The current task is **not** to implement the entire 3D pipeline. Work milestone-by-milestone.
+Detailed scope belongs in the active milestone engineering brief.
+
+Work milestone-by-milestone. Do not infer permission to implement later phases merely because the broader architecture describes them.
 
 ---
 
-## 2. Required reading order
+## 2. Pipeline status
 
-Read these documents in this order before implementation:
+### Accepted foundation
 
-1. **This file**
+**M01 — Canonical Model Data Foundation** is owner-accepted.
+
+M01 established the renderer-independent canonical-model subsystem, including typed identities/references, 3D local transforms, canonical normalization/serialization, SHA-256 source identity, structured validation, deterministic tracing, and proof fixtures.
+
+Its accepted golden identities remain regression contracts unless an explicitly reviewed M01 change authorizes otherwise.
+
+### Testing foundation
+
+**M01.5 — test-tier streamlining** is complete.
+
+It reorganized execution speed and test scheduling without weakening M01 contracts, changing accepted tolerances, shortening stress iteration counts, or deleting meaningful coverage.
+
+The repository testing authority is:
+
+- `docs/TESTING.md`
+
+### Active milestone
+
+**M02 — `human_base` Structural Definition** is the current implementation milestone.
+
+M02 instantiates the first real canonical human structural asset on top of the M01 data foundation. It defines stable human structure—component ownership, skeleton, rest pose, joints, controls, anchors, landmarks, seams, semantic identities, interaction hooks, and deterministic asset evidence—without yet creating the production human mesh.
+
+Read:
+
+- `docs/implementation/3d_pipeline_milestone_02.md`
+
+### Next milestone
+
+**M03 — Canonical Human Mesh & Surface Foundation** begins only after M02 owner acceptance.
+
+M03 will attach actual continuous canonical human geometry to the structural identities established in M02. It must consume M02 IDs, skeleton, landmarks, seams, anchors, and semantic ownership rather than redefining them.
+
+M03 is not authorized while M02 is active.
+
+---
+
+## 3. Required reading order
+
+Before beginning or resuming milestone implementation, read the following in order.
+
+1. **Pipeline entry point**
    - `docs/implementation/3d_pipeline_start_here.md`
 
 2. **Canonical source of truth**
    - `docs/architecture/3d_model_pipeline_canonical_decision_record_v1.md`
 
-3. **Current implementation milestone**
-   - `docs/implementation/3d_pipeline_milestone_01.md`
+3. **Active milestone engineering brief**
+   - currently: `docs/implementation/3d_pipeline_milestone_02.md`
 
-4. **Downstream requirements/reference**
+4. **Accepted prior-milestone evidence relevant to the current work**
+   - currently: `docs/implementation/3d_pipeline_m01_review_package.md`
+
+5. **Repository testing authority**
+   - `docs/TESTING.md`
+
+6. **Additional accepted transition/testing report if retained in the repository**
+   - M01.5 report/documentation, when present
+
+7. **Downstream integration / acceptance reference**
    - `docs/architecture/creature_interaction_architecture_decision_record_v3.md`
 
-Do not substitute an older renderer implementation, historical prompt, test fixture, or downstream architecture note for the canonical decision record.
+Read additional repository architecture or implementation documents when the active milestone references them.
+
+Do not substitute:
+
+- an older prompt;
+- historical renderer behavior;
+- a test fixture;
+- a downstream integration note;
+- the current runtime humanoid;
+- or a previous milestone's temporary implementation detail
+
+for the canonical decision record or active milestone brief.
 
 ---
 
-## 3. Authority and precedence
+## 4. Authority and precedence
 
-The canonical decision record owns:
+The canonical decision record is authoritative for canonical model-pipeline architecture, including:
 
 - units and coordinate conventions;
-- canonical origin and bind pose;
+- canonical origin and bind/reference pose;
 - naming and stable IDs;
-- component topology;
-- rig/skeleton structure;
-- morphology parameters and bindings;
-- deformation rules;
-- anchors, sockets, semantic surfaces, seams, and landmarks;
+- component ownership;
+- rig/skeleton concepts;
+- morphology and dependency rules;
+- deformation architecture;
+- anchors, sockets, surfaces, regions, seams, and landmarks;
 - material and visibility contracts;
-- animation data contracts;
-- registration/export requirements;
+- animation-data architecture;
+- representation/registration requirements;
 - deterministic serialization, hashing, and validation;
-- the canonical `human_base` definition.
+- canonical `human_base` requirements.
 
-The creature/interaction architecture record is a **downstream integration and acceptance-requirements record**. It informs clothing, interaction, representation, caching, simulation, and future integration, but it does not silently redefine canonical anatomy or rig behavior.
+The **active milestone engineering brief** determines which portion of that architecture may be implemented now.
 
-If documents conflict, the canonical decision record wins for canonical model-pipeline behavior unless a newer explicit, versioned owner decision says otherwise.
+The creature/interaction architecture record is a **downstream integration and acceptance-requirements reference**. It can expose requirements the canonical pipeline must eventually satisfy, but it does not silently redefine canonical anatomy, rig structure, identity, coordinate behavior, or source authority.
 
-Known examples already resolved in favor of the canonical record include:
+If documents conflict:
 
-- canonical asset origin is centered between the feet on the ground in the A-pose;
-- the tongue uses four shared deformation bones plus an explicit branching point.
+1. a newer explicit owner decision wins over older text for the decision it replaces;
+2. otherwise the canonical decision record wins for canonical model-pipeline architecture;
+3. the active milestone brief controls current implementation scope;
+4. downstream documents do not silently override canonical authority.
+
+Known previously resolved examples include:
+
+- canonical asset origin centered between the feet on the ground in A-pose rather than at the pelvis;
+- tongue structure using four shared deformation bones plus an explicit branch point.
 
 ---
 
-## 4. Status language is binding
+## 5. Status language is binding
 
-The canonical decision record uses these statuses:
+The canonical decision record and milestone briefs use these statuses:
 
-- **LOCKED** — requirement; implement as specified.
-- **DEFERRED** — preserve architectural compatibility, but do not pull implementation forward unless the milestone requires it.
+- **LOCKED** — architectural requirement; implement as specified.
+- **DEFERRED** — preserve compatibility, but do not pull the implementation forward unless the active milestone explicitly requires it.
 - **EXCLUDED** — do not implement in the current scope.
-- **OPEN/TUNING** — may require later empirical tuning; do not present a provisional implementation value as a newly locked design decision.
+- **OPEN/TUNING** — provisional empirical values may be needed, but they are not newly locked architecture.
 
-If a milestone requires a provisional `OPEN/TUNING` value, record it explicitly in the review package.
+When an active milestone requires an `OPEN/TUNING` value:
 
----
-
-## 5. Current milestone
-
-The active milestone is:
-
-> **M01 — Canonical Model Data Foundation**
-
-M01 implements the deterministic, versioned data model and validation infrastructure needed to represent a canonical creature definition.
-
-M01 is **schema/data-contract work**, not character modeling.
-
-The milestone must make it possible for M02 to begin `human_base` without requiring a schema rewrite.
-
-Read the full scope and acceptance criteria in:
-
-- `docs/implementation/3d_pipeline_milestone_01.md`
+- keep it centralized and inspectable;
+- identify it explicitly in the implementation report/review package;
+- do not describe it as a universal law or permanent architecture;
+- do not turn a hierarchy/topology/ownership decision into “tuning” to avoid owner review.
 
 ---
 
-## 6. M01 hard boundary
+## 6. Milestone boundary rule
 
-### M01 should implement
+The active milestone is the implementation boundary.
 
-At minimum, the repository must be able to represent, normalize, validate, serialize, hash, and inspect:
+Codex may:
 
-- schema / asset / compiler identity;
-- coordinate contract;
-- stable IDs and references;
-- component graph;
-- bones / skeleton;
-- joints;
-- animator-facing controls;
-- anchors, sockets, mount anchors, and attachments;
-- semantic surfaces / regions;
-- landmarks and shared seams;
-- interaction sites / effectors;
-- morphology parameters and explicit bindings;
-- dependency relationships;
-- material definitions and instances;
-- visibility / representation / normalized coverage metadata;
-- deterministic canonical JSON normalization and serialization;
-- source-definition hashing;
-- structured validation diagnostics;
-- valid and invalid proof fixtures.
+- use already accepted infrastructure from prior milestones;
+- add the records/assets/tests/tools explicitly required by the active milestone;
+- add narrow regression fixes discovered while implementing the active milestone;
+- preserve forward-compatible hooks already authorized by the canonical architecture.
 
-### M01 must not implement
+Codex must not:
 
-Do not pull these into M01:
+- begin the next milestone early;
+- opportunistically implement later solvers/systems;
+- redesign accepted prior milestones without a demonstrated defect;
+- make renderer/game state authoritative for canonical data;
+- broaden scope merely because a future system is described in the architecture record.
 
-- the actual `human_base` mesh;
-- production skinning or weight painting;
-- morphology sculpting;
-- corrective-shape authoring;
-- soft-tissue solving;
-- contact deformation solving;
-- garment fitting;
-- clothing authoring;
-- animation solving;
-- multi-actor choreography solving;
-- atlas generation;
-- a replacement 2D renderer;
-- live runtime 3D.
-
-Representing future-facing records or metadata hooks is allowed when M01 requires them. Implementing the downstream solver/system is not.
+At every owner-review gate, stop and wait for explicit approval before advancing.
 
 ---
 
-## 7. Repository reconnaissance comes before code changes
+## 7. Non-negotiable implementation rules
 
-Before implementing M01, inspect the repository and identify:
+### 7.1 One source of truth
 
-- current module/project layout;
-- JSON/config/schema infrastructure;
-- stable ID/reference types;
-- vector/quaternion/transform math;
-- hashing utilities;
-- validation/diagnostic conventions;
-- test framework and fixture conventions;
-- build targets;
-- renderer-specific types that must **not** become canonical model dependencies.
-
-Prefer reuse only when the existing abstraction is genuinely compatible with the canonical contract.
-
-Do not force canonical model data into an existing renderer-specific type merely because it already exists.
-
-Do not reorganize unrelated repository code for aesthetic reasons.
-
-If the repository architecture creates a real conflict with a locked canonical decision, stop at that boundary and report it before proceeding.
-
----
-
-## 8. Non-negotiable implementation rules
-
-### 8.1 One source of truth
-
-Do not create two authoritative representations of the same canonical value.
+Do not create two independently authoritative representations of the same canonical value.
 
 Examples:
 
-- canonical bone transforms store local parent-relative transforms only;
-- global transforms are derived/cached, not independently authored;
-- one low-level target property has one authoritative morphology resolver/writer.
+- canonical bone transforms are authored as local parent-relative transforms;
+- derived global/affine transforms are computed/cached, not independently authored;
+- one low-level target property has one authoritative writer/resolver;
+- a semantic seam has one stable identity rather than separate unrelated definitions for each side.
 
-### 8.2 No silent repair
+### 7.2 No silent repair
 
-Invalid source data must fail validation.
+Invalid canonical source must fail explicitly.
 
 Do not silently:
 
-- normalize invalid skin/morph weights;
 - repair broken references;
-- choose between conflicting writers;
+- clamp invalid canonical values;
+- choose between conflicting authoritative writers;
 - upgrade dependency versions;
+- substitute missing/unsupported components;
 - change topology;
-- substitute unsupported components;
-- clamp invalid canonical values without reporting it.
+- reinterpret malformed hierarchy;
+- regenerate accepted goldens merely because a test fails.
 
-The editor/tooling may later offer an explicit repair operation, but repair is a source-changing author action.
+An editor may eventually offer explicit repair actions, but repair is a source-changing author operation.
 
-### 8.3 No silent architectural invention
+### 7.3 No silent architectural invention
 
-If implementation needs a canonical decision that is not present:
+If implementation requires a decision that is not already supported:
 
 1. stop at the affected boundary;
 2. identify the exact missing decision;
-3. explain why it is required;
-4. report possible options/tradeoffs;
-5. wait for owner review when the choice changes architecture.
+3. explain why it is necessary;
+4. show the smallest viable alternatives/tradeoffs;
+5. request owner review;
+6. do not bury the choice in code, fixture data, generated output, or a magic constant.
 
-Do not bury an architectural decision in implementation code.
+### 7.4 Determinism
 
-### 8.4 Determinism
-
-Given identical canonical inputs, dependencies, compiler version, settings, and deterministic seed, canonical metadata and generated metadata must be reproducible.
+Given identical canonical source, accepted dependencies, compiler version, settings, and deterministic seed, canonical/generated metadata must be reproducible where the milestone requires it.
 
 Normalize before hashing.
 
-Generated artifacts must record their relevant source/version/hash dependencies.
+Ordering must be deterministic where ordering is non-semantic.
 
-### 8.5 Validation-first design
+Semantic ordering must not be destroyed merely to make serialization easier.
+
+Accepted golden files/hashes are reviewed regression evidence, not auto-update targets.
+
+### 7.5 Validation-first design
 
 Prefer explicit measurable validation over visual guessing.
 
-Diagnostics should identify:
+Diagnostics should identify, where applicable:
 
-- exact object/record ID;
-- exact property/reference;
 - stable diagnostic code/category;
-- actionable reason.
+- object/record ID;
+- property/reference;
+- referenced ID;
+- actionable reason;
+- deterministic ordering/location information.
 
-The broader pipeline will later use the same philosophy for seams, landmarks, registration, morphology, collisions, and 3D-to-2D traceability.
+Later mesh, deformation, representation, seam, landmark, and registration milestones should continue the same evidence-first philosophy.
 
-### 8.6 Renderer independence
+### 7.6 Renderer independence
 
-The canonical 3D model pipeline is not an extension of the current sprite placement implementation.
+The canonical 3D model pipeline is not an extension of the current sprite-placement implementation.
 
-The current 2D renderer may eventually consume compiled representation packages, but canonical model data must not depend on hidden renderer placement rules, sprite-specific assumptions, or game-specific state.
+Canonical model data must not depend on:
+
+- current sprite layout;
+- atlas placement;
+- render layers as structural authority;
+- game-specific controller state;
+- current runtime humanoid indexes;
+- GPU/D3D12 state;
+- hidden presentation offsets.
+
+The current 2D renderer may later consume compiled representation packages. Dependency direction must remain toward the canonical/compiled data, not from canonical data into runtime presentation code.
 
 ---
 
-## 9. Implementation style
+## 8. Implementation style
 
 Prefer:
 
 - explicit typed records;
-- stable semantic IDs;
+- stable semantic string IDs;
+- local transforms;
 - small deterministic transformations;
-- traceable dependency graphs;
+- explicit ownership and references;
+- traceable dependencies;
 - structured diagnostics;
-- proof fixtures;
-- unit/regression tests around every canonical rule.
+- file-backed proof fixtures where appropriate;
+- focused regression tests;
+- reviewable canonical goldens/evidence.
 
 Avoid:
 
 - implicit global state;
 - magic numeric indexes as identity;
 - order-dependent behavior where order is not semantic;
-- giant catch-all schema records;
-- one-off special cases for `human_base` that prevent later dog/horse/other rig families;
-- renderer-specific naming in canonical model types.
+- giant catch-all records;
+- duplicate sources of truth;
+- human-only hacks in generic canonical-model infrastructure when a general rig-family abstraction is required;
+- renderer-specific naming in canonical model types;
+- speculative systems that belong to later milestones.
 
 ---
 
-## 10. Required review evidence
+## 9. Testing and verification policy
 
-Every milestone should finish with a concise engineering report containing:
+`docs/TESTING.md` is the testing authority.
+
+M01.5 established separate fast, full, stress, specialized, and complete verification tiers. Preserve that structure.
+
+### Normal edit-time verification
+
+```text
+zig build test -j1
+```
+
+Use focused milestone-specific test targets while iterating when available.
+
+### Fast repository / pre-review gate
+
+```text
+zig build check -j1
+```
+
+This is the normal fast tests plus formatting/static repository audits.
+
+### Targeted deterministic iteration
+
+```text
+zig build test-deterministic -Dtest-filter='<text>' -j1
+```
+
+Use when the relevant test lives in the deterministic suite.
+
+### Full non-stress regression
+
+```text
+zig build test-full -j1
+```
+
+Run at major owner-review gates or when changes have broad integration reach.
+
+### Stress / endurance verification
+
+```text
+zig build test-stress -j1
+```
+
+Do not shorten or duplicate existing endurance coverage merely for convenience.
+
+### Complete acceptance verification
+
+```text
+zig build verify -j1
+```
+
+Use for final milestone acceptance unless the milestone brief explicitly requires more specialized evidence.
+
+### Specialized workflows
+
+Keep specialized GPU-smoke, D3D12 evidence, visual/manual review, and focused subsystem commands explicit.
+
+Do not claim GPU/manual visual acceptance for an offline structural milestone that has no production geometry to inspect.
+
+### Test retirement
+
+Do not delete, weaken, or classify active compatibility/runtime coverage as obsolete merely because a newer canonical milestone exists.
+
+A production test/path may be retired only when an authorized later milestone has actually replaced its responsibility and the retirement policy in `docs/TESTING.md` is satisfied.
+
+---
+
+## 10. Accepted infrastructure limitations
+
+The following previously observed behaviors are infrastructure/tooling observations unless new evidence ties them to an implementation defect:
+
+- managed-environment Zig cache/manifest `AccessDenied` behavior where the equivalent host Debug build succeeds;
+- standalone Zig test-runner IPC/outer-timeout variability where unchanged tests pass through the accepted verification graph.
+
+Continue reporting them accurately.
+
+Do not:
+
+- hide real assertion failures behind these classifications;
+- skip tests because of them;
+- weaken acceptance criteria;
+- redesign canonical architecture around a managed-sandbox artifact.
+
+---
+
+## 11. Required milestone review evidence
+
+Every milestone should end with an engineering/review package containing, as applicable:
 
 ### Implemented
 
-- files/modules changed;
-- contracts implemented;
-- validators implemented;
-- normalization/hash behavior.
+- files/modules/assets changed;
+- contracts/features implemented;
+- validators or schema extensions added;
+- tools/reports added.
 
 ### Automated tests
 
-- test categories and counts;
-- valid fixture coverage;
-- invalid fixture coverage;
-- deterministic round-trip/repeat-build results.
+- focused milestone tests;
+- prior-milestone regression/golden status;
+- fast `test`;
+- `check`;
+- `test-full` where required;
+- `verify` for final acceptance;
+- specialized/stress tests when relevant.
 
 ### Empirical evidence
 
-Show concrete examples where applicable:
+Show concrete outputs relevant to the milestone, such as:
 
-- normalized canonical output;
+- canonical normalized output;
 - hashes/signatures;
-- representative validation diagnostics;
+- hierarchy reports;
+- transform derivations;
+- measurement reports;
+- semantic inventories;
+- representative diagnostics;
 - dependency/binding traces;
-- exact failure evidence.
+- seam/registration evidence;
+- later, visual/GPU evidence where the milestone actually requires it.
 
 ### Decisions assumed
 
-List every necessary assumption not explicitly supported by the canonical record.
+List every necessary assumption not explicitly supported by accepted architecture.
 
-Preferred result: **none**.
+Preferred result: **None**.
 
 ### OPEN/TUNING values
 
-List provisional values separately. They are not newly locked architecture.
+List provisional values separately.
+
+They are not newly locked architecture unless explicitly owner-approved.
 
 ### Known limitations
 
@@ -311,32 +442,70 @@ State what the milestone intentionally does not implement.
 
 ### Owner-review items
 
-Call out anything that must be accepted before the next milestone.
+Identify anything that must be accepted before the next milestone.
+
+### Next-milestone readiness
+
+State whether the next milestone can consume the current work without replacing accepted core IDs, hierarchy, authority, or evidence contracts.
 
 ---
 
-## 11. Stop / escalation rules
+## 12. Stop / escalation rules
 
 Stop instead of silently continuing if:
 
-- a locked decision cannot be represented;
-- canonical model types would need to depend on renderer/game-specific state;
-- stable IDs cannot be maintained;
-- deterministic normalization/hashing cannot be guaranteed;
-- implementation would constrain later rig families without an explicit decision;
-- a continuous morphology control would require an implicit topology change;
-- two authoritative writers/sources of truth would exist;
+- a `LOCKED` decision cannot be represented;
+- the active milestone would require material redesign of an accepted prior milestone;
+- canonical data would need renderer/game-specific authority;
+- stable IDs or ownership cannot be preserved;
+- deterministic normalization/hashing cannot be maintained;
+- two authoritative representations would exist;
+- an `OPEN/TUNING` choice actually changes architecture;
+- a continuous morphology operation would implicitly require a topology change;
+- an accepted golden changes unexpectedly;
 - a required dependency must be silently upgraded;
-- a schema or solver choice falls outside the current milestone.
+- implementation would constrain future rig families without an accepted decision;
+- tests must be skipped/weakened to pass;
+- the work would cross into the next milestone.
+
+If the problem is a genuine defect in accepted prior work, report it as a regression/blocker and propose the narrowest correction.
 
 ---
 
-## 12. M01 completion and M02 gate
+## 13. Current M02 → M03 gate
 
-M01 is not complete merely because types compile.
+M02 is complete only when the Definition of Done and review evidence in:
 
-It is complete only when the milestone definition of done and review evidence in `3d_pipeline_milestone_01.md` are satisfied.
+- `docs/implementation/3d_pipeline_milestone_02.md`
 
-**Do not begin M02 until owner review accepts M01.**
+are satisfied and the owner accepts the M02 review package.
 
-M02 will begin the actual canonical `human_base` structural asset using the M01 data foundation.
+Until that acceptance:
+
+- do not begin production canonical human mesh topology;
+- do not attach real skin weights;
+- do not implement morphology sculpting/correctives;
+- do not create real-geometry UVs;
+- do not implement garment fitting;
+- do not begin 3D-to-2D representation generation.
+
+After M02 acceptance, M03 may create the continuous canonical human mesh and surface foundation **using the structural identities produced by M02**.
+
+The handoff is successful only if M03 can proceed without casually renaming core IDs, replacing the accepted skeleton, inventing a parallel landmark/seam system, or making renderer-specific data authoritative.
+
+---
+
+## 14. Maintenance rule for this file
+
+Keep this file stable and short relative to milestone briefs.
+
+When the pipeline advances:
+
+1. update the status block;
+2. update the active milestone section/path;
+3. update the next-milestone summary/gate;
+4. preserve the cross-milestone engineering/testing rules unless an explicit owner decision changes them.
+
+Do **not** copy an entire milestone specification into this file again.
+
+Historical milestone details belong in milestone briefs and review packages.
