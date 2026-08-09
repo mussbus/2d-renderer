@@ -1,6 +1,6 @@
 # Engineering Brief — 3D Model Pipeline M02: `human_base` Structural Definition
 
-**Status:** Ready for Codex implementation planning and staged execution  
+**Status:** Completed and owner-accepted; retained as historical milestone specification
 **Milestone:** M02  
 **Prerequisite:** M01 owner-accepted; M01.5 test-tier refactor complete  
 **Source of truth:** `../architecture/3d_model_pipeline_canonical_decision_record_v1.md`  

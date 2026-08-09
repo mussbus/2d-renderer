@@ -1,9 +1,7 @@
 const std = @import("std");
 const definition = @import("definition.zig");
 const human_attachments = @import("human_attachments.zig");
-const identity = @import("identity.zig");
 const math3d = @import("math3d.zig");
-const semantics = @import("semantics.zig");
 
 pub const landmark_count: usize = 35;
 pub const shared_seam_count: usize = 11;
@@ -85,18 +83,7 @@ pub const ReportError = human_attachments.ReportError || error{
     InvalidSemanticReport,
 };
 
-const landmark_tags = makeIds(identity.SemanticTagId, &.{ "human", "structural_landmark" });
-const landmark_left_tags = makeIds(identity.SemanticTagId, &.{ "human", "left", "structural_landmark" });
-const landmark_right_tags = makeIds(identity.SemanticTagId, &.{ "human", "right", "structural_landmark" });
-const site_tags = makeIds(identity.SemanticTagId, &.{ "human", "interaction_site" });
-const site_left_tags = makeIds(identity.SemanticTagId, &.{ "human", "left", "interaction_site" });
-const site_right_tags = makeIds(identity.SemanticTagId, &.{ "human", "right", "interaction_site" });
-const effector_tags = makeIds(identity.SemanticTagId, &.{ "human", "structural_effector" });
-const effector_left_tags = makeIds(identity.SemanticTagId, &.{ "human", "left", "structural_effector" });
-const effector_right_tags = makeIds(identity.SemanticTagId, &.{ "human", "right", "structural_effector" });
-
 pub const landmark_specs = buildLandmarkSpecs();
-pub const landmarks = buildLandmarks();
 pub const seam_specs = [_]SeamSpec{
     .{ .seam_id = "torso_pelvis_seam", .component_a_id = "torso", .surface_a_id = "torso_surface", .component_b_id = "pelvis", .surface_b_id = "pelvis_surface" },
     .{ .seam_id = "torso_neck_seam", .component_a_id = "torso", .surface_a_id = "torso_surface", .component_b_id = "neck", .surface_b_id = "neck_surface" },
@@ -110,8 +97,6 @@ pub const seam_specs = [_]SeamSpec{
     .{ .seam_id = "ankle_foot_left_seam", .component_a_id = "leg_left_01", .surface_a_id = "ankle_left_surface", .component_b_id = "foot_left_01", .surface_b_id = "midfoot_left_surface" },
     .{ .seam_id = "ankle_foot_right_seam", .component_a_id = "leg_right_01", .surface_a_id = "ankle_right_surface", .component_b_id = "foot_right_01", .surface_b_id = "midfoot_right_surface" },
 };
-pub const seam_members = buildSeamMembers();
-pub const shared_seams = buildSharedSeams();
 pub const site_specs = [_]SiteSpec{
     .{ .site_id = "shoulder_left_site", .owner_component_id = "torso", .region_id = "shoulder_left", .preferred_anchor_id = "shoulder_left_anchor", .side = .left },
     .{ .site_id = "shoulder_right_site", .owner_component_id = "torso", .region_id = "shoulder_right", .preferred_anchor_id = "shoulder_right_anchor", .side = .right },
@@ -139,7 +124,6 @@ pub const site_specs = [_]SiteSpec{
     .{ .site_id = "penis_structural_site", .owner_component_id = "penis_module_01", .region_id = "penis_base", .preferred_anchor_id = "anterior_genital_anchor", .side = .center },
     .{ .site_id = "scrotum_structural_site", .owner_component_id = "scrotum_testicles_module_01", .region_id = "scrotum", .preferred_anchor_id = "perineal_center_anchor", .side = .center },
 };
-pub const interaction_sites = buildInteractionSites();
 pub const effector_specs = [_]EffectorSpec{
     .{ .effector_id = "hand_left_effector", .owner_component_id = "hand_left_01", .region_id = "palm_left", .preferred_anchor_id = "grip_left_anchor", .side = .left },
     .{ .effector_id = "hand_right_effector", .owner_component_id = "hand_right_01", .region_id = "palm_right", .preferred_anchor_id = "grip_right_anchor", .side = .right },
@@ -148,7 +132,6 @@ pub const effector_specs = [_]EffectorSpec{
     .{ .effector_id = "mouth_effector", .owner_component_id = "mouth", .region_id = "mouth_external", .preferred_anchor_id = "mouth_interaction_anchor", .side = .center },
     .{ .effector_id = "head_effector", .owner_component_id = "head", .region_id = "face", .preferred_anchor_id = "facial_perception_fallback_anchor", .side = .center },
 };
-pub const effectors = buildEffectors();
 
 pub fn generateLandmarkReport(
     source: *const definition.CanonicalCreatureDefinition,
@@ -276,112 +259,6 @@ fn buildLandmarkSpecs() [landmark_count]LandmarkSpec {
     return result;
 }
 
-fn buildLandmarks() [landmark_count]semantics.Landmark {
-    @setEvalBranchQuota(500_000);
-    var result: [landmark_count]semantics.Landmark = undefined;
-    inline for (landmark_specs, 0..) |spec, index| {
-        result[index] = .{
-            .landmark_id = makeId(identity.LandmarkId, spec.landmark_id),
-            .display_name = null,
-            .owner = .{ .anchor = makeId(identity.AnchorId, spec.anchor_id) },
-            .mirror_landmark_id = if (spec.mirror_landmark_id) |id| makeId(identity.LandmarkId, id) else null,
-            .coordinate_metadata_id = null,
-            .semantic_tags = landmarkTags(spec.side),
-        };
-    }
-    return result;
-}
-
-fn buildSeamMembers() [shared_seam_count][2]semantics.SharedSeamMember {
-    @setEvalBranchQuota(100_000);
-    var result: [shared_seam_count][2]semantics.SharedSeamMember = undefined;
-    inline for (seam_specs, 0..) |spec, index| {
-        result[index] = .{
-            .{ .component_id = makeId(identity.ComponentId, spec.component_a_id), .surface_id = makeId(identity.SurfaceId, spec.surface_a_id) },
-            .{ .component_id = makeId(identity.ComponentId, spec.component_b_id), .surface_id = makeId(identity.SurfaceId, spec.surface_b_id) },
-        };
-    }
-    return result;
-}
-
-fn buildSharedSeams() [shared_seam_count]semantics.SharedSeam {
-    @setEvalBranchQuota(100_000);
-    var result: [shared_seam_count]semantics.SharedSeam = undefined;
-    inline for (seam_specs, 0..) |spec, index| {
-        result[index] = .{
-            .seam_id = makeId(identity.SeamId, spec.seam_id),
-            .display_name = null,
-            .members = &seam_members[index],
-            .coordinate_metadata_id = null,
-        };
-    }
-    return result;
-}
-
-fn buildInteractionSites() [interaction_site_count]semantics.InteractionSite {
-    @setEvalBranchQuota(500_000);
-    var result: [interaction_site_count]semantics.InteractionSite = undefined;
-    inline for (site_specs, 0..) |spec, index| {
-        result[index] = .{
-            .site_id = makeId(identity.InteractionSiteId, spec.site_id),
-            .display_name = null,
-            .owner_component_id = makeId(identity.ComponentId, spec.owner_component_id),
-            .region_id = makeId(identity.RegionId, spec.region_id),
-            .preferred_anchor_id = makeId(identity.AnchorId, spec.preferred_anchor_id),
-            .semantic_tags = siteTags(spec.side),
-            .approach_metadata_id = null,
-            .orientation_metadata_id = null,
-            .capacity = 1,
-            .occupancy_policy_id = null,
-        };
-    }
-    return result;
-}
-
-fn buildEffectors() [effector_count]semantics.Effector {
-    @setEvalBranchQuota(100_000);
-    var result: [effector_count]semantics.Effector = undefined;
-    inline for (effector_specs, 0..) |spec, index| {
-        result[index] = .{
-            .effector_id = makeId(identity.EffectorId, spec.effector_id),
-            .display_name = null,
-            .owner_component_id = makeId(identity.ComponentId, spec.owner_component_id),
-            .region_id = makeId(identity.RegionId, spec.region_id),
-            .preferred_anchor_id = makeId(identity.AnchorId, spec.preferred_anchor_id),
-            .semantic_tags = effectorTags(spec.side),
-            .approach_metadata_id = null,
-            .orientation_metadata_id = null,
-            .capacity = 1,
-            .occupancy_policy_id = null,
-        };
-    }
-    return result;
-}
-
-fn landmarkTags(comptime side: Side) []const identity.SemanticTagId {
-    return switch (side) {
-        .center => &landmark_tags,
-        .left => &landmark_left_tags,
-        .right => &landmark_right_tags,
-    };
-}
-
-fn siteTags(comptime side: Side) []const identity.SemanticTagId {
-    return switch (side) {
-        .center => &site_tags,
-        .left => &site_left_tags,
-        .right => &site_right_tags,
-    };
-}
-
-fn effectorTags(comptime side: Side) []const identity.SemanticTagId {
-    return switch (side) {
-        .center => &effector_tags,
-        .left => &effector_left_tags,
-        .right => &effector_right_tags,
-    };
-}
-
 fn selectNext(items: anytype, comptime id_field: []const u8, previous_id: ?[]const u8) ?usize {
     var selected: ?usize = null;
     for (items, 0..) |item, index| {
@@ -390,14 +267,4 @@ fn selectNext(items: anytype, comptime id_field: []const u8, previous_id: ?[]con
         if (selected == null or std.mem.order(u8, id, @field(items[selected.?], id_field).value.bytes) == .lt) selected = index;
     }
     return selected;
-}
-
-fn makeId(comptime T: type, comptime bytes: []const u8) T {
-    return T.init(bytes) catch |id_error| @compileError(@errorName(id_error) ++ ": " ++ bytes);
-}
-
-fn makeIds(comptime T: type, comptime values: []const []const u8) [values.len]T {
-    var result: [values.len]T = undefined;
-    inline for (values, 0..) |value, index| result[index] = makeId(T, value);
-    return result;
 }

@@ -1,8 +1,5 @@
 const std = @import("std");
-const definition = @import("definition.zig");
-const identity = @import("identity.zig");
 const math3d = @import("math3d.zig");
-const rig = @import("rig.zig");
 
 pub const bone_count: usize = 149;
 pub const shared_bone_count: usize = 140;
@@ -136,51 +133,7 @@ pub const component_follow_specs = [_]ComponentFollowSpec{
     .{ .component_id = "tongue", .bone_id = "tongue_01" },
 };
 
-const root_tags = makeIds(identity.SemanticTagId, &.{ "human", "root" });
-const torso_tags = makeIds(identity.SemanticTagId, &.{ "human", "torso_rig" });
-const tongue_tags = makeIds(identity.SemanticTagId, &.{ "human", "tongue_rig" });
-const left_tags = makeIds(identity.SemanticTagId, &.{ "human", "left" });
-const right_tags = makeIds(identity.SemanticTagId, &.{ "human", "right" });
-const optional_tags = makeIds(identity.SemanticTagId, &.{ "human", "optional_anatomy" });
-
 pub const bone_specs = buildBoneSpecs();
-pub const bones = buildBones();
-
-pub fn categoryCount(category: Category) usize {
-    var count: usize = 0;
-    for (bone_specs) |spec| if (spec.category == category) {
-        count += 1;
-    };
-    return count;
-}
-
-pub fn boneIsActive(
-    source: *const definition.CanonicalCreatureDefinition,
-    bone: rig.Bone,
-) bool {
-    const owner = bone.owner_component_id orelse return false;
-    for (source.components) |record| {
-        if (record.component_id.eql(owner)) return record.default_state == .enabled;
-    }
-    return false;
-}
-
-pub fn activeBoneCount(source: *const definition.CanonicalCreatureDefinition) usize {
-    var count: usize = 0;
-    for (source.bones) |bone| if (boneIsActive(source, bone)) {
-        count += 1;
-    };
-    return count;
-}
-
-pub fn componentOwnedBoneCount(component_id: []const u8) usize {
-    var count: usize = 0;
-    for (bones) |bone| {
-        const owner = bone.owner_component_id orelse continue;
-        if (std.mem.eql(u8, owner.value.bytes, component_id)) count += 1;
-    }
-    return count;
-}
 
 fn buildBoneSpecs() [bone_count]BoneSpec {
     @setEvalBranchQuota(500_000);
@@ -389,35 +342,6 @@ fn appendBone(
     index.* += 1;
 }
 
-fn buildBones() [bone_count]rig.Bone {
-    @setEvalBranchQuota(1_000_000);
-    var result: [bone_count]rig.Bone = undefined;
-    inline for (bone_specs, 0..) |spec, index| {
-        result[index] = .{
-            .bone_id = makeId(identity.BoneId, spec.bone_id),
-            .display_name = null,
-            .owner_component_id = makeId(identity.ComponentId, spec.owner_component_id),
-            .parent_bone_id = if (spec.parent_bone_id) |parent_id| makeId(identity.BoneId, parent_id) else null,
-            .deforms_mesh = spec.deforms_mesh,
-            .local_rest_transform = spec.local_rest_transform,
-            .semantic_tags = tagsFor(spec),
-            .mirror_bone_id = if (spec.mirror_bone_id) |mirror_id| makeId(identity.BoneId, mirror_id) else null,
-            .display_length_m = spec.display_length_m,
-        };
-    }
-    return result;
-}
-
-fn tagsFor(comptime spec: BoneSpec) []const identity.SemanticTagId {
-    if (spec.category == .root) return &root_tags;
-    if (spec.category == .torso) return &torso_tags;
-    if (spec.category == .tongue) return &tongue_tags;
-    if (spec.category == .optional_anatomy) return &optional_tags;
-    if (std.mem.indexOf(u8, spec.bone_id, "_left") != null) return &left_tags;
-    if (std.mem.indexOf(u8, spec.bone_id, "_right") != null) return &right_tags;
-    return &torso_tags;
-}
-
 fn transform(x: f32, y: f32, z: f32, rotation: math3d.Quaternion) math3d.LocalTransform {
     return .{
         .translation_m = .{ .x = x, .y = y, .z = z },
@@ -429,14 +353,4 @@ fn transform(x: f32, y: f32, z: f32, rotation: math3d.Quaternion) math3d.LocalTr
 fn rotationZDegrees(degrees: f32) math3d.Quaternion {
     const half_radians = degrees * std.math.pi / 360.0;
     return math3d.Quaternion.initCanonical(0, 0, @sin(half_radians), @cos(half_radians)) catch |quaternion_error| @compileError(@errorName(quaternion_error));
-}
-
-fn makeId(comptime T: type, comptime bytes: []const u8) T {
-    return T.init(bytes) catch |id_error| @compileError(@errorName(id_error) ++ ": " ++ bytes);
-}
-
-fn makeIds(comptime T: type, comptime values: []const []const u8) [values.len]T {
-    var result: [values.len]T = undefined;
-    inline for (values, 0..) |value, index| result[index] = makeId(T, value);
-    return result;
 }

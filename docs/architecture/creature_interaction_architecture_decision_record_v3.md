@@ -76,7 +76,7 @@ The following decisions are treated as inherited requirements for this architect
 
 - canonical measurements use meters and stored floating-point values; imperial values are display/input conveniences only;
 - handedness and the meanings of up, forward, and right are explicit data-contract decisions, never implicit renderer assumptions;
-- the canonical character origin is associated with the pelvis/hips, while gameplay facing and presentation-camera facing remain separate concepts;
+- canonical asset origin is defined by the canonical model ADR and is currently centered between the feet at ground Y=0 in A-pose, while gameplay facing and presentation-camera facing remain separate concepts;
 - one skeleton root owns pose propagation;
 - the typed component graph owns topology, parent/child relationships, optional modules, sockets, multiplicity, and capacity;
 - the canonical skeleton owns animation pose; exported landmarks and binding metadata own 2D registration;
@@ -92,7 +92,7 @@ Current human-rig decisions that downstream systems must be able to consume incl
 - seven spine deformation bones with five animator-facing control concepts, including whole-spine and pelvis-handoff behavior;
 - three neck deformation bones;
 - separate skull and jaw structures;
-- separate upper teeth, upper gum/palate, jaw, lower teeth, lower gums, and tongue root/mid/tip, with branching tongue topology permitted;
+- separate upper teeth, upper gum/palate, jaw, lower teeth, and lower gums; canonical tongue structure defers to the canonical model ADR and currently uses four shared deformation bones plus branch-point/tip references;
 - an optional primary eye group, a normal default pair, shared look target plus per-eye overrides, semantic eye positions, variable eye count, deformable eyeballs, socket anchors, multi-segment upper/lower eyelids, and non-deforming look controls;
 - default one eyebrow per eye while permitting variable count, with authored brow regions/profile points and independent raise, tilt, curve, compression, and stretch controls;
 - semantic sockets, component IDs, and view-specific default placements rather than hardcoded screen coordinates;
@@ -2627,4 +2627,3 @@ For any body change that affects clothing or silhouettes:
 ### 29.5 Decision-record rule
 
 The model-pipeline chat should use this document as a downstream-requirements checklist, but should continue to record the final canonical anatomy and rig choices in its own source-of-truth document. Once a canonical choice is accepted, this architecture record should reference or inherit it rather than maintaining an independent competing definition.
-

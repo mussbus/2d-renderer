@@ -1,6 +1,5 @@
 const std = @import("std");
 const human_rig = @import("human_rig.zig");
-const identity = @import("identity.zig");
 const math3d = @import("math3d.zig");
 const rig = @import("rig.zig");
 
@@ -270,7 +269,6 @@ pub const JointSpec = struct {
 };
 
 pub const joint_specs = buildJointSpecs();
-pub const joints = buildJoints();
 
 pub fn profileForKind(kind: ProfileKind) MobilityProfile {
     return switch (kind) {
@@ -314,29 +312,6 @@ fn buildJointSpecs() [joint_count]JointSpec {
         index += 1;
     }
     if (index != joint_count) @compileError("human joint manifest count mismatch");
-    return result;
-}
-
-fn buildJoints() [joint_count]rig.Joint {
-    @setEvalBranchQuota(500_000);
-    var result: [joint_count]rig.Joint = undefined;
-    inline for (joint_specs, 0..) |spec, index| {
-        const mobility = profileForKind(spec.profile_kind);
-        result[index] = .{
-            .joint_id = makeId(identity.JointId, spec.joint_id),
-            .display_name = null,
-            .parent_bone_id = makeId(identity.BoneId, spec.parent_bone_id),
-            .child_bone_id = makeId(identity.BoneId, spec.child_bone_id),
-            .mirror_joint_id = if (spec.mirror_joint_id) |mirror_id| makeId(identity.JointId, mirror_id) else null,
-            .joint_type = mobility.joint_type,
-            .preferred_range = mobility.preferred_range,
-            .hard_range = mobility.hard_range,
-            .preferred_bend_direction = mobility.preferred_bend_direction,
-            .swing_twist = mobility.swing_twist,
-            .limit_behavior = .{ .stiffness = mobility.stiffness },
-            .mobility_profile_override = makeId(identity.MobilityProfileId, mobility.profile_id),
-        };
-    }
     return result;
 }
 
@@ -421,8 +396,4 @@ fn swing(
         .swing_z_radians = swing_z,
         .twist_radians = twist,
     };
-}
-
-fn makeId(comptime T: type, comptime bytes: []const u8) T {
-    return T.init(bytes) catch |id_error| @compileError(@errorName(id_error) ++ ": " ++ bytes);
 }

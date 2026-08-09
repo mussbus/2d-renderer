@@ -1,11 +1,11 @@
 # 3D Model Pipeline — Codex Start Here
 
-**Status:** Active implementation handoff  
-**Current milestone:** M02 — `human_base` Structural Definition  
-**Accepted foundation:** M01 — Canonical Model Data Foundation  
+**Status:** M02.5 authority/handoff cleanup complete; awaiting owner review
+**Current milestone:** M02.5 — File-backed `human_base` authority and M03 handoff cleanup
+**Accepted foundation:** M01, M01.5, and M02
 **Testing foundation:** M01.5 — Tiered verification / test-streamlining pass  
-**Next milestone:** M03 — Canonical Human Mesh & Surface Foundation  
-**Owner-review gate:** Required before advancing from the current milestone  
+**Next milestone:** M03 — Canonical Human Mesh & Surface Foundation; not started and requires explicit authorization
+**Owner-review gate:** Required for this M02.5 cleanup before any M03 work
 **Primary runtime boundary:** The current production runtime remains 2D-only. Canonical 3D authoring, validation, and representation generation are offline/build-time concerns unless a later milestone explicitly changes that boundary.
 
 ---
@@ -51,9 +51,9 @@ The repository testing authority is:
 
 - `docs/TESTING.md`
 
-### Active milestone
+### Accepted structural milestone
 
-**M02 — `human_base` Structural Definition** is the current implementation milestone.
+**M02 — `human_base` Structural Definition** is owner-accepted.
 
 M02 instantiates the first real canonical human structural asset on top of the M01 data foundation. It defines stable human structure—component ownership, skeleton, rest pose, joints, controls, anchors, landmarks, seams, semantic identities, interaction hooks, and deterministic asset evidence—without yet creating the production human mesh.
 
@@ -61,13 +61,22 @@ Read:
 
 - `docs/implementation/3d_pipeline_milestone_02.md`
 
-### Next milestone
+### Current cleanup and next milestone
 
-**M03 — Canonical Human Mesh & Surface Foundation** begins only after M02 owner acceptance.
+**M02.5** enforces the accepted authority boundary: the sole authoritative
+human source is `assets/canonical_model/human_base/human_base.authoring.json`.
+The supported repository API is
+`canonical_model.human_base.loadAuthoritative(allocator, io, diagnostics)`.
+It reads that file, parses it, runs generic and human structural validation,
+normalizes it, and returns an ownership wrapper for the canonical in-memory
+definition. Evidence files and the current 2D runtime are never source authority.
+
+**M03 — Canonical Human Mesh & Surface Foundation** begins only after explicit
+owner authorization with its engineering brief.
 
 M03 will attach actual continuous canonical human geometry to the structural identities established in M02. It must consume M02 IDs, skeleton, landmarks, seams, anchors, and semantic ownership rather than redefining them.
 
-M03 is not authorized while M02 is active.
+M03 has not started.
 
 ---
 
@@ -81,11 +90,12 @@ Before beginning or resuming milestone implementation, read the following in ord
 2. **Canonical source of truth**
    - `docs/architecture/3d_model_pipeline_canonical_decision_record_v1.md`
 
-3. **Active milestone engineering brief**
-   - currently: `docs/implementation/3d_pipeline_milestone_02.md`
+3. **Current cleanup/review package**
+   - `docs/implementation/3d_pipeline_m02_5_review_package.md`
 
 4. **Accepted prior-milestone evidence relevant to the current work**
-   - currently: `docs/implementation/3d_pipeline_m01_review_package.md`
+   - `docs/implementation/3d_pipeline_m02_review_package.md`
+   - `docs/implementation/3d_pipeline_m01_review_package.md`
 
 5. **Repository testing authority**
    - `docs/TESTING.md`
@@ -472,15 +482,23 @@ If the problem is a genuine defect in accepted prior work, report it as a regres
 
 ---
 
-## 13. Current M02 → M03 gate
+## 13. Current M02.5 → M03 gate
 
-M02 is complete only when the Definition of Done and review evidence in:
+M02 is owner-accepted. M02.5 is limited to enforcing its source-authority and
+handoff boundary. M03 remains unauthorized until its explicit engineering
+brief/prompt is provided.
 
-- `docs/implementation/3d_pipeline_milestone_02.md`
+The sole supported M03 consumption path is:
 
-are satisfied and the owner accepts the M02 review package.
+1. call `canonical_model.human_base.loadAuthoritative(allocator, io, diagnostics)`;
+2. consume the returned normalized, validated in-memory definition while the
+   ownership wrapper remains alive.
 
-Until that acceptance:
+M03 must not treat the canonical JSON, report, hashes, traces, old Zig
+validation tables, current 2D runtime anatomy, or renderer registration data as
+source authority.
+
+Until explicit M03 authorization:
 
 - do not begin production canonical human mesh topology;
 - do not attach real skin weights;
@@ -489,7 +507,7 @@ Until that acceptance:
 - do not implement garment fitting;
 - do not begin 3D-to-2D representation generation.
 
-After M02 acceptance, M03 may create the continuous canonical human mesh and surface foundation **using the structural identities produced by M02**.
+When authorized, M03 may create the continuous canonical human mesh and surface foundation **using the structural identities produced by M02**.
 
 The handoff is successful only if M03 can proceed without casually renaming core IDs, replacing the accepted skeleton, inventing a parallel landmark/seam system, or making renderer-specific data authoritative.
 

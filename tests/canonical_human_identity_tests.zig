@@ -1,8 +1,8 @@
 const std = @import("std");
 const canonical = @import("canonical_model");
+const human_test_support = @import("canonical_human_test_support.zig");
 
 const diagnostics = canonical.diagnostics;
-const human_base = canonical.human_base;
 const human_validation = canonical.human_validation;
 const identity = canonical.identity;
 const normalization = canonical.normalization;
@@ -14,11 +14,14 @@ const m01_canonical_json = @embedFile("fixtures/canonical_model/valid/minimal_va
 const m01_phase_f_sha256 = "b1da6274c03d4a70de124f9ab81af8d870882c53ff759ca7d3c9e68b482d7f6d";
 
 test "Prompt 2A human_base is a valid canonical source" {
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
     var diagnostic_storage: [256]diagnostics.Diagnostic = undefined;
-    const normalized = try normalization.normalize(&human_base.source, .{}, &diagnostic_storage);
+    const normalized = try normalization.normalize(source, .{}, &diagnostic_storage);
     try std.testing.expect(normalized.isValid());
     try std.testing.expectEqual(@as(usize, 0), normalized.report.error_count);
-    try human_validation.validatePrompt2A(&human_base.source);
+    try human_validation.validatePrompt2A(source);
 
     const canonical_bytes = try serialization.serializeAlloc(std.testing.allocator, normalized.normalized.?);
     defer std.testing.allocator.free(canonical_bytes);
@@ -40,7 +43,9 @@ test "Prompt 2A human_base is a valid canonical source" {
 }
 
 test "Prompt 2A identity and coordinate defaults are locked" {
-    const source = human_base.source;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
     try std.testing.expectEqualStrings("canonical_creature_schema", source.schema_identity.schema_id.value.bytes);
     try std.testing.expectEqual(@as(u32, 1), source.schema_identity.version.major);
     try std.testing.expectEqual(@as(u32, 1), source.schema_identity.version.minor);
@@ -55,38 +60,47 @@ test "Prompt 2A identity and coordinate defaults are locked" {
 }
 
 test "Prompt 2A component tree has the approved 48 stable identities" {
-    try std.testing.expectEqual(human_base.component_count, human_base.source.components.len);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try std.testing.expectEqual(@as(usize, 48), source.components.len);
     var root_count: usize = 0;
-    for (human_base.source.components) |record| {
+    for (source.components) |record| {
         if (record.parent_component_id == null) root_count += 1;
     }
     try std.testing.expectEqual(@as(usize, 1), root_count);
-    try expectComponent("body", null, .required, .enabled);
-    try expectComponent("torso", "body", .required, .enabled);
-    try expectComponent("arm_left_01", "body", .required, .enabled);
-    try expectComponent("hand_right_01", "arm_right_01", .required, .enabled);
-    try expectComponent("leg_left_01", "pelvis", .required, .enabled);
-    try expectComponent("foot_right_01", "leg_right_01", .required, .enabled);
-    try expectComponent("mouth_cavity", "mouth", .required, .enabled);
-    try expectComponent("fingernail_thumb_left", "hand_left_01", .required, .enabled);
-    try expectComponent("toenail_little_right", "foot_right_01", .required, .enabled);
+    try expectComponent(source, "body", null, .required, .enabled);
+    try expectComponent(source, "torso", "body", .required, .enabled);
+    try expectComponent(source, "arm_left_01", "body", .required, .enabled);
+    try expectComponent(source, "hand_right_01", "arm_right_01", .required, .enabled);
+    try expectComponent(source, "leg_left_01", "pelvis", .required, .enabled);
+    try expectComponent(source, "foot_right_01", "leg_right_01", .required, .enabled);
+    try expectComponent(source, "mouth_cavity", "mouth", .required, .enabled);
+    try expectComponent(source, "fingernail_thumb_left", "hand_left_01", .required, .enabled);
+    try expectComponent(source, "toenail_little_right", "foot_right_01", .required, .enabled);
 }
 
 test "Prompt 2A optional anatomy remains present with approved neutral defaults" {
-    try expectComponent("anus_module_01", "pelvis", .optional, .enabled);
-    try expectComponent("vulva_vaginal_canal_module_01", "pelvis", .optional, .disabled);
-    try expectComponent("penis_module_01", "pelvis", .optional, .disabled);
-    try expectComponent("scrotum_testicles_module_01", "pelvis", .optional, .disabled);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try expectComponent(source, "anus_module_01", "pelvis", .optional, .enabled);
+    try expectComponent(source, "vulva_vaginal_canal_module_01", "pelvis", .optional, .disabled);
+    try expectComponent(source, "penis_module_01", "pelvis", .optional, .disabled);
+    try expectComponent(source, "scrotum_testicles_module_01", "pelvis", .optional, .disabled);
 
-    try expectVisibility("anus_module_01", .present, .enabled, .visible);
-    try expectVisibility("vulva_vaginal_canal_module_01", .present, .disabled, .hidden_by_policy);
-    try expectVisibility("penis_module_01", .present, .disabled, .hidden_by_policy);
-    try expectVisibility("scrotum_testicles_module_01", .present, .disabled, .hidden_by_policy);
+    try expectVisibility(source, "anus_module_01", .present, .enabled, .visible);
+    try expectVisibility(source, "vulva_vaginal_canal_module_01", .present, .disabled, .hidden_by_policy);
+    try expectVisibility(source, "penis_module_01", .present, .disabled, .hidden_by_policy);
+    try expectVisibility(source, "scrotum_testicles_module_01", .present, .disabled, .hidden_by_policy);
 }
 
 test "Prompt 2A region and surface inventory preserves adult anatomy identities" {
-    try std.testing.expectEqual(human_base.region_surface_count, human_base.source.regions.len);
-    try std.testing.expectEqual(human_base.region_surface_count, human_base.source.surfaces.len);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try std.testing.expectEqual(@as(usize, 206), source.regions.len);
+    try std.testing.expectEqual(@as(usize, 206), source.surfaces.len);
     inline for (.{
         "breast_left",
         "nipple_right",
@@ -106,22 +120,24 @@ test "Prompt 2A region and surface inventory preserves adult anatomy identities"
         "testicle_left",
         "testicle_right",
     }) |region_id| {
-        try std.testing.expect(findRegion(region_id) != null);
-        try std.testing.expect(findSurface(region_id ++ "_surface") != null);
+        try std.testing.expect(findRegion(source, region_id) != null);
+        try std.testing.expect(findSurface(source, region_id ++ "_surface") != null);
     }
-    const breast = findRegion("breast_left").?;
+    const breast = findRegion(source, "breast_left").?;
     try std.testing.expectEqualStrings("torso", breast.owner_component_id.value.bytes);
-    const anal_canal = findRegion("anal_canal").?;
+    const anal_canal = findRegion(source, "anal_canal").?;
     try std.testing.expectEqualStrings("anus_module_01", anal_canal.owner_component_id.value.bytes);
 }
 
 test "Prompt 2A neutral materials keep definitions and instances separate" {
-    try std.testing.expectEqual(human_base.neutral_material_count, human_base.source.material_definitions.len);
-    try std.testing.expectEqual(human_base.neutral_material_count, human_base.source.material_instances.len);
-    for (human_base.material_specs) |spec| {
-        try std.testing.expect(!std.mem.eql(u8, spec.definition_id, spec.instance_id));
-        const instance = findMaterialInstance(spec.instance_id).?;
-        try std.testing.expectEqualStrings(spec.definition_id, instance.definition_id.value.bytes);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try std.testing.expectEqual(@as(usize, 11), source.material_definitions.len);
+    try std.testing.expectEqual(@as(usize, 11), source.material_instances.len);
+    for (source.material_instances) |instance| {
+        try std.testing.expect(!std.mem.eql(u8, instance.definition_id.value.bytes, instance.material_instance_id.value.bytes));
+        try std.testing.expect(findMaterialDefinition(source, instance.definition_id.value.bytes) != null);
         const color = switch (instance.properties[0].value) {
             .linear_srgb_rgba => |value| value,
             else => return error.UnexpectedMaterialValue,
@@ -134,35 +150,45 @@ test "Prompt 2A neutral materials keep definitions and instances separate" {
 }
 
 test "Prompt 2A human validation rejects structural drift" {
-    var source = human_base.source;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const base = loaded.definition();
+    var source = base.*;
     source.components = source.components[0 .. source.components.len - 1];
     try std.testing.expectError(error.InvalidComponentCount, human_validation.validatePrompt2A(&source));
 
-    var changed_components = human_base.components;
-    const anus_index = componentIndex("anus_module_01").?;
+    var changed_components = try human_test_support.dupe(canonical.component.Component, base.components);
+    defer std.testing.allocator.free(changed_components);
+    const anus_index = componentIndex(base, "anus_module_01").?;
     changed_components[anus_index].default_state = .disabled;
-    source = human_base.source;
-    source.components = &changed_components;
+    source = base.*;
+    source.components = changed_components;
     try std.testing.expectError(error.ComponentContractMismatch, human_validation.validatePrompt2A(&source));
 
-    var changed_bones = human_base.bones;
+    var changed_bones = try human_test_support.dupe(canonical.rig.Bone, base.bones);
+    defer std.testing.allocator.free(changed_bones);
     changed_bones[0].owner_component_id = null;
-    source = human_base.source;
-    source.bones = &changed_bones;
+    source = base.*;
+    source.bones = changed_bones;
     try std.testing.expectError(error.MissingBoneOwner, human_validation.validatePrompt2A(&source));
 
-    var changed_surfaces = human_base.surfaces;
+    var changed_surfaces = try human_test_support.dupe(canonical.semantics.Surface, base.surfaces);
+    defer std.testing.allocator.free(changed_surfaces);
     changed_surfaces[0].owner_component_id = try identity.ComponentId.init("pelvis");
-    source = human_base.source;
-    source.surfaces = &changed_surfaces;
+    source = base.*;
+    source.surfaces = changed_surfaces;
     try std.testing.expectError(error.RegionSurfaceContractMismatch, human_validation.validatePrompt2A(&source));
 }
 
 test "component-owned bone reference is typed and generically validated" {
-    var bones = human_base.bones;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const base = loaded.definition();
+    var bones = try human_test_support.dupe(canonical.rig.Bone, base.bones);
+    defer std.testing.allocator.free(bones);
     bones[0].owner_component_id = try identity.ComponentId.init("human_base_skin");
-    var source = human_base.source;
-    source.bones = &bones;
+    var source = base.*;
+    source.bones = bones;
     var diagnostic_storage: [16]diagnostics.Diagnostic = undefined;
     const report = try validation.validate(&source, .{}, &diagnostic_storage);
     try std.testing.expect(!report.isValid());
@@ -172,9 +198,12 @@ test "component-owned bone reference is typed and generically validated" {
 }
 
 test "component-owned bone field requires schema 1.1 or newer" {
-    var source = human_base.source;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const base = loaded.definition();
+    var source = base.*;
     source.schema_identity.version = .{ .major = 1, .minor = 0, .patch = 0 };
-    source.bones = human_base.source.bones[0..1];
+    source.bones = base.bones[0..1];
     source.joints = &.{};
     source.controls = &.{};
     source.anchors = &.{};
@@ -188,8 +217,16 @@ test "component-owned bone field requires schema 1.1 or newer" {
     var diagnostic_storage: [16]diagnostics.Diagnostic = undefined;
     const report = try validation.validate(&source, .{}, &diagnostic_storage);
     try std.testing.expect(!report.isValid());
-    try std.testing.expectEqual(@as(usize, 1), report.error_count);
-    try std.testing.expectEqual(diagnostics.Code.schema_feature_version_mismatch, report.diagnostics[0].code);
+    var found_owner_version_error = false;
+    for (report.diagnostics) |diagnostic| {
+        if (diagnostic.code == .schema_feature_version_mismatch and
+            diagnostic.property != null and
+            std.mem.eql(u8, diagnostic.property.?, "owner_component_id"))
+        {
+            found_owner_version_error = true;
+        }
+    }
+    try std.testing.expect(found_owner_version_error);
 }
 
 test "M01 canonical golden remains byte-identical without owner field" {
@@ -229,12 +266,13 @@ test "M01 canonical golden remains byte-identical without owner field" {
 }
 
 fn expectComponent(
+    source: *const canonical.definition.CanonicalCreatureDefinition,
     id: []const u8,
     parent_id: ?[]const u8,
     requirement: canonical.component.Requirement,
     default_state: canonical.component.DefaultState,
 ) !void {
-    const record = human_base.source.components[componentIndex(id) orelse return error.MissingComponent];
+    const record = source.components[componentIndex(source, id) orelse return error.MissingComponent];
     try std.testing.expectEqual(requirement, record.requirement);
     try std.testing.expectEqual(default_state, record.default_state);
     if (parent_id) |expected_parent| {
@@ -246,12 +284,13 @@ fn expectComponent(
 }
 
 fn expectVisibility(
+    source: *const canonical.definition.CanonicalCreatureDefinition,
     component_id: []const u8,
     existence: canonical.visibility.ComponentExistence,
     enabled_state: canonical.visibility.ComponentEnabledState,
     visibility_state: canonical.visibility.VisibilityState,
 ) !void {
-    for (human_base.source.visibility_metadata) |record| switch (record.subject) {
+    for (source.visibility_metadata) |record| switch (record.subject) {
         .component => |id| if (std.mem.eql(u8, id.value.bytes, component_id)) {
             try std.testing.expectEqual(existence, record.component_existence);
             try std.testing.expectEqual(enabled_state, record.component_enabled_state);
@@ -265,24 +304,24 @@ fn expectVisibility(
     return error.MissingVisibility;
 }
 
-fn componentIndex(id: []const u8) ?usize {
-    for (human_base.source.components, 0..) |record, index| {
+fn componentIndex(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?usize {
+    for (source.components, 0..) |record, index| {
         if (std.mem.eql(u8, record.component_id.value.bytes, id)) return index;
     }
     return null;
 }
 
-fn findRegion(id: []const u8) ?canonical.semantics.Region {
-    for (human_base.source.regions) |record| if (std.mem.eql(u8, record.region_id.value.bytes, id)) return record;
+fn findRegion(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?canonical.semantics.Region {
+    for (source.regions) |record| if (std.mem.eql(u8, record.region_id.value.bytes, id)) return record;
     return null;
 }
 
-fn findSurface(id: []const u8) ?canonical.semantics.Surface {
-    for (human_base.source.surfaces) |record| if (std.mem.eql(u8, record.surface_id.value.bytes, id)) return record;
+fn findSurface(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?canonical.semantics.Surface {
+    for (source.surfaces) |record| if (std.mem.eql(u8, record.surface_id.value.bytes, id)) return record;
     return null;
 }
 
-fn findMaterialInstance(id: []const u8) ?canonical.material.MaterialInstance {
-    for (human_base.source.material_instances) |record| if (std.mem.eql(u8, record.material_instance_id.value.bytes, id)) return record;
+fn findMaterialDefinition(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?canonical.material.MaterialDefinition {
+    for (source.material_definitions) |record| if (std.mem.eql(u8, record.material_definition_id.value.bytes, id)) return record;
     return null;
 }

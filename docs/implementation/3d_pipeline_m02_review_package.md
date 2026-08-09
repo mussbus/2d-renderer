@@ -2,7 +2,7 @@
 
 Date: 2026-08-09  
 Scope: Prompt 3 audit only  
-Disposition: **READY FOR FINAL M02 OWNER ACCEPTANCE**  
+Disposition: **OWNER-ACCEPTED**
 M03 status: **NOT STARTED**
 
 This package audits the complete M02 implementation against the M02 brief, the
@@ -18,9 +18,16 @@ The principal offline inspection artifact remains
 This package audits and indexes that report; it does not introduce a parallel
 structural evidence format.
 
+**M02.5 handoff note:** the accepted authoring JSON remains the sole source.
+Downstream canonical work must load it through
+`canonical_model.human_base.loadAuthoritative(allocator, io, diagnostics)`,
+which owns the file bytes and parsed definition and performs generic validation,
+human structural validation, and normalization. The canonical JSON, structural
+report, hashes, and traces remain derived review evidence.
+
 ## A. Executive status
 
-M02 is ready for final owner acceptance. There are no failing M02 requirements
+M02 is owner-accepted. There are no failing M02 requirements
 and no M03 structural blocker. Two matters remain deliberately deferred by
 owner decision: derived male/female configuration profiles and empirically
 fitted structural collision proxies. The latter is a hard carry-forward gate:
@@ -393,7 +400,7 @@ behavior.
 
 ## K. M03 readiness
 
-**Assessment: READY AFTER FINAL M02 OWNER ACCEPTANCE.**
+**Assessment: M02 OWNER-ACCEPTED; M02.5 FILE-BACKED HANDOFF READY.**
 
 M03 can attach one continuous canonical human mesh to the existing M02 source
 without renaming core IDs, replacing the skeleton, changing its hierarchy,
@@ -408,8 +415,8 @@ empirically fit canonical structural collision proxies after real geometry is
 available and before the first resolved-human-geometry snapshot is accepted.
 Runtime 2D AABBs are not an acceptable substitute.
 
-No M03 implementation was created during this audit. Work stops here for final
-M02 owner acceptance.
+No M03 implementation was created during this audit. M03 remains unstarted and
+requires its explicit engineering brief/prompt.
 
 ## Major-section audit matrix
 

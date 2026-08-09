@@ -3,7 +3,6 @@ const canonical = @import("canonical_model");
 
 const asset_directory = "assets/canonical_model/human_base";
 const invalid_directory = "tests/fixtures/canonical_model/human_base/invalid";
-const authoring_path = canonical.human_base.authoritative_authoring_path;
 const canonical_path = asset_directory ++ "/human_base.canonical.json";
 const report_path = asset_directory ++ "/human_base.structural_report.txt";
 
@@ -12,25 +11,20 @@ pub fn main(init: std.process.Init) !void {
     try std.Io.Dir.cwd().createDirPath(init.io, asset_directory);
     try std.Io.Dir.cwd().createDirPath(init.io, invalid_directory);
 
-    const authoring_bytes = try std.Io.Dir.cwd().readFileAlloc(init.io, authoring_path, allocator, .limited(2 * 1024 * 1024));
-    defer allocator.free(authoring_bytes);
-    var parsed = try canonical.parsing.parse(allocator, authoring_bytes);
-    defer parsed.deinit();
-
     var diagnostic_storage: [1024]canonical.diagnostics.Diagnostic = undefined;
-    const normalized = try canonical.normalization.normalize(&parsed.value, .{}, &diagnostic_storage);
-    if (!normalized.isValid()) return error.HumanBaseSourceInvalid;
-    try canonical.human_structural_validation.validatePrompt2D(&parsed.value);
+    var loaded = try canonical.human_base.loadAuthoritative(allocator, init.io, &diagnostic_storage);
+    defer loaded.deinit();
+    const source = loaded.definition();
 
-    const canonical_bytes = try canonical.serialization.serializeAlloc(allocator, normalized.normalized.?);
+    const canonical_bytes = try canonical.serialization.serializeAlloc(allocator, loaded.normalized());
     defer allocator.free(canonical_bytes);
     try writeFile(init.io, canonical_path, canonical_bytes);
 
     for (canonical.human_acceptance.invalid_fixture_specs) |spec| {
-        try writeInvalidFixture(init.io, allocator, &parsed.value, spec);
+        try writeInvalidFixture(init.io, allocator, source, spec);
     }
 
-    const structural_report = try canonical.human_evidence.generateAlloc(allocator, &parsed.value);
+    const structural_report = try canonical.human_evidence.generateAlloc(allocator, source);
     defer allocator.free(structural_report);
     try writeFile(init.io, report_path, structural_report);
 

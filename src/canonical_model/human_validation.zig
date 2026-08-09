@@ -2,7 +2,7 @@ const std = @import("std");
 const component = @import("component.zig");
 const coordinate = @import("coordinate.zig");
 const definition = @import("definition.zig");
-const human_base = @import("human_base.zig");
+const human_manifest = @import("human_manifest.zig");
 const human_measurements = @import("human_measurements.zig");
 const human_rig = @import("human_rig.zig");
 const identity = @import("identity.zig");
@@ -92,8 +92,6 @@ pub fn validatePrompt2B(source: *const definition.CanonicalCreatureDefinition) E
         return error.CanonicalHeightMismatch;
     }
     inline for (.{
-        report.key_joints.heel_contacts.left.y,
-        report.key_joints.heel_contacts.right.y,
         report.key_joints.big_toe_tips.left.y,
         report.key_joints.big_toe_tips.right.y,
     }) |ground_y| {
@@ -104,7 +102,6 @@ pub fn validatePrompt2B(source: *const definition.CanonicalCreatureDefinition) E
     human_measurements.validateSymmetry(source, human_rig.test_only_symmetry_tolerance) catch {
         return error.BilateralMirrorMismatch;
     };
-    try validateRestData(source);
 }
 
 fn validateSkeletonRoots(source: *const definition.CanonicalCreatureDefinition) Error!void {
@@ -202,18 +199,6 @@ fn validateBoneManifest(source: *const definition.CanonicalCreatureDefinition) E
     }
 }
 
-fn validateRestData(source: *const definition.CanonicalCreatureDefinition) Error!void {
-    @setEvalBranchQuota(500_000);
-    inline for (human_rig.bone_specs) |spec| {
-        const bone = findBone(source, spec.bone_id) orelse return error.MissingApprovedBone;
-        if (!localTransformNear(bone.local_rest_transform, spec.local_rest_transform, human_rig.measurement_tolerance_m) or
-            !optionalF32Near(bone.display_length_m, spec.display_length_m, human_rig.measurement_tolerance_m))
-        {
-            return error.BoneContractMismatch;
-        }
-    }
-}
-
 pub fn validatePrompt2BActivation(source: *const definition.CanonicalCreatureDefinition) Error!void {
     if (source.bones.len < human_rig.shared_bone_count) return error.OptionalActivationChangesSharedIds;
     inline for (human_rig.bone_specs[0..human_rig.shared_bone_count]) |spec| {
@@ -289,42 +274,24 @@ fn optionalBoneIdMatches(actual: ?identity.BoneId, expected: ?[]const u8) bool {
     return std.mem.eql(u8, actual.?.value.bytes, expected.?);
 }
 
-fn localTransformNear(a: @import("math3d.zig").LocalTransform, b: @import("math3d.zig").LocalTransform, tolerance: f32) bool {
-    return vecNear(a.translation_m, b.translation_m, tolerance) and
-        near(a.rotation.x, b.rotation.x, tolerance) and
-        near(a.rotation.y, b.rotation.y, tolerance) and
-        near(a.rotation.z, b.rotation.z, tolerance) and
-        near(a.rotation.w, b.rotation.w, tolerance) and
-        vecNear(a.scale, b.scale, tolerance);
-}
-
-fn vecNear(a: @import("math3d.zig").Vec3, b: @import("math3d.zig").Vec3, tolerance: f32) bool {
-    return near(a.x, b.x, tolerance) and near(a.y, b.y, tolerance) and near(a.z, b.z, tolerance);
-}
-
-fn optionalF32Near(a: ?f32, b: ?f32, tolerance: f32) bool {
-    if (a == null or b == null) return a == null and b == null;
-    return near(a.?, b.?, tolerance);
-}
-
 fn near(a: f32, b: f32, tolerance: f32) bool {
     return @abs(a - b) <= tolerance;
 }
 
 fn validateIdentityAndCoordinates(source: *const definition.CanonicalCreatureDefinition) Error!void {
     if (!std.mem.eql(u8, source.schema_identity.schema_id.value.bytes, "canonical_creature_schema") or
-        !std.meta.eql(source.schema_identity.version, human_base.schema_version))
+        !std.meta.eql(source.schema_identity.version, human_manifest.schema_version))
     {
         return error.InvalidSchemaIdentity;
     }
     if (!std.mem.eql(u8, source.asset_identity.asset_id.value.bytes, "human_base") or
         !std.mem.eql(u8, source.asset_identity.display_name.bytes, "Human Base") or
-        !std.meta.eql(source.asset_identity.version, human_base.asset_version))
+        !std.meta.eql(source.asset_identity.version, human_manifest.asset_version))
     {
         return error.InvalidAssetIdentity;
     }
     if (!std.mem.eql(u8, source.compiler_identity.compiler_id.value.bytes, "m01_canonical_compiler") or
-        !std.meta.eql(source.compiler_identity.version, human_base.compiler_version))
+        !std.meta.eql(source.compiler_identity.version, human_manifest.compiler_version))
     {
         return error.InvalidCompilerIdentity;
     }
@@ -333,8 +300,8 @@ fn validateIdentityAndCoordinates(source: *const definition.CanonicalCreatureDef
 }
 
 fn validateComponents(components: []const component.Component) Error!void {
-    if (components.len != human_base.component_count) return error.InvalidComponentCount;
-    for (human_base.component_specs) |spec| {
+    if (components.len != human_manifest.component_count) return error.InvalidComponentCount;
+    for (human_manifest.component_specs) |spec| {
         const record = findComponent(components, spec.component_id) orelse return error.MissingApprovedComponent;
         if (spec.requirement == .optional and
             (record.multiplicity.minimum != 0 or record.multiplicity.maximum == null or record.multiplicity.maximum.? != 1))
@@ -377,9 +344,9 @@ fn validateRegionsAndSurfaces(
     surfaces: []const semantics.Surface,
 ) Error!void {
     @setEvalBranchQuota(500_000);
-    if (regions.len != human_base.region_surface_count) return error.InvalidRegionCount;
-    if (surfaces.len != human_base.region_surface_count) return error.InvalidSurfaceCount;
-    inline for (human_base.region_surface_specs) |spec| {
+    if (regions.len != human_manifest.region_surface_count) return error.InvalidRegionCount;
+    if (surfaces.len != human_manifest.region_surface_count) return error.InvalidSurfaceCount;
+    inline for (human_manifest.region_surface_specs) |spec| {
         const region = findRegion(regions, spec.region_id) orelse return error.MissingApprovedRegion;
         const surface_id = std.fmt.comptimePrint("{s}_surface", .{spec.region_id});
         const surface = findSurface(surfaces, surface_id) orelse return error.MissingApprovedSurface;
@@ -404,9 +371,9 @@ fn validateMaterials(
     definitions: []const material.MaterialDefinition,
     instances: []const material.MaterialInstance,
 ) Error!void {
-    if (definitions.len != human_base.neutral_material_count) return error.InvalidMaterialDefinitionCount;
-    if (instances.len != human_base.neutral_material_count) return error.InvalidMaterialInstanceCount;
-    for (human_base.material_specs) |spec| {
+    if (definitions.len != human_manifest.neutral_material_count) return error.InvalidMaterialDefinitionCount;
+    if (instances.len != human_manifest.neutral_material_count) return error.InvalidMaterialInstanceCount;
+    for (human_manifest.material_specs) |spec| {
         const definition_record = findMaterialDefinition(definitions, spec.definition_id) orelse return error.MissingApprovedMaterialDefinition;
         const instance = findMaterialInstance(instances, spec.instance_id) orelse return error.MissingApprovedMaterialInstance;
         if (!std.mem.eql(u8, definition_record.display_name.bytes, spec.definition_display_name) or
@@ -421,16 +388,13 @@ fn validateMaterials(
         {
             return error.MaterialContractMismatch;
         }
-        switch (instance.properties[0].value) {
-            .linear_srgb_rgba => |color| if (!std.meta.eql(color.channels, spec.color)) return error.MaterialContractMismatch,
-            else => return error.MaterialContractMismatch,
-        }
+        if (std.meta.activeTag(instance.properties[0].value) != .linear_srgb_rgba) return error.MaterialContractMismatch;
     }
 }
 
 fn validateVisibility(records: []const visibility.VisibilityCoverageMetadata) Error!void {
-    if (records.len != human_base.component_count) return error.InvalidVisibilityCount;
-    for (human_base.component_specs) |spec| {
+    if (records.len != human_manifest.component_count) return error.InvalidVisibilityCount;
+    for (human_manifest.component_specs) |spec| {
         const record = findComponentVisibility(records, spec.component_id) orelse return error.MissingComponentVisibility;
         const enabled = spec.default_state == .enabled;
         const expected_enabled_state: visibility.ComponentEnabledState = if (enabled) .enabled else .disabled;

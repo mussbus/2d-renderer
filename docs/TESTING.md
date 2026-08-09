@@ -20,11 +20,44 @@ pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
 
 | Tier | Primary command | Purpose | Required use |
 | --- | --- | --- | --- |
-| Fast development | `zig build test -j1` | Pure/deterministic CPU behavior, cheap format-independent asset checks, visual registration, and all 50 M01 canonical-model tests | During normal implementation and before handing a local change to another engineer |
+| Fast development | `zig build test -j1` | Pure/deterministic CPU behavior, cheap format-independent asset checks, visual registration, all 50 M01 canonical-model declarations, and all 53 M02 canonical-human declarations | During normal implementation and before handing a local change to another engineer |
 | Fast repository gate | `zig build check -j1` | Fast development tier plus formatting and every static repository, art, golden, and policy audit | Before every review request; this remains the required non-GPU static gate |
 | Full regression | `zig build test-full -j1` | Fast tier plus the bounded production-route integration, foundation, wardrobe, visual-geometry, environment, and visual-foundation suites | Before milestone acceptance, after cross-system changes, and when a focused suite affects an adjacent subsystem |
 | Stress/exhaustive | `zig build test-stress -j1` | The unchanged 1,000-handshake lifecycle audit and 100,000-integrated-tick stability/resource audit | Before milestone acceptance and after interaction, IK, foot-planting, reset, allocation, or long-duration simulation changes |
 | Complete CPU verification | `zig build verify -j1` | `check` + `test-full` + `test-stress`, with shared build nodes executed once | Final pre-owner-review gate for M02 through M08 and repository-wide verification changes |
+
+### Current M02.5 canonical-human routes
+
+The current canonical-model inventory is 50 M01 test declarations and 53 M02
+test declarations. The M02 declarations are split across five file-backed
+focused routes. Each later route depends on the earlier routes, so the final
+route exercises the complete M02 chain:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-identity -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-rig -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-joint-controls -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-structural -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-base -j1
+```
+
+Tests of the accepted human asset load
+`assets/canonical_model/human_base/human_base.authoring.json` through the
+canonical file-backed loader. Small synthetic records remain appropriate for
+generic schema/validator unit tests.
+
+`test` schedules all M01 and M02 roots directly. `check` depends on `test` and
+adds formatting plus static repository, art, and golden audits. `test-full`
+depends on `test` and adds bounded integration/production-route suites.
+`test-stress` contains the two long-duration audits and does not duplicate the
+M01/M02 declarations. `verify` is the union of `check`, `test-full`, and
+`test-stress`, with shared build nodes executed once.
+
+`zig build update-human-base-evidence` is an explicit authoring/update command.
+It reads the authoritative authoring JSON and may regenerate only the reviewed
+derived canonical JSON and structural report. Ordinary `test`, `check`,
+`test-full`, `test-stress`, and `verify` routes never invoke it to repair a
+golden mismatch.
 
 The 2026-08-08 M01.5 measurements use isolated task-local caches and report
 wall time, so compiler cache state and the known Windows test-runner IPC

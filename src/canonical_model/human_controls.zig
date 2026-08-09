@@ -1,7 +1,5 @@
 const std = @import("std");
 const definition = @import("definition.zig");
-const identity = @import("identity.zig");
-const math3d = @import("math3d.zig");
 const rig = @import("rig.zig");
 
 pub const control_count: usize = 116;
@@ -65,61 +63,65 @@ pub const TraceEntry = struct {
     provenance: []const u8,
 };
 
-pub const TraceError = error{OutputTooSmall};
+pub const TraceError = error{ OutputTooSmall, UnsupportedTarget };
 
 const provenance = "owner_approved_m02_prompt_2c_manifest";
 const empty_target = TargetSpec{ .kind = .bone, .id = "skeleton_root" };
-const control_tags = makeIds(identity.SemanticTagId, &.{ "human", "structural_control" });
-
 pub const control_specs = buildControlSpecs();
-pub const target_storage = buildTargetStorage();
-pub const controls = buildControls();
-pub const trace_count = countTraceEntries();
 
-pub fn generateTraces(output: []TraceEntry) TraceError![]const TraceEntry {
-    if (output.len < trace_count) return error.OutputTooSmall;
+pub fn traceCount(source: *const definition.CanonicalCreatureDefinition) usize {
+    var count: usize = 0;
+    for (source.controls) |control| count += control.driven_targets.len;
+    return count;
+}
+
+pub fn generateTraces(
+    source: *const definition.CanonicalCreatureDefinition,
+    output: []TraceEntry,
+) TraceError![]const TraceEntry {
+    if (output.len < traceCount(source)) return error.OutputTooSmall;
     var output_index: usize = 0;
     var previous_control_id: ?[]const u8 = null;
     var emitted_controls: usize = 0;
-    while (emitted_controls < control_specs.len) : (emitted_controls += 1) {
+    while (emitted_controls < source.controls.len) : (emitted_controls += 1) {
         var selected_control: ?usize = null;
-        for (control_specs, 0..) |spec, index| {
+        for (source.controls, 0..) |control, index| {
             if (previous_control_id) |previous| {
-                if (std.mem.order(u8, spec.control_id, previous) != .gt) continue;
+                if (std.mem.order(u8, control.control_id.value.bytes, previous) != .gt) continue;
             }
-            if (selected_control == null or std.mem.order(u8, spec.control_id, control_specs[selected_control.?].control_id) == .lt) {
+            if (selected_control == null or std.mem.order(u8, control.control_id.value.bytes, source.controls[selected_control.?].control_id.value.bytes) == .lt) {
                 selected_control = index;
             }
         }
-        const control_spec = control_specs[selected_control.?];
-        var previous_target: ?TargetSpec = null;
+        const control = source.controls[selected_control.?];
+        var previous_target: ?rig.DrivenTarget = null;
         var emitted_targets: usize = 0;
-        while (emitted_targets < control_spec.target_count) : (emitted_targets += 1) {
+        while (emitted_targets < control.driven_targets.len) : (emitted_targets += 1) {
             var selected_target: ?usize = null;
-            for (control_spec.targets[0..control_spec.target_count], 0..) |target, target_index| {
+            for (control.driven_targets, 0..) |target, target_index| {
                 if (previous_target) |previous| {
-                    if (!targetLessThan(previous, target)) continue;
+                    if (!drivenTargetLessThan(previous, target)) continue;
                 }
-                if (selected_target == null or targetLessThan(target, control_spec.targets[selected_target.?])) {
+                if (selected_target == null or drivenTargetLessThan(target, control.driven_targets[selected_target.?])) {
                     selected_target = target_index;
                 }
             }
-            const target = control_spec.targets[selected_target.?];
+            const target = control.driven_targets[selected_target.?];
             output[output_index] = .{
-                .control_id = control_spec.control_id,
-                .owner_component_id = control_spec.owner_component_id,
-                .area = control_spec.area,
-                .target_kind = target.kind,
-                .target_id = target.id,
-                .mirror_control_id = control_spec.mirror_control_id,
-                .space = control_spec.space,
-                .relevant_joint_id = control_spec.relevant_joint_id,
-                .provenance = control_spec.provenance,
+                .control_id = control.control_id.value.bytes,
+                .owner_component_id = ownerComponentId(source, control),
+                .area = areaForControl(control.control_id.value.bytes),
+                .target_kind = drivenTargetKind(target) orelse return error.UnsupportedTarget,
+                .target_id = drivenTargetId(target),
+                .mirror_control_id = if (control.mirror_control_id) |id| id.value.bytes else null,
+                .space = control.space,
+                .relevant_joint_id = relevantJointFromControl(source, control),
+                .provenance = provenance,
             };
             output_index += 1;
             previous_target = target;
         }
-        previous_control_id = control_spec.control_id;
+        previous_control_id = control.control_id.value.bytes;
     }
     return output[0..output_index];
 }
@@ -141,13 +143,42 @@ pub fn controlIsActive(
     source: *const definition.CanonicalCreatureDefinition,
     control_id: []const u8,
 ) bool {
-    const spec = findControlSpec(control_id) orelse return false;
+    const control = findControl(source, control_id) orelse return false;
+    const owner_component_id = ownerComponentId(source, control);
     for (source.components) |component| {
-        if (std.mem.eql(u8, component.component_id.value.bytes, spec.owner_component_id)) {
+        if (std.mem.eql(u8, component.component_id.value.bytes, owner_component_id)) {
             return component.default_state == .enabled;
         }
     }
     return false;
+}
+
+pub fn areaForControl(control_id: []const u8) Area {
+    if (std.mem.startsWith(u8, control_id, "spine_")) return .spine;
+    if (std.mem.startsWith(u8, control_id, "pelvis_") or std.mem.startsWith(u8, control_id, "hip_hike")) return .pelvis_root;
+    if (std.mem.startsWith(u8, control_id, "head_") or std.mem.startsWith(u8, control_id, "jaw_")) return .head_jaw;
+    if (std.mem.startsWith(u8, control_id, "eye") or std.mem.startsWith(u8, control_id, "eyelid")) return .eyes_eyelids;
+    if (std.mem.startsWith(u8, control_id, "tongue_")) return .tongue;
+    if (std.mem.startsWith(u8, control_id, "penis_")) return .optional_anatomy;
+    if (std.mem.eql(u8, control_id, "hand_left_ik_target") or
+        std.mem.eql(u8, control_id, "hand_right_ik_target")) return .arm;
+    if (std.mem.startsWith(u8, control_id, "hand_") or
+        std.mem.startsWith(u8, control_id, "finger_") or
+        std.mem.startsWith(u8, control_id, "thumb_") or
+        std.mem.startsWith(u8, control_id, "index_") or
+        std.mem.startsWith(u8, control_id, "middle_") or
+        std.mem.startsWith(u8, control_id, "ring_") or
+        std.mem.startsWith(u8, control_id, "little_") or
+        std.mem.startsWith(u8, control_id, "palm_")) return .hand;
+    if (std.mem.indexOf(u8, control_id, "foot_") != null or
+        std.mem.indexOf(u8, control_id, "toe_") != null or
+        std.mem.indexOf(u8, control_id, "heel_") != null or
+        std.mem.indexOf(u8, control_id, "ball_") != null or
+        std.mem.indexOf(u8, control_id, "ankle_") != null or
+        std.mem.indexOf(u8, control_id, "knee_") != null or
+        std.mem.indexOf(u8, control_id, "leg_") != null or
+        std.mem.startsWith(u8, control_id, "hip_")) return .leg_foot;
+    return .arm;
 }
 
 pub fn activeControlCount(source: *const definition.CanonicalCreatureDefinition) usize {
@@ -343,40 +374,6 @@ fn append(
     index.* += 1;
 }
 
-fn buildTargetStorage() [control_count][max_targets_per_control]rig.DrivenTarget {
-    @setEvalBranchQuota(1_000_000);
-    var result: [control_count][max_targets_per_control]rig.DrivenTarget = undefined;
-    inline for (control_specs, 0..) |spec, control_index| {
-        inline for (spec.targets, 0..) |target, target_index| {
-            result[control_index][target_index] = switch (target.kind) {
-                .bone => .{ .bone = makeId(identity.BoneId, target.id) },
-                .joint => .{ .joint = makeId(identity.JointId, target.id) },
-            };
-        }
-    }
-    return result;
-}
-
-fn buildControls() [control_count]rig.Control {
-    @setEvalBranchQuota(1_000_000);
-    var result: [control_count]rig.Control = undefined;
-    inline for (control_specs, 0..) |spec, index| {
-        result[index] = .{
-            .control_id = makeId(identity.ControlId, spec.control_id),
-            .display_name = null,
-            .control_type = spec.control_type,
-            .driven_targets = target_storage[index][0..spec.target_count],
-            .space = spec.space,
-            .mirror_control_id = if (spec.mirror_control_id) |mirror_id| makeId(identity.ControlId, mirror_id) else null,
-            .default_value = defaultValue(spec),
-            .limits = controlLimits(spec),
-            .semantic_tags = &control_tags,
-            .region_id = null,
-        };
-    }
-    return result;
-}
-
 fn handJointTargets(comptime side: []const u8) [19]TargetSpec {
     var result: [19]TargetSpec = undefined;
     var index: usize = 0;
@@ -500,21 +497,6 @@ fn relevantJointFor(comptime target: TargetSpec) ?[]const u8 {
     };
 }
 
-fn defaultValue(comptime spec: ControlSpec) ?rig.ControlValue {
-    return switch (spec.control_type) {
-        .fk_rotation => .{ .quaternion = math3d.Quaternion.identity },
-        .normalized_slider => .{ .scalar = spec.normalized_default.? },
-        else => null,
-    };
-}
-
-fn controlLimits(comptime spec: ControlSpec) ?rig.ControlLimits {
-    return if (spec.control_type == .normalized_slider) .{
-        .minimum = .{ .scalar = open_tuning.normalized_minimum },
-        .maximum = .{ .scalar = open_tuning.normalized_maximum },
-    } else null;
-}
-
 fn normalizedDefault(comptime control_id: []const u8, comptime control_type: rig.ControlType) ?f32 {
     if (control_type != .normalized_slider) return null;
     inline for (.{
@@ -548,18 +530,99 @@ fn targetLessThan(a: TargetSpec, b: TargetSpec) bool {
     return std.mem.order(u8, a.id, b.id) == .lt;
 }
 
-fn countTraceEntries() usize {
-    var count: usize = 0;
-    for (control_specs) |spec| count += spec.target_count;
-    return count;
+fn drivenTargetLessThan(a: rig.DrivenTarget, b: rig.DrivenTarget) bool {
+    const a_tag = std.meta.activeTag(a);
+    const b_tag = std.meta.activeTag(b);
+    const kind_order = std.math.order(@intFromEnum(a_tag), @intFromEnum(b_tag));
+    if (kind_order != .eq) return kind_order == .lt;
+    return std.mem.order(u8, drivenTargetId(a), drivenTargetId(b)) == .lt;
 }
 
-fn makeId(comptime T: type, comptime bytes: []const u8) T {
-    return T.init(bytes) catch |id_error| @compileError(@errorName(id_error) ++ ": " ++ bytes);
+fn drivenTargetKind(target: rig.DrivenTarget) ?TargetKind {
+    return switch (target) {
+        .bone => .bone,
+        .joint => .joint,
+        .anchor, .morphology_parameter, .constraint => null,
+    };
 }
 
-fn makeIds(comptime T: type, comptime values: []const []const u8) [values.len]T {
-    var result: [values.len]T = undefined;
-    inline for (values, 0..) |value, index| result[index] = makeId(T, value);
-    return result;
+fn drivenTargetId(target: rig.DrivenTarget) []const u8 {
+    return switch (target) {
+        inline else => |id| id.value.bytes,
+    };
+}
+
+fn relevantJointFromControl(
+    source: *const definition.CanonicalCreatureDefinition,
+    control: rig.Control,
+) ?[]const u8 {
+    if (control.driven_targets.len == 0) return null;
+    return switch (control.driven_targets[0]) {
+        .joint => |id| id.value.bytes,
+        .bone => |bone_id| blk: {
+            if (std.mem.eql(u8, bone_id.value.bytes, "skeleton_root")) break :blk null;
+            for (source.joints) |joint_record| {
+                if (joint_record.child_bone_id.eql(bone_id)) break :blk joint_record.joint_id.value.bytes;
+            }
+            break :blk null;
+        },
+        .anchor, .morphology_parameter, .constraint => null,
+    };
+}
+
+fn ownerComponentId(
+    source: *const definition.CanonicalCreatureDefinition,
+    control: rig.Control,
+) []const u8 {
+    if (control.driven_targets.len == 0) return "unknown";
+    // This whole-region animator concept intentionally owns the head/neck
+    // span from the head component even though its canonical targets cross
+    // the sibling head and neck component branches.
+    if (std.mem.eql(u8, control.control_id.value.bytes, "head_neck_control")) return "head";
+    var common_owner = targetOwnerComponentId(source, control.driven_targets[0]);
+    for (control.driven_targets[1..]) |target| {
+        const target_owner = targetOwnerComponentId(source, target);
+        while (!componentIsAncestorOrSelf(source, common_owner, target_owner)) {
+            common_owner = componentParentId(source, common_owner) orelse return "unknown";
+        }
+    }
+    return common_owner;
+}
+
+fn targetOwnerComponentId(source: *const definition.CanonicalCreatureDefinition, target: rig.DrivenTarget) []const u8 {
+    const owner_bone_id = switch (target) {
+        .bone => |bone_id| bone_id.value.bytes,
+        .joint => |joint_id| blk: {
+            for (source.joints) |joint_record| {
+                if (joint_record.joint_id.eql(joint_id)) break :blk joint_record.child_bone_id.value.bytes;
+            }
+            return "unknown";
+        },
+        else => return "unknown",
+    };
+    for (source.bones) |bone_record| {
+        if (!std.mem.eql(u8, bone_record.bone_id.value.bytes, owner_bone_id)) continue;
+        return if (bone_record.owner_component_id) |owner| owner.value.bytes else "unknown";
+    }
+    return "unknown";
+}
+
+fn componentIsAncestorOrSelf(
+    source: *const definition.CanonicalCreatureDefinition,
+    candidate_id: []const u8,
+    descendant_id: []const u8,
+) bool {
+    var current_id = descendant_id;
+    while (true) {
+        if (std.mem.eql(u8, candidate_id, current_id)) return true;
+        current_id = componentParentId(source, current_id) orelse return false;
+    }
+}
+
+fn componentParentId(source: *const definition.CanonicalCreatureDefinition, component_id: []const u8) ?[]const u8 {
+    for (source.components) |component| {
+        if (!std.mem.eql(u8, component.component_id.value.bytes, component_id)) continue;
+        return if (component.parent_component_id) |parent| parent.value.bytes else null;
+    }
+    return null;
 }

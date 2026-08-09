@@ -3,7 +3,6 @@ const attachment = @import("attachment.zig");
 const component = @import("component.zig");
 const definition = @import("definition.zig");
 const human_rig = @import("human_rig.zig");
-const identity = @import("identity.zig");
 const math3d = @import("math3d.zig");
 const rig = @import("rig.zig");
 
@@ -124,23 +123,10 @@ pub const ReportError = error{
     UnsupportedAnchorDriver,
 };
 
-const anchor_tags = makeIds(identity.SemanticTagId, &.{ "human", "structural_anchor" });
-const anchor_left_tags = makeIds(identity.SemanticTagId, &.{ "human", "left", "structural_anchor" });
-const anchor_right_tags = makeIds(identity.SemanticTagId, &.{ "human", "right", "structural_anchor" });
-const contact_left_tags = makeIds(identity.SemanticTagId, &.{ "human", "left", "ground_contact" });
-const contact_right_tags = makeIds(identity.SemanticTagId, &.{ "human", "right", "ground_contact" });
-const nail_component_types = makeIds(identity.ComponentTypeId, &.{"nail"});
-const hair_component_types = makeIds(identity.ComponentTypeId, &.{"hair"});
-const headwear_component_types = makeIds(identity.ComponentTypeId, &.{"headwear"});
-
 pub const anchor_specs = buildAnchorSpecs();
-pub const anchors = buildAnchors();
 pub const socket_specs = buildSocketSpecs();
-pub const sockets = buildSockets();
 pub const mount_specs = buildMountSpecs();
-pub const mount_anchors = buildMountAnchors();
 pub const attachment_specs = buildAttachmentSpecs();
-pub const attachments = buildAttachments();
 
 pub fn generateAnchorReport(
     source: *const definition.CanonicalCreatureDefinition,
@@ -447,77 +433,6 @@ fn buildAttachmentSpecs() [attachment_count]AttachmentSpec {
     return result;
 }
 
-fn buildAnchors() [anchor_count]attachment.Anchor {
-    @setEvalBranchQuota(1_000_000);
-    var result: [anchor_count]attachment.Anchor = undefined;
-    inline for (anchor_specs, 0..) |spec, index| {
-        result[index] = .{
-            .anchor_id = makeId(identity.AnchorId, spec.anchor_id),
-            .display_name = null,
-            .owner_component_id = makeId(identity.ComponentId, spec.owner_component_id),
-            .mirror_anchor_id = if (spec.mirror_anchor_id) |id| makeId(identity.AnchorId, id) else null,
-            .driver = .{ .bone = makeId(identity.BoneId, spec.driver_bone_id) },
-            .local_transform = transform(spec.local_translation_m),
-            .semantic_tags = tagsFor(spec),
-        };
-    }
-    return result;
-}
-
-fn buildSockets() [socket_count]attachment.Socket {
-    @setEvalBranchQuota(100_000);
-    var result: [socket_count]attachment.Socket = undefined;
-    inline for (socket_specs, 0..) |spec, index| {
-        const accepted_types = if (std.mem.eql(u8, spec.accepted_component_type, "nail"))
-            &nail_component_types
-        else if (std.mem.eql(u8, spec.accepted_component_type, "hair"))
-            &hair_component_types
-        else
-            &headwear_component_types;
-        result[index] = .{
-            .socket_id = makeId(identity.SocketId, spec.socket_id),
-            .anchor_id = makeId(identity.AnchorId, spec.anchor_id),
-            .accepted_component_types = accepted_types,
-            .accepted_tags = &.{},
-            .capacity = 1,
-            .attachment_requirement = spec.attachment_requirement,
-            .compatibility = .none,
-        };
-    }
-    return result;
-}
-
-fn buildMountAnchors() [mount_anchor_count]attachment.MountAnchor {
-    @setEvalBranchQuota(100_000);
-    var result: [mount_anchor_count]attachment.MountAnchor = undefined;
-    inline for (mount_specs, 0..) |spec, index| {
-        result[index] = .{
-            .mount_anchor_id = makeId(identity.MountAnchorId, spec.mount_anchor_id),
-            .display_name = null,
-            .owner_component_id = makeId(identity.ComponentId, spec.owner_component_id),
-            .driver = .{ .component = makeId(identity.ComponentId, spec.owner_component_id) },
-            .local_transform = math3d.LocalTransform.identity,
-            .semantic_tags = &anchor_tags,
-        };
-    }
-    return result;
-}
-
-fn buildAttachments() [attachment_count]attachment.Attachment {
-    @setEvalBranchQuota(100_000);
-    var result: [attachment_count]attachment.Attachment = undefined;
-    inline for (attachment_specs, 0..) |spec, index| {
-        result[index] = .{
-            .attachment_id = makeId(identity.AttachmentId, spec.attachment_id),
-            .parent_socket_id = makeId(identity.SocketId, spec.parent_socket_id),
-            .child_component_id = makeId(identity.ComponentId, spec.child_component_id),
-            .child_mount_anchor_id = makeId(identity.MountAnchorId, spec.child_mount_anchor_id),
-            .compatibility_profiles = &.{},
-        };
-    }
-    return result;
-}
-
 fn appendAnchor(
     result: *[anchor_count]AnchorSpec,
     index: *usize,
@@ -543,15 +458,6 @@ fn appendAnchor(
     index.* += 1;
 }
 
-fn tagsFor(comptime spec: AnchorSpec) []const identity.SemanticTagId {
-    if (spec.kind == .foot_contact) return if (spec.side == .left) &contact_left_tags else &contact_right_tags;
-    return switch (spec.side) {
-        .center => &anchor_tags,
-        .left => &anchor_left_tags,
-        .right => &anchor_right_tags,
-    };
-}
-
 fn findAnchor(records: []const attachment.Anchor, id: []const u8) ?attachment.Anchor {
     for (records) |record| if (std.mem.eql(u8, record.anchor_id.value.bytes, id)) return record;
     return null;
@@ -572,20 +478,6 @@ fn selectNext(items: anytype, comptime id_field: []const u8, previous_id: ?[]con
     return selected;
 }
 
-fn transform(translation_m: math3d.Vec3) math3d.LocalTransform {
-    return .{ .translation_m = translation_m, .rotation = math3d.Quaternion.identity, .scale = math3d.Vec3.one };
-}
-
 fn vec(x: f32, y: f32, z: f32) math3d.Vec3 {
     return .{ .x = x, .y = y, .z = z };
-}
-
-fn makeId(comptime T: type, comptime bytes: []const u8) T {
-    return T.init(bytes) catch |id_error| @compileError(@errorName(id_error) ++ ": " ++ bytes);
-}
-
-fn makeIds(comptime T: type, comptime values: []const []const u8) [values.len]T {
-    var result: [values.len]T = undefined;
-    inline for (values, 0..) |value, index| result[index] = makeId(T, value);
-    return result;
 }

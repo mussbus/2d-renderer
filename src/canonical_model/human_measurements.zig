@@ -6,11 +6,13 @@ const math3d = @import("math3d.zig");
 pub const Error = error{
     InvalidBoneCount,
     MissingBone,
+    MissingAnchor,
     MissingParentBone,
     HierarchyCycle,
     MissingDisplayLength,
     BilateralMirrorMismatch,
     NoSpaceLeft,
+    UnsupportedAnchorDriver,
 };
 
 pub const GlobalPose = struct {
@@ -78,8 +80,10 @@ pub fn generate(source: *const definition.CanonicalCreatureDefinition) Error!Mea
     const pelvis = try positionFor(&pose, source, "pelvis");
     const neck_01 = try positionFor(&pose, source, "neck_01");
 
-    const head_top = head.transformPoint(.{ .x = 0, .y = human_rig.open_tuning.head_top_offset_m, .z = 0 });
-    const jaw_bottom = jaw.transformPoint(.{ .x = 0, .y = -human_rig.open_tuning.jaw_bottom_offset_m, .z = 0 });
+    const head_length = source.bones[findBoneIndex(source, "head") orelse return error.MissingBone].display_length_m orelse return error.MissingDisplayLength;
+    const jaw_length = source.bones[findBoneIndex(source, "jaw") orelse return error.MissingBone].display_length_m orelse return error.MissingDisplayLength;
+    const head_top = head.transformPoint(.{ .x = 0, .y = head_length, .z = 0 });
+    const jaw_bottom = jaw.transformPoint(.{ .x = 0, .y = -jaw_length, .z = 0 });
     const shoulders = try pairedPositions(&pose, source, "upper_arm");
     const elbows = try pairedPositions(&pose, source, "forearm");
     const wrists = try pairedPositions(&pose, source, "hand");
@@ -241,12 +245,23 @@ fn heelContact(
     side: []const u8,
 ) Error!math3d.Vec3 {
     var id_buffer: [64]u8 = undefined;
-    const foot = try pose.transformFor(source, try std.fmt.bufPrint(&id_buffer, "foot_{s}", .{side}));
-    return foot.transformPoint(.{
-        .x = 0,
-        .y = -human_rig.open_tuning.heel_ground_drop_m,
-        .z = -human_rig.open_tuning.heel_back_offset_m,
-    });
+    return anchorPosition(pose, source, try std.fmt.bufPrint(&id_buffer, "heel_contact_{s}_anchor", .{side}));
+}
+
+fn anchorPosition(
+    pose: *const GlobalPose,
+    source: *const definition.CanonicalCreatureDefinition,
+    anchor_id: []const u8,
+) Error!math3d.Vec3 {
+    for (source.anchors) |anchor| {
+        if (!std.mem.eql(u8, anchor.anchor_id.value.bytes, anchor_id)) continue;
+        const driver = switch (anchor.driver) {
+            .bone => |bone_id| try pose.transformFor(source, bone_id.value.bytes),
+            else => return error.UnsupportedAnchorDriver,
+        };
+        return math3d.AffineTransform.compose(driver, math3d.AffineTransform.fromLocal(anchor.local_transform)).translation_m;
+    }
+    return error.MissingAnchor;
 }
 
 fn localTransformsMirror(

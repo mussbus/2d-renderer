@@ -1,5 +1,6 @@
 const std = @import("std");
 const canonical = @import("canonical_model");
+const human_test_support = @import("canonical_human_test_support.zig");
 
 const authoring_path = "assets/canonical_model/human_base/human_base.authoring.json";
 const canonical_path = "assets/canonical_model/human_base/human_base.canonical.json";
@@ -22,22 +23,11 @@ test "Prompt 2E readable human_base normalizes to the committed canonical golden
     try std.testing.expect(std.mem.indexOf(u8, golden, "\"component_id\":\"body\"").? <
         std.mem.indexOf(u8, golden, "\"component_id\":\"vulva_vaginal_canal_module_01\"").?);
 
-    var parsed = try canonical.parsing.parse(std.testing.allocator, authoring);
-    defer parsed.deinit();
-    try canonical.human_structural_validation.validatePrompt2D(&parsed.value);
-    var diagnostics: [1024]canonical.diagnostics.Diagnostic = undefined;
-    const normalized = try canonical.normalization.normalize(&parsed.value, .{}, &diagnostics);
-    try std.testing.expect(normalized.isValid());
-    const generated = try canonical.serialization.serializeAlloc(std.testing.allocator, normalized.normalized.?);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const generated = try canonical.serialization.serializeAlloc(std.testing.allocator, loaded.normalized());
     defer std.testing.allocator.free(generated);
     try std.testing.expectEqualStrings(golden, generated);
-
-    var mirror_diagnostics: [1024]canonical.diagnostics.Diagnostic = undefined;
-    const mirror_normalized = try canonical.normalization.normalize(&canonical.human_base.source, .{}, &mirror_diagnostics);
-    try std.testing.expect(mirror_normalized.isValid());
-    const mirror_bytes = try canonical.serialization.serializeAlloc(std.testing.allocator, mirror_normalized.normalized.?);
-    defer std.testing.allocator.free(mirror_bytes);
-    try std.testing.expectEqualStrings(golden, mirror_bytes);
 
     var golden_parse = try canonical.parsing.parse(std.testing.allocator, golden);
     defer golden_parse.deinit();
@@ -62,7 +52,7 @@ test "Prompt 3 keeps authoring authoritative and evidence updates explicit" {
 
     const exporter = try readFixture("tools/export_human_base_evidence.zig");
     defer std.testing.allocator.free(exporter);
-    try std.testing.expect(std.mem.indexOf(u8, exporter, "readFileAlloc(init.io, authoring_path") != null);
+    try std.testing.expect(std.mem.indexOf(u8, exporter, "human_base.loadAuthoritative") != null);
     try std.testing.expect(std.mem.indexOf(u8, exporter, "writeFile(init.io, authoring_path") == null);
     try std.testing.expect(std.mem.indexOf(u8, exporter, "human_base.source") == null);
 
@@ -73,6 +63,23 @@ test "Prompt 3 keeps authoring authoritative and evidence updates explicit" {
     try std.testing.expect(std.mem.indexOf(u8, build_source, "full_test_step.dependOn(&run_human_base_export.step)") == null);
     try std.testing.expect(std.mem.indexOf(u8, build_source, "check_step.dependOn(&run_human_base_export.step)") == null);
     try std.testing.expect(std.mem.indexOf(u8, build_source, "verify_step.dependOn(&run_human_base_export.step)") == null);
+
+    const invalid = try readFixture(invalid_directory ++ "/01_missing_skeleton_root.json");
+    defer std.testing.allocator.free(invalid);
+    var invalid_diagnostics: [1024]canonical.diagnostics.Diagnostic = undefined;
+    try std.testing.expectError(
+        error.InvalidCanonicalSource,
+        canonical.human_base.loadAuthoritativeBytes(std.testing.allocator, invalid, &invalid_diagnostics),
+    );
+
+    const public_root = try readFixture("src/canonical_model/root.zig");
+    defer std.testing.allocator.free(public_root);
+    try std.testing.expect(std.mem.indexOf(u8, public_root, "pub const human_rig =") == null);
+    try std.testing.expect(std.mem.indexOf(u8, public_root, "pub const human_joints =") == null);
+
+    const manifest = try readFixture("src/canonical_model/human_manifest.zig");
+    defer std.testing.allocator.free(manifest);
+    try std.testing.expect(std.mem.indexOf(u8, manifest, "pub const source") == null);
 }
 
 test "Prompt 2E repeats parse validate normalize serialize hash and reports five times" {
@@ -84,18 +91,15 @@ test "Prompt 2E repeats parse validate normalize serialize hash and reports five
     defer std.testing.allocator.free(stored_report);
 
     for (0..5) |iteration| {
-        var parsed = try canonical.parsing.parse(std.testing.allocator, authoring);
-        defer parsed.deinit();
-        try canonical.human_structural_validation.validatePrompt2D(&parsed.value);
         var diagnostics: [1024]canonical.diagnostics.Diagnostic = undefined;
-        const normalized = try canonical.normalization.normalize(&parsed.value, .{}, &diagnostics);
-        try std.testing.expect(normalized.isValid());
-        const generated = try canonical.serialization.serializeAlloc(std.testing.allocator, normalized.normalized.?);
+        var loaded = try canonical.human_base.loadAuthoritativeBytes(std.testing.allocator, authoring, &diagnostics);
+        defer loaded.deinit();
+        const generated = try canonical.serialization.serializeAlloc(std.testing.allocator, loaded.normalized());
         defer std.testing.allocator.free(generated);
         try std.testing.expectEqualStrings(golden, generated);
         try std.testing.expectEqualStrings(canonical_sha256, &sha256Hex(generated));
 
-        const report = try canonical.human_evidence.generateAlloc(std.testing.allocator, &parsed.value);
+        const report = try canonical.human_evidence.generateAlloc(std.testing.allocator, loaded.definition());
         defer std.testing.allocator.free(report);
         try std.testing.expectEqualStrings(stored_report, report);
         std.debug.print("PROMPT2E_REPEAT iteration={d} bytes={d} sha256={s} report_bytes={d}\n", .{ iteration + 1, generated.len, canonical_sha256, report.len });
@@ -107,10 +111,10 @@ test "Prompt 2E controlled material mutation changes canonical bytes and hash" {
     defer std.testing.allocator.free(authoring);
     const golden = try readFixture(canonical_path);
     defer std.testing.allocator.free(golden);
-    var parsed = try canonical.parsing.parse(std.testing.allocator, authoring);
-    defer parsed.deinit();
-
-    var source = parsed.value;
+    var diagnostics: [1024]canonical.diagnostics.Diagnostic = undefined;
+    var loaded = try canonical.human_base.loadAuthoritativeBytes(std.testing.allocator, authoring, &diagnostics);
+    defer loaded.deinit();
+    var source = loaded.definition().*;
     const instances = try std.testing.allocator.dupe(canonical.material.MaterialInstance, source.material_instances);
     defer std.testing.allocator.free(instances);
     const instance_index = findMaterialInstanceIndex(instances, "human_base_skin") orelse return error.MissingMaterialInstance;
@@ -128,8 +132,8 @@ test "Prompt 2E controlled material mutation changes canonical bytes and hash" {
         else => return error.UnexpectedMaterialPropertyType,
     }
 
-    var diagnostics: [1024]canonical.diagnostics.Diagnostic = undefined;
-    const normalized = try canonical.normalization.normalize(&source, .{}, &diagnostics);
+    var mutation_diagnostics: [1024]canonical.diagnostics.Diagnostic = undefined;
+    const normalized = try canonical.normalization.normalize(&source, .{}, &mutation_diagnostics);
     try std.testing.expect(normalized.isValid());
     const mutated = try canonical.serialization.serializeAlloc(std.testing.allocator, normalized.normalized.?);
     defer std.testing.allocator.free(mutated);

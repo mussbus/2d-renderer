@@ -1,11 +1,10 @@
 const std = @import("std");
 const canonical = @import("canonical_model");
+const human_test_support = @import("canonical_human_test_support.zig");
 
 const diagnostics = canonical.diagnostics;
-const human_base = canonical.human_base;
 const human_controls = canonical.human_controls;
 const human_joint_control_validation = canonical.human_joint_control_validation;
-const human_joints = canonical.human_joints;
 const identity = canonical.identity;
 const normalization = canonical.normalization;
 const parsing = canonical.parsing;
@@ -13,9 +12,12 @@ const serialization = canonical.serialization;
 const validation = canonical.validation;
 
 test "Prompt 2C human joints and controls validate and round-trip canonically" {
-    try human_joint_control_validation.validatePrompt2C(&human_base.source);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try human_joint_control_validation.validatePrompt2C(source);
     var diagnostic_storage: [512]diagnostics.Diagnostic = undefined;
-    const normalized = try normalization.normalize(&human_base.source, .{}, &diagnostic_storage);
+    const normalized = try normalization.normalize(source, .{}, &diagnostic_storage);
     try std.testing.expect(normalized.isValid());
     const canonical_bytes = try serialization.serializeAlloc(std.testing.allocator, normalized.normalized.?);
     defer std.testing.allocator.free(canonical_bytes);
@@ -33,14 +35,16 @@ test "Prompt 2C human joints and controls validate and round-trip canonically" {
 }
 
 test "Prompt 2C joint inventory covers every non-root bone with typed mirrors" {
-    try std.testing.expectEqual(@as(usize, 148), human_joints.joint_count);
-    try std.testing.expectEqual(human_joints.joint_count, human_base.source.joints.len);
-    try std.testing.expectEqual(@as(usize, 21), human_joints.mobility_profiles.len);
-    for (human_base.source.bones) |bone| {
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try std.testing.expectEqual(@as(usize, 148), source.joints.len);
+    try std.testing.expectEqual(@as(usize, 21), uniqueMobilityProfileCount(source));
+    for (source.bones) |bone| {
         if (bone.parent_bone_id == null) continue;
         const joint_id = try std.fmt.allocPrint(std.testing.allocator, "{s}_joint", .{bone.bone_id.value.bytes});
         defer std.testing.allocator.free(joint_id);
-        const joint = findJoint(joint_id) orelse return error.MissingJoint;
+        const joint = findJoint(source, joint_id) orelse return error.MissingJoint;
         try std.testing.expect(joint.child_bone_id.eql(bone.bone_id));
         try std.testing.expect(joint.parent_bone_id.eql(bone.parent_bone_id.?));
         try std.testing.expect(joint.mobility_profile_override != null);
@@ -51,19 +55,22 @@ test "Prompt 2C joint inventory covers every non-root bone with typed mirrors" {
             try std.testing.expectEqualStrings(expected_mirror, joint.mirror_joint_id.?.value.bytes);
         }
     }
-    try std.testing.expectEqual(canonical.rig.JointType.twist, findJoint("upper_arm_twist_left_01_joint").?.joint_type);
-    try std.testing.expectEqualStrings("upper_arm_left", findJoint("forearm_left_joint").?.parent_bone_id.value.bytes);
+    try std.testing.expectEqual(canonical.rig.JointType.twist, findJoint(source, "upper_arm_twist_left_01_joint").?.joint_type);
+    try std.testing.expectEqualStrings("upper_arm_left", findJoint(source, "forearm_left_joint").?.parent_bone_id.value.bytes);
 }
 
 test "Prompt 2C provisional ROM profiles are finite ordered and bounded" {
-    for (human_joints.mobility_profiles) |profile| {
-        try std.testing.expect(profile.profile_id.len != 0);
-        try std.testing.expect(std.math.isFinite(profile.stiffness));
-        try std.testing.expect(profile.stiffness >= 0 and profile.stiffness <= 1);
-        try expectAxisFiniteAndOrdered(profile.preferred_range);
-        try expectAxisFiniteAndOrdered(profile.hard_range);
-        try expectPreferredInsideHard(profile.preferred_range, profile.hard_range);
-        if (profile.swing_twist) |limits| {
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    for (source.joints) |joint| {
+        try std.testing.expect(joint.mobility_profile_override != null);
+        try std.testing.expect(std.math.isFinite(joint.limit_behavior.stiffness.?));
+        try std.testing.expect(joint.limit_behavior.stiffness.? >= 0 and joint.limit_behavior.stiffness.? <= 1);
+        try expectAxisFiniteAndOrdered(joint.preferred_range);
+        try expectAxisFiniteAndOrdered(joint.hard_range);
+        try expectPreferredInsideHard(joint.preferred_range, joint.hard_range);
+        if (joint.swing_twist) |limits| {
             try expectRangeFiniteAndOrdered(limits.swing_y_radians);
             try expectRangeFiniteAndOrdered(limits.swing_z_radians);
             try expectRangeFiniteAndOrdered(limits.twist_radians);
@@ -72,29 +79,32 @@ test "Prompt 2C provisional ROM profiles are finite ordered and bounded" {
 }
 
 test "Prompt 2C canonical joint angles are radians and survive serialization" {
-    const shoulder = findJoint("upper_arm_left_joint").?;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    const shoulder = findJoint(source, "upper_arm_left_joint").?;
     try expectRangeRadians(shoulder.preferred_range.x.?, -std.math.pi / 4.0, std.math.pi / 2.0);
     try expectRangeRadians(shoulder.hard_range.x.?, -std.math.pi / 2.0, 5.0 * std.math.pi / 6.0);
     try expectRangeRadians(shoulder.swing_twist.?.twist_radians, -11.0 * std.math.pi / 36.0, 11.0 * std.math.pi / 36.0);
 
-    const elbow = findJoint("forearm_left_joint").?;
+    const elbow = findJoint(source, "forearm_left_joint").?;
     try expectRangeRadians(elbow.preferred_range.z.?, 0, 2.0 * std.math.pi / 3.0);
     try expectRangeRadians(elbow.hard_range.z.?, -std.math.pi / 36.0, 5.0 * std.math.pi / 6.0);
 
-    const hip = findJoint("thigh_left_joint").?;
+    const hip = findJoint(source, "thigh_left_joint").?;
     try expectRangeRadians(hip.preferred_range.x.?, -std.math.pi / 6.0, std.math.pi / 3.0);
     try expectRangeRadians(hip.hard_range.x.?, -std.math.pi / 3.0, 2.0 * std.math.pi / 3.0);
 
-    const knee = findJoint("lower_leg_left_joint").?;
+    const knee = findJoint(source, "lower_leg_left_joint").?;
     try expectRangeRadians(knee.preferred_range.x.?, 0, 2.0 * std.math.pi / 3.0);
     try expectRangeRadians(knee.hard_range.x.?, -std.math.pi / 36.0, 5.0 * std.math.pi / 6.0);
 
-    const eye = findJoint("eyeball_left_01_joint").?;
+    const eye = findJoint(source, "eyeball_left_01_joint").?;
     try expectRangeRadians(eye.preferred_range.x.?, -5.0 * std.math.pi / 36.0, 5.0 * std.math.pi / 36.0);
     try expectRangeRadians(eye.hard_range.x.?, -std.math.pi / 4.0, std.math.pi / 4.0);
     try expectRangeRadians(eye.swing_twist.?.twist_radians, -std.math.pi / 12.0, std.math.pi / 12.0);
 
-    const twist = findJoint("upper_arm_twist_left_01_joint").?;
+    const twist = findJoint(source, "upper_arm_twist_left_01_joint").?;
     try std.testing.expect(twist.preferred_range.x == null and twist.preferred_range.y == null and twist.preferred_range.z == null);
     try std.testing.expect(twist.hard_range.x == null and twist.hard_range.y == null and twist.hard_range.z == null);
     try expectRangeRadians(twist.swing_twist.?.swing_y_radians, -std.math.pi / 60.0, std.math.pi / 60.0);
@@ -110,7 +120,7 @@ test "Prompt 2C canonical joint angles are radians and survive serialization" {
     try expectReviewDegrees(twist.swing_twist.?.swing_y_radians.maximum_radians, 3);
 
     var diagnostic_storage: [512]diagnostics.Diagnostic = undefined;
-    const normalized = try normalization.normalize(&human_base.source, .{}, &diagnostic_storage);
+    const normalized = try normalization.normalize(source, .{}, &diagnostic_storage);
     try std.testing.expect(normalized.isValid());
     const bytes = try serialization.serializeAlloc(std.testing.allocator, normalized.normalized.?);
     defer std.testing.allocator.free(bytes);
@@ -144,17 +154,19 @@ test "Prompt 2C canonical joint angles are radians and survive serialization" {
 }
 
 test "Prompt 2C control inventory covers every approved body area" {
-    try std.testing.expectEqual(@as(usize, 116), human_controls.control_count);
-    try std.testing.expectEqual(human_controls.control_count, human_base.source.controls.len);
-    try expectAreaCount(.spine, 5);
-    try expectAreaCount(.pelvis_root, 8);
-    try expectAreaCount(.head_jaw, 3);
-    try expectAreaCount(.arm, 14);
-    try expectAreaCount(.hand, 52);
-    try expectAreaCount(.leg_foot, 24);
-    try expectAreaCount(.eyes_eyelids, 7);
-    try expectAreaCount(.tongue, 2);
-    try expectAreaCount(.optional_anatomy, 1);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try std.testing.expectEqual(@as(usize, 116), source.controls.len);
+    try expectAreaCount(source, .spine, 5);
+    try expectAreaCount(source, .pelvis_root, 8);
+    try expectAreaCount(source, .head_jaw, 3);
+    try expectAreaCount(source, .arm, 14);
+    try expectAreaCount(source, .hand, 52);
+    try expectAreaCount(source, .leg_foot, 24);
+    try expectAreaCount(source, .eyes_eyelids, 7);
+    try expectAreaCount(source, .tongue, 2);
+    try expectAreaCount(source, .optional_anatomy, 1);
 
     inline for (.{
         "spine_lower_control",
@@ -171,37 +183,46 @@ test "Prompt 2C control inventory covers every approved body area" {
         "eyelids_blink_control",
         "tongue_curve_control",
         "penis_curve_control",
-    }) |control_id| try std.testing.expect(human_controls.findControl(&human_base.source, control_id) != null);
-    for (human_base.source.controls) |control| try std.testing.expect(control.control_type != .procedural_grasp);
-    try std.testing.expectEqual(@as(f32, 0), human_controls.findControl(&human_base.source, "eyelids_blink_control").?.default_value.?.scalar);
-    try std.testing.expectEqual(@as(f32, 0), human_controls.findControl(&human_base.source, "hand_left_pinch_control").?.default_value.?.scalar);
-    try std.testing.expectEqual(@as(f32, 0.5), human_controls.findControl(&human_base.source, "finger_left_spread_control").?.default_value.?.scalar);
+    }) |control_id| try std.testing.expect(findControl(source, control_id) != null);
+    for (source.controls) |control| try std.testing.expect(control.control_type != .procedural_grasp);
+    try std.testing.expectEqual(@as(f32, 0), findControl(source, "eyelids_blink_control").?.default_value.?.scalar);
+    try std.testing.expectEqual(@as(f32, 0), findControl(source, "hand_left_pinch_control").?.default_value.?.scalar);
+    try std.testing.expectEqual(@as(f32, 0.5), findControl(source, "finger_left_spread_control").?.default_value.?.scalar);
 }
 
 test "Prompt 2C neutral structural controls default to local or character space" {
-    try expectControlSpaceCount(.local, 102);
-    try expectControlSpaceCount(.character, 14);
-    try expectControlSpaceCount(.world, 0);
-    try expectControlSpaceCount(.target_relative, 0);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    try expectControlSpaceCount(source, .local, 102);
+    try expectControlSpaceCount(source, .character, 14);
+    try expectControlSpaceCount(source, .world, 0);
+    try expectControlSpaceCount(source, .target_relative, 0);
 
-    try expectControlSpace("upper_arm_left_fk_control", .local);
-    try expectControlSpace("finger_left_spread_control", .local);
-    try expectControlSpace("hand_left_ik_target", .character);
-    try expectControlSpace("foot_right_ik_target", .character);
-    try expectControlSpace("elbow_left_pole_control", .character);
-    try expectControlSpace("knee_right_pole_control", .character);
-    try expectControlSpace("eyes_shared_look_target", .character);
-    try expectControlSpace("eye_left_look_override", .character);
-    try expectControlSpace("pelvis_translation_control", .character);
+    try expectControlSpace(source, "upper_arm_left_fk_control", .local);
+    try expectControlSpace(source, "finger_left_spread_control", .local);
+    try expectControlSpace(source, "hand_left_ik_target", .character);
+    try expectControlSpace(source, "foot_right_ik_target", .character);
+    try expectControlSpace(source, "elbow_left_pole_control", .character);
+    try expectControlSpace(source, "knee_right_pole_control", .character);
+    try expectControlSpace(source, "eyes_shared_look_target", .character);
+    try expectControlSpace(source, "eye_left_look_override", .character);
+    try expectControlSpace(source, "pelvis_translation_control", .character);
 
     std.debug.print("PROMPT2C_CONTROL_SPACES local=102 character=14 world=0 target_relative=0\n", .{});
 }
 
 test "Prompt 2C deterministic traces are stable-ID ordered and complete" {
-    var first_storage: [human_controls.trace_count]human_controls.TraceEntry = undefined;
-    var second_storage: [human_controls.trace_count]human_controls.TraceEntry = undefined;
-    const first = try human_controls.generateTraces(&first_storage);
-    const second = try human_controls.generateTraces(&second_storage);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const source = loaded.definition();
+    const trace_count = human_controls.traceCount(source);
+    const first_storage = try std.testing.allocator.alloc(human_controls.TraceEntry, trace_count);
+    defer std.testing.allocator.free(first_storage);
+    const second_storage = try std.testing.allocator.alloc(human_controls.TraceEntry, trace_count);
+    defer std.testing.allocator.free(second_storage);
+    const first = try human_controls.generateTraces(source, first_storage);
+    const second = try human_controls.generateTraces(source, second_storage);
     try std.testing.expectEqual(@as(usize, 313), first.len);
     try std.testing.expectEqual(first.len, second.len);
     for (first, second, 0..) |a, b, index| {
@@ -234,93 +255,111 @@ test "Prompt 2C deterministic traces are stable-ID ordered and complete" {
 }
 
 test "Prompt 2C optional structural control follows component activation" {
-    try std.testing.expectEqual(@as(usize, 115), human_controls.activeControlCount(&human_base.source));
-    try std.testing.expect(!human_controls.controlIsActive(&human_base.source, "penis_curve_control"));
-    var components = human_base.components;
-    components[componentIndex("penis_module_01").?].default_state = .enabled;
-    var source = human_base.source;
-    source.components = &components;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const base = loaded.definition();
+    try std.testing.expectEqual(@as(usize, 115), human_controls.activeControlCount(base));
+    try std.testing.expect(!human_controls.controlIsActive(base, "penis_curve_control"));
+    var components = try human_test_support.dupe(canonical.component.Component, base.components);
+    defer std.testing.allocator.free(components);
+    components[componentIndex(base, "penis_module_01").?].default_state = .enabled;
+    var source = base.*;
+    source.components = components;
     try std.testing.expectEqual(@as(usize, 116), human_controls.activeControlCount(&source));
     try std.testing.expect(human_controls.controlIsActive(&source, "penis_curve_control"));
 }
 
 test "Prompt 2C validator distinguishes joint range and hierarchy defects" {
-    var joints = human_base.joints;
-    const spine_index = jointIndex("spine_01_joint").?;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const base = loaded.definition();
+    var joints = try human_test_support.dupe(canonical.rig.Joint, base.joints);
+    defer std.testing.allocator.free(joints);
+    const spine_index = jointIndex(base, "spine_01_joint").?;
     var preferred = joints[spine_index].preferred_range.x.?;
     preferred.maximum_radians = joints[spine_index].hard_range.x.?.maximum_radians + 0.1;
     joints[spine_index].preferred_range.x = preferred;
-    try expectJointError(error.PreferredRangeOutsideHardRange, &joints);
+    try expectJointError(base, error.PreferredRangeOutsideHardRange, joints);
 
-    joints = human_base.joints;
-    joints[jointIndex("upper_arm_left_joint").?].swing_twist = null;
-    try expectJointError(error.MalformedSwingTwist, &joints);
+    @memcpy(joints, base.joints);
+    joints[jointIndex(base, "upper_arm_left_joint").?].swing_twist = null;
+    try expectJointError(base, error.MalformedSwingTwist, joints);
 
-    joints = human_base.joints;
-    const jaw_index = jointIndex("jaw_joint").?;
+    @memcpy(joints, base.joints);
+    const jaw_index = jointIndex(base, "jaw_joint").?;
     preferred = joints[jaw_index].preferred_range.x.?;
     preferred.minimum_radians = std.math.nan(f32);
     joints[jaw_index].preferred_range.x = preferred;
-    try expectJointError(error.NonFiniteJointRange, &joints);
+    try expectJointError(base, error.NonFiniteJointRange, joints);
 
-    joints = human_base.joints;
-    const knee_index = jointIndex("lower_leg_left_joint").?;
+    @memcpy(joints, base.joints);
+    const knee_index = jointIndex(base, "lower_leg_left_joint").?;
     var hard = joints[knee_index].hard_range.x.?;
     hard.minimum_radians = hard.maximum_radians + 0.1;
     joints[knee_index].hard_range.x = hard;
-    try expectJointError(error.ReversedJointRange, &joints);
+    try expectJointError(base, error.ReversedJointRange, joints);
 
-    joints = human_base.joints;
+    @memcpy(joints, base.joints);
     joints[jaw_index].parent_bone_id = try identity.BoneId.init("pelvis");
-    try expectJointError(error.IncompatibleJointBones, &joints);
+    try expectJointError(base, error.IncompatibleJointBones, joints);
 
-    joints = human_base.joints;
-    joints[jointIndex("upper_arm_left_joint").?].mirror_joint_id = null;
-    try expectJointError(error.MissingJointMirrorPartner, &joints);
+    @memcpy(joints, base.joints);
+    joints[jointIndex(base, "upper_arm_left_joint").?].mirror_joint_id = null;
+    try expectJointError(base, error.MissingJointMirrorPartner, joints);
 }
 
 test "Prompt 2C validator distinguishes control drive and mirror defects" {
-    var controls = human_base.controls;
-    controls[0].driven_targets = controls[0].driven_targets[0..1];
-    try expectControlError(error.MissingDrivenTarget, &controls);
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const base = loaded.definition();
+    var controls = try human_test_support.dupe(canonical.rig.Control, base.controls);
+    defer std.testing.allocator.free(controls);
+    const spine_control_index = controlIndex(base, "spine_lower_control").?;
+    controls[spine_control_index].driven_targets = controls[spine_control_index].driven_targets[0..1];
+    try expectControlError(base, error.MissingDrivenTarget, controls);
 
-    controls = human_base.controls;
-    var targets = human_controls.target_storage[0];
+    @memcpy(controls, base.controls);
+    var targets = try human_test_support.dupe(canonical.rig.DrivenTarget, base.controls[spine_control_index].driven_targets);
+    defer std.testing.allocator.free(targets);
     targets[0] = .{ .bone = try identity.BoneId.init("spine_01_joint") };
-    controls[0].driven_targets = targets[0..2];
-    try expectControlError(error.WrongDrivenTargetType, &controls);
+    controls[spine_control_index].driven_targets = targets;
+    try expectControlError(base, error.WrongDrivenTargetType, controls);
 
-    controls = human_base.controls;
-    targets = human_controls.target_storage[0];
+    @memcpy(controls, base.controls);
+    @memcpy(targets, base.controls[spine_control_index].driven_targets);
     targets[0] = .{ .constraint = try identity.ConstraintId.init("disallowed_control_constraint") };
-    controls[0].driven_targets = targets[0..2];
-    try expectControlError(error.DisallowedDrivenTarget, &controls);
+    controls[spine_control_index].driven_targets = targets;
+    try expectControlError(base, error.DisallowedDrivenTarget, controls);
 
-    controls = human_base.controls;
+    @memcpy(controls, base.controls);
     controls[1].control_id = controls[0].control_id;
-    try expectControlError(error.DuplicateStructuralControlOwnership, &controls);
+    try expectControlError(base, error.DuplicateStructuralControlOwnership, controls);
 
-    controls = human_base.controls;
-    controls[controlIndex("hand_left_ik_target").?].mirror_control_id = null;
-    try expectControlError(error.MissingControlMirrorPartner, &controls);
+    @memcpy(controls, base.controls);
+    controls[controlIndex(base, "hand_left_ik_target").?].mirror_control_id = null;
+    try expectControlError(base, error.MissingControlMirrorPartner, controls);
 
-    controls = human_base.controls;
-    controls[controlIndex("spine_lower_control").?].control_id = try identity.ControlId.init("renamed_spine_control");
-    try expectControlError(error.WrongSpineControlCount, &controls);
+    @memcpy(controls, base.controls);
+    controls[controlIndex(base, "spine_lower_control").?].control_id = try identity.ControlId.init("renamed_spine_control");
+    try expectControlError(base, error.WrongSpineControlCount, controls);
 
-    controls = human_base.controls;
-    controls[controlIndex("hand_left_pinch_control").?].control_type = .procedural_grasp;
-    try expectControlError(error.DisallowedDrivenTarget, &controls);
+    @memcpy(controls, base.controls);
+    controls[controlIndex(base, "hand_left_pinch_control").?].control_type = .procedural_grasp;
+    try expectControlError(base, error.DisallowedDrivenTarget, controls);
 }
 
 test "Prompt 2C parser-backed preferred-range drift retains its diagnostic" {
-    var joints = human_base.joints;
-    const index = jointIndex("spine_01_joint").?;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    const base = loaded.definition();
+    var joints = try human_test_support.dupe(canonical.rig.Joint, base.joints);
+    defer std.testing.allocator.free(joints);
+    const index = jointIndex(base, "spine_01_joint").?;
     var preferred = joints[index].preferred_range.x.?;
     preferred.maximum_radians = joints[index].hard_range.x.?.maximum_radians + 0.1;
     joints[index].preferred_range.x = preferred;
-    var source = human_base.source;
-    source.joints = &joints;
+    var source = base.*;
+    source.joints = joints;
     var diagnostic_storage: [512]diagnostics.Diagnostic = undefined;
     const normalized = try normalization.normalize(&source, .{}, &diagnostic_storage);
     try std.testing.expect(normalized.isValid());
@@ -332,7 +371,9 @@ test "Prompt 2C parser-backed preferred-range drift retains its diagnostic" {
 }
 
 test "typed joint mirrors require schema 1.1 while M01 remains schema 1.0" {
-    var source = human_base.source;
+    var loaded = try human_test_support.load();
+    defer loaded.deinit();
+    var source = loaded.definition().*;
     source.schema_identity.version = .{ .major = 1, .minor = 0, .patch = 0 };
     var diagnostic_storage: [512]diagnostics.Diagnostic = undefined;
     const report = try validation.validate(&source, .{}, &diagnostic_storage);
@@ -350,36 +391,36 @@ test "typed joint mirrors require schema 1.1 while M01 remains schema 1.0" {
     try std.testing.expect(found_joint_mirror_version_error);
 }
 
-fn expectJointError(expected: human_joint_control_validation.Error, joints: []const canonical.rig.Joint) !void {
-    var source = human_base.source;
+fn expectJointError(base: *const canonical.definition.CanonicalCreatureDefinition, expected: human_joint_control_validation.Error, joints: []const canonical.rig.Joint) !void {
+    var source = base.*;
     source.joints = joints;
     try std.testing.expectError(expected, human_joint_control_validation.validatePrompt2C(&source));
 }
 
-fn expectControlError(expected: human_joint_control_validation.Error, controls: []const canonical.rig.Control) !void {
-    var source = human_base.source;
+fn expectControlError(base: *const canonical.definition.CanonicalCreatureDefinition, expected: human_joint_control_validation.Error, controls: []const canonical.rig.Control) !void {
+    var source = base.*;
     source.controls = controls;
     try std.testing.expectError(expected, human_joint_control_validation.validatePrompt2C(&source));
 }
 
-fn expectAreaCount(area: human_controls.Area, expected: usize) !void {
+fn expectAreaCount(source: *const canonical.definition.CanonicalCreatureDefinition, area: human_controls.Area, expected: usize) !void {
     var count: usize = 0;
-    for (human_controls.control_specs) |spec| if (spec.area == area) {
+    for (source.controls) |control| if (human_controls.areaForControl(control.control_id.value.bytes) == area) {
         count += 1;
     };
     try std.testing.expectEqual(expected, count);
 }
 
-fn expectControlSpaceCount(space: canonical.rig.ControlSpace, expected: usize) !void {
+fn expectControlSpaceCount(source: *const canonical.definition.CanonicalCreatureDefinition, space: canonical.rig.ControlSpace, expected: usize) !void {
     var count: usize = 0;
-    for (human_base.source.controls) |control| if (control.space == space) {
+    for (source.controls) |control| if (control.space == space) {
         count += 1;
     };
     try std.testing.expectEqual(expected, count);
 }
 
-fn expectControlSpace(control_id: []const u8, expected: canonical.rig.ControlSpace) !void {
-    const control = human_controls.findControl(&human_base.source, control_id) orelse return error.MissingControl;
+fn expectControlSpace(source: *const canonical.definition.CanonicalCreatureDefinition, control_id: []const u8, expected: canonical.rig.ControlSpace) !void {
+    const control = findControl(source, control_id) orelse return error.MissingControl;
     try std.testing.expectEqual(expected, control.space);
 }
 
@@ -448,8 +489,8 @@ fn findTrace(traces: []const human_controls.TraceEntry, control_id: []const u8, 
     return null;
 }
 
-fn findJoint(id: []const u8) ?canonical.rig.Joint {
-    return findJointIn(human_base.source.joints, id);
+fn findJoint(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?canonical.rig.Joint {
+    return findJointIn(source.joints, id);
 }
 
 fn findJointIn(joints: []const canonical.rig.Joint, id: []const u8) ?canonical.rig.Joint {
@@ -457,23 +498,44 @@ fn findJointIn(joints: []const canonical.rig.Joint, id: []const u8) ?canonical.r
     return null;
 }
 
-fn jointIndex(id: []const u8) ?usize {
-    for (human_base.source.joints, 0..) |joint, index| {
+fn jointIndex(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?usize {
+    for (source.joints, 0..) |joint, index| {
         if (std.mem.eql(u8, joint.joint_id.value.bytes, id)) return index;
     }
     return null;
 }
 
-fn controlIndex(id: []const u8) ?usize {
-    for (human_base.source.controls, 0..) |control, index| {
+fn controlIndex(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?usize {
+    for (source.controls, 0..) |control, index| {
         if (std.mem.eql(u8, control.control_id.value.bytes, id)) return index;
     }
     return null;
 }
 
-fn componentIndex(id: []const u8) ?usize {
-    for (human_base.source.components, 0..) |component, index| {
+fn componentIndex(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?usize {
+    for (source.components, 0..) |component, index| {
         if (std.mem.eql(u8, component.component_id.value.bytes, id)) return index;
     }
     return null;
+}
+
+fn findControl(source: *const canonical.definition.CanonicalCreatureDefinition, id: []const u8) ?canonical.rig.Control {
+    for (source.controls) |control| if (std.mem.eql(u8, control.control_id.value.bytes, id)) return control;
+    return null;
+}
+
+fn uniqueMobilityProfileCount(source: *const canonical.definition.CanonicalCreatureDefinition) usize {
+    var count: usize = 0;
+    for (source.joints, 0..) |joint, index| {
+        const profile = joint.mobility_profile_override orelse continue;
+        var seen = false;
+        for (source.joints[0..index]) |previous| if (previous.mobility_profile_override) |previous_profile| {
+            if (previous_profile.eql(profile)) {
+                seen = true;
+                break;
+            }
+        };
+        if (!seen) count += 1;
+    }
+    return count;
 }
