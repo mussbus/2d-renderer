@@ -56,13 +56,13 @@ pub fn serialize(
     try writer.write(",\"components\":");
     try writeSortedRecords(&writer, source.components, "component_id", writeComponent);
     try writer.write(",\"bones\":");
-    try writeSortedRecords(&writer, source.bones, "bone_id", writeBone);
+    try writeSortedBones(&writer, source.bones, source.schema_identity.version);
     try writer.write(",\"joints\":");
-    try writeSortedRecords(&writer, source.joints, "joint_id", writeJoint);
+    try writeSortedJoints(&writer, source.joints, source.schema_identity.version);
     try writer.write(",\"controls\":");
     try writeSortedRecords(&writer, source.controls, "control_id", writeControl);
     try writer.write(",\"anchors\":");
-    try writeSortedRecords(&writer, source.anchors, "anchor_id", writeAnchor);
+    try writeSortedAnchors(&writer, source.anchors, source.schema_identity.version);
     try writer.write(",\"sockets\":");
     try writeSortedRecords(&writer, source.sockets, "socket_id", writeSocket);
     try writer.write(",\"mount_anchors\":");
@@ -74,7 +74,7 @@ pub fn serialize(
     try writer.write(",\"surfaces\":");
     try writeSortedRecords(&writer, source.surfaces, "surface_id", writeSurface);
     try writer.write(",\"landmarks\":");
-    try writeSortedRecords(&writer, source.landmarks, "landmark_id", writeLandmark);
+    try writeSortedLandmarks(&writer, source.landmarks, source.schema_identity.version);
     try writer.write(",\"shared_seams\":");
     try writeSortedRecords(&writer, source.shared_seams, "seam_id", writeSharedSeam);
     try writer.write(",\"interaction_sites\":");
@@ -97,6 +97,29 @@ pub fn serialize(
     try writeSortedRecords(&writer, source.visibility_metadata, "visibility_metadata_id", writeVisibilityMetadata);
     try writer.byte('}');
     return writer.bytes();
+}
+
+pub fn serializeAlloc(
+    allocator: std.mem.Allocator,
+    normalized: normalization.NormalizedDefinition,
+) (std.mem.Allocator.Error || SerializationError)![]u8 {
+    var buffer = try allocator.alloc(u8, 4096);
+    errdefer allocator.free(buffer);
+
+    while (true) {
+        const canonical_bytes = serialize(normalized, buffer) catch |serialization_error| switch (serialization_error) {
+            error.OutputTooSmall => {
+                if (buffer.len > std.math.maxInt(usize) / 2) return error.OutputTooSmall;
+                buffer = try allocator.realloc(buffer, buffer.len * 2);
+                continue;
+            },
+            else => return serialization_error,
+        };
+        if (canonical_bytes.len != buffer.len) {
+            buffer = try allocator.realloc(buffer, canonical_bytes.len);
+        }
+        return buffer;
+    }
 }
 
 pub fn serializeF32(value: f32, output: []u8) SerializationError![]const u8 {
@@ -197,11 +220,21 @@ fn writeComponent(writer: *ByteWriter, value: component.Component) Serialization
     try writer.byte('}');
 }
 
-fn writeBone(writer: *ByteWriter, value: rig.Bone) SerializationError!void {
+fn writeBone(
+    writer: *ByteWriter,
+    value: rig.Bone,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
     try writer.write("{\"bone_id\":");
     try writeId(writer, value.bone_id);
     try writer.write(",\"display_name\":");
     try writeOptionalDisplayName(writer, value.display_name);
+    if (schemaSupportsM02TypedExtensions(schema_version)) {
+        if (value.owner_component_id) |owner_component_id| {
+            try writer.write(",\"owner_component_id\":");
+            try writeId(writer, owner_component_id);
+        }
+    }
     try writer.write(",\"parent_bone_id\":");
     try writeOptionalId(writer, value.parent_bone_id);
     try writer.write(",\"deforms_mesh\":");
@@ -217,7 +250,11 @@ fn writeBone(writer: *ByteWriter, value: rig.Bone) SerializationError!void {
     try writer.byte('}');
 }
 
-fn writeJoint(writer: *ByteWriter, value: rig.Joint) SerializationError!void {
+fn writeJoint(
+    writer: *ByteWriter,
+    value: rig.Joint,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
     try writer.write("{\"joint_id\":");
     try writeId(writer, value.joint_id);
     try writer.write(",\"display_name\":");
@@ -226,6 +263,10 @@ fn writeJoint(writer: *ByteWriter, value: rig.Joint) SerializationError!void {
     try writeId(writer, value.parent_bone_id);
     try writer.write(",\"child_bone_id\":");
     try writeId(writer, value.child_bone_id);
+    if (schemaSupportsM02TypedExtensions(schema_version)) {
+        try writer.write(",\"mirror_joint_id\":");
+        try writeOptionalId(writer, value.mirror_joint_id);
+    }
     try writer.write(",\"joint_type\":");
     try writeEnum(writer, value.joint_type);
     try writer.write(",\"preferred_range\":");
@@ -276,13 +317,21 @@ fn writeControl(writer: *ByteWriter, value: rig.Control) SerializationError!void
     try writer.byte('}');
 }
 
-fn writeAnchor(writer: *ByteWriter, value: attachment.Anchor) SerializationError!void {
+fn writeAnchor(
+    writer: *ByteWriter,
+    value: attachment.Anchor,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
     try writer.write("{\"anchor_id\":");
     try writeId(writer, value.anchor_id);
     try writer.write(",\"display_name\":");
     try writeOptionalDisplayName(writer, value.display_name);
     try writer.write(",\"owner_component_id\":");
     try writeId(writer, value.owner_component_id);
+    if (schemaSupportsM02TypedExtensions(schema_version)) {
+        try writer.write(",\"mirror_anchor_id\":");
+        try writeOptionalId(writer, value.mirror_anchor_id);
+    }
     try writer.write(",\"driver\":");
     try writeTransformDriver(writer, value.driver);
     try writer.write(",\"local_transform\":");
@@ -370,13 +419,21 @@ fn writeSurface(writer: *ByteWriter, value: semantics.Surface) SerializationErro
     try writer.byte('}');
 }
 
-fn writeLandmark(writer: *ByteWriter, value: semantics.Landmark) SerializationError!void {
+fn writeLandmark(
+    writer: *ByteWriter,
+    value: semantics.Landmark,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
     try writer.write("{\"landmark_id\":");
     try writeId(writer, value.landmark_id);
     try writer.write(",\"display_name\":");
     try writeOptionalDisplayName(writer, value.display_name);
     try writer.write(",\"owner\":");
     try writeTaggedId(writer, value.owner);
+    if (schemaSupportsM02TypedExtensions(schema_version)) {
+        try writer.write(",\"mirror_landmark_id\":");
+        try writeOptionalId(writer, value.mirror_landmark_id);
+    }
     try writer.write(",\"coordinate_metadata_id\":");
     try writeOptionalId(writer, value.coordinate_metadata_id);
     try writer.write(",\"semantic_tags\":");
@@ -903,6 +960,118 @@ fn writeSortedRecords(
         previous_id = @field(items[selected.?], id_field).value.bytes;
     }
     try writer.byte(']');
+}
+
+fn writeSortedBones(
+    writer: *ByteWriter,
+    items: []const rig.Bone,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
+    try writer.byte('[');
+    var previous_id: ?[]const u8 = null;
+    var emitted: usize = 0;
+    while (emitted < items.len) : (emitted += 1) {
+        var selected: ?usize = null;
+        for (items, 0..) |item, index| {
+            const id_bytes = item.bone_id.value.bytes;
+            if (previous_id) |previous| {
+                if (std.mem.order(u8, id_bytes, previous) != .gt) continue;
+            }
+            if (selected == null or std.mem.order(u8, id_bytes, items[selected.?].bone_id.value.bytes) == .lt) {
+                selected = index;
+            }
+        }
+        if (selected == null) return error.InvalidNormalizedCollection;
+        if (emitted != 0) try writer.byte(',');
+        try writeBone(writer, items[selected.?], schema_version);
+        previous_id = items[selected.?].bone_id.value.bytes;
+    }
+    try writer.byte(']');
+}
+
+fn writeSortedJoints(
+    writer: *ByteWriter,
+    items: []const rig.Joint,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
+    try writer.byte('[');
+    var previous_id: ?[]const u8 = null;
+    var emitted: usize = 0;
+    while (emitted < items.len) : (emitted += 1) {
+        var selected: ?usize = null;
+        for (items, 0..) |item, index| {
+            const id_bytes = item.joint_id.value.bytes;
+            if (previous_id) |previous| {
+                if (std.mem.order(u8, id_bytes, previous) != .gt) continue;
+            }
+            if (selected == null or std.mem.order(u8, id_bytes, items[selected.?].joint_id.value.bytes) == .lt) {
+                selected = index;
+            }
+        }
+        if (selected == null) return error.InvalidNormalizedCollection;
+        if (emitted != 0) try writer.byte(',');
+        try writeJoint(writer, items[selected.?], schema_version);
+        previous_id = items[selected.?].joint_id.value.bytes;
+    }
+    try writer.byte(']');
+}
+
+fn writeSortedAnchors(
+    writer: *ByteWriter,
+    items: []const attachment.Anchor,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
+    try writer.byte('[');
+    var previous_id: ?[]const u8 = null;
+    var emitted: usize = 0;
+    while (emitted < items.len) : (emitted += 1) {
+        var selected: ?usize = null;
+        for (items, 0..) |item, index| {
+            const id_bytes = item.anchor_id.value.bytes;
+            if (previous_id) |previous| {
+                if (std.mem.order(u8, id_bytes, previous) != .gt) continue;
+            }
+            if (selected == null or std.mem.order(u8, id_bytes, items[selected.?].anchor_id.value.bytes) == .lt) {
+                selected = index;
+            }
+        }
+        if (selected == null) return error.InvalidNormalizedCollection;
+        if (emitted != 0) try writer.byte(',');
+        try writeAnchor(writer, items[selected.?], schema_version);
+        previous_id = items[selected.?].anchor_id.value.bytes;
+    }
+    try writer.byte(']');
+}
+
+fn writeSortedLandmarks(
+    writer: *ByteWriter,
+    items: []const semantics.Landmark,
+    schema_version: identity.SchemaVersion,
+) SerializationError!void {
+    try writer.byte('[');
+    var previous_id: ?[]const u8 = null;
+    var emitted: usize = 0;
+    while (emitted < items.len) : (emitted += 1) {
+        var selected: ?usize = null;
+        for (items, 0..) |item, index| {
+            const id_bytes = item.landmark_id.value.bytes;
+            if (previous_id) |previous| {
+                if (std.mem.order(u8, id_bytes, previous) != .gt) continue;
+            }
+            if (selected == null or std.mem.order(u8, id_bytes, items[selected.?].landmark_id.value.bytes) == .lt) {
+                selected = index;
+            }
+        }
+        if (selected == null) return error.InvalidNormalizedCollection;
+        if (emitted != 0) try writer.byte(',');
+        try writeLandmark(writer, items[selected.?], schema_version);
+        previous_id = items[selected.?].landmark_id.value.bytes;
+    }
+    try writer.byte(']');
+}
+
+fn schemaSupportsM02TypedExtensions(version: identity.SchemaVersion) bool {
+    return version.major > 1 or (version.major == 1 and version.minor >= 1);
 }
 
 fn writeSortedIds(writer: *ByteWriter, items: anytype) SerializationError!void {

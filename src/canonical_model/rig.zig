@@ -4,6 +4,7 @@ const math3d = @import("math3d.zig");
 pub const Bone = struct {
     bone_id: identity.BoneId,
     display_name: ?identity.DisplayName,
+    owner_component_id: ?identity.ComponentId = null,
     parent_bone_id: ?identity.BoneId,
     deforms_mesh: bool,
     local_rest_transform: math3d.LocalTransform,
@@ -45,6 +46,7 @@ pub const Joint = struct {
     display_name: ?identity.DisplayName,
     parent_bone_id: identity.BoneId,
     child_bone_id: identity.BoneId,
+    mirror_joint_id: ?identity.JointId = null,
     joint_type: JointType,
     preferred_range: AxisAngularLimits,
     hard_range: AxisAngularLimits,

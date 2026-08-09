@@ -13,6 +13,7 @@ pub const Anchor = struct {
     anchor_id: identity.AnchorId,
     display_name: ?identity.DisplayName,
     owner_component_id: identity.ComponentId,
+    mirror_anchor_id: ?identity.AnchorId = null,
     driver: TransformDriver,
     local_transform: math3d.LocalTransform,
     semantic_tags: []const identity.SemanticTagId,

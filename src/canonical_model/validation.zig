@@ -155,6 +155,14 @@ fn validateRig(
     for (source.bones) |bone| {
         if (bone.parent_bone_id == null) root_count += 1;
         try validateUniqueIds(bone.semantic_tags, "bone", bone.bone_id.value.bytes, "semantic_tags", collector);
+        if (bone.owner_component_id) |owner_component_id| {
+            if (!schemaSupportsM02TypedExtensions(source.schema_identity.version)) {
+                try emit(collector, .schema_feature_version_mismatch, .identity, "bone", bone.bone_id.value.bytes, "owner_component_id", null, null, "component-owned bones require canonical creature schema 1.1.0 or newer");
+            }
+            if (!hasId(source.components, "component_id", owner_component_id)) {
+                try missingOrWrongReference(source, collector, "bone", bone.bone_id.value.bytes, "owner_component_id", "component", owner_component_id.value.bytes);
+            }
+        }
         if (bone.parent_bone_id) |parent_id| {
             if (bone.bone_id.eql(parent_id)) {
                 try emit(collector, .invalid_parent_relationship, .graph, "bone", bone.bone_id.value.bytes, "parent_bone_id", "bone", parent_id.value.bytes, "bone cannot parent itself");
@@ -187,6 +195,14 @@ fn validateRig(
     }
 
     for (source.joints) |joint| {
+        if (joint.mirror_joint_id) |mirror_joint_id| {
+            if (!schemaSupportsM02TypedExtensions(source.schema_identity.version)) {
+                try emit(collector, .schema_feature_version_mismatch, .identity, "joint", joint.joint_id.value.bytes, "mirror_joint_id", null, null, "typed joint mirrors require canonical creature schema 1.1.0 or newer");
+            }
+            if (!hasId(source.joints, "joint_id", mirror_joint_id)) {
+                try missingOrWrongReference(source, collector, "joint", joint.joint_id.value.bytes, "mirror_joint_id", "joint", mirror_joint_id.value.bytes);
+            }
+        }
         if (!hasId(source.bones, "bone_id", joint.parent_bone_id)) {
             try missingOrWrongReference(source, collector, "joint", joint.joint_id.value.bytes, "parent_bone_id", "bone", joint.parent_bone_id.value.bytes);
         }
@@ -234,6 +250,10 @@ fn validateRig(
     }
 }
 
+fn schemaSupportsM02TypedExtensions(version: identity.SchemaVersion) bool {
+    return version.major > 1 or (version.major == 1 and version.minor >= 1);
+}
+
 fn validateAttachments(
     source: *const definition.CanonicalCreatureDefinition,
     collector: *diagnostics.Collector,
@@ -245,6 +265,14 @@ fn validateAttachments(
         }
         try validateTransform(anchor.local_transform, "anchor", anchor.anchor_id.value.bytes, "local_transform", collector);
         try validateTransformDriver(source, anchor.driver, "anchor", anchor.anchor_id.value.bytes, collector);
+        if (anchor.mirror_anchor_id) |mirror_anchor_id| {
+            if (!schemaSupportsM02TypedExtensions(source.schema_identity.version)) {
+                try emit(collector, .schema_feature_version_mismatch, .identity, "anchor", anchor.anchor_id.value.bytes, "mirror_anchor_id", null, null, "typed anchor mirrors require canonical creature schema 1.1.0 or newer");
+            }
+            if (!hasId(source.anchors, "anchor_id", mirror_anchor_id)) {
+                try missingOrWrongReference(source, collector, "anchor", anchor.anchor_id.value.bytes, "mirror_anchor_id", "anchor", mirror_anchor_id.value.bytes);
+            }
+        }
     }
     for (source.mount_anchors) |mount| {
         try validateUniqueIds(mount.semantic_tags, "mount_anchor", mount.mount_anchor_id.value.bytes, "semantic_tags", collector);
@@ -336,6 +364,14 @@ fn validateSemantics(
         try validateUniqueIds(landmark.semantic_tags, "landmark", landmark.landmark_id.value.bytes, "semantic_tags", collector);
         if (!semanticOwnerExists(source, landmark.owner)) {
             try emit(collector, .semantic_owner_missing, .semantic, "landmark", landmark.landmark_id.value.bytes, "owner", semanticOwnerType(landmark.owner), semanticOwnerId(landmark.owner), "landmark owner reference does not resolve");
+        }
+        if (landmark.mirror_landmark_id) |mirror_landmark_id| {
+            if (!schemaSupportsM02TypedExtensions(source.schema_identity.version)) {
+                try emit(collector, .schema_feature_version_mismatch, .identity, "landmark", landmark.landmark_id.value.bytes, "mirror_landmark_id", null, null, "typed landmark mirrors require canonical creature schema 1.1.0 or newer");
+            }
+            if (!hasId(source.landmarks, "landmark_id", mirror_landmark_id)) {
+                try missingOrWrongReference(source, collector, "landmark", landmark.landmark_id.value.bytes, "mirror_landmark_id", "landmark", mirror_landmark_id.value.bytes);
+            }
         }
     }
     for (source.shared_seams) |seam| {

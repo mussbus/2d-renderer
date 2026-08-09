@@ -175,6 +175,22 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const human_base_export_module = b.createModule(.{
+        .root_source_file = b.path("tools/export_human_base_evidence.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    human_base_export_module.addImport("canonical_model", canonical_model_module);
+    const human_base_export = b.addExecutable(.{
+        .name = "export-human-base-evidence",
+        .root_module = human_base_export_module,
+    });
+    const run_human_base_export = b.addRunArtifact(human_base_export);
+    const human_base_export_step = b.step(
+        "update-human-base-evidence",
+        "Explicitly regenerate reviewed human_base derived evidence from the authoritative authoring source",
+    );
+    human_base_export_step.dependOn(&run_human_base_export.step);
     const canonical_model_core_test_module = b.createModule(.{
         .root_source_file = b.path("tests/canonical_model_core_tests.zig"),
         .target = target,
@@ -199,6 +215,36 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     canonical_model_phase_f_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_human_identity_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_identity_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_identity_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_human_rig_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_rig_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_rig_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_human_joint_control_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_joint_control_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_joint_control_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_human_structural_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_structural_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_structural_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_human_base_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_base_acceptance_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_base_test_module.addImport("canonical_model", canonical_model_module);
     const test_module = b.createModule(.{
         .root_source_file = b.path("tests/test_all.zig"),
         .target = target,
@@ -1743,6 +1789,67 @@ pub fn build(b: *std.Build) void {
     );
     canonical_model_phase_f_test_step.dependOn(&run_canonical_model_phase_f_tests.step);
 
+    const canonical_human_identity_tests = b.addTest(.{
+        .name = "canonical-human-identity-tests",
+        .root_module = canonical_human_identity_test_module,
+    });
+    const run_canonical_human_identity_tests = b.addRunArtifact(canonical_human_identity_tests);
+    const canonical_human_identity_test_step = b.step(
+        "test-canonical-human-identity",
+        "Run Prompt 2A human identity, component, semantic, material, and M01-golden tests",
+    );
+    canonical_human_identity_test_step.dependOn(&run_canonical_human_identity_tests.step);
+    canonical_human_identity_test_step.dependOn(&run_canonical_model_phase_de_tests.step);
+    canonical_human_identity_test_step.dependOn(&run_canonical_model_phase_f_tests.step);
+
+    const canonical_human_rig_tests = b.addTest(.{
+        .name = "canonical-human-rig-tests",
+        .root_module = canonical_human_rig_test_module,
+    });
+    const run_canonical_human_rig_tests = b.addRunArtifact(canonical_human_rig_tests);
+    const canonical_human_rig_test_step = b.step(
+        "test-canonical-human-rig",
+        "Run Prompt 2B skeleton, rest-pose, measurement, symmetry, and activation tests",
+    );
+    canonical_human_rig_test_step.dependOn(&run_canonical_human_rig_tests.step);
+    canonical_human_rig_test_step.dependOn(canonical_human_identity_test_step);
+
+    const canonical_human_joint_control_tests = b.addTest(.{
+        .name = "canonical-human-joint-control-tests",
+        .root_module = canonical_human_joint_control_test_module,
+    });
+    const run_canonical_human_joint_control_tests = b.addRunArtifact(canonical_human_joint_control_tests);
+    const canonical_human_joint_control_test_step = b.step(
+        "test-canonical-human-joint-controls",
+        "Run Prompt 2C human joint, ROM, control, trace, and invalid-data tests",
+    );
+    canonical_human_joint_control_test_step.dependOn(&run_canonical_human_joint_control_tests.step);
+    canonical_human_joint_control_test_step.dependOn(canonical_human_rig_test_step);
+
+    const canonical_human_structural_tests = b.addTest(.{
+        .name = "canonical-human-structural-tests",
+        .root_module = canonical_human_structural_test_module,
+    });
+    const run_canonical_human_structural_tests = b.addRunArtifact(canonical_human_structural_tests);
+    const canonical_human_structural_test_step = b.step(
+        "test-canonical-human-structural",
+        "Run Prompt 2D anchor, socket, landmark, seam, site, effector, and proxy-decision tests",
+    );
+    canonical_human_structural_test_step.dependOn(&run_canonical_human_structural_tests.step);
+    canonical_human_structural_test_step.dependOn(canonical_human_joint_control_test_step);
+
+    const canonical_human_base_tests = b.addTest(.{
+        .name = "canonical-human-base-acceptance-tests",
+        .root_module = canonical_human_base_test_module,
+    });
+    const run_canonical_human_base_tests = b.addRunArtifact(canonical_human_base_tests);
+    const canonical_human_base_test_step = b.step(
+        "test-canonical-human-base",
+        "Run Prompt 2E file-backed human_base golden, determinism, evidence, and invalid-fixture tests",
+    );
+    canonical_human_base_test_step.dependOn(&run_canonical_human_base_tests.step);
+    canonical_human_base_test_step.dependOn(canonical_human_structural_test_step);
+
     const deterministic_test_filter = b.option(
         []const u8,
         "test-filter",
@@ -1792,6 +1899,11 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_canonical_model_phase_c_tests.step);
     test_step.dependOn(&run_canonical_model_phase_de_tests.step);
     test_step.dependOn(&run_canonical_model_phase_f_tests.step);
+    test_step.dependOn(&run_canonical_human_identity_tests.step);
+    test_step.dependOn(&run_canonical_human_rig_tests.step);
+    test_step.dependOn(&run_canonical_human_joint_control_tests.step);
+    test_step.dependOn(&run_canonical_human_structural_tests.step);
+    test_step.dependOn(&run_canonical_human_base_tests.step);
 
     const full_test_step = b.step(
         "test-full",
@@ -1822,6 +1934,7 @@ pub fn build(b: *std.Build) void {
     check_step.dependOn(&p27c_r1_torso_audit.step);
     check_step.dependOn(&verify_p25d_goldens.step);
     check_step.dependOn(&repository_audit.step);
+    check_step.dependOn(&human_base_export.step);
 
     const verify_step = b.step(
         "verify",

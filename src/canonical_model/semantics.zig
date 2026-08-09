@@ -28,6 +28,7 @@ pub const Landmark = struct {
     landmark_id: identity.LandmarkId,
     display_name: ?identity.DisplayName,
     owner: SemanticOwner,
+    mirror_landmark_id: ?identity.LandmarkId = null,
     coordinate_metadata_id: ?identity.SurfaceCoordinateMetadataId,
     semantic_tags: []const identity.SemanticTagId,
 };

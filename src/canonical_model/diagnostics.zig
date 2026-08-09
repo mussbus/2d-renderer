@@ -60,6 +60,7 @@ pub const Code = enum {
     material_property_type_mismatch,
     invalid_material_color,
     invalid_coordinate_contract,
+    schema_feature_version_mismatch,
 };
 
 pub const Diagnostic = struct {
