@@ -1,5 +1,145 @@
 # Testing Strategy
 
+## M01.5 verification workflow
+
+This section is the current repository-wide command contract. Historical
+milestone counts and commands later in this document remain evidence for the
+state that existed when those milestones were accepted; they do not override
+this workflow.
+
+All routine CPU verification remains windowless and GPU-independent. Use the
+pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test -j1
+& '.\.deps\zig-0.16.0\zig.exe' build check -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-full -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-stress -j1
+& '.\.deps\zig-0.16.0\zig.exe' build verify -j1
+```
+
+| Tier | Primary command | Purpose | Required use |
+| --- | --- | --- | --- |
+| Fast development | `zig build test -j1` | Pure/deterministic CPU behavior, cheap format-independent asset checks, visual registration, and all 50 M01 canonical-model tests | During normal implementation and before handing a local change to another engineer |
+| Fast repository gate | `zig build check -j1` | Fast development tier plus formatting and every static repository, art, golden, and policy audit | Before every review request; this remains the required non-GPU static gate |
+| Full regression | `zig build test-full -j1` | Fast tier plus the bounded production-route integration, foundation, wardrobe, visual-geometry, environment, and visual-foundation suites | Before milestone acceptance, after cross-system changes, and when a focused suite affects an adjacent subsystem |
+| Stress/exhaustive | `zig build test-stress -j1` | The unchanged 1,000-handshake lifecycle audit and 100,000-integrated-tick stability/resource audit | Before milestone acceptance and after interaction, IK, foot-planting, reset, allocation, or long-duration simulation changes |
+| Complete CPU verification | `zig build verify -j1` | `check` + `test-full` + `test-stress`, with shared build nodes executed once | Final pre-owner-review gate for M02 through M08 and repository-wide verification changes |
+
+The 2026-08-08 M01.5 measurements use isolated task-local caches and report
+wall time, so compiler cache state and the known Windows test-runner IPC
+variability can move the outer time without changing test work. The measured
+fast tier passed 340/340 in 63.4 seconds, `check` passed 22/22 steps and
+340/340 tests in 68.9 seconds, full regression passed 450/450 in 172.2
+seconds, stress passed 2/2 in 237.6 seconds, and complete `verify` passed
+39/39 steps and 452/452 unique tests in 274.4 seconds. These are planning
+ranges, not pass/fail timeouts. A slow run is investigated; tests are never
+weakened or skipped to meet a time target.
+
+### M01.5 before-state findings
+
+Before this split, both `test` and `check` executed the same 11 test binaries:
+the 323-test deterministic aggregate, image decode, wardrobe, visual
+registration, visual geometry, environment, visual foundation, and all four
+canonical-model suites. `check` additionally ran formatting plus five static
+art/golden/repository audits. The shared dependency nodes were not executed
+twice within one `check` invocation, but the ordinary `test` command still
+carried the same expensive workload as `check` minus static audits.
+
+The fresh before-state `check` passed 29/29 steps and 484/484 scheduled test
+executions in 459.3 seconds. The deterministic aggregate reported about five
+minutes, including an isolated 174.0-second 1,000-handshake audit and a
+67.0-second 100,000-tick audit. The visual-foundation suite reported about one
+minute; its two production-route proofs took approximately 37 and 25 seconds.
+Wardrobe, visual geometry, and environment took approximately 9, 6, and 10
+seconds. Static audits accounted for approximately 40 seconds of constituent
+execution. Constituent times can overlap and therefore do not sum to wall
+time.
+
+Before-state standalone `test` attempts reached 440.1 to 454.8 seconds and
+completed 470 to 477 reported tests before the known Windows test-runner IPC
+non-response occurred. The identical test graph completed through `check`;
+there was no assertion failure. M01.5 therefore uses the successful `check`
+wall time as the clean aggregate baseline and retains the standalone behavior
+as an infrastructure observation.
+
+### Focused and specialized commands
+
+Use the smallest relevant focused step while iterating, then run the required
+primary tier before review. Existing milestone steps such as `test-camera`,
+`test-art`, `test-presentation`, `test-component-graph`, `test-wardrobe`,
+`test-visual-registration`, `test-visual-geometry`, `test-foundation`,
+`test-environment`, `test-visual-foundation`, and the four
+`test-canonical-model-*` steps remain supported specialized routes.
+
+`zig build test-deterministic -Dtest-filter=<text> -j1` compiles and runs only
+matching tests from the fast deterministic aggregate. Use the following for a
+focused test in the visual-foundation suite:
+
+```powershell
+zig build test-visual-foundation -Dvisual-foundation-test-filter=<text> -j1
+```
+
+Filters are iteration aids only and never satisfy a primary tier by themselves.
+
+The GPU-backed `gpu-smoke`, bounded executable evidence routes, real-D3D12
+review packages, and manual visual acceptance remain specialized verification.
+They are intentionally not hidden inside a CPU command that could report
+success on a machine without the required graphical environment.
+
+### Test placement rules
+
+- Put short isolated behavior, validation, ownership, deterministic ordering,
+  and regression cases in the fast aggregate.
+- Put bounded end-to-end production routes, large asset/geometry matrices, and
+  multi-subsystem acceptance simulations in full regression.
+- Put repeated lifecycle, long-duration, high-load, permutation/exhaustive, and
+  soak tests in stress when their cost would materially slow normal iteration.
+- Keep GPU, review-package, report-generation, and narrowly scoped subsystem
+  checks as specialized commands with explicit environment requirements.
+- A test moves tiers because of its purpose and measured cost, never solely to
+  make a failing or slow gate appear green. Its assertions and accepted bounds
+  remain unchanged during a tier move.
+- A new meaningful test must be reachable from `test`, `test-full`, or
+  `test-stress`; `verify` must therefore reach it. A specialized-only test is
+  allowed only when it requires hardware, external evidence, or an explicitly
+  documented environment that the CPU verification graph cannot provide.
+
+M01.5 removed no test behavior. The previous graph executed the 19 wardrobe
+and 13 environment tests twice: once through `tests/test_all.zig` and once
+through their focused roots. The current graph executes each once in
+`test-full`. The two long stress tests moved intact from
+`tests/integration_tests.zig` to `tests/stress_tests.zig`; the remaining nine
+integration tests use their own full-regression root.
+
+### M02-M08 retirement rule
+
+Every M02 through M08 milestone that introduces a replacement production path,
+test harness, fixture helper, compatibility adapter, or temporary scaffold must
+perform a retirement review before its owner-review gate:
+
+1. Inventory the old and replacement paths and every production, test, tool,
+   build, and documentation call site.
+2. Delete the old item in the same milestone when it has zero required call
+   sites, the replacement carries equivalent or stronger coverage, and no
+   accepted contract still requires it.
+3. If deletion is unsafe, record why it remains, its current owner, the exact
+   exit evidence required, and the latest milestone (no later than M08) that
+   must decide its fate. Terms such as `transitional_legacy` are an explicit
+   migration classification, not permanent authorization.
+4. Do not keep an old path merely for hypothetical compatibility, and do not
+   delete it merely because its name says legacy. Uncertain reachability or
+   behavior stays in place and is reported for owner review.
+5. Update build steps and documentation in the same change so retired tests or
+   helpers cannot remain silently scheduled, orphaned, or described as current.
+6. At the M08 closeout, every remaining transitional item must either be
+   deleted or receive explicit owner approval as a supported long-term path.
+
+The M01 canonical-model source, file-backed goldens, 12,022-byte Phase F
+payload, and accepted SHA-256 identities are protected regression authority.
+Ordinary verification never regenerates them. An intentional canonical change
+still requires explicit review.
+
 ## Documentation contract audit
 
 Prompt 25E introduced a bounded PowerShell audit for the consolidated project,
@@ -12,7 +152,7 @@ records implementation through Prompt 27:
 
 It verifies required files, local Markdown targets, prompt navigation, report links, and practical orphan detection. Verbatim historical report files are excluded from link lint because their original local evidence paths are intentionally preserved rather than rewritten.
 
-## Current aggregate status through Prompt 27C-R1
+## Historical aggregate status through Prompt 27C-R1
 
 The Prompt 27C-R1 aggregate gate passes 389/389 tests in Debug. The focused
 visual-geometry gate passes 158/158 checks and the focused

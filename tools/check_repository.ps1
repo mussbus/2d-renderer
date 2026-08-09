@@ -103,6 +103,7 @@ $diagnosticsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 's
 $debugDrawSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/debug/debug_draw.zig')
 $integratedDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/integrated_demo.zig')
 $integrationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/integration_tests.zig')
+$stressTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/stress_tests.zig')
 $playgroundSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/playground_demo.zig')
 $playgroundTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/playground_tests.zig')
 $cameraSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/camera2d.zig')
@@ -850,9 +851,7 @@ $requiredIntegrationTestPhrases = @(
     'diagnostic getters are non destructive',
     'integrated scene reset clears planted airborne pre contact and contact state',
     'character local reset isolates',
-    'three render frame grouping schedules',
-    'one thousand complete handshakes',
-    'one hundred thousand integrated ticks'
+    'three render frame grouping schedules'
 )
 foreach ($phrase in $requiredIntegrationTestPhrases) {
     if (-not $integrationTestsSource.Contains($phrase)) {
@@ -860,12 +859,39 @@ foreach ($phrase in $requiredIntegrationTestPhrases) {
         $failed = $true
     }
 }
+$requiredStressTestPhrases = @(
+    'one thousand complete handshakes',
+    'one hundred thousand integrated ticks'
+)
+foreach ($phrase in $requiredStressTestPhrases) {
+    if (-not $stressTestsSource.Contains($phrase)) {
+        Write-Error "Required deterministic stress coverage is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
 if (-not $integratedDemoSource.Contains('activeOwnedOverrideCount()') -or
     -not $integratedDemoSource.Contains('activeIkConstraintCount()') -or
     -not $integratedDemoSource.Contains('airborne_false_plants') -or
-    -not $integrationTestsSource.Contains('snapshot.allocations.total()')) {
+    -not $stressTestsSource.Contains('snapshot.allocations.total()')) {
     Write-Error 'Integrated cleanup gates must cover stale interaction ownership, IK constraints, airborne foot locks, and allocation growth.' -ErrorAction Continue
     $failed = $true
+}
+$requiredVerificationTiers = @(
+    '"test-full"',
+    '"test-stress"',
+    '"verify"',
+    'full_test_step.dependOn(&run_integration_tests.step)',
+    'full_test_step.dependOn(&run_visual_foundation_tests.step)',
+    'stress_test_step.dependOn(&run_stress_tests.step)',
+    'verify_step.dependOn(check_step)',
+    'verify_step.dependOn(full_test_step)',
+    'verify_step.dependOn(stress_test_step)'
+)
+foreach ($phrase in $requiredVerificationTiers) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "Required M01.5 verification-tier wiring is missing: '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
 }
 
 $inputOwnershipSources = $sdlInputSource + [Environment]::NewLine + $inputSource

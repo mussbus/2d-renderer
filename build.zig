@@ -204,6 +204,16 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const stress_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/stress_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const integration_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/integration_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const fault_injection_module = b.createModule(.{
         .root_source_file = b.path("src/platform/fault_injection.zig"),
         .target = target,
@@ -1248,6 +1258,19 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("visual_registration", visual_registration_module);
     test_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
     test_module.addImport("anatomy_evidence", anatomy_evidence_module);
+    stress_test_module.addImport("math", math_module);
+    stress_test_module.addImport("input", input_module);
+    stress_test_module.addImport("humanoid", humanoid_module);
+    stress_test_module.addImport("authored_clips", authored_clips_module);
+    stress_test_module.addImport("character", character_module);
+    stress_test_module.addImport("interaction_system", interaction_system_module);
+    stress_test_module.addImport("handshake", handshake_module);
+    stress_test_module.addImport("integrated_demo", integrated_demo_module);
+    integration_test_module.addImport("math", math_module);
+    integration_test_module.addImport("sprite_batch", sprite_batch_module);
+    integration_test_module.addImport("diagnostics", diagnostics_module);
+    integration_test_module.addImport("debug_draw", debug_draw_module);
+    integration_test_module.addImport("integrated_demo", integrated_demo_module);
     const camera_test_module = b.createModule(.{
         .root_source_file = b.path("tests/camera_tests.zig"),
         .target = target,
@@ -1601,6 +1624,11 @@ pub fn build(b: *std.Build) void {
     const visual_foundation_tests = b.addTest(.{
         .name = "visual-foundation-tests",
         .root_module = visual_foundation_test_module,
+        .filters = if (b.option(
+            []const u8,
+            "visual-foundation-test-filter",
+            "Run only visual-foundation tests whose names contain this text",
+        )) |filter| &.{filter} else &.{},
     });
     const run_visual_foundation_tests = b.addRunArtifact(visual_foundation_tests);
     const visual_foundation_test_step = b.step(
@@ -1715,20 +1743,67 @@ pub fn build(b: *std.Build) void {
     );
     canonical_model_phase_f_test_step.dependOn(&run_canonical_model_phase_f_tests.step);
 
-    const tests = b.addTest(.{ .name = "deterministic-tests", .root_module = test_module });
+    const deterministic_test_filter = b.option(
+        []const u8,
+        "test-filter",
+        "Run only deterministic tests whose names contain this text",
+    );
+    const tests = b.addTest(.{
+        .name = "deterministic-tests",
+        .root_module = test_module,
+        .filters = if (deterministic_test_filter) |filter| &.{filter} else &.{},
+    });
     const run_tests = b.addRunArtifact(tests);
-    const test_step = b.step("test", "Run pure math, hierarchy, animation, controller, procedural-motion, collision, sprite-batch, and ownership tests without SDL or a GPU");
+    const deterministic_test_step = b.step(
+        "test-deterministic",
+        "Run the deterministic CPU test aggregate; optionally narrow with -Dtest-filter=<text>",
+    );
+    deterministic_test_step.dependOn(&run_tests.step);
+    const stress_tests = b.addTest(.{
+        .name = "stress-tests",
+        .root_module = stress_test_module,
+    });
+    const run_stress_tests = b.addRunArtifact(stress_tests);
+    const stress_test_step = b.step(
+        "test-stress",
+        "Run long-duration 1,000-interaction and 100,000-tick deterministic stress tests",
+    );
+    stress_test_step.dependOn(&run_stress_tests.step);
+
+    const integration_tests = b.addTest(.{
+        .name = "integration-tests",
+        .root_module = integration_test_module,
+    });
+    const run_integration_tests = b.addRunArtifact(integration_tests);
+    const integration_test_step = b.step(
+        "test-integration",
+        "Run full deterministic production-route integration regressions",
+    );
+    integration_test_step.dependOn(&run_integration_tests.step);
+
+    const test_step = b.step(
+        "test",
+        "Run the fast CPU development suite without SDL or a GPU",
+    );
     test_step.dependOn(&run_tests.step);
     test_step.dependOn(&run_image_decode_tests.step);
-    test_step.dependOn(&run_wardrobe_tests.step);
     test_step.dependOn(&run_visual_registration_tests.step);
-    test_step.dependOn(&run_visual_geometry_tests.step);
-    test_step.dependOn(&run_environment_tests.step);
-    test_step.dependOn(&run_visual_foundation_tests.step);
     test_step.dependOn(&run_canonical_model_core_tests.step);
     test_step.dependOn(&run_canonical_model_phase_c_tests.step);
     test_step.dependOn(&run_canonical_model_phase_de_tests.step);
     test_step.dependOn(&run_canonical_model_phase_f_tests.step);
+
+    const full_test_step = b.step(
+        "test-full",
+        "Run every non-stress CPU regression suite without SDL or a GPU",
+    );
+    full_test_step.dependOn(test_step);
+    full_test_step.dependOn(&run_integration_tests.step);
+    full_test_step.dependOn(&run_foundation_tests.step);
+    full_test_step.dependOn(&run_wardrobe_tests.step);
+    full_test_step.dependOn(&run_visual_geometry_tests.step);
+    full_test_step.dependOn(&run_environment_tests.step);
+    full_test_step.dependOn(&run_visual_foundation_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });
     format.setName("verify Zig formatting");
@@ -1736,24 +1811,25 @@ pub fn build(b: *std.Build) void {
     repository_audit.addFileArg(b.path("tools/check_repository.ps1"));
     repository_audit.setName("audit repository source policy");
 
-    const check_step = b.step("check", "Verify formatting, deterministic tests, and source policy without a GPU");
+    const check_step = b.step(
+        "check",
+        "Run the fast CPU suite plus formatting and every static repository audit",
+    );
     check_step.dependOn(&format.step);
-    check_step.dependOn(&run_tests.step);
-    check_step.dependOn(&run_image_decode_tests.step);
-    check_step.dependOn(&run_wardrobe_tests.step);
-    check_step.dependOn(&run_visual_registration_tests.step);
-    check_step.dependOn(&run_visual_geometry_tests.step);
-    check_step.dependOn(&run_environment_tests.step);
-    check_step.dependOn(&run_visual_foundation_tests.step);
-    check_step.dependOn(&run_canonical_model_core_tests.step);
-    check_step.dependOn(&run_canonical_model_phase_c_tests.step);
-    check_step.dependOn(&run_canonical_model_phase_de_tests.step);
-    check_step.dependOn(&run_canonical_model_phase_f_tests.step);
+    check_step.dependOn(test_step);
     check_step.dependOn(&environment_art_audit.step);
     check_step.dependOn(&p27c_art_audit.step);
     check_step.dependOn(&p27c_r1_torso_audit.step);
     check_step.dependOn(&verify_p25d_goldens.step);
     check_step.dependOn(&repository_audit.step);
+
+    const verify_step = b.step(
+        "verify",
+        "Run fast checks, every non-stress regression, and deterministic stress tests",
+    );
+    verify_step.dependOn(check_step);
+    verify_step.dependOn(full_test_step);
+    verify_step.dependOn(stress_test_step);
 }
 
 const ShaderCompileOptions = struct {
