@@ -1,0 +1,143 @@
+{
+  "adoption_schema": "hm08_canonical_adoption",
+  "adoption_version": "1.0.0",
+  "external_provenance": {
+    "upstream_project": "MakeHuman Community MPFB2",
+    "repository_commit": "437dd513888a92399d1d3200d2e80859fae55abc",
+    "asset_path": "src/mpfb/data/3dobjs/base.obj",
+    "asset_identity": "hm08",
+    "asset_bytes": 1808470,
+    "asset_sha256": "bea00279464133e86b634220cd2774ebf3b470de280d11222a6b2269e4a8d950",
+    "license": "CC0 1.0 Universal",
+    "license_sha256": "5f3ab0cf6f7ebe92efe4b83213131c617d308d164eeefd5da230373640b0c226",
+    "license_provenance": "PASS",
+    "canonical_authority": false
+  },
+  "canonical_authority_path": "assets/canonical_model/human_base/geometry/human_base_geometry.authoring.json",
+  "candidate_path": "human_base_geometry.hm08.run5.json",
+  "candidate_authoring_sha256": "29552addc3d550c4a423609598a0dfbc5d28629e62329fb11ef6ce52cab875bf",
+  "topology_reset": {
+    "mesh_id": "human_base_main_body",
+    "topology_id": "human_base_topology",
+    "compatibility_version": {
+      "major": 2,
+      "minor": 0,
+      "patch": 0
+    },
+    "revision": 4,
+    "vertex_id_range": [
+      0,
+      13379
+    ],
+    "face_id_range": [
+      0,
+      13377
+    ],
+    "next_vertex_id": 13380,
+    "next_face_id": 13378,
+    "cross_version_element_correspondence": false,
+    "r1_classification": "HISTORICAL_SUPERSEDED_M03_R1_CANDIDATE",
+    "r1_source_sha256": "e501458b9cf78991aa4290bcecd81ebcc5cb112d4c735c2a9e0a381653766623"
+  },
+  "coordinate_adaptation": {
+    "upstream_axes": "right_handed_X_lateral_Y_up_Z_forward",
+    "upstream_units": "MakeHuman native units",
+    "upstream_height": 16.658900000000003,
+    "uniform_scale": 0.10977915708720262,
+    "translation_before_scale": [
+      -0.0,
+      8.1676,
+      0.0
+    ],
+    "axis_conversion": "identity into canonical X/Y/Z; Blender bridge uses (X,-Z,Y)",
+    "canonical_height_m": 1.8288,
+    "canonical_ground_y_m": 0.0,
+    "seed_pose": {
+      "operation": "qualified_native_neutral_A_pose_preserved",
+      "arm_vertex_count": 3922,
+      "leg_vertex_count": 3012,
+      "symmetry_preserved": true,
+      "topology_changed": false,
+      "shape_adaptation_deferred_to": "Prompt 2C-R3"
+    }
+  },
+  "geometry": {
+    "vertex_count": 13380,
+    "used_vertex_count": 13380,
+    "unused_vertex_count": 0,
+    "face_count": 13378,
+    "arity_counts": {
+      "4": 13378
+    },
+    "quad_percentage": 100.0,
+    "boundary_edge_count": 0,
+    "non_manifold_edge_count": 0,
+    "connected_component_count": 1,
+    "connected_component_vertex_counts": [
+      13380
+    ],
+    "duplicate_position_count": 0,
+    "duplicate_face_count": 0,
+    "degenerate_face_count": 0,
+    "uv_corner_coverage": 1.0,
+    "aspect_ratio": {
+      "maximum": 13.858321488960184,
+      "p95": 4.50259691636008,
+      "p99": 7.015029556295374,
+      "over_8_count": 80
+    },
+    "edge_length_native": {
+      "minimum": 0.00035858314415962395,
+      "median": 0.00617452605762102,
+      "p95": 0.028509924493132686,
+      "p99": 0.040386428789797084,
+      "maximum": 0.06829584795325379
+    },
+    "valence_distribution": {
+      "3": 164,
+      "4": 13060,
+      "5": 156
+    },
+    "extraordinary_vertex_count": 320,
+    "self_intersection": {
+      "status": "completed",
+      "nonadjacent_bvh_candidate_count": 0,
+      "detected_nonadjacent_triangle_intersection_count": 0,
+      "intersections": []
+    }
+  },
+  "semantic": {
+    "rendered_face_count": 13378,
+    "unclassified_face_count": 0,
+    "rendered_surface_count": 108,
+    "rendered_region_count": 108,
+    "classification_counts": {
+      "DIRECT_MAPPING": 140,
+      "LOCAL_RETOPOLOGY_REQUIRED": 6,
+      "MODULE_GEOMETRY_REQUIRED": 42,
+      "NOT_RENDERED_AT_THIS_STAGE": 158,
+      "REGION_SPLIT": 70
+    }
+  },
+  "seam_binding_count": 11,
+  "landmark_binding_count": 35,
+  "face_set_count": 44,
+  "topology_loop_count": 44,
+  "anus_receiver": {
+    "classification": "LOCAL_RETOPOLOGY_REQUIRED",
+    "closure_face_id": 6480,
+    "loop_edge_count": 4,
+    "module_geometry_stage": "Prompt 2E"
+  },
+  "texture_uv": {
+    "status": "PROVISIONAL_IMPORTED_UV",
+    "source_corner_count": 53512,
+    "fallback_face_count": 0,
+    "fallback_face_ids": []
+  },
+  "surface_coordinates": {
+    "status": "OPEN_TUNING_PROVISIONAL_PER_FACE_CHARTS",
+    "chart_count": 13378,
+    "aliased_to_texture_uv": false
+  }
+}

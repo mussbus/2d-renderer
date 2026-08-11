@@ -1,6 +1,6 @@
 # Engineering Brief — 3D Model Pipeline M03: Canonical Human Mesh & Surface Foundation
 
-**Status:** Ready for Codex implementation planning and staged execution  
+**Status:** Prompts 2A and 2B owner-approved; Prompt 2C remains open; Prompt 2C-R4 final neutral shared-human candidate awaits owner acceptance
 **Milestone:** M03  
 **Prerequisites:** M01, M01.5, M02, and M02.5 owner-accepted  
 **Accepted structural source:** `assets/canonical_model/human_base/human_base.authoring.json`  
@@ -83,9 +83,170 @@ M03 must not use as structural source authority:
 
 M02 canonical SHA-256:
 
-`7b579784f239d90ae9757a0aec1967fc37cf752733a4ac13409977f6f3212381`
+`b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda`
 
 M03 must not alter the M02 structural authoring file or canonical golden unless a separately reviewed M02 regression fix is required.
+
+The current accepted M02 manifest contains 208 regions and 208 surfaces. These
+are current manifest totals, not universal architecture constants.
+
+### 3.2.1 Prompt 2A accepted checkpoint
+
+Prompt 2A introduces the renderer-independent `src/canonical_geometry/` layer
+with schema, parsing, validation, normalization, canonical JSON serialization,
+separate source/control-topology/triangulation/neutral hashes, deterministic
+quad triangulation, Catmull-Clark v1 level-one evaluation, and an explicit-limit
+loader. Its tests use only tiny synthetic geometry while resolving structural
+references through the accepted file-backed M02 loader.
+
+Prompt 2A did not include production human geometry. Its generic architecture
+is now owner-approved and remains the foundation consumed by Prompt 2B.
+
+### 3.2.2 Prompt 2B candidate checkpoint
+
+Prompt 2B creates the first production file-backed geometry authority at:
+
+`assets/canonical_model/human_base/geometry/human_base_geometry.authoring.json`
+
+The candidate contains the single continuous `human_base_main_body` scaffold,
+real face semantics, all 11 M02 seam-loop bindings, all 35 landmark geometry
+bindings, and the approved anus receiver closure face set/loop. It remains a
+coarse scaffold: detailed deformation-critical edge flow is Prompt 2C work.
+Separate eyes, oral meshes, teeth, tongue, nails, adult modules, final UVs,
+collision proxies, weights, and morphs remain unimplemented under the accepted
+prompt boundaries.
+
+### 3.2.3 Prompt 2C review candidate checkpoint
+
+Prompt 2C evolves the same authoritative file to topology revision 2; it does
+not introduce another human mesh source. The current review candidate contains
+11,506 stable vertices, 11,504 quads, 23,008 deterministic triangles, 39
+critical-zone face sets, and 55 explicit topology loops covering eyes, lips,
+breast roots, shoulders, elbows, wrists, every finger, glute/perineal zones,
+knees, ankles, feet, and every toe. All Prompt 2B vertices remain allocated;
+its 2,876 face IDs are retired and not reused.
+
+The current offline evidence reports a closed connected manifold, zero
+degenerate quads, zero non-manifold/boundary edges, zero detected non-adjacent
+triangle intersections, exact locked height/ground, and 35 landmark bindings
+under the proposed 0.10 m OPEN/TUNING Prompt 2C tolerance. Visible proportions,
+local form, edge spacing, topology density, and chart/UV layout remain
+OPEN/TUNING pending owner visual review. Prompt 2D and M04 have not started.
+
+### 3.2.4 Prompt 2C-R1 targeted-refinement checkpoint
+
+Prompt 2C-R1 advances the same file-backed authority to topology revision 3.
+It preserves 11,506 stable vertex IDs, retires 218 face IDs without reuse, and
+allocates 218 redirected replacement quads; the current topology remains
+11,504 quads and 23,008 deterministic derived triangles. High-resolution
+offline evidence is isolated under `evidence/prompt_2c_r1/`; Prompt 2B and the
+original Prompt 2C packages remain unchanged historical evidence.
+
+The R1 audit is fail-closed for topology integrity: one connected component,
+no boundaries or non-manifold edges, no degenerate quads, and zero detected
+non-adjacent triangle intersections. It does not claim visual acceptance. The
+current candidate improves aggregate aspect-ratio counts and landmark median,
+but still misses the owner guardrails in shoulder, foot/toe, lip-loop, and
+landmark-registration evidence and remains blocked for further topology work.
+Prompt 2D and M04 have not started.
+
+### 3.2.5 Prompt 2C-T1 Blender authoring bridge checkpoint
+
+T1 does not alter the R1 geometry authority or resume anatomy work. It pins
+the portable Windows x64 Blender 4.5.9 LTS archive, isolates it under `.deps`,
+and supplies a headless canonical JSON ↔ Blender working bridge. The `.blend`,
+deterministic sidecar, candidate JSON, and validation report are ignored
+derived working data. Candidate export is source-bound and fail-closed; stable
+`VertexId`/`FaceId` values live in explicit attributes rather than Blender
+indexes, while complex seam/set/binding data remains in a source-bound sidecar.
+
+The no-op gate requires exact preservation of the R1 normalized geometry,
+control topology, triangulation, neutral signature, stable ID sets, semantics,
+seams, bindings, and allocation cursors. Canonical-to-Blender coordinates are
+exactly `(Xc,Yc,Zc) -> (Xc,-Zc,Yc)` with the documented inverse. The bridge
+also defines explicit UNALLOCATED state, deterministic cursor-based allocation,
+retirement/non-reuse rules, and owner-reviewed candidate promotion. Detailed
+commands and evidence are in
+`docs/implementation/3d_pipeline_m03_blender_bridge.md`. Prompt 2D and M04
+remain unauthorized.
+
+### 3.2.6 Prompt 2C-T2 hm08 topology-seed qualification checkpoint
+
+T2 does not alter or supersede the R1 geometry authority. It pins the official
+MPFB2 `hm08` OBJ and its asset-license evidence, separates the closed visible
+body from MakeHuman helpers, audits topology/anatomy/morphology capacity, and
+constructs provisional feasibility mappings for every M02 region, surface,
+seam, and landmark. The external OBJ, inspection `.blend`, and proposed reset
+IDs remain non-authoritative; no external vertex or face has a canonical M03
+stable ID.
+
+The qualification finds hm08 materially more anatomy-driven and
+deformation-ready than R1 while retaining explicit project work for semantic
+remapping, surface channels, module receivers, and all accepted adult anatomy.
+Adoption is a separate owner decision. Full provenance, metrics, mapping,
+visual evidence, and the proposed topology-reset policy are in
+`docs/implementation/3d_pipeline_m03_hm08_qualification.md`. Prompt 2C-R2,
+Prompt 2D, and M04 remain blocked.
+
+### 3.2.7 Prompt 2C-T3 HM08 topology-adoption checkpoint
+
+T3 is the owner-authorized whole-topology reset. The file-backed canonical
+geometry authority now contains only the pinned HM08 visible body at topology
+compatibility 2.0.0/revision 4: 13,380 fresh version-scoped vertex IDs, 13,378
+fresh face IDs/quads, cursors 13,380/13,378, and no claimed R1 correspondence.
+Every face has accepted M02 surface/material/region data, all 11 M02 seams and
+35 landmarks are rebound, deformation-critical face sets/loops are rebuilt,
+and upstream UVs are retained as provisional data separate from provisional
+canonical surface charts.
+
+The closed connected symmetric topology has zero boundary/non-manifold/
+degenerate faces and zero detected non-adjacent triangle intersections. Five
+independent generation/validation runs and a Blender no-op round trip preserve
+the T3 identities. The one-shot adoption generator was removed after promotion
+so canonical JSON remains the only mesh authority. R1 evidence remains frozen
+as `HISTORICAL_SUPERSEDED_M03_R1_CANDIDATE`. Full provenance, identities,
+mapping, quality, and visual inventory are in
+`docs/implementation/3d_pipeline_m03_hm08_adoption.md`. Prompt 2C-R3, Prompt
+2D, and M04 have not started.
+
+### 3.2.8 Prompt 2C-R3 HM08 neutral-human adaptation checkpoint
+
+R3 uses the accepted canonical JSON → Blender → candidate JSON bridge to fit
+the promoted HM08 topology-v2 body to the M02 A-pose and a neutral shared-human
+shape. It changes positions only: topology compatibility remains 2.0.0,
+revision 4, with 13,380 vertex IDs, 13,378 face IDs/quads, unchanged allocation
+cursors, and unchanged control-topology/triangulation identities. Height is
+exactly 1.8288 m, ground is Y=0, symmetry remains valid, and the closed
+connected mesh has zero detected non-adjacent triangle intersections.
+
+All 35 landmarks are now classified as surface correspondences or intentional
+internal structural references rather than compared under one misleading
+global tolerance. All 11 seams, semantic coverage, deformation face sets, and
+provisional imported UVs remain intact. Persistent high-resolution views,
+mobile sheets, T3-vs-R3 comparisons, quality metrics, and the OPEN/TUNING
+inventory are in
+`docs/implementation/3d_pipeline_m03_hm08_neutral_adaptation.md`. This is an
+owner-review candidate, not Prompt 2C acceptance. Prompt 2D, Prompt 2E, and
+M04 have not started.
+
+### 3.2.9 Prompt 2C-R4 final neutral shared-human checkpoint
+
+R4 preserves the accepted HM08 topology exactly and performs only symmetric
+vertex-position edits. Topology compatibility remains 2.0.0/revision 4 with
+13,380 vertices, 13,378 quads, unchanged stable IDs/cursors, and unchanged
+control-topology and triangulation identities. The adaptation reduces R3's
+female-coded silhouette by broadening the shoulder surface and waist,
+moderating external hips, glute projection, upper-thigh fullness, and visible
+breast projection, while retaining the accepted anatomical topology.
+
+The candidate remains exactly 1.8288 m high on ground Y=0, closed, connected,
+manifold, symmetric, and free of detected non-adjacent triangle intersections.
+All 11 seam bindings and 35 landmark bindings remain intact, with the accepted
+18 surface/17 internal classification. Complete identities, measurements,
+quality metrics, mobile sheets, and R3-vs-R4 comparisons are in
+`docs/implementation/3d_pipeline_m03_final_neutral_adaptation.md`. This remains
+an owner-review candidate, not Prompt 2C acceptance. Prompt 2D, Prompt 2E, and
+M04 have not started.
 
 ### 3.3 Accepted M01 regression identities
 

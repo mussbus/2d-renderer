@@ -1,0 +1,4637 @@
+{
+  "provenance": {
+    "qualification_schema": "hm08_qualification_bridge",
+    "qualification_version": "1.0.0",
+    "external_asset_id": "makehuman_mpfb_hm08_core_basemesh",
+    "upstream_project": "MakeHuman Community MPFB2",
+    "repository_url": "https://github.com/makehumancommunity/mpfb2.git",
+    "repository_commit": "437dd513888a92399d1d3200d2e80859fae55abc",
+    "asset_path": "src/mpfb/data/3dobjs/base.obj",
+    "asset_name": "hm08",
+    "asset_bytes": 1808470,
+    "asset_sha256": "bea00279464133e86b634220cd2774ebf3b470de280d11222a6b2269e4a8d950",
+    "license_path": "LICENSE.ASSETS.md",
+    "license_bytes": 7003,
+    "license_sha256": "5f3ab0cf6f7ebe92efe4b83213131c617d308d164eeefd5da230373640b0c226",
+    "license": "CC0 1.0 Universal",
+    "license_provenance": "PASS",
+    "asset_header_license_evidence": "OBJ header explicitly identifies hm08 and CC0 release",
+    "inspection_only": true,
+    "canonical_authority": false,
+    "r1_source_sha256": "e501458b9cf78991aa4290bcecd81ebcc5cb112d4c735c2a9e0a381653766623",
+    "r1_normalized_sha256": "88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae",
+    "r1_topology_sha256": "23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931",
+    "r1_triangulation_sha256": "1e587d27b6524888f14fe50b9e8912f107dea8627abf9435378f556d65f5fc5b",
+    "r1_neutral_signature": "aa7352786b5e564f2bab96f4f12edcaf08a837204ab70667be75a0ca488e89c8",
+    "m02_structural_sha256": "b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda",
+    "verified_file_hashes": {
+      "C:\\Users\\Chad\\Documents\\2d Renderer\\.deps\\external\\mpfb2-437dd513888a92399d1d3200d2e80859fae55abc\\src\\mpfb\\data\\3dobjs\\base.obj": "bea00279464133e86b634220cd2774ebf3b470de280d11222a6b2269e4a8d950",
+      "C:\\Users\\Chad\\Documents\\2d Renderer\\.deps\\external\\mpfb2-437dd513888a92399d1d3200d2e80859fae55abc\\LICENSE.ASSETS.md": "5f3ab0cf6f7ebe92efe4b83213131c617d308d164eeefd5da230373640b0c226",
+      "C:\\Users\\Chad\\Documents\\2d Renderer\\.deps\\external\\mpfb2-437dd513888a92399d1d3200d2e80859fae55abc\\src\\mpfb\\data\\mesh_metadata\\hm08_config.json": "e8450599c2f97642f2cfa70d2163b70b7d796d552b4b69f8a9f7c52ec7a44a0a",
+      "C:\\Users\\Chad\\Documents\\2d Renderer\\.deps\\external\\mpfb2-437dd513888a92399d1d3200d2e80859fae55abc\\src\\mpfb\\data\\mesh_metadata\\hm08.mirror": "e375beaf66dabd49b31af45dd497d9408a76db41870af523d1eb8476980b894e",
+      "C:\\Users\\Chad\\Documents\\2d Renderer\\.deps\\external\\mpfb2-437dd513888a92399d1d3200d2e80859fae55abc\\src\\mpfb\\data\\mesh_metadata\\basemesh_vertex_groups.json": "cd88834f7353333820bd054f0a2a492f684daa2c84d8542e1007d6748a797a8e",
+      "C:\\Users\\Chad\\Documents\\2d Renderer\\assets\\canonical_model\\human_base\\geometry\\human_base_geometry.authoring.json": "e501458b9cf78991aa4290bcecd81ebcc5cb112d4c735c2a9e0a381653766623"
+    }
+  },
+  "alignment": {
+    "native_bbox": {
+      "minimum": [
+        -4.9627,
+        -8.1676,
+        -1.0154
+      ],
+      "maximum": [
+        4.9627,
+        8.4913,
+        3.2147
+      ]
+    },
+    "native_height": 16.658900000000003,
+    "scale_native_to_meters": 0.10977915708720262,
+    "translation_before_scale": [
+      -0.0,
+      8.1676,
+      0.0
+    ],
+    "axis_mapping": "hm08 (X,Y,Z) -> canonical (X,Y,Z)",
+    "canonical_height": 1.8288,
+    "canonical_ground_y": 0.0,
+    "native_ground_contact_vertex_count": 2,
+    "native_ground_contact_x_range": [
+      -1.9998,
+      1.9998
+    ],
+    "native_ground_contact_z_range": [
+      1.3656,
+      1.3656
+    ]
+  },
+  "raw_obj": {
+    "total_vertex_count": 19158,
+    "total_texture_coordinate_count": 21334,
+    "total_face_count": 18486,
+    "group_count": 139,
+    "material_names": [],
+    "arity_counts": {
+      "4": 18486
+    }
+  },
+  "visible_body": {
+    "vertex_count": 13380,
+    "used_vertex_count": 13380,
+    "unused_vertex_count": 0,
+    "face_count": 13378,
+    "arity_counts": {
+      "4": 13378
+    },
+    "quad_percentage": 100.0,
+    "boundary_edge_count": 0,
+    "non_manifold_edge_count": 0,
+    "connected_component_count": 1,
+    "connected_component_vertex_counts": [
+      13380
+    ],
+    "duplicate_position_count": 0,
+    "duplicate_face_count": 0,
+    "degenerate_face_count": 0,
+    "uv_corner_coverage": 1.0,
+    "aspect_ratio": {
+      "maximum": 13.856982381171607,
+      "p95": 4.5025720176447175,
+      "p99": 7.015018784113706,
+      "over_8_count": 80
+    },
+    "edge_length_native": {
+      "minimum": 0.003266496594212319,
+      "median": 0.05624428859893219,
+      "p95": 0.2597033114921718,
+      "p99": 0.3678879992606452,
+      "maximum": 0.6221202938339173
+    },
+    "valence_distribution": {
+      "3": 164,
+      "4": 13060,
+      "5": 156
+    },
+    "extraordinary_vertex_count": 320,
+    "symmetry": {
+      "mapping_record_count": 19158,
+      "visible_missing_count": 0,
+      "visible_nonreciprocal_count": 0,
+      "maximum_position_error_native": 0.0,
+      "p99_position_error_native": 0.0,
+      "exact_position_match_count": 13380
+    },
+    "critical_regions": {
+      "ankle_achilles": {
+        "face_count": 146,
+        "vertex_count": 188,
+        "aspect_ratio_maximum": 8.570566332898714,
+        "aspect_ratio_p95": 8.092345872143202,
+        "aspect_ratio_over_8_count": 10,
+        "extraordinary_vertex_count": 0,
+        "maximum_valence": 4
+      },
+      "foot_toes": {
+        "face_count": 2184,
+        "vertex_count": 2206,
+        "aspect_ratio_maximum": 12.321227617695724,
+        "aspect_ratio_p95": 5.108934659683565,
+        "aspect_ratio_over_8_count": 12,
+        "extraordinary_vertex_count": 92,
+        "maximum_valence": 5
+      },
+      "head_face": {
+        "face_count": 4530,
+        "vertex_count": 4559,
+        "aspect_ratio_maximum": 12.634371806174299,
+        "aspect_ratio_p95": 5.30426287470589,
+        "aspect_ratio_over_8_count": 50,
+        "extraordinary_vertex_count": 76,
+        "maximum_valence": 5
+      },
+      "knee": {
+        "face_count": 392,
+        "vertex_count": 438,
+        "aspect_ratio_maximum": 2.4352722164114686,
+        "aspect_ratio_p95": 1.9933785618269058,
+        "aspect_ratio_over_8_count": 0,
+        "extraordinary_vertex_count": 0,
+        "maximum_valence": 4
+      },
+      "limbs_other": {
+        "face_count": 292,
+        "vertex_count": 384,
+        "aspect_ratio_maximum": 4.0638027195717275,
+        "aspect_ratio_p95": 3.044024085943105,
+        "aspect_ratio_over_8_count": 0,
+        "extraordinary_vertex_count": 0,
+        "maximum_valence": 4
+      },
+      "pelvis_groin_glute": {
+        "face_count": 454,
+        "vertex_count": 500,
+        "aspect_ratio_maximum": 4.679343195635471,
+        "aspect_ratio_p95": 3.103411149591925,
+        "aspect_ratio_over_8_count": 0,
+        "extraordinary_vertex_count": 4,
+        "maximum_valence": 5
+      },
+      "shoulder_arm": {
+        "face_count": 390,
+        "vertex_count": 458,
+        "aspect_ratio_maximum": 3.2643099928276267,
+        "aspect_ratio_p95": 2.482707647708264,
+        "aspect_ratio_over_8_count": 0,
+        "extraordinary_vertex_count": 0,
+        "maximum_valence": 4
+      },
+      "torso_breast": {
+        "face_count": 4990,
+        "vertex_count": 5105,
+        "aspect_ratio_maximum": 13.856982381171607,
+        "aspect_ratio_p95": 3.5689927691641925,
+        "aspect_ratio_over_8_count": 8,
+        "extraordinary_vertex_count": 152,
+        "maximum_valence": 5
+      }
+    },
+    "self_intersection": {
+      "status": "completed",
+      "nonadjacent_bvh_candidate_count": 0,
+      "detected_nonadjacent_triangle_intersection_count": 0,
+      "intersections": []
+    },
+    "edge_length_meters_after_alignment": {
+      "minimum": 0.0003585932427408465,
+      "median": 0.006174450593360137,
+      "p95": 0.02851001062836584,
+      "p99": 0.04038643446133105,
+      "maximum": 0.06829584146393027
+    }
+  },
+  "helpers": [
+    {
+      "group": "helper-genital",
+      "face_count": 182,
+      "referenced_vertex_count": 200,
+      "minimum_vertex_id": 15128,
+      "maximum_vertex_id": 15327,
+      "arity_counts": {
+        "4": 182
+      },
+      "boundary_edge_count": 34,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-hair",
+      "face_count": 198,
+      "referenced_vertex_count": 428,
+      "minimum_vertex_id": 18722,
+      "maximum_vertex_id": 19149,
+      "arity_counts": {
+        "4": 198
+      },
+      "boundary_edge_count": 428,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 16
+    },
+    {
+      "group": "helper-l-eye",
+      "face_count": 70,
+      "referenced_vertex_count": 72,
+      "minimum_vertex_id": 14598,
+      "maximum_vertex_id": 14669,
+      "arity_counts": {
+        "4": 70
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-l-eyelashes-1",
+      "face_count": 44,
+      "referenced_vertex_count": 60,
+      "minimum_vertex_id": 14751,
+      "maximum_vertex_id": 14866,
+      "arity_counts": {
+        "4": 44
+      },
+      "boundary_edge_count": 30,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-l-eyelashes-2",
+      "face_count": 48,
+      "referenced_vertex_count": 65,
+      "minimum_vertex_id": 14742,
+      "maximum_vertex_id": 14854,
+      "arity_counts": {
+        "4": 48
+      },
+      "boundary_edge_count": 32,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-lower-teeth",
+      "face_count": 48,
+      "referenced_vertex_count": 68,
+      "minimum_vertex_id": 14992,
+      "maximum_vertex_id": 15059,
+      "arity_counts": {
+        "4": 48
+      },
+      "boundary_edge_count": 38,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-r-eye",
+      "face_count": 70,
+      "referenced_vertex_count": 72,
+      "minimum_vertex_id": 14670,
+      "maximum_vertex_id": 14741,
+      "arity_counts": {
+        "4": 70
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-r-eyelashes-1",
+      "face_count": 44,
+      "referenced_vertex_count": 60,
+      "minimum_vertex_id": 14876,
+      "maximum_vertex_id": 14991,
+      "arity_counts": {
+        "4": 44
+      },
+      "boundary_edge_count": 30,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-r-eyelashes-2",
+      "face_count": 48,
+      "referenced_vertex_count": 65,
+      "minimum_vertex_id": 14867,
+      "maximum_vertex_id": 14979,
+      "arity_counts": {
+        "4": 48
+      },
+      "boundary_edge_count": 32,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-skirt",
+      "face_count": 684,
+      "referenced_vertex_count": 720,
+      "minimum_vertex_id": 18002,
+      "maximum_vertex_id": 18721,
+      "arity_counts": {
+        "4": 684
+      },
+      "boundary_edge_count": 72,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-tights",
+      "face_count": 2650,
+      "referenced_vertex_count": 2674,
+      "minimum_vertex_id": 15328,
+      "maximum_vertex_id": 18001,
+      "arity_counts": {
+        "4": 2650
+      },
+      "boundary_edge_count": 50,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-tongue",
+      "face_count": 224,
+      "referenced_vertex_count": 226,
+      "minimum_vertex_id": 13380,
+      "maximum_vertex_id": 13605,
+      "arity_counts": {
+        "4": 224
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "helper-upper-teeth",
+      "face_count": 48,
+      "referenced_vertex_count": 68,
+      "minimum_vertex_id": 15060,
+      "maximum_vertex_id": 15127,
+      "arity_counts": {
+        "4": 48
+      },
+      "boundary_edge_count": 38,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-ground",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 19150,
+      "maximum_vertex_id": 19157,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-head",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14070,
+      "maximum_vertex_id": 14077,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-head-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14566,
+      "maximum_vertex_id": 14573,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-jaw",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14542,
+      "maximum_vertex_id": 14549,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-ankle",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13830,
+      "maximum_vertex_id": 13837,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-clavicle",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14054,
+      "maximum_vertex_id": 14061,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-elbow",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14038,
+      "maximum_vertex_id": 14045,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-eye",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13606,
+      "maximum_vertex_id": 13613,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-eye-target",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14086,
+      "maximum_vertex_id": 14093,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-1-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14006,
+      "maximum_vertex_id": 14013,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-1-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13998,
+      "maximum_vertex_id": 14005,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-1-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13990,
+      "maximum_vertex_id": 13997,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-1-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13982,
+      "maximum_vertex_id": 13989,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-2-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13974,
+      "maximum_vertex_id": 13981,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-2-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13918,
+      "maximum_vertex_id": 13925,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-2-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13910,
+      "maximum_vertex_id": 13917,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-2-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13854,
+      "maximum_vertex_id": 13861,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-3-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13966,
+      "maximum_vertex_id": 13973,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-3-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13926,
+      "maximum_vertex_id": 13933,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-3-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13902,
+      "maximum_vertex_id": 13909,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-3-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13862,
+      "maximum_vertex_id": 13869,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-4-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13958,
+      "maximum_vertex_id": 13965,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-4-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13934,
+      "maximum_vertex_id": 13941,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-4-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13894,
+      "maximum_vertex_id": 13901,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-4-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13870,
+      "maximum_vertex_id": 13877,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-5-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13950,
+      "maximum_vertex_id": 13957,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-5-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13942,
+      "maximum_vertex_id": 13949,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-5-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13886,
+      "maximum_vertex_id": 13893,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-finger-5-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13878,
+      "maximum_vertex_id": 13885,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-foot-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13670,
+      "maximum_vertex_id": 13677,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-foot-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13662,
+      "maximum_vertex_id": 13669,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-hand",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14030,
+      "maximum_vertex_id": 14037,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-hand-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14022,
+      "maximum_vertex_id": 14029,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-hand-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14014,
+      "maximum_vertex_id": 14021,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-knee",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13838,
+      "maximum_vertex_id": 13845,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-lowerlid",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14078,
+      "maximum_vertex_id": 14085,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-scapula",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14062,
+      "maximum_vertex_id": 14069,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-shoulder",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14046,
+      "maximum_vertex_id": 14053,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-1-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13822,
+      "maximum_vertex_id": 13829,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-1-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13814,
+      "maximum_vertex_id": 13821,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-1-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13806,
+      "maximum_vertex_id": 13813,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-2-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13798,
+      "maximum_vertex_id": 13805,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-2-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13742,
+      "maximum_vertex_id": 13749,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-2-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13734,
+      "maximum_vertex_id": 13741,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-2-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13726,
+      "maximum_vertex_id": 13733,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-3-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13790,
+      "maximum_vertex_id": 13797,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-3-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13750,
+      "maximum_vertex_id": 13757,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-3-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13710,
+      "maximum_vertex_id": 13717,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-3-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13718,
+      "maximum_vertex_id": 13725,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-4-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13782,
+      "maximum_vertex_id": 13789,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-4-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13758,
+      "maximum_vertex_id": 13765,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-4-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13694,
+      "maximum_vertex_id": 13701,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-4-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13702,
+      "maximum_vertex_id": 13709,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-5-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13774,
+      "maximum_vertex_id": 13781,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-5-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13766,
+      "maximum_vertex_id": 13773,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-5-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13678,
+      "maximum_vertex_id": 13685,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-toe-5-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13686,
+      "maximum_vertex_id": 13693,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-upper-leg",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13846,
+      "maximum_vertex_id": 13853,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-l-upperlid",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14094,
+      "maximum_vertex_id": 14101,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-mouth",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14590,
+      "maximum_vertex_id": 14597,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-neck",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14534,
+      "maximum_vertex_id": 14541,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-pelvis",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13622,
+      "maximum_vertex_id": 13629,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-ankle",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14270,
+      "maximum_vertex_id": 14277,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-clavicle",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14494,
+      "maximum_vertex_id": 14501,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-elbow",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14478,
+      "maximum_vertex_id": 14485,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-eye",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13614,
+      "maximum_vertex_id": 13621,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-eye-target",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14518,
+      "maximum_vertex_id": 14525,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-1-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14446,
+      "maximum_vertex_id": 14453,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-1-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14438,
+      "maximum_vertex_id": 14445,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-1-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14430,
+      "maximum_vertex_id": 14437,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-1-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14422,
+      "maximum_vertex_id": 14429,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-2-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14414,
+      "maximum_vertex_id": 14421,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-2-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14358,
+      "maximum_vertex_id": 14365,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-2-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14350,
+      "maximum_vertex_id": 14357,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-2-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14294,
+      "maximum_vertex_id": 14301,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-3-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14406,
+      "maximum_vertex_id": 14413,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-3-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14366,
+      "maximum_vertex_id": 14373,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-3-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14342,
+      "maximum_vertex_id": 14349,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-3-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14302,
+      "maximum_vertex_id": 14309,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-4-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14398,
+      "maximum_vertex_id": 14405,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-4-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14374,
+      "maximum_vertex_id": 14381,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-4-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14334,
+      "maximum_vertex_id": 14341,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-4-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14310,
+      "maximum_vertex_id": 14317,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-5-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14390,
+      "maximum_vertex_id": 14397,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-5-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14382,
+      "maximum_vertex_id": 14389,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-5-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14326,
+      "maximum_vertex_id": 14333,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-finger-5-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14318,
+      "maximum_vertex_id": 14325,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-foot-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14110,
+      "maximum_vertex_id": 14117,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-foot-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14102,
+      "maximum_vertex_id": 14109,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-hand",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14470,
+      "maximum_vertex_id": 14477,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-hand-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14462,
+      "maximum_vertex_id": 14469,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-hand-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14454,
+      "maximum_vertex_id": 14461,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-knee",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14278,
+      "maximum_vertex_id": 14285,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-lowerlid",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14510,
+      "maximum_vertex_id": 14517,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-scapula",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14502,
+      "maximum_vertex_id": 14509,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-shoulder",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14486,
+      "maximum_vertex_id": 14493,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-1-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14262,
+      "maximum_vertex_id": 14269,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-1-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14254,
+      "maximum_vertex_id": 14261,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-1-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14246,
+      "maximum_vertex_id": 14253,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-2-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14238,
+      "maximum_vertex_id": 14245,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-2-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14182,
+      "maximum_vertex_id": 14189,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-2-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14174,
+      "maximum_vertex_id": 14181,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-2-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14166,
+      "maximum_vertex_id": 14173,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-3-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14230,
+      "maximum_vertex_id": 14237,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-3-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14190,
+      "maximum_vertex_id": 14197,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-3-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14150,
+      "maximum_vertex_id": 14157,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-3-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14158,
+      "maximum_vertex_id": 14165,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-4-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14222,
+      "maximum_vertex_id": 14229,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-4-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14198,
+      "maximum_vertex_id": 14205,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-4-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14134,
+      "maximum_vertex_id": 14141,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-4-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14142,
+      "maximum_vertex_id": 14149,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-5-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14214,
+      "maximum_vertex_id": 14221,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-5-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14206,
+      "maximum_vertex_id": 14213,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-5-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14118,
+      "maximum_vertex_id": 14125,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-toe-5-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14126,
+      "maximum_vertex_id": 14133,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-upper-leg",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14286,
+      "maximum_vertex_id": 14293,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-r-upperlid",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14526,
+      "maximum_vertex_id": 14533,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-spine-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13654,
+      "maximum_vertex_id": 13661,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-spine-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13646,
+      "maximum_vertex_id": 13653,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-spine-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13638,
+      "maximum_vertex_id": 13645,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-spine-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 13630,
+      "maximum_vertex_id": 13637,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-tongue-1",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14582,
+      "maximum_vertex_id": 14589,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-tongue-2",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14574,
+      "maximum_vertex_id": 14581,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-tongue-3",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14558,
+      "maximum_vertex_id": 14565,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    },
+    {
+      "group": "joint-tongue-4",
+      "face_count": 6,
+      "referenced_vertex_count": 8,
+      "minimum_vertex_id": 14550,
+      "maximum_vertex_id": 14557,
+      "arity_counts": {
+        "4": 6
+      },
+      "boundary_edge_count": 0,
+      "non_manifold_edge_count": 0,
+      "connected_component_count": 1
+    }
+  ],
+  "helper_categories": {
+    "tongue": {
+      "groups": [
+        "helper-tongue"
+      ],
+      "group_count": 1,
+      "referenced_vertex_count_sum": 226,
+      "face_count_sum": 224,
+      "classification": "useful anatomical and topology reference"
+    },
+    "eyes": {
+      "groups": [
+        "helper-l-eye",
+        "helper-r-eye"
+      ],
+      "group_count": 2,
+      "referenced_vertex_count_sum": 144,
+      "face_count_sum": 140,
+      "classification": "useful anatomical and topology reference"
+    },
+    "eyelashes": {
+      "groups": [
+        "helper-l-eyelashes-1",
+        "helper-l-eyelashes-2",
+        "helper-r-eyelashes-1",
+        "helper-r-eyelashes-2"
+      ],
+      "group_count": 4,
+      "referenced_vertex_count_sum": 250,
+      "face_count_sum": 184,
+      "classification": "useful semantic mapping reference"
+    },
+    "teeth": {
+      "groups": [
+        "helper-lower-teeth",
+        "helper-upper-teeth"
+      ],
+      "group_count": 2,
+      "referenced_vertex_count_sum": 136,
+      "face_count_sum": 96,
+      "classification": "useful anatomical reference; not individual canonical dentition"
+    },
+    "genital": {
+      "groups": [
+        "helper-genital"
+      ],
+      "group_count": 1,
+      "referenced_vertex_count_sum": 200,
+      "face_count_sum": 182,
+      "classification": "useful receiver-area and topology reference; incomplete adult anatomy"
+    },
+    "joint_cubes": {
+      "groups": [
+        "joint-ground",
+        "joint-head",
+        "joint-head-2",
+        "joint-jaw",
+        "joint-l-ankle",
+        "joint-l-clavicle",
+        "joint-l-elbow",
+        "joint-l-eye",
+        "joint-l-eye-target",
+        "joint-l-finger-1-1",
+        "joint-l-finger-1-2",
+        "joint-l-finger-1-3",
+        "joint-l-finger-1-4",
+        "joint-l-finger-2-1",
+        "joint-l-finger-2-2",
+        "joint-l-finger-2-3",
+        "joint-l-finger-2-4",
+        "joint-l-finger-3-1",
+        "joint-l-finger-3-2",
+        "joint-l-finger-3-3",
+        "joint-l-finger-3-4",
+        "joint-l-finger-4-1",
+        "joint-l-finger-4-2",
+        "joint-l-finger-4-3",
+        "joint-l-finger-4-4",
+        "joint-l-finger-5-1",
+        "joint-l-finger-5-2",
+        "joint-l-finger-5-3",
+        "joint-l-finger-5-4",
+        "joint-l-foot-1",
+        "joint-l-foot-2",
+        "joint-l-hand",
+        "joint-l-hand-2",
+        "joint-l-hand-3",
+        "joint-l-knee",
+        "joint-l-lowerlid",
+        "joint-l-scapula",
+        "joint-l-shoulder",
+        "joint-l-toe-1-1",
+        "joint-l-toe-1-2",
+        "joint-l-toe-1-3",
+        "joint-l-toe-2-1",
+        "joint-l-toe-2-2",
+        "joint-l-toe-2-3",
+        "joint-l-toe-2-4",
+        "joint-l-toe-3-1",
+        "joint-l-toe-3-2",
+        "joint-l-toe-3-3",
+        "joint-l-toe-3-4",
+        "joint-l-toe-4-1",
+        "joint-l-toe-4-2",
+        "joint-l-toe-4-3",
+        "joint-l-toe-4-4",
+        "joint-l-toe-5-1",
+        "joint-l-toe-5-2",
+        "joint-l-toe-5-3",
+        "joint-l-toe-5-4",
+        "joint-l-upper-leg",
+        "joint-l-upperlid",
+        "joint-mouth",
+        "joint-neck",
+        "joint-pelvis",
+        "joint-r-ankle",
+        "joint-r-clavicle",
+        "joint-r-elbow",
+        "joint-r-eye",
+        "joint-r-eye-target",
+        "joint-r-finger-1-1",
+        "joint-r-finger-1-2",
+        "joint-r-finger-1-3",
+        "joint-r-finger-1-4",
+        "joint-r-finger-2-1",
+        "joint-r-finger-2-2",
+        "joint-r-finger-2-3",
+        "joint-r-finger-2-4",
+        "joint-r-finger-3-1",
+        "joint-r-finger-3-2",
+        "joint-r-finger-3-3",
+        "joint-r-finger-3-4",
+        "joint-r-finger-4-1",
+        "joint-r-finger-4-2",
+        "joint-r-finger-4-3",
+        "joint-r-finger-4-4",
+        "joint-r-finger-5-1",
+        "joint-r-finger-5-2",
+        "joint-r-finger-5-3",
+        "joint-r-finger-5-4",
+        "joint-r-foot-1",
+        "joint-r-foot-2",
+        "joint-r-hand",
+        "joint-r-hand-2",
+        "joint-r-hand-3",
+        "joint-r-knee",
+        "joint-r-lowerlid",
+        "joint-r-scapula",
+        "joint-r-shoulder",
+        "joint-r-toe-1-1",
+        "joint-r-toe-1-2",
+        "joint-r-toe-1-3",
+        "joint-r-toe-2-1",
+        "joint-r-toe-2-2",
+        "joint-r-toe-2-3",
+        "joint-r-toe-2-4",
+        "joint-r-toe-3-1",
+        "joint-r-toe-3-2",
+        "joint-r-toe-3-3",
+        "joint-r-toe-3-4",
+        "joint-r-toe-4-1",
+        "joint-r-toe-4-2",
+        "joint-r-toe-4-3",
+        "joint-r-toe-4-4",
+        "joint-r-toe-5-1",
+        "joint-r-toe-5-2",
+        "joint-r-toe-5-3",
+        "joint-r-toe-5-4",
+        "joint-r-upper-leg",
+        "joint-r-upperlid",
+        "joint-spine-1",
+        "joint-spine-2",
+        "joint-spine-3",
+        "joint-spine-4",
+        "joint-tongue-1",
+        "joint-tongue-2",
+        "joint-tongue-3",
+        "joint-tongue-4"
+      ],
+      "group_count": 125,
+      "referenced_vertex_count_sum": 1000,
+      "face_count_sum": 750,
+      "classification": "useful alignment reference; incompatible as canonical geometry or skeleton"
+    },
+    "garment_helpers": {
+      "groups": [
+        "helper-skirt",
+        "helper-tights"
+      ],
+      "group_count": 2,
+      "referenced_vertex_count_sum": 3394,
+      "face_count_sum": 3334,
+      "classification": "irrelevant to shared-body topology qualification"
+    },
+    "hair_helper": {
+      "groups": [
+        "helper-hair"
+      ],
+      "group_count": 1,
+      "referenced_vertex_count_sum": 428,
+      "face_count_sum": 198,
+      "classification": "irrelevant to shared-body topology qualification"
+    }
+  },
+  "helper_joint_centers_canonical_inspection": {
+    "joint-ground": [
+      0.0,
+      -0.001696087976997274,
+      0.0
+    ],
+    "joint-head": [
+      0.0,
+      1.6623363751508198,
+      0.017646999501767822
+    ],
+    "joint-head-2": [
+      0.0,
+      1.8192547022912673,
+      0.009051291501839856
+    ],
+    "joint-jaw": [
+      0.0,
+      1.5762475601630357,
+      0.15641883197570064
+    ],
+    "joint-l-ankle": [
+      0.2410969847949144,
+      0.07901354831351412,
+      -0.0009989903294935437
+    ],
+    "joint-l-clavicle": [
+      0.02915185516450666,
+      1.4665342705700855,
+      0.07621417980779042
+    ],
+    "joint-l-elbow": [
+      0.3435387774703011,
+      1.2801114227229888,
+      0.014492220974974334
+    ],
+    "joint-l-eye": [
+      0.0337845355935866,
+      1.6962800905221829,
+      0.13671347327854777
+    ],
+    "joint-l-eye-target": [
+      0.034838415501623754,
+      1.6974657054187248,
+      0.17763914304065692
+    ],
+    "joint-l-finger-1-1": [
+      0.46053179741759653,
+      1.1497665127949623,
+      0.23431126064746166
+    ],
+    "joint-l-finger-1-2": [
+      0.4495264369196045,
+      1.1442597158275756,
+      0.2605416179939852
+    ],
+    "joint-l-finger-1-3": [
+      0.4373423227223886,
+      1.1282278421744534,
+      0.29445102737875845
+    ],
+    "joint-l-finger-1-4": [
+      0.42998025800022804,
+      1.1162029077550137,
+      0.31573171698011265
+    ],
+    "joint-l-finger-2-1": [
+      0.49351631740391017,
+      1.11951549382012,
+      0.29027393045159045
+    ],
+    "joint-l-finger-2-2": [
+      0.49746699481958584,
+      1.1046788407397845,
+      0.31328638625599525
+    ],
+    "joint-l-finger-2-3": [
+      0.4977194868808864,
+      1.0882407842054396,
+      0.3319213981715479
+    ],
+    "joint-l-finger-2-4": [
+      0.49726115890004735,
+      1.0710809297132464,
+      0.3506689337231149
+    ],
+    "joint-l-finger-3-1": [
+      0.5058952896049559,
+      1.1036922005654635,
+      0.2721397859402481
+    ],
+    "joint-l-finger-3-2": [
+      0.5173287888155881,
+      1.080226905738074,
+      0.29539238365078124
+    ],
+    "joint-l-finger-3-3": [
+      0.5210928416642155,
+      1.0600028405236839,
+      0.31351692248587837
+    ],
+    "joint-l-finger-3-4": [
+      0.5251985821392768,
+      1.0396497847997166,
+      0.33094985263132615
+    ],
+    "joint-l-finger-4-1": [
+      0.5155627166259475,
+      1.0969778328701174,
+      0.2535308465745037
+    ],
+    "joint-l-finger-4-2": [
+      0.5281859474515124,
+      1.0741890520982778,
+      0.27018571694409593
+    ],
+    "joint-l-finger-4-3": [
+      0.5334279022024262,
+      1.0531430154451973,
+      0.28453659725432046
+    ],
+    "joint-l-finger-4-4": [
+      0.539604352028045,
+      1.0308701967116674,
+      0.29823703605880336
+    ],
+    "joint-l-finger-5-1": [
+      0.5209460120416114,
+      1.0902524872590627,
+      0.23315446277965526
+    ],
+    "joint-l-finger-5-2": [
+      0.5277125248365738,
+      1.070301497697927,
+      0.24384283596155804
+    ],
+    "joint-l-finger-5-3": [
+      0.5302237230549435,
+      1.0563993396922964,
+      0.25044193554196253
+    ],
+    "joint-l-finger-5-4": [
+      0.5331781546200528,
+      1.0381705106579664,
+      0.25828291183691593
+    ],
+    "joint-l-foot-1": [
+      0.24136045477192372,
+      0.0072564022834641475,
+      0.13266262238203003
+    ],
+    "joint-l-foot-2": [
+      0.2413330099826519,
+      0.015533750727839215,
+      0.2229559790862542
+    ],
+    "joint-l-hand": [
+      0.4733512584864546,
+      1.165790153011303,
+      0.19283257838152576
+    ],
+    "joint-l-hand-2": [
+      0.4826975814729664,
+      1.1243100985059036,
+      0.20587983120133976
+    ],
+    "joint-l-hand-3": [
+      0.4710788299347495,
+      1.1410280918908209,
+      0.21611124864186712
+    ],
+    "joint-l-knee": [
+      0.17357731422843042,
+      0.4910174693407127,
+      0.03515677505717663
+    ],
+    "joint-l-lowerlid": [
+      0.0348603713330412,
+      1.68507163858358,
+      0.1758936544429704
+    ],
+    "joint-l-scapula": [
+      0.12990716553914122,
+      1.502882149481658,
+      0.05570743326390097
+    ],
+    "joint-l-shoulder": [
+      0.1841133688298747,
+      1.4725117456734835,
+      0.016033245892585944
+    ],
+    "joint-l-toe-1-1": [
+      0.20731793815918212,
+      0.017954381141612023,
+      0.14883309222097496
+    ],
+    "joint-l-toe-1-2": [
+      0.2101063287491971,
+      0.017965359057320742,
+      0.17783674552341389
+    ],
+    "joint-l-toe-1-3": [
+      0.21472803126256834,
+      0.017981825930883783,
+      0.21045213309402178
+    ],
+    "joint-l-toe-2-1": [
+      0.23426597674516322,
+      0.01805318238299049,
+      0.15198375402937767
+    ],
+    "joint-l-toe-2-2": [
+      0.2360581214846118,
+      0.01805867134084484,
+      0.17608027901001863
+    ],
+    "joint-l-toe-2-3": [
+      0.23644234853441698,
+      0.01805867134084484,
+      0.1913286039294311
+    ],
+    "joint-l-toe-2-4": [
+      0.2375456290631434,
+      0.01806416029869919,
+      0.21040822143118687
+    ],
+    "joint-l-toe-3-1": [
+      0.253436162051516,
+      0.018124538835097202,
+      0.14853668849683951
+    ],
+    "joint-l-toe-3-2": [
+      0.25414423761472843,
+      0.018124538835097202,
+      0.17078892363841547
+    ],
+    "joint-l-toe-3-3": [
+      0.25382862253810273,
+      0.018124538835097202,
+      0.18468696492565537
+    ],
+    "joint-l-toe-3-4": [
+      0.2539960357526607,
+      0.018124538835097202,
+      0.19945775051173845
+    ],
+    "joint-l-toe-4-1": [
+      0.27028177370654727,
+      0.018184917371495125,
+      0.1396006651099412
+    ],
+    "joint-l-toe-4-2": [
+      0.27064678940386216,
+      0.018184917371495125,
+      0.15693479401401053
+    ],
+    "joint-l-toe-4-3": [
+      0.2694584300283932,
+      0.018179428413640775,
+      0.17050349782998875
+    ],
+    "joint-l-toe-4-4": [
+      0.2702515844383482,
+      0.018184917371495125,
+      0.18284267508659033
+    ],
+    "joint-l-toe-5-1": [
+      0.28626561897844394,
+      0.018245295907893064,
+      0.13511069758507463
+    ],
+    "joint-l-toe-5-2": [
+      0.2862875748098614,
+      0.018245295907893064,
+      0.14799877062711222
+    ],
+    "joint-l-toe-5-3": [
+      0.28486044576772773,
+      0.01823706247111152,
+      0.15718728607531107
+    ],
+    "joint-l-toe-5-4": [
+      0.2849263132619801,
+      0.01823980695003872,
+      0.16960330874187368
+    ],
+    "joint-l-upper-leg": [
+      0.12115776671929118,
+      0.9500013806433796,
+      0.013497347363871561
+    ],
+    "joint-l-upperlid": [
+      0.034717658428827826,
+      1.7098268385067439,
+      0.17451043706367164
+    ],
+    "joint-mouth": [
+      0.0,
+      1.6524342951815545,
+      0.07041784031358611
+    ],
+    "joint-neck": [
+      0.0,
+      1.5432589234583312,
+      0.007470471639784138
+    ],
+    "joint-pelvis": [
+      0.0,
+      0.9764252237542693,
+      0.01586308819910078
+    ],
+    "joint-r-ankle": [
+      -0.2410969847949144,
+      0.07901354831351412,
+      -0.0009989903294935437
+    ],
+    "joint-r-clavicle": [
+      -0.02915185516450666,
+      1.4665342705700855,
+      0.07621417980779042
+    ],
+    "joint-r-elbow": [
+      -0.3435387774703011,
+      1.2801114227229888,
+      0.014492220974974334
+    ],
+    "joint-r-eye": [
+      -0.0337845355935866,
+      1.6962800905221829,
+      0.13671347327854777
+    ],
+    "joint-r-eye-target": [
+      -0.034838415501623754,
+      1.6974657054187248,
+      0.17763914304065692
+    ],
+    "joint-r-finger-1-1": [
+      -0.46053179741759653,
+      1.1497665127949623,
+      0.23431126064746166
+    ],
+    "joint-r-finger-1-2": [
+      -0.4495264369196045,
+      1.1442597158275756,
+      0.2605416179939852
+    ],
+    "joint-r-finger-1-3": [
+      -0.4373423227223886,
+      1.1282278421744534,
+      0.29445102737875845
+    ],
+    "joint-r-finger-1-4": [
+      -0.42998025800022804,
+      1.1162029077550137,
+      0.31573171698011265
+    ],
+    "joint-r-finger-2-1": [
+      -0.49351631740391017,
+      1.11951549382012,
+      0.29027393045159045
+    ],
+    "joint-r-finger-2-2": [
+      -0.49746699481958584,
+      1.1046788407397845,
+      0.31328638625599525
+    ],
+    "joint-r-finger-2-3": [
+      -0.4977194868808864,
+      1.0882407842054396,
+      0.3319213981715479
+    ],
+    "joint-r-finger-2-4": [
+      -0.49726115890004735,
+      1.0710809297132464,
+      0.3506689337231149
+    ],
+    "joint-r-finger-3-1": [
+      -0.5058952896049559,
+      1.1036922005654635,
+      0.2721397859402481
+    ],
+    "joint-r-finger-3-2": [
+      -0.5173287888155881,
+      1.080226905738074,
+      0.29539238365078124
+    ],
+    "joint-r-finger-3-3": [
+      -0.5210928416642155,
+      1.0600028405236839,
+      0.31351692248587837
+    ],
+    "joint-r-finger-3-4": [
+      -0.5251985821392768,
+      1.0396497847997166,
+      0.33094985263132615
+    ],
+    "joint-r-finger-4-1": [
+      -0.5155627166259475,
+      1.0969778328701174,
+      0.2535308465745037
+    ],
+    "joint-r-finger-4-2": [
+      -0.5281859474515124,
+      1.0741890520982778,
+      0.27018571694409593
+    ],
+    "joint-r-finger-4-3": [
+      -0.5334279022024262,
+      1.0531430154451973,
+      0.28453659725432046
+    ],
+    "joint-r-finger-4-4": [
+      -0.539604352028045,
+      1.0308701967116674,
+      0.29823703605880336
+    ],
+    "joint-r-finger-5-1": [
+      -0.5209460120416114,
+      1.0902524872590627,
+      0.23315446277965526
+    ],
+    "joint-r-finger-5-2": [
+      -0.5277125248365738,
+      1.070301497697927,
+      0.24384283596155804
+    ],
+    "joint-r-finger-5-3": [
+      -0.5302237230549435,
+      1.0563993396922964,
+      0.25044193554196253
+    ],
+    "joint-r-finger-5-4": [
+      -0.5331781546200528,
+      1.0381705106579664,
+      0.25828291183691593
+    ],
+    "joint-r-foot-1": [
+      -0.24136045477192372,
+      0.0072564022834641475,
+      0.13266262238203003
+    ],
+    "joint-r-foot-2": [
+      -0.2413330099826519,
+      0.015533750727839215,
+      0.2229559790862542
+    ],
+    "joint-r-hand": [
+      -0.4733512584864546,
+      1.165790153011303,
+      0.19283257838152576
+    ],
+    "joint-r-hand-2": [
+      -0.4826975814729664,
+      1.1243100985059036,
+      0.20587983120133976
+    ],
+    "joint-r-hand-3": [
+      -0.4710788299347495,
+      1.1410280918908209,
+      0.21611124864186712
+    ],
+    "joint-r-knee": [
+      -0.17357731422843042,
+      0.4910174693407127,
+      0.03515677505717663
+    ],
+    "joint-r-lowerlid": [
+      -0.0348603713330412,
+      1.68507163858358,
+      0.1758936544429704
+    ],
+    "joint-r-scapula": [
+      -0.12990716553914122,
+      1.502882149481658,
+      0.05570743326390097
+    ],
+    "joint-r-shoulder": [
+      -0.1841133688298747,
+      1.4725117456734835,
+      0.016033245892585944
+    ],
+    "joint-r-toe-1-1": [
+      -0.20731793815918212,
+      0.017954381141612023,
+      0.14883309222097496
+    ],
+    "joint-r-toe-1-2": [
+      -0.2101063287491971,
+      0.017965359057320742,
+      0.17783674552341389
+    ],
+    "joint-r-toe-1-3": [
+      -0.21472803126256834,
+      0.017981825930883783,
+      0.21045213309402178
+    ],
+    "joint-r-toe-2-1": [
+      -0.23426597674516322,
+      0.01805318238299049,
+      0.15198375402937767
+    ],
+    "joint-r-toe-2-2": [
+      -0.2360581214846118,
+      0.01805867134084484,
+      0.17608027901001863
+    ],
+    "joint-r-toe-2-3": [
+      -0.23644234853441698,
+      0.01805867134084484,
+      0.1913286039294311
+    ],
+    "joint-r-toe-2-4": [
+      -0.2375456290631434,
+      0.01806416029869919,
+      0.21040822143118687
+    ],
+    "joint-r-toe-3-1": [
+      -0.253436162051516,
+      0.018124538835097202,
+      0.14853668849683951
+    ],
+    "joint-r-toe-3-2": [
+      -0.25414423761472843,
+      0.018124538835097202,
+      0.17078892363841547
+    ],
+    "joint-r-toe-3-3": [
+      -0.25382862253810273,
+      0.018124538835097202,
+      0.18468696492565537
+    ],
+    "joint-r-toe-3-4": [
+      -0.2539960357526607,
+      0.018124538835097202,
+      0.19945775051173845
+    ],
+    "joint-r-toe-4-1": [
+      -0.27028177370654727,
+      0.018184917371495125,
+      0.1396006651099412
+    ],
+    "joint-r-toe-4-2": [
+      -0.27064678940386216,
+      0.018184917371495125,
+      0.15693479401401053
+    ],
+    "joint-r-toe-4-3": [
+      -0.2694584300283932,
+      0.018179428413640775,
+      0.17050349782998875
+    ],
+    "joint-r-toe-4-4": [
+      -0.2702515844383482,
+      0.018184917371495125,
+      0.18284267508659033
+    ],
+    "joint-r-toe-5-1": [
+      -0.28626561897844394,
+      0.018245295907893064,
+      0.13511069758507463
+    ],
+    "joint-r-toe-5-2": [
+      -0.2862875748098614,
+      0.018245295907893064,
+      0.14799877062711222
+    ],
+    "joint-r-toe-5-3": [
+      -0.28486044576772773,
+      0.01823706247111152,
+      0.15718728607531107
+    ],
+    "joint-r-toe-5-4": [
+      -0.2849263132619801,
+      0.01823980695003872,
+      0.16960330874187368
+    ],
+    "joint-r-upper-leg": [
+      -0.12115776671929118,
+      0.9500013806433796,
+      0.013497347363871561
+    ],
+    "joint-r-upperlid": [
+      -0.034717658428827826,
+      1.7098268385067439,
+      0.17451043706367164
+    ],
+    "joint-spine-1": [
+      0.0,
+      1.3718168138352471,
+      -0.007821764942463186
+    ],
+    "joint-spine-2": [
+      0.0,
+      1.2036461230933613,
+      0.028482202306274716
+    ],
+    "joint-spine-3": [
+      0.0,
+      1.101551507002263,
+      0.01630769378530395
+    ],
+    "joint-spine-4": [
+      0.0,
+      1.0269236360143825,
+      -0.010566243869643253
+    ],
+    "joint-tongue-1": [
+      0.0,
+      1.6159876150286034,
+      0.07492976366987014
+    ],
+    "joint-tongue-2": [
+      0.0,
+      1.6226841436109225,
+      0.1068096308879938
+    ],
+    "joint-tongue-3": [
+      0.0,
+      1.6242869193043954,
+      0.12940767037439443
+    ],
+    "joint-tongue-4": [
+      0.0,
+      1.6157351229673025,
+      0.1484269093397523
+    ]
+  },
+  "hm08_config": {
+    "description": "MakeHuman HM08 basemesh",
+    "dimensions": {
+      "Body": {
+        "xmin": 13868,
+        "xmax": 14308,
+        "ymin": 10854,
+        "ymax": 10981,
+        "zmin": 881,
+        "zmax": 13137
+      },
+      "Head": {
+        "xmin": 5399,
+        "xmax": 11998,
+        "ymin": 962,
+        "ymax": 5320,
+        "zmin": 791,
+        "zmax": 881
+      },
+      "Teeth": {
+        "xmin": 15077,
+        "xmax": 15111,
+        "ymin": 15061,
+        "ymax": 15068,
+        "zmin": 14993,
+        "zmax": 15061
+      },
+      "Torso": {
+        "xmin": 3924,
+        "xmax": 10589,
+        "ymin": 1892,
+        "ymax": 3946,
+        "zmin": 1524,
+        "zmax": 4370
+      },
+      "Arm": {
+        "xmin": 8300,
+        "xmax": 10210,
+        "ymin": 10076,
+        "ymax": 10543,
+        "zmin": 10064,
+        "zmax": 10069
+      },
+      "Hand": {
+        "xmin": 8938,
+        "xmax": 10548,
+        "ymin": 9864,
+        "ymax": 10267,
+        "zmin": 9881,
+        "zmax": 10318
+      },
+      "Leg": {
+        "xmin": 11133,
+        "xmax": 11141,
+        "ymin": 11130,
+        "ymax": 11135,
+        "zmin": 11025,
+        "zmax": 11460
+      },
+      "Foot": {
+        "xmin": 12839,
+        "xmax": 12860,
+        "ymin": 11609,
+        "ymax": 12442,
+        "zmin": 12828,
+        "zmax": 12888
+      },
+      "Eye": {
+        "xmin": 14618,
+        "xmax": 14645,
+        "ymin": 14650,
+        "ymax": 14658,
+        "zmin": 14636,
+        "zmax": 14663
+      },
+      "Genital": {
+        "xmin": 6335,
+        "xmax": 12932,
+        "ymin": 4347,
+        "ymax": 4376,
+        "zmin": 4335,
+        "zmax": 6431
+      }
+    },
+    "select_groups": {
+      "BODY": [
+        "body"
+      ],
+      "SKIRT": [
+        "helper-skirt"
+      ],
+      "TIGHTS": [
+        "helper-tights"
+      ],
+      "EYES": [
+        "helper-l-eye",
+        "helper-r-eye"
+      ],
+      "HAIR": [
+        "helper-hair"
+      ],
+      "EYELASHES": [
+        "helper-l-eyelashes",
+        "helper-r-eyelashes"
+      ],
+      "TEETH": [
+        "helper-upper-teeth",
+        "helper-lower-teeth"
+      ],
+      "TONGUE": [
+        "helper-tongue"
+      ],
+      "GENITALS": [
+        "helper-genital"
+      ],
+      "HELPERS": [
+        "HelperGeometry"
+      ]
+    },
+    "groups_by_range": {
+      "body": [
+        0,
+        13379
+      ],
+      "helper-skirt": [
+        18002,
+        18721
+      ],
+      "helper-tights": [
+        15328,
+        18001
+      ],
+      "helper-l-eye": [
+        14598,
+        14669
+      ],
+      "helper-r-eye": [
+        14670,
+        14741
+      ],
+      "helper-hair": [
+        18722,
+        19149
+      ],
+      "helper-l-eyelashes": [
+        14742,
+        14866
+      ],
+      "helper-r-eyelashes": [
+        14867,
+        14991
+      ],
+      "helper-upper-teeth": [
+        15060,
+        15127
+      ],
+      "helper-lower-teeth": [
+        14992,
+        15059
+      ],
+      "helper-tongue": [
+        13380,
+        13605
+      ],
+      "helper-genital": [
+        15128,
+        15327
+      ]
+    }
+  },
+  "vertex_group_names": [
+    "HelperGeometry",
+    "JointCubes",
+    "Left",
+    "Mid",
+    "Right",
+    "body",
+    "helper-genital",
+    "helper-hair",
+    "helper-l-eye",
+    "helper-l-eyelashes-1",
+    "helper-l-eyelashes-2",
+    "helper-lower-teeth",
+    "helper-r-eye",
+    "helper-r-eyelashes-1",
+    "helper-r-eyelashes-2",
+    "helper-skirt",
+    "helper-tights",
+    "helper-tongue",
+    "helper-upper-teeth",
+    "joint-ground",
+    "joint-head",
+    "joint-head-2",
+    "joint-jaw",
+    "joint-l-ankle",
+    "joint-l-clavicle",
+    "joint-l-elbow",
+    "joint-l-eye",
+    "joint-l-eye-target",
+    "joint-l-finger-1-1",
+    "joint-l-finger-1-2",
+    "joint-l-finger-1-3",
+    "joint-l-finger-1-4",
+    "joint-l-finger-2-1",
+    "joint-l-finger-2-2",
+    "joint-l-finger-2-3",
+    "joint-l-finger-2-4",
+    "joint-l-finger-3-1",
+    "joint-l-finger-3-2",
+    "joint-l-finger-3-3",
+    "joint-l-finger-3-4",
+    "joint-l-finger-4-1",
+    "joint-l-finger-4-2",
+    "joint-l-finger-4-3",
+    "joint-l-finger-4-4",
+    "joint-l-finger-5-1",
+    "joint-l-finger-5-2",
+    "joint-l-finger-5-3",
+    "joint-l-finger-5-4",
+    "joint-l-foot-1",
+    "joint-l-foot-2",
+    "joint-l-hand",
+    "joint-l-hand-2",
+    "joint-l-hand-3",
+    "joint-l-knee",
+    "joint-l-lowerlid",
+    "joint-l-scapula",
+    "joint-l-shoulder",
+    "joint-l-toe-1-1",
+    "joint-l-toe-1-2",
+    "joint-l-toe-1-3",
+    "joint-l-toe-2-1",
+    "joint-l-toe-2-2",
+    "joint-l-toe-2-3",
+    "joint-l-toe-2-4",
+    "joint-l-toe-3-1",
+    "joint-l-toe-3-2",
+    "joint-l-toe-3-3",
+    "joint-l-toe-3-4",
+    "joint-l-toe-4-1",
+    "joint-l-toe-4-2",
+    "joint-l-toe-4-3",
+    "joint-l-toe-4-4",
+    "joint-l-toe-5-1",
+    "joint-l-toe-5-2",
+    "joint-l-toe-5-3",
+    "joint-l-toe-5-4",
+    "joint-l-upper-leg",
+    "joint-l-upperlid",
+    "joint-mouth",
+    "joint-neck",
+    "joint-pelvis",
+    "joint-r-ankle",
+    "joint-r-clavicle",
+    "joint-r-elbow",
+    "joint-r-eye",
+    "joint-r-eye-target",
+    "joint-r-finger-1-1",
+    "joint-r-finger-1-2",
+    "joint-r-finger-1-3",
+    "joint-r-finger-1-4",
+    "joint-r-finger-2-1",
+    "joint-r-finger-2-2",
+    "joint-r-finger-2-3",
+    "joint-r-finger-2-4",
+    "joint-r-finger-3-1",
+    "joint-r-finger-3-2",
+    "joint-r-finger-3-3",
+    "joint-r-finger-3-4",
+    "joint-r-finger-4-1",
+    "joint-r-finger-4-2",
+    "joint-r-finger-4-3",
+    "joint-r-finger-4-4",
+    "joint-r-finger-5-1",
+    "joint-r-finger-5-2",
+    "joint-r-finger-5-3",
+    "joint-r-finger-5-4",
+    "joint-r-foot-1",
+    "joint-r-foot-2",
+    "joint-r-hand",
+    "joint-r-hand-2",
+    "joint-r-hand-3",
+    "joint-r-knee",
+    "joint-r-lowerlid",
+    "joint-r-scapula",
+    "joint-r-shoulder",
+    "joint-r-toe-1-1",
+    "joint-r-toe-1-2",
+    "joint-r-toe-1-3",
+    "joint-r-toe-2-1",
+    "joint-r-toe-2-2",
+    "joint-r-toe-2-3",
+    "joint-r-toe-2-4",
+    "joint-r-toe-3-1",
+    "joint-r-toe-3-2",
+    "joint-r-toe-3-3",
+    "joint-r-toe-3-4",
+    "joint-r-toe-4-1",
+    "joint-r-toe-4-2",
+    "joint-r-toe-4-3",
+    "joint-r-toe-4-4",
+    "joint-r-toe-5-1",
+    "joint-r-toe-5-2",
+    "joint-r-toe-5-3",
+    "joint-r-toe-5-4",
+    "joint-r-upper-leg",
+    "joint-r-upperlid",
+    "joint-spine-1",
+    "joint-spine-2",
+    "joint-spine-3",
+    "joint-spine-4",
+    "joint-tongue-1",
+    "joint-tongue-2",
+    "joint-tongue-3",
+    "joint-tongue-4"
+  ],
+  "landmark_summary": {
+    "count": 35,
+    "surface_correspondence_count": 20,
+    "internal_structural_reference_count": 15,
+    "surface_maximum": 0.38008347153663635,
+    "surface_median": 0.2142357937991619,
+    "surface_p90": 0.3690666198730469,
+    "internal_offset_maximum": 0.27502527832984924,
+    "internal_offset_median": 0.08428025990724564,
+    "internal_offset_p90": 0.2705765426158905
+  },
+  "landmarks": [
+    {
+      "landmark_id": "ankle_left_landmark",
+      "anchor_id": "ankle_left_anchor",
+      "mirror_id": "ankle_right_landmark",
+      "structural_position": [
+        -0.1,
+        0.06999999,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 4374,
+      "geometry_position": [
+        -0.20895880460739136,
+        0.07536492496728897,
+        0.016234993934631348
+      ],
+      "error_vector": [
+        -0.10895880460739135,
+        0.005364934967288973,
+        0.016234993934631348
+      ],
+      "distance": 0.11029224097728729
+    },
+    {
+      "landmark_id": "ankle_right_landmark",
+      "anchor_id": "ankle_right_anchor",
+      "mirror_id": "ankle_left_landmark",
+      "structural_position": [
+        0.1,
+        0.06999999,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 11088,
+      "geometry_position": [
+        0.20895880460739136,
+        0.07536492496728897,
+        0.016234993934631348
+      ],
+      "error_vector": [
+        0.10895880460739135,
+        0.005364934967288973,
+        0.016234993934631348
+      ],
+      "distance": 0.11029224097728729
+    },
+    {
+      "landmark_id": "chin_landmark",
+      "anchor_id": "chin_anchor",
+      "mirror_id": null,
+      "structural_position": [
+        0.0,
+        1.52,
+        0.04
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 7244,
+      "geometry_position": [
+        0.0016559860669076443,
+        1.52143394947052,
+        0.07624965906143188
+      ],
+      "error_vector": [
+        0.0016559860669076443,
+        0.0014339494705200018,
+        0.036249659061431884
+      ],
+      "distance": 0.036315787583589554
+    },
+    {
+      "landmark_id": "elbow_left_landmark",
+      "anchor_id": "elbow_left_anchor",
+      "mirror_id": "elbow_right_landmark",
+      "structural_position": [
+        -0.45595545,
+        1.3189883,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 2957,
+      "geometry_position": [
+        -0.38806700706481934,
+        1.284349799156189,
+        0.035979099571704865
+      ],
+      "error_vector": [
+        0.06788844293518065,
+        -0.03463850084381104,
+        0.035979099571704865
+      ],
+      "distance": 0.08428025990724564
+    },
+    {
+      "landmark_id": "elbow_right_landmark",
+      "anchor_id": "elbow_right_anchor",
+      "mirror_id": "elbow_left_landmark",
+      "structural_position": [
+        0.45595545,
+        1.3189883,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 9576,
+      "geometry_position": [
+        0.38806700706481934,
+        1.284349799156189,
+        0.035979099571704865
+      ],
+      "error_vector": [
+        -0.06788844293518065,
+        -0.03463850084381104,
+        0.035979099571704865
+      ],
+      "distance": 0.08428025990724564
+    },
+    {
+      "landmark_id": "face_center_landmark",
+      "anchor_id": "face_center_anchor",
+      "mirror_id": null,
+      "structural_position": [
+        0.0,
+        1.68,
+        0.09
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 7074,
+      "geometry_position": [
+        0.005499935708940029,
+        1.6599489450454712,
+        0.0935513824224472
+      ],
+      "error_vector": [
+        0.005499935708940029,
+        -0.020051054954528746,
+        0.003551382422447208
+      ],
+      "distance": 0.02109275385737419
+    },
+    {
+      "landmark_id": "fingertip_index_left_landmark",
+      "anchor_id": "fingertip_index_left_anchor",
+      "mirror_id": "fingertip_index_right_landmark",
+      "structural_position": [
+        -0.815356,
+        1.1114883,
+        -0.022
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 3497,
+      "geometry_position": [
+        -0.5049402117729187,
+        1.1220418214797974,
+        0.19707554578781128
+      ],
+      "error_vector": [
+        0.31041578822708127,
+        0.010553521479797379,
+        0.21907554578781127
+      ],
+      "distance": 0.38008347153663635
+    },
+    {
+      "landmark_id": "fingertip_index_right_landmark",
+      "anchor_id": "fingertip_index_right_anchor",
+      "mirror_id": "fingertip_index_left_landmark",
+      "structural_position": [
+        0.815356,
+        1.1114883,
+        -0.022
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 10117,
+      "geometry_position": [
+        0.5049402117729187,
+        1.1220418214797974,
+        0.19707554578781128
+      ],
+      "error_vector": [
+        -0.31041578822708127,
+        0.010553521479797379,
+        0.21907554578781127
+      ],
+      "distance": 0.38008347153663635
+    },
+    {
+      "landmark_id": "fingertip_little_left_landmark",
+      "anchor_id": "fingertip_little_left_anchor",
+      "mirror_id": "fingertip_little_right_landmark",
+      "structural_position": [
+        -0.815356,
+        1.1114883,
+        0.044
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 3107,
+      "geometry_position": [
+        -0.5268301963806152,
+        1.0936089754104614,
+        0.23060210049152374
+      ],
+      "error_vector": [
+        0.28852580361938474,
+        -0.01787932458953856,
+        0.18660210049152376
+      ],
+      "distance": 0.3440743684768677
+    },
+    {
+      "landmark_id": "fingertip_little_right_landmark",
+      "anchor_id": "fingertip_little_right_anchor",
+      "mirror_id": "fingertip_little_left_landmark",
+      "structural_position": [
+        0.815356,
+        1.1114883,
+        0.044
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 9726,
+      "geometry_position": [
+        0.5268301963806152,
+        1.0936089754104614,
+        0.23060210049152374
+      ],
+      "error_vector": [
+        -0.28852580361938474,
+        -0.01787932458953856,
+        0.18660210049152376
+      ],
+      "distance": 0.3440743684768677
+    },
+    {
+      "landmark_id": "fingertip_middle_left_landmark",
+      "anchor_id": "fingertip_middle_left_anchor",
+      "mirror_id": "fingertip_middle_right_landmark",
+      "structural_position": [
+        -0.815356,
+        1.1114883,
+        0.0
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 3497,
+      "geometry_position": [
+        -0.5049402117729187,
+        1.1220418214797974,
+        0.19707554578781128
+      ],
+      "error_vector": [
+        0.31041578822708127,
+        0.010553521479797379,
+        0.19707554578781128
+      ],
+      "distance": 0.36784252524375916
+    },
+    {
+      "landmark_id": "fingertip_middle_right_landmark",
+      "anchor_id": "fingertip_middle_right_anchor",
+      "mirror_id": "fingertip_middle_left_landmark",
+      "structural_position": [
+        0.815356,
+        1.1114883,
+        0.0
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 10117,
+      "geometry_position": [
+        0.5049402117729187,
+        1.1220418214797974,
+        0.19707554578781128
+      ],
+      "error_vector": [
+        -0.31041578822708127,
+        0.010553521479797379,
+        0.19707554578781128
+      ],
+      "distance": 0.36784252524375916
+    },
+    {
+      "landmark_id": "fingertip_ring_left_landmark",
+      "anchor_id": "fingertip_ring_left_anchor",
+      "mirror_id": "fingertip_ring_right_landmark",
+      "structural_position": [
+        -0.815356,
+        1.1114883,
+        0.021999998
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 3107,
+      "geometry_position": [
+        -0.5268301963806152,
+        1.0936089754104614,
+        0.23060210049152374
+      ],
+      "error_vector": [
+        0.28852580361938474,
+        -0.01787932458953856,
+        0.20860210249152375
+      ],
+      "distance": 0.35648515820503235
+    },
+    {
+      "landmark_id": "fingertip_ring_right_landmark",
+      "anchor_id": "fingertip_ring_right_anchor",
+      "mirror_id": "fingertip_ring_left_landmark",
+      "structural_position": [
+        0.815356,
+        1.1114883,
+        0.021999998
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 9726,
+      "geometry_position": [
+        0.5268301963806152,
+        1.0936089754104614,
+        0.23060210049152374
+      ],
+      "error_vector": [
+        -0.28852580361938474,
+        -0.01787932458953856,
+        0.20860210249152375
+      ],
+      "distance": 0.35648515820503235
+    },
+    {
+      "landmark_id": "fingertip_thumb_left_landmark",
+      "anchor_id": "fingertip_thumb_left_anchor",
+      "mirror_id": "fingertip_thumb_right_landmark",
+      "structural_position": [
+        -0.76821494,
+        1.1098377,
+        0.03
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 3497,
+      "geometry_position": [
+        -0.5049402117729187,
+        1.1220418214797974,
+        0.19707554578781128
+      ],
+      "error_vector": [
+        0.2632747282270813,
+        0.012204121479797436,
+        0.16707554578781128
+      ],
+      "distance": 0.31205248832702637
+    },
+    {
+      "landmark_id": "fingertip_thumb_right_landmark",
+      "anchor_id": "fingertip_thumb_right_anchor",
+      "mirror_id": "fingertip_thumb_left_landmark",
+      "structural_position": [
+        0.76821494,
+        1.1098377,
+        0.03
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 10117,
+      "geometry_position": [
+        0.5049402117729187,
+        1.1220418214797974,
+        0.19707554578781128
+      ],
+      "error_vector": [
+        -0.2632747282270813,
+        0.012204121479797436,
+        0.16707554578781128
+      ],
+      "distance": 0.31205248832702637
+    },
+    {
+      "landmark_id": "head_top_landmark",
+      "anchor_id": "head_top_anchor",
+      "mirror_id": null,
+      "structural_position": [
+        0.0,
+        1.8288,
+        0.0
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 12120,
+      "geometry_position": [
+        0.0,
+        1.81482994556427,
+        0.006101635284721851
+      ],
+      "error_vector": [
+        0.0,
+        -0.013970054435729962,
+        0.006101635284721851
+      ],
+      "distance": 0.015244387090206146
+    },
+    {
+      "landmark_id": "heel_left_landmark",
+      "anchor_id": "heel_contact_left_anchor",
+      "mirror_id": "heel_right_landmark",
+      "structural_position": [
+        -0.1,
+        3.1664968e-08,
+        -0.055
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 6445,
+      "geometry_position": [
+        -0.21222274005413055,
+        0.019826484844088554,
+        -0.031201347708702087
+      ],
+      "error_vector": [
+        -0.11222274005413055,
+        0.019826453179120556,
+        0.023798652291297913
+      ],
+      "distance": 0.11641909927129745
+    },
+    {
+      "landmark_id": "heel_right_landmark",
+      "anchor_id": "heel_contact_right_anchor",
+      "mirror_id": "heel_left_landmark",
+      "structural_position": [
+        0.1,
+        3.1664968e-08,
+        -0.055
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 13172,
+      "geometry_position": [
+        0.21222274005413055,
+        0.019826484844088554,
+        -0.031201347708702087
+      ],
+      "error_vector": [
+        0.11222274005413055,
+        0.019826453179120556,
+        0.023798652291297913
+      ],
+      "distance": 0.11641909927129745
+    },
+    {
+      "landmark_id": "hip_left_landmark",
+      "anchor_id": "hip_left_anchor",
+      "mirror_id": "hip_right_landmark",
+      "structural_position": [
+        -0.1,
+        0.95,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 3972,
+      "geometry_position": [
+        -0.1671382188796997,
+        0.9653375744819641,
+        -0.033351168036460876
+      ],
+      "error_vector": [
+        -0.0671382188796997,
+        0.015337574481964156,
+        -0.033351168036460876
+      ],
+      "distance": 0.07651850581169128
+    },
+    {
+      "landmark_id": "hip_right_landmark",
+      "anchor_id": "hip_right_anchor",
+      "mirror_id": "hip_left_landmark",
+      "structural_position": [
+        0.1,
+        0.95,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 10636,
+      "geometry_position": [
+        0.1671382188796997,
+        0.9653375744819641,
+        -0.033351168036460876
+      ],
+      "error_vector": [
+        0.0671382188796997,
+        0.015337574481964156,
+        -0.033351168036460876
+      ],
+      "distance": 0.07651850581169128
+    },
+    {
+      "landmark_id": "knee_left_landmark",
+      "anchor_id": "knee_left_anchor",
+      "mirror_id": "knee_right_landmark",
+      "structural_position": [
+        -0.1,
+        0.5,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 6121,
+      "geometry_position": [
+        -0.11563373357057571,
+        0.5026547908782959,
+        0.0077889421954751015
+      ],
+      "error_vector": [
+        -0.01563373357057571,
+        0.0026547908782958984,
+        0.0077889421954751015
+      ],
+      "distance": 0.017667178064584732
+    },
+    {
+      "landmark_id": "knee_right_landmark",
+      "anchor_id": "knee_right_anchor",
+      "mirror_id": "knee_left_landmark",
+      "structural_position": [
+        0.1,
+        0.5,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 12848,
+      "geometry_position": [
+        0.11563373357057571,
+        0.5026548504829407,
+        0.0077889421954751015
+      ],
+      "error_vector": [
+        0.01563373357057571,
+        0.002654850482940674,
+        0.0077889421954751015
+      ],
+      "distance": 0.01766718551516533
+    },
+    {
+      "landmark_id": "navel_landmark",
+      "anchor_id": "navel_anchor",
+      "mirror_id": null,
+      "structural_position": [
+        0.0,
+        1.08,
+        0.07
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 10461,
+      "geometry_position": [
+        0.0,
+        1.0986807346343994,
+        0.14946432411670685
+      ],
+      "error_vector": [
+        0.0,
+        0.018680734634399343,
+        0.07946432411670684
+      ],
+      "distance": 0.08163055777549744
+    },
+    {
+      "landmark_id": "palm_center_left_landmark",
+      "anchor_id": "palm_center_left_anchor",
+      "mirror_id": "palm_center_right_landmark",
+      "structural_position": [
+        -0.7027726,
+        1.1764883,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 3047,
+      "geometry_position": [
+        -0.46782386302948,
+        1.181695818901062,
+        0.1428665965795517
+      ],
+      "error_vector": [
+        0.23494873697052,
+        0.00520751890106208,
+        0.1428665965795517
+      ],
+      "distance": 0.27502527832984924
+    },
+    {
+      "landmark_id": "palm_center_right_landmark",
+      "anchor_id": "palm_center_right_anchor",
+      "mirror_id": "palm_center_left_landmark",
+      "structural_position": [
+        0.7027726,
+        1.1764883,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 9666,
+      "geometry_position": [
+        0.46782386302948,
+        1.181695818901062,
+        0.1428665965795517
+      ],
+      "error_vector": [
+        -0.23494873697052,
+        0.00520751890106208,
+        0.1428665965795517
+      ],
+      "distance": 0.27502527832984924
+    },
+    {
+      "landmark_id": "pelvis_center_landmark",
+      "anchor_id": "pelvis_center_anchor",
+      "mirror_id": null,
+      "structural_position": [
+        0.0,
+        0.95,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 10597,
+      "geometry_position": [
+        0.0,
+        0.8986690640449524,
+        -0.06016429141163826
+      ],
+      "error_vector": [
+        0.0,
+        -0.05133093595504756,
+        -0.06016429141163826
+      ],
+      "distance": 0.0790860652923584
+    },
+    {
+      "landmark_id": "shoulder_left_landmark",
+      "anchor_id": "shoulder_left_anchor",
+      "mirror_id": "shoulder_right_landmark",
+      "structural_position": [
+        -0.175,
+        1.45,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 1341,
+      "geometry_position": [
+        -0.1820359081029892,
+        1.442155122756958,
+        -0.04456163942813873
+      ],
+      "error_vector": [
+        -0.007035908102989208,
+        -0.007844877243041948,
+        -0.04456163942813873
+      ],
+      "distance": 0.04579068347811699
+    },
+    {
+      "landmark_id": "shoulder_right_landmark",
+      "anchor_id": "shoulder_right_anchor",
+      "mirror_id": "shoulder_left_landmark",
+      "structural_position": [
+        0.175,
+        1.45,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 7960,
+      "geometry_position": [
+        0.1820359081029892,
+        1.442155122756958,
+        -0.04456163942813873
+      ],
+      "error_vector": [
+        0.007035908102989208,
+        -0.007844877243041948,
+        -0.04456163942813873
+      ],
+      "distance": 0.04579068347811699
+    },
+    {
+      "landmark_id": "sternum_center_landmark",
+      "anchor_id": "sternum_center_anchor",
+      "mirror_id": null,
+      "structural_position": [
+        0.0,
+        1.3299999,
+        0.06
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 8186,
+      "geometry_position": [
+        0.0,
+        1.3637958765029907,
+        0.1470467448234558
+      ],
+      "error_vector": [
+        0.0,
+        0.03379597650299071,
+        0.08704674482345581
+      ],
+      "distance": 0.09337720274925232
+    },
+    {
+      "landmark_id": "toe_tip_left_landmark",
+      "anchor_id": "toe_tip_left_anchor",
+      "mirror_id": "toe_tip_right_landmark",
+      "structural_position": [
+        -0.1,
+        0.0,
+        0.20500001
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 6028,
+      "geometry_position": [
+        -0.19513341784477234,
+        0.012649320997297764,
+        0.1832466870546341
+      ],
+      "error_vector": [
+        -0.09513341784477233,
+        0.012649320997297764,
+        -0.021753322945365916
+      ],
+      "distance": 0.09840517491102219
+    },
+    {
+      "landmark_id": "toe_tip_right_landmark",
+      "anchor_id": "toe_tip_right_anchor",
+      "mirror_id": "toe_tip_left_landmark",
+      "structural_position": [
+        0.1,
+        0.0,
+        0.20500001
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 12755,
+      "geometry_position": [
+        0.19513341784477234,
+        0.012649320997297764,
+        0.1832466870546341
+      ],
+      "error_vector": [
+        0.09513341784477233,
+        0.012649320997297764,
+        -0.021753322945365916
+      ],
+      "distance": 0.09840517491102219
+    },
+    {
+      "landmark_id": "waist_center_landmark",
+      "anchor_id": "waist_center_anchor",
+      "mirror_id": null,
+      "structural_position": [
+        0.0,
+        1.03,
+        0.06
+      ],
+      "classification": "surface_correspondence",
+      "mapping_feasibility": "direct surface correspondence",
+      "nearest_body_face_index": 10723,
+      "geometry_position": [
+        0.00427849218249321,
+        1.0231869220733643,
+        0.1580064296722412
+      ],
+      "error_vector": [
+        0.00427849218249321,
+        -0.006813077926635769,
+        0.09800642967224121
+      ],
+      "distance": 0.09833607077598572
+    },
+    {
+      "landmark_id": "wrist_left_landmark",
+      "anchor_id": "wrist_left_anchor",
+      "mirror_id": "wrist_right_landmark",
+      "structural_position": [
+        -0.68978226,
+        1.1839883,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 3047,
+      "geometry_position": [
+        -0.46486303210258484,
+        1.1838412284851074,
+        0.13804474472999573
+      ],
+      "error_vector": [
+        0.22491922789741514,
+        -0.00014707151489257164,
+        0.13804474472999573
+      ],
+      "distance": 0.2639034390449524
+    },
+    {
+      "landmark_id": "wrist_right_landmark",
+      "anchor_id": "wrist_right_anchor",
+      "mirror_id": "wrist_left_landmark",
+      "structural_position": [
+        0.68978226,
+        1.1839883,
+        0.0
+      ],
+      "classification": "internal_structural_reference",
+      "mapping_feasibility": "internal structural reference requiring derived binding",
+      "nearest_body_face_index": 9666,
+      "geometry_position": [
+        0.46486303210258484,
+        1.1838412284851074,
+        0.13804474472999573
+      ],
+      "error_vector": [
+        -0.22491922789741514,
+        -0.00014707151489257164,
+        0.13804474472999573
+      ],
+      "distance": 0.2639034390449524
+    }
+  ],
+  "seam_mapping_feasibility": {
+    "torso_pelvis_seam": {
+      "boundary_edge_count": 46,
+      "cycle_count": 1,
+      "closed_cycle_count": 1,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          4199,
+          4200,
+          4201,
+          4202,
+          4203,
+          4204,
+          4205,
+          10842,
+          10841,
+          10840,
+          10839,
+          10838,
+          10837,
+          10845,
+          10844,
+          10906,
+          10905,
+          10908,
+          10907,
+          10909,
+          10910,
+          10952,
+          10947,
+          10950,
+          10951,
+          10949,
+          10948,
+          10981,
+          10990,
+          4367,
+          4366,
+          4357,
+          4319,
+          4320,
+          4322,
+          4321,
+          4318,
+          4324,
+          4280,
+          4279,
+          4277,
+          4278,
+          4275,
+          4276,
+          4207,
+          4208
+        ],
+        "edge_count": 46,
+        "center": [
+          -2.413528314402514e-18,
+          1.0206411657745549,
+          0.03144242114216529
+        ],
+        "target_distance": 0.03144895770660362
+      }
+    },
+    "torso_neck_seam": {
+      "boundary_edge_count": 94,
+      "cycle_count": 1,
+      "closed_cycle_count": 1,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          1356,
+          1357,
+          1432,
+          1674,
+          1406,
+          3759,
+          1407,
+          1680,
+          1679,
+          1434,
+          1435,
+          1360,
+          1361,
+          1371,
+          1372,
+          1382,
+          1392,
+          1534,
+          1529,
+          1507,
+          1477,
+          1400,
+          8163,
+          8191,
+          8209,
+          8214,
+          8084,
+          8074,
+          8064,
+          8063,
+          8053,
+          8052,
+          8123,
+          8122,
+          8351,
+          8352,
+          8095,
+          10426,
+          8094,
+          8346,
+          8120,
+          8049,
+          8048,
+          8058,
+          8139,
+          8059,
+          8276,
+          8275,
+          8274,
+          8278,
+          8288,
+          8287,
+          8344,
+          8297,
+          8301,
+          8302,
+          8357,
+          8361,
+          10452,
+          10447,
+          10453,
+          10441,
+          10442,
+          10443,
+          10444,
+          8257,
+          8263,
+          8269,
+          1597,
+          1591,
+          1585,
+          1579,
+          3777,
+          3776,
+          3775,
+          3774,
+          3787,
+          3781,
+          3786,
+          1689,
+          1685,
+          1630,
+          1629,
+          1625,
+          1672,
+          1615,
+          1616,
+          1606,
+          1602,
+          1603,
+          1604,
+          1367,
+          1451,
+          1366
+        ],
+        "edge_count": 94,
+        "center": [
+          -1.594469237493576e-17,
+          1.4448749596631172,
+          0.02525726438733215
+        ],
+        "target_distance": 0.029312008278365408
+      }
+    },
+    "neck_head_seam": {
+      "boundary_edge_count": 56,
+      "cycle_count": 1,
+      "closed_cycle_count": 1,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          1366,
+          1376,
+          1375,
+          1385,
+          3753,
+          3752,
+          3751,
+          1513,
+          1511,
+          1460,
+          1461,
+          1510,
+          1521,
+          1522,
+          8205,
+          8194,
+          8149,
+          8148,
+          8195,
+          8197,
+          10418,
+          10419,
+          10420,
+          8077,
+          8067,
+          8068,
+          8058,
+          8139,
+          8059,
+          8276,
+          8275,
+          8274,
+          8273,
+          8233,
+          8232,
+          8231,
+          8221,
+          8220,
+          8219,
+          8217,
+          8218,
+          1539,
+          1538,
+          1537,
+          1540,
+          1541,
+          1542,
+          1553,
+          1554,
+          1555,
+          1601,
+          1602,
+          1603,
+          1604,
+          1367,
+          1451
+        ],
+        "edge_count": 56,
+        "center": [
+          -5.451988067355679e-18,
+          1.4983468980544938,
+          0.02345686535639893
+        ],
+        "target_distance": 0.02351504366124938
+      }
+    },
+    "torso_arm_left_seam": {
+      "boundary_edge_count": 108,
+      "cycle_count": 3,
+      "closed_cycle_count": 3,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          1356,
+          1357,
+          1432,
+          1674,
+          1406,
+          3759,
+          3760,
+          3761,
+          1417,
+          1427,
+          1428,
+          1698,
+          1699,
+          1709,
+          1708,
+          1707,
+          3850,
+          3788,
+          3785,
+          1688,
+          1659,
+          1649,
+          1648,
+          1639,
+          1629,
+          1625,
+          1672,
+          1615,
+          1616,
+          1606,
+          1602,
+          1603,
+          1604,
+          1367,
+          1451,
+          1366
+        ],
+        "edge_count": 36,
+        "center": [
+          -0.2198824676299155,
+          1.4285171385865811,
+          0.009779188301748612
+        ],
+        "target_distance": 0.01296873114079034
+      }
+    },
+    "torso_arm_right_seam": {
+      "boundary_edge_count": 108,
+      "cycle_count": 3,
+      "closed_cycle_count": 3,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          8048,
+          8049,
+          8120,
+          8346,
+          8094,
+          10426,
+          10427,
+          10428,
+          8105,
+          8115,
+          8116,
+          8370,
+          8371,
+          8381,
+          8380,
+          8379,
+          10515,
+          10454,
+          10451,
+          8360,
+          8331,
+          8321,
+          8320,
+          8311,
+          8301,
+          8297,
+          8344,
+          8287,
+          8288,
+          8278,
+          8274,
+          8275,
+          8276,
+          8059,
+          8139,
+          8058
+        ],
+        "edge_count": 36,
+        "center": [
+          0.2198824676299155,
+          1.4285171385865811,
+          0.009779188301748612
+        ],
+        "target_distance": 0.01296873114079034
+      }
+    },
+    "wrist_hand_left_seam": {
+      "boundary_edge_count": 56,
+      "cycle_count": 2,
+      "closed_cycle_count": 2,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          3447,
+          3457,
+          3456,
+          3455,
+          3454,
+          3458,
+          3475,
+          3476,
+          3480,
+          3801,
+          3802,
+          3865,
+          3494,
+          3511,
+          3512,
+          3513,
+          3530,
+          3520,
+          3519,
+          3518,
+          3501,
+          3768,
+          3500,
+          3483,
+          3482,
+          3487,
+          3470,
+          3464
+        ],
+        "edge_count": 28,
+        "center": [
+          -0.4294501814988642,
+          1.2004111665750525,
+          0.13370944505854013
+        ],
+        "target_distance": 0.0553891399971881
+      }
+    },
+    "wrist_hand_right_seam": {
+      "boundary_edge_count": 56,
+      "cycle_count": 2,
+      "closed_cycle_count": 2,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          10115,
+          10125,
+          10124,
+          10123,
+          10122,
+          10126,
+          10143,
+          10144,
+          10148,
+          10467,
+          10468,
+          10530,
+          10162,
+          10179,
+          10180,
+          10181,
+          10198,
+          10188,
+          10187,
+          10186,
+          10169,
+          10435,
+          10168,
+          10151,
+          10150,
+          10155,
+          10138,
+          10132
+        ],
+        "edge_count": 28,
+        "center": [
+          0.4294501814988642,
+          1.2004111665750525,
+          0.13370944505854013
+        ],
+        "target_distance": 0.0553891399971881
+      }
+    },
+    "pelvis_thigh_left_seam": {
+      "boundary_edge_count": 32,
+      "cycle_count": 1,
+      "closed_cycle_count": 1,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          4253,
+          4254,
+          4255,
+          4256,
+          4257,
+          4258,
+          4259,
+          4267,
+          4376,
+          4374,
+          6431,
+          4372,
+          4370,
+          4371,
+          4378,
+          4382,
+          4411,
+          4354,
+          4356,
+          4316,
+          4407,
+          4409,
+          4410,
+          4418,
+          4429,
+          4405,
+          4406,
+          4403,
+          4404,
+          4401,
+          4261,
+          4268
+        ],
+        "edge_count": 32,
+        "center": [
+          -0.08248668639586046,
+          0.8572949408424325,
+          0.03136562047914328
+        ],
+        "target_distance": 0.04897313743931577
+      }
+    },
+    "pelvis_thigh_right_seam": {
+      "boundary_edge_count": 32,
+      "cycle_count": 1,
+      "closed_cycle_count": 1,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          4259,
+          4267,
+          4376,
+          4374,
+          6431,
+          4372,
+          4370,
+          10993,
+          10997,
+          11001,
+          11029,
+          10978,
+          10980,
+          10946,
+          11025,
+          11027,
+          11028,
+          11036,
+          11047,
+          11023,
+          11024,
+          11021,
+          11022,
+          11019,
+          10892,
+          10898,
+          10885,
+          10886,
+          10887,
+          10888,
+          10889,
+          10890
+        ],
+        "edge_count": 32,
+        "center": [
+          0.08248668639586045,
+          0.8572949408424324,
+          0.031365620479143284
+        ],
+        "target_distance": 0.04897313743931579
+      }
+    },
+    "ankle_foot_left_seam": {
+      "boundary_edge_count": 20,
+      "cycle_count": 1,
+      "closed_cycle_count": 1,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          4800,
+          4801,
+          4841,
+          4840,
+          4846,
+          4844,
+          4842,
+          4839,
+          4843,
+          4845,
+          6360,
+          6432,
+          6330,
+          6367,
+          6365,
+          6364,
+          6366,
+          6363,
+          6368,
+          6361
+        ],
+        "edge_count": 20,
+        "center": [
+          -0.2427903282929845,
+          0.12039589936910602,
+          0.008979386153947739
+        ],
+        "target_distance": 0.009411272177277457
+      }
+    },
+    "ankle_foot_right_seam": {
+      "boundary_edge_count": 20,
+      "cycle_count": 1,
+      "closed_cycle_count": 1,
+      "candidate": {
+        "closed": true,
+        "vertex_ids": [
+          11418,
+          11419,
+          11459,
+          11458,
+          11464,
+          11462,
+          11460,
+          11457,
+          11461,
+          11463,
+          12957,
+          13028,
+          12927,
+          12964,
+          12962,
+          12961,
+          12963,
+          12960,
+          12965,
+          12958
+        ],
+        "edge_count": 20,
+        "center": [
+          0.2427903282929845,
+          0.12039589936910602,
+          0.008979386153947739
+        ],
+        "target_distance": 0.009411272177277457
+      }
+    }
+  },
+  "m02_semantic_mapping": {
+    "region_count": 208,
+    "surface_count": 208,
+    "record_count": 416,
+    "classification_counts": {
+      "direct mapping": 67,
+      "requires local retopology": 4,
+      "requires new module geometry": 178,
+      "straightforward region split": 167
+    }
+  }
+}

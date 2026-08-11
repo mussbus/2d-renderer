@@ -99,8 +99,8 @@ test "Prompt 2A region and surface inventory preserves adult anatomy identities"
     var loaded = try human_test_support.load();
     defer loaded.deinit();
     const source = loaded.definition();
-    try std.testing.expectEqual(@as(usize, 206), source.regions.len);
-    try std.testing.expectEqual(@as(usize, 206), source.surfaces.len);
+    try std.testing.expectEqual(@as(usize, 208), source.regions.len);
+    try std.testing.expectEqual(@as(usize, 208), source.surfaces.len);
     inline for (.{
         "breast_left",
         "nipple_right",
@@ -115,7 +115,9 @@ test "Prompt 2A region and surface inventory preserves adult anatomy identities"
         "vaginal_opening",
         "vestibule",
         "vaginal_canal",
+        "penis_foreskin",
         "penis_shaft",
+        "penis_urethral_opening",
         "scrotum",
         "testicle_left",
         "testicle_right",
@@ -127,6 +129,13 @@ test "Prompt 2A region and surface inventory preserves adult anatomy identities"
     try std.testing.expectEqualStrings("torso", breast.owner_component_id.value.bytes);
     const anal_canal = findRegion(source, "anal_canal").?;
     try std.testing.expectEqualStrings("anus_module_01", anal_canal.owner_component_id.value.bytes);
+    inline for (.{ "penis_foreskin", "penis_urethral_opening" }) |region_id| {
+        const region = findRegion(source, region_id).?;
+        try std.testing.expectEqualStrings("penis_module_01", region.owner_component_id.value.bytes);
+        const surface = findSurface(source, region_id ++ "_surface").?;
+        try std.testing.expectEqualStrings("penis_module_01", surface.owner_component_id.value.bytes);
+        try std.testing.expectEqualStrings("human_base_skin", surface.material_instance_id.value.bytes);
+    }
 }
 
 test "Prompt 2A neutral materials keep definitions and instances separate" {

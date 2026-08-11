@@ -1,0 +1,6 @@
+{
+  "status": "completed",
+  "nonadjacent_bvh_candidate_count": 0,
+  "detected_nonadjacent_triangle_intersection_count": 0,
+  "intersections": []
+}

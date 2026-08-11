@@ -7,7 +7,7 @@ pub const asset_version = identity.AssetVersion{ .major = 1, .minor = 0, .patch 
 pub const compiler_version = identity.CompilerVersion{ .major = 1, .minor = 0, .patch = 0 };
 
 pub const component_count: usize = 48;
-pub const region_surface_count: usize = 206;
+pub const region_surface_count: usize = 208;
 pub const neutral_material_count: usize = 11;
 
 pub const ComponentSpec = struct {
@@ -235,7 +235,7 @@ fn buildRegionSurfaceSpecs() [region_surface_count]RegionSurfaceSpec {
         inline for (.{ "left", "right" }) |side| appendRegion(&result, &index, std.fmt.comptimePrint("{s}_{s}", .{ region_prefix, side }), "vulva_vaginal_canal_module_01", "human_base_skin");
     }
     inline for (.{ "clitoral_region", "urethral_opening", "vaginal_opening", "vestibule", "vaginal_canal" }) |region_id| appendRegion(&result, &index, region_id, "vulva_vaginal_canal_module_01", "human_base_skin");
-    inline for (.{ "penis_base", "penis_shaft", "penis_glans" }) |region_id| appendRegion(&result, &index, region_id, "penis_module_01", "human_base_skin");
+    inline for (.{ "penis_base", "penis_foreskin", "penis_glans", "penis_shaft", "penis_urethral_opening" }) |region_id| appendRegion(&result, &index, region_id, "penis_module_01", "human_base_skin");
     inline for (.{ "scrotum", "testicle_left", "testicle_right" }) |region_id| appendRegion(&result, &index, region_id, "scrotum_testicles_module_01", "human_base_skin");
 
     if (index != region_surface_count) @compileError(std.fmt.comptimePrint("human_base region/surface manifest count is {d}, expected {d}", .{ index, region_surface_count }));

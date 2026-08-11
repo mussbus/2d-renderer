@@ -11,11 +11,13 @@ No dependency may use a floating branch, moving tag, package alias, or `latest` 
 | Zig | 0.16.0 | Installed toolchain; `zig version` must print `0.16.0` | Distribution verification is external to this repository; the executable version is checked on every task and build entry point |
 | SDL3 | release 3.4.10, embedded commit `8e37db5e797b6167f3a00d697d816a684bd259c7` | `SDL3-devel-3.4.10-VC.zip` | `e2b336b10b037934af98308027410732ef7b22f2c6697d58092aa1c209fae7d7` |
 | DirectX Shader Compiler | stable release `v1.9.2602.24`, commit `d355aa8364d34df3f0822ba0de8d1dfc75ae6f48` | `dxc_2026_05_27.zip` | `cf658aacf070d3045e31b8f1f8a696c2945f37c1095019481ef7c513368db3b4` |
+| Blender | 4.5.9 LTS | `blender-4.5.9-windows-x64.zip` portable archive | `41da973b9bf95bb312cbeff4d1982feb13259b43c821686b9bafea4dfe5477cf` |
 
 The machine-readable authority used by the bootstrap is `tools/dependencies.lock.json`, which embeds these exact URLs and hashes. Official artifact URLs:
 
 - `https://github.com/libsdl-org/SDL/releases/download/release-3.4.10/SDL3-devel-3.4.10-VC.zip`
 - `https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.9.2602.24/dxc_2026_05_27.zip`
+- `https://mirror.blender.org/release/Blender4.5/blender-4.5.9-windows-x64.zip`
 
 The SDL release page publishes the archive digest. The DXC release API publishes the archive digest and marks the release immutable. A release name is not trusted by itself; the local SHA-256 check is authoritative.
 
@@ -49,9 +51,40 @@ Expected validated paths are:
 .deps/dxc-1.9.2602.24/bin/x64/dxcompiler.dll
 .deps/dxc-1.9.2602.24/bin/x64/dxil.dll
 .deps/dxc-1.9.2602.24/bin/x64/dxv.exe
+.deps/blender-4.5.9-windows-x64/blender.exe
+.deps/blender-4.5.9-windows-x64/copyright.txt
 ```
 
 `.deps` is ignored local build input and is not committed. The build fails with a diagnostic directing the developer to the bootstrap command if any pinned path is missing; it does not search arbitrary environment locations.
+
+Blender is a portable, repository-local, offline authoring dependency only.
+The bootstrap verifies the archive before extraction and installs it under
+`.deps/blender-4.5.9-windows-x64/`; the empty local `portable/` directory keeps
+preferences beside that installation rather than in machine-global Blender
+configuration. The runtime, renderer, canonical parser, normal geometry
+validation, and production packages do not link, launch, or ship Blender.
+Only the explicitly specialized Blender bridge commands depend on it.
+
+### External qualification asset: MakeHuman/MPFB `hm08`
+
+Prompt 2C-T2 qualified and Prompt 2C-T3 adopted the visible-body topology of
+the official `hm08` basemesh bundled with MPFB2. The reproducible provenance
+input is pinned to MPFB2
+commit `437dd513888a92399d1d3200d2e80859fae55abc` at
+`src/mpfb/data/3dobjs/base.obj`. The OBJ is 1,808,470 bytes with SHA-256
+`bea00279464133e86b634220cd2774ebf3b470de280d11222a6b2269e4a8d950`.
+Its header identifies `hm08` and its CC0 release; the pinned
+`LICENSE.ASSETS.md` is 7,003 bytes with SHA-256
+`5f3ab0cf6f7ebe92efe4b83213131c617d308d164eeefd5da230373640b0c226`.
+
+The sparse upstream checkout lives only under the ignored
+`.deps/external/mpfb2-437dd513888a92399d1d3200d2e80859fae55abc/` inspection
+location. It is not a runtime dependency, is no longer geometry authority after
+promotion, and is not fetched by ordinary bootstrap, build, test, or runtime
+routes. Machine-readable qualification and adoption provenance is committed
+under `evidence/prompt_2c_t2_hm08/` and
+`evidence/prompt_2c_t3_hm08_adoption/`; the canonical JSON owns the adopted
+topology.
 
 ## Header inspection record
 

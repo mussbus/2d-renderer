@@ -1,5 +1,6 @@
 # Repository-local dependencies and verified download cache
 .deps/
+.authoring-work/
 
 # Zig cache and install output
 .zig-cache/

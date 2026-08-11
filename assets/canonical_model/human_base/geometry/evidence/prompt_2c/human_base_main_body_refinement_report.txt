@@ -1,0 +1,205 @@
+M03 PROMPT 2C HUMAN MAIN-BODY ANATOMICAL AND DEFORMATION-TOPOLOGY EVIDENCE
+authority_path=assets/canonical_model/human_base/geometry/human_base_geometry.authoring.json
+structural_authority_path=assets/canonical_model/human_base/human_base.authoring.json
+structural_normalized_sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda
+authoring_bytes=31806628
+authoring_sha256=09544c1bdc69728c6374f4b4285939a7dc6d1a47a868fe77800c2866ba432140
+canonical_bytes=15449174
+geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772
+control_topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+triangulation_sha256=79f355367d384af628d20035597535a1f09d5c26f52ce7db4c6cb124e1fa4820
+neutral_geometry_signature=4073177d385c545bd9d200051d8f56ef9ec7968642b32cf83987b709a55dbdcc
+mesh_id=human_base_main_body
+topology_revision=2
+next_vertex_id=11506
+next_face_id=14380
+vertices=11506
+quads=11504
+derived_triangles=23008
+prompt_2b_authoring_sha256=23ba78843920eae23053c9654add7b05e67822d0e627963e0af1aed4e019b898
+prompt_2b_vertices=2878
+prompt_2b_quads=2876
+prompt_2b_triangles=5752
+topology_delta_vertices_added=8628
+topology_delta_vertices_removed=0
+topology_delta_faces_added=11504
+topology_delta_faces_retired=2876
+prompt_2b_quality unique_edges=5752 boundary_edges=0 non_manifold_edges=0 degenerate_quads=0
+prompt_2b_quality valence_3=156 valence_4=2574 valence_5=148 valence_other=0 extraordinary_vertices=304
+prompt_2b_quality edge_length_m min=0.025399999999999867 p25=0.025399999999999978 median=0.025400000000000006 p75=0.025400000000460155 p90=0.027297787777516715 max=0.27 mean=0.03624801578101608
+prompt_2b_quality quad_aspect_ratio min=1 p25=1.000000000000001 median=1.0000000000000044 p75=1.0132600008617227 p90=4.330708661417327 max=10.62992125984253 mean=1.8419359108024635
+connected_components=1
+open_boundary_loops=0
+topology_loops_total=56
+prompt_2c_critical_face_sets=39
+prompt_2c_deformation_loops=55
+subdivision_policy=catmull_clark_v1
+structural_seam_loops=11
+seam id=ankle_foot_left_seam edges=28 side_a=ankle_left_surface side_b=midfoot_left_surface
+seam id=ankle_foot_right_seam edges=28 side_a=ankle_right_surface side_b=midfoot_right_surface
+seam id=neck_head_seam edges=28 side_a=neck_surface side_b=head_surface
+seam id=pelvis_thigh_left_seam edges=36 side_a=hip_left_surface side_b=thigh_left_surface
+seam id=pelvis_thigh_right_seam edges=36 side_a=hip_right_surface side_b=thigh_right_surface
+seam id=torso_arm_left_seam edges=24 side_a=shoulder_left_surface side_b=upper_arm_left_surface
+seam id=torso_arm_right_seam edges=24 side_a=shoulder_right_surface side_b=upper_arm_right_surface
+seam id=torso_neck_seam edges=28 side_a=torso_surface side_b=neck_surface
+seam id=torso_pelvis_seam edges=76 side_a=torso_surface side_b=pelvis_surface
+seam id=wrist_hand_left_seam edges=28 side_a=wrist_left_surface side_b=palm_left_surface
+seam id=wrist_hand_right_seam edges=28 side_a=wrist_right_surface side_b=palm_right_surface
+geometry_landmark_bindings=35
+landmark_error_count=35
+landmark_error_min_m=0.009138361150352442
+landmark_error_median_m=0.04078810366511899
+landmark_error_p90_m=0.07599180077977244
+landmark_error_max_m=0.098477602188602
+landmark_error_mean_m=0.04410956446400982
+semantic_surfaces=97
+surface id=abdomen_surface faces=128
+surface id=ankle_left_surface faces=224
+surface id=ankle_right_surface faces=224
+surface id=areola_left_surface faces=56
+surface id=areola_right_surface faces=56
+surface id=back_surface faces=1272
+surface id=breast_left_surface faces=56
+surface id=breast_right_surface faces=56
+surface id=brow_left_surface faces=12
+surface id=brow_right_surface faces=12
+surface id=calf_left_surface faces=216
+surface id=calf_right_surface faces=216
+surface id=cheek_left_surface faces=20
+surface id=cheek_right_surface faces=20
+surface id=chest_surface faces=600
+surface id=ear_left_surface faces=116
+surface id=ear_right_surface faces=116
+surface id=elbow_left_surface faces=112
+surface id=elbow_right_surface faces=112
+surface id=eyelid_lower_left_center_surface faces=8
+surface id=eyelid_lower_right_center_surface faces=8
+surface id=eyelid_upper_left_center_surface faces=8
+surface id=eyelid_upper_right_center_surface faces=8
+surface id=face_surface faces=24
+surface id=forearm_left_surface faces=344
+surface id=forearm_right_surface faces=344
+surface id=forefoot_left_surface faces=24
+surface id=forefoot_right_surface faces=24
+surface id=forehead_surface faces=40
+surface id=glute_left_surface faces=192
+surface id=glute_right_surface faces=192
+surface id=gluteal_cleft_surface faces=24
+surface id=hand_dorsum_left_surface faces=16
+surface id=hand_dorsum_right_surface faces=16
+surface id=head_surface faces=184
+surface id=heel_left_surface faces=120
+surface id=heel_right_surface faces=120
+surface id=hip_left_surface faces=216
+surface id=hip_right_surface faces=216
+surface id=index_left_surface faces=76
+surface id=index_right_surface faces=76
+surface id=jawline_surface faces=8
+surface id=knee_left_surface faces=168
+surface id=knee_right_surface faces=168
+surface id=lip_lower_surface faces=24
+surface id=lip_upper_surface faces=24
+surface id=little_left_surface faces=56
+surface id=little_right_surface faces=56
+surface id=lower_leg_left_surface faces=72
+surface id=lower_leg_right_surface faces=72
+surface id=middle_left_surface faces=52
+surface id=middle_right_surface faces=52
+surface id=midfoot_left_surface faces=96
+surface id=midfoot_right_surface faces=96
+surface id=navel_surface faces=16
+surface id=neck_surface faces=176
+surface id=nipple_left_surface faces=8
+surface id=nipple_right_surface faces=8
+surface id=nose_surface faces=16
+surface id=palm_left_surface faces=80
+surface id=palm_right_surface faces=80
+surface id=pectoral_left_surface faces=80
+surface id=pectoral_right_surface faces=80
+surface id=pelvis_surface faces=216
+surface id=perineal_surface faces=16
+surface id=pubic_surface faces=136
+surface id=ring_left_surface faces=8
+surface id=ring_right_surface faces=8
+surface id=scalp_surface faces=168
+surface id=shin_left_surface faces=216
+surface id=shin_right_surface faces=216
+surface id=shoulder_left_surface faces=48
+surface id=shoulder_right_surface faces=48
+surface id=sole_left_surface faces=24
+surface id=sole_right_surface faces=24
+surface id=sternum_surface faces=56
+surface id=thigh_left_surface faces=616
+surface id=thigh_right_surface faces=616
+surface id=throat_surface faces=48
+surface id=thumb_left_surface faces=24
+surface id=thumb_right_surface faces=24
+surface id=toe_big_left_surface faces=16
+surface id=toe_big_right_surface faces=16
+surface id=toe_index_left_surface faces=16
+surface id=toe_index_right_surface faces=16
+surface id=toe_little_left_surface faces=16
+surface id=toe_little_right_surface faces=16
+surface id=toe_middle_left_surface faces=32
+surface id=toe_middle_right_surface faces=32
+surface id=toe_ring_left_surface faces=16
+surface id=toe_ring_right_surface faces=16
+surface id=torso_surface faces=352
+surface id=upper_arm_left_surface faces=376
+surface id=upper_arm_right_surface faces=376
+surface id=waist_surface faces=72
+surface id=wrist_left_surface faces=116
+surface id=wrist_right_surface faces=116
+measurement overall min=[-0.8636,0,-0.18579382] max=[0.8636,1.8288,0.2212072] width=1.7272 height=1.8288 depth=0.40700102
+measurement chest min=[-0.2921931,1.1296262,-0.14393897] max=[0.2921931,1.4982815,0.2212072] width=0.5843862 height=0.36865532 depth=0.36514616
+measurement waist min=[-0.21364109,1.0279281,-0.13302107] max=[0.21364109,1.1169139,0.12502775] width=0.42728218 height=0.0889858 depth=0.25804883
+measurement hip_glute min=[-0.22296534,0.82453215,-0.18579382] max=[0.22296534,1.0152159,0.14193286] width=0.4459307 height=0.19068372 depth=0.32772666
+measurement head min=[-0.11998299,1.6126918,-0.106476] max=[0.11998299,1.8288,0.17436333] width=0.23996598 height=0.2161082 depth=0.28083932
+measurement arms min=[-0.7112,1.1584921,-0.059260327] max=[0.7112,1.4954693,0.058893174] width=1.4224 height=0.33697724 depth=0.1181535
+measurement hands min=[-0.8636,1.1077183,-0.02105074] max=[0.8636,1.2135644,0.02105074] width=1.7272 height=0.10584605 depth=0.04210148
+measurement legs min=[-0.21680863,0.10040108,-0.10804916] max=[0.21680863,0.8118199,0.107285276] width=0.43361726 height=0.7114188 depth=0.21533445
+measurement feet min=[-0.16386616,0,-0.065] max=[0.16386616,0.107298665,0.205] width=0.32773232 height=0.107298665 depth=0.26999998
+self_intersections=0
+quality unique_edges=23008 boundary_edges=0 non_manifold_edges=0 degenerate_quads=0
+quality valence_3=156 valence_4=11202 valence_5=148 valence_other=0 extraordinary_vertices=304
+quality edge_length_m min=0.0027582949101565774 p25=0.01028205429246066 median=0.012779884379706504 p75=0.013589150786723793 p90=0.023229547213962674 max=0.2702854505432277 mean=0.01614873055844735
+quality quad_aspect_ratio min=1.002691364976373 p25=1.239408485963342 median=1.5143111156980507 p75=2.193381090634578 p90=4.299146550179124 max=29.142155930863858 mean=2.358607340482125
+left_right_limb_intersection=none_by_triangle_audit
+hand_body_overlap=none_by_triangle_audit
+breast_torso_relationship=continuous_integrated_surface
+leg_groin_overlap=none_by_triangle_audit
+toe_foot_relationship=continuous_integrated_surface
+OPEN_TUNING.landmark_binding_tolerance_m=0.1
+VALIDATION_ONLY.locked_extent_tolerance_m=0.000001
+VALIDATION_ONLY.symmetry_tolerance_m=0.000001
+VALIDATION_ONLY.intersection_epsilon_m=0.000000001
+OPEN_TUNING.topology_density=11506_vertices_11504_quads
+OPEN_TUNING.surface_charts=face_local_scaffold_charts
+OPEN_TUNING.texture_uvs=face_local_scaffold_islands
+collision_proxies=0_deferred_to_prompt_2f
+prompt_2c_implemented=true
+prompt_2d_started=false
+m04_started=false
+inspection image=human_base_main_body_front.ppm purpose=front_neutral geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_back.ppm purpose=back_neutral geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_left.ppm purpose=left_neutral geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_right.ppm purpose=right_neutral geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_three_quarter.ppm purpose=three_quarter_neutral geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_wireframe_front.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_wireframe_side.ppm purpose=right_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_surface_front.ppm purpose=front_semantic geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_face_shape.ppm purpose=front_semantic geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_face_wireframe.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_eyelids.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_nose_lips.ppm purpose=front_semantic geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_shoulder_armpit.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_torso_breast_shape.ppm purpose=front_semantic geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_torso_breast_wireframe.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_hand_thumb_fingers.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_pelvis_perineal_front.ppm purpose=front_semantic geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_pelvis_glutes_back.ppm purpose=back_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_knee.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_ankle.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_foot_toes_shape.ppm purpose=front_semantic geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a
+inspection image=human_base_main_body_closeup_foot_toes_wireframe.ppm purpose=front_wireframe geometry_source_sha256=fd535f9b5793b8b3635c4cbbc966f2e3a726b847aa7cfcdbc9bae2a3df39d772 topology_sha256=46c86524d6ad1213dcc73f941db8bda21711393cc250b3d7cad7a731e4a30b2a

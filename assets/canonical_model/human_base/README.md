@@ -3,12 +3,14 @@
 This directory contains the repository-authoritative Prompt 2E evidence for the shared neutral `human_base` structural definition.
 
 - `human_base.authoring.json` is the sole authoritative readable M02 asset source. It intentionally uses insignificant formatting, omitted schema defaults, and a different ordering for the schema-declared unordered component collection.
-- `human_base.canonical.json` is the immutable normalized canonical golden. It is UTF-8, whitespace-free, 379,458 bytes, ends in `}` (`0x7d`), and has no trailing newline.
+- `human_base.canonical.json` is the accepted normalized canonical golden derived from the authoritative source. It is UTF-8, whitespace-free, 380,208 bytes, ends in `}` (`0x7d`), and has no trailing newline.
 - `human_base.structural_report.txt` is the deterministic offline hierarchy, transform, measurement, joint, control, anchor, landmark, seam, site, effector, optional-module, and deferral report.
 
-Canonical SHA-256:
+Accepted canonical SHA-256 after the owner-approved pre-M03 semantic correction:
 
-`7b579784f239d90ae9757a0aec1967fc37cf752733a4ac13409977f6f3212381`
+`b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda`
+
+This accepted correction adds the `penis_foreskin` and `penis_urethral_opening` regions and their matching surfaces to the disabled `penis_module_01`. It supersedes the historical 379,458-byte canonical identity `7b579784f239d90ae9757a0aec1967fc37cf752733a4ac13409977f6f3212381` as the current M02 compatibility target.
 
 The 17 applicable file-backed invalid human definitions live under `tests/fixtures/canonical_model/human_base/invalid/`. Each is parsed by the real canonical authoring parser and rejected through the human validation matrix.
 

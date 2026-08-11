@@ -1,0 +1,217 @@
+{
+  "schema_identity": {
+    "geometry_schema_id": "canonical_geometry_schema",
+    "version": { "major": 1, "minor": 0, "patch": 0 }
+  },
+  "asset_identity": {
+    "geometry_asset_id": "synthetic_open_module_geometry",
+    "version": { "major": 1, "minor": 0, "patch": 0 }
+  },
+  "compiler_identity": {
+    "geometry_compiler_id": "canonical_geometry_compiler",
+    "version": { "major": 1, "minor": 0, "patch": 0 }
+  },
+  "structural_compatibility": {
+    "structural_asset_id": "human_base",
+    "structural_asset_version": { "major": 1, "minor": 0, "patch": 0 },
+    "structural_schema_id": "canonical_creature_schema",
+    "structural_schema_version": { "major": 1, "minor": 1, "patch": 0 },
+    "normalized_source_sha256": "b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda",
+    "coordinate_contract": {
+      "unit": "meter",
+      "numeric_precision": "f32",
+      "authoring_step_m": 0.001,
+      "handedness": "right_handed",
+      "world_viewer_right": "positive_x",
+      "up": "positive_y",
+      "toward_camera": "positive_z",
+      "away_from_camera": "negative_z",
+      "canonical_forward": "positive_z",
+      "ground_y_m": 0,
+      "asset_origin": "centered_between_feet_on_ground_in_a_pose",
+      "canonical_height_m": 1.8288,
+      "bind_pose": "a_pose",
+      "canonical_angle_unit": "radian"
+    },
+    "required_component_ids": ["torso"],
+    "required_bone_ids": ["spine_01"],
+    "required_anchor_ids": ["sternum_center_anchor"],
+    "required_surface_ids": ["torso_surface", "neck_surface", "head_surface"],
+    "required_region_ids": ["torso", "chest"],
+    "required_material_instance_ids": ["human_base_skin"],
+    "required_seam_ids": ["neck_head_seam"],
+    "required_landmark_ids": ["sternum_center_landmark"],
+    "required_interaction_site_ids": ["chest_support_site"]
+  },
+  "topology_identity": {
+    "topology_id": "synthetic_open_module_topology",
+    "compatibility_version": { "major": 1, "minor": 0, "patch": 0 },
+    "revision": 1
+  },
+  "meshes": [
+    {
+      "mesh_id": "synthetic_receiver_patch",
+      "owner_component_ids": ["torso"],
+      "next_vertex_id": 41,
+      "next_face_id": 8,
+      "connectivity_policy": "connected",
+      "subdivision_policy": "catmull_clark_v1",
+      "vertices": [
+        { "vertex_id": 30, "position_m": [1, 1, 0] },
+        { "vertex_id": 10, "position_m": [0, 0, 0] },
+        { "vertex_id": 40, "position_m": [0, 1, 0] },
+        { "vertex_id": 20, "position_m": [1, 0, 0] }
+      ],
+      "faces": [
+        {
+          "face_id": 7,
+          "vertex_ids": [10, 20, 30, 40],
+          "diagonal": "v0_v2",
+          "primary_surface_id": "torso_surface",
+          "material_instance_id": "human_base_skin",
+          "region_ids": ["torso", "chest"],
+          "surface_coordinates": [
+            { "surface_id": "torso_surface", "chart_id": "synthetic_torso_chart", "coordinate": [0, 0] },
+            { "surface_id": "torso_surface", "chart_id": "synthetic_torso_chart", "coordinate": [1, 0] },
+            { "surface_id": "torso_surface", "chart_id": "synthetic_torso_chart", "coordinate": [1, 1] },
+            { "surface_id": "torso_surface", "chart_id": "synthetic_torso_chart", "coordinate": [0, 1] }
+          ],
+          "texture_coordinates": [
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_receiver_island", "uv": [0, 0], "overlap_group_id": null },
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_receiver_island", "uv": [1, 0], "overlap_group_id": null },
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_receiver_island", "uv": [1, 1], "overlap_group_id": null },
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_receiver_island", "uv": [0, 1], "overlap_group_id": null }
+          ]
+        }
+      ],
+      "boundary_loops": [
+        {
+          "boundary_loop_id": "synthetic_receiver_loop",
+          "classification": "intentional_open",
+          "directed_edges": [
+            { "from_vertex_id": 10, "to_vertex_id": 20 },
+            { "from_vertex_id": 20, "to_vertex_id": 30 },
+            { "from_vertex_id": 30, "to_vertex_id": 40 },
+            { "from_vertex_id": 40, "to_vertex_id": 10 }
+          ]
+        }
+      ]
+    },
+    {
+      "mesh_id": "synthetic_module_patch",
+      "owner_component_ids": ["torso"],
+      "next_vertex_id": 5,
+      "next_face_id": 4,
+      "connectivity_policy": "connected",
+      "subdivision_policy": "none",
+      "vertices": [
+        { "vertex_id": 1, "position_m": [0, 0, 1] },
+        { "vertex_id": 2, "position_m": [1, 0, 1] },
+        { "vertex_id": 3, "position_m": [1, 1, 1] },
+        { "vertex_id": 4, "position_m": [0, 1, 1] }
+      ],
+      "faces": [
+        {
+          "face_id": 3,
+          "vertex_ids": [1, 2, 3, 4],
+          "diagonal": "v1_v3",
+          "primary_surface_id": "torso_surface",
+          "material_instance_id": "human_base_skin",
+          "region_ids": ["torso"],
+          "surface_coordinates": [
+            { "surface_id": "torso_surface", "chart_id": "synthetic_module_chart", "coordinate": [0, 0] },
+            { "surface_id": "torso_surface", "chart_id": "synthetic_module_chart", "coordinate": [1, 0] },
+            { "surface_id": "torso_surface", "chart_id": "synthetic_module_chart", "coordinate": [1, 1] },
+            { "surface_id": "torso_surface", "chart_id": "synthetic_module_chart", "coordinate": [0, 1] }
+          ],
+          "texture_coordinates": [
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_module_island", "uv": [0, 0], "overlap_group_id": null },
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_module_island", "uv": [1, 0], "overlap_group_id": null },
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_module_island", "uv": [1, 1], "overlap_group_id": null },
+            { "texture_space_id": "human_base_texture_space", "uv_island_id": "synthetic_module_island", "uv": [0, 1], "overlap_group_id": null }
+          ]
+        }
+      ],
+      "boundary_loops": [
+        {
+          "boundary_loop_id": "synthetic_module_root_loop",
+          "classification": "intentional_open",
+          "directed_edges": [
+            { "from_vertex_id": 1, "to_vertex_id": 2 },
+            { "from_vertex_id": 2, "to_vertex_id": 3 },
+            { "from_vertex_id": 3, "to_vertex_id": 4 },
+            { "from_vertex_id": 4, "to_vertex_id": 1 }
+          ]
+        }
+      ]
+    }
+  ],
+  "face_sets": [
+    { "face_set_id": "synthetic_receiver_closure_faces", "mesh_id": "synthetic_receiver_patch", "face_ids": [7] }
+  ],
+  "seam_bindings": [
+    {
+      "geometry_seam_binding_id": "synthetic_neck_head_loop",
+      "structural_seam_id": "neck_head_seam",
+      "mesh_id": "synthetic_receiver_patch",
+      "directed_edges": [
+        { "from_vertex_id": 10, "to_vertex_id": 20 },
+        { "from_vertex_id": 20, "to_vertex_id": 30 },
+        { "from_vertex_id": 30, "to_vertex_id": 40 },
+        { "from_vertex_id": 40, "to_vertex_id": 10 }
+      ],
+      "is_closed": true,
+      "side_a_surface_id": "neck_surface",
+      "side_b_surface_id": "head_surface"
+    }
+  ],
+  "geometry_bindings": [
+    {
+      "geometry_binding_id": "synthetic_sternum_binding",
+      "landmark_id": "sternum_center_landmark",
+      "interaction_site_id": null,
+      "mesh_id": "synthetic_receiver_patch",
+      "face_id": 7,
+      "local_face_coordinate": [0.5, 0.5],
+      "surface_coordinate": { "surface_id": "torso_surface", "chart_id": "synthetic_torso_chart", "coordinate": [0.5, 0.5] }
+    },
+    {
+      "geometry_binding_id": "synthetic_chest_site_binding",
+      "landmark_id": null,
+      "interaction_site_id": "chest_support_site",
+      "mesh_id": "synthetic_receiver_patch",
+      "face_id": 7,
+      "local_face_coordinate": [0.5, 0.5],
+      "surface_coordinate": { "surface_id": "torso_surface", "chart_id": "synthetic_torso_chart", "coordinate": [0.5, 0.5] }
+    }
+  ],
+  "module_interfaces": [
+    {
+      "module_interface_id": "synthetic_module_interface",
+      "receiver_mesh_id": "synthetic_receiver_patch",
+      "module_mesh_id": "synthetic_module_patch",
+      "receiver_closure_face_set_id": "synthetic_receiver_closure_faces",
+      "body_receiver_loop_id": "synthetic_receiver_loop",
+      "module_root_loop_id": "synthetic_module_root_loop"
+    }
+  ],
+  "collision_proxies": [
+    {
+      "collision_proxy_id": "synthetic_torso_sphere",
+      "owner_component_id": "torso",
+      "driver_bone_id": "spine_01",
+      "driver_anchor_id": null,
+      "local_transform": {
+        "translation_m": [0, 0, 0],
+        "rotation": [0, 0, 0, 1],
+        "scale": [1, 1, 1]
+      },
+      "primitive": "sphere",
+      "dimensions": { "radius_m": 0.25, "half_length_m": null, "half_extents_m": null },
+      "semantic_region_id": "torso",
+      "topology_id": "synthetic_open_module_topology",
+      "topology_compatibility_version": { "major": 1, "minor": 0, "patch": 0 },
+      "topology_revision": 1
+    }
+  ]
+}

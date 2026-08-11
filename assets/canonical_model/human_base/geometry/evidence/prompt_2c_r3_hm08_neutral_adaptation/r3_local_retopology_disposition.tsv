@@ -1,0 +1,7 @@
+kind	id	T3_classification	R3_disposition	note
+region	groin_left	LOCAL_RETOPOLOGY_REQUIRED	CARRIED_FORWARD	Shape and structural binding were improved without sacrificing HM08 topology; final module-interface loop work remains Prompt 2E.
+region	groin_right	LOCAL_RETOPOLOGY_REQUIRED	CARRIED_FORWARD	Shape and structural binding were improved without sacrificing HM08 topology; final module-interface loop work remains Prompt 2E.
+region	perineal	LOCAL_RETOPOLOGY_REQUIRED	CARRIED_FORWARD	Shared receiving surface was reshaped symmetrically; interface-specific connectivity remains Prompt 2E.
+surface	groin_left_surface	LOCAL_RETOPOLOGY_REQUIRED	CARRIED_FORWARD	Current continuous surface is valid and classified; topology changes require the final module receiver design.
+surface	groin_right_surface	LOCAL_RETOPOLOGY_REQUIRED	CARRIED_FORWARD	Current continuous surface is valid and classified; topology changes require the final module receiver design.
+surface	perineal_surface	LOCAL_RETOPOLOGY_REQUIRED	CARRIED_FORWARD	Current shared receiving surface is valid; project-specific anus and optional-module interfaces remain Prompt 2E.

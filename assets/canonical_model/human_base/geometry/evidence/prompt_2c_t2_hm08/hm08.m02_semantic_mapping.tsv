@@ -1,0 +1,417 @@
+kind	id	owner_component_id	classification	reason
+region	abdomen	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	anal_canal	anus_module_01	requires new module geometry	separate accepted component or optional module
+region	ankle_left	leg_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	ankle_right	leg_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	anus_external	anus_module_01	requires new module geometry	separate accepted component or optional module
+region	areola_left	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	areola_right	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	back	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	breast_left	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	breast_right	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	brow_left	head	straightforward region split	feature-supporting topology exists in the visible body
+region	brow_right	head	straightforward region split	feature-supporting topology exists in the visible body
+region	calf_left	leg_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	calf_right	leg_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	cheek_left	head	straightforward region split	feature-supporting topology exists in the visible body
+region	cheek_right	head	straightforward region split	feature-supporting topology exists in the visible body
+region	chest	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	chin	head	straightforward region split	feature-supporting topology exists in the visible body
+region	clitoral_region	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	cornea_left	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	cornea_right	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	ear_left	ear_left_01	straightforward region split	external ear is integrated in the continuous hm08 body
+region	ear_right	ear_right_01	straightforward region split	external ear is integrated in the continuous hm08 body
+region	elbow_left	arm_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	elbow_right	arm_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	eye_left	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	eye_right	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	eyelid_lower_left_center	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_lower_left_inner	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_lower_left_outer	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_lower_right_center	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_lower_right_inner	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_lower_right_outer	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_upper_left_center	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_upper_left_inner	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_upper_left_outer	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_upper_right_center	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_upper_right_inner	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	eyelid_upper_right_outer	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	face	head	straightforward region split	feature-supporting topology exists in the visible body
+region	fingernail_index_left	fingernail_index_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_index_right	fingernail_index_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_little_left	fingernail_little_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_little_right	fingernail_little_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_middle_left	fingernail_middle_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_middle_right	fingernail_middle_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_ring_left	fingernail_ring_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_ring_right	fingernail_ring_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_thumb_left	fingernail_thumb_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	fingernail_thumb_right	fingernail_thumb_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	forearm_left	arm_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	forearm_right	arm_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	forefoot_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	forefoot_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	forehead	head	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	glute_left	pelvis	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	glute_right	pelvis	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	gluteal_cleft	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+region	groin_left	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+region	groin_right	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+region	gums_lower	gums_lower	requires new module geometry	separate accepted component or optional module
+region	gums_upper	gums_palate_upper	requires new module geometry	separate accepted component or optional module
+region	hand_dorsum_left	hand_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	hand_dorsum_right	hand_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	head	head	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	heel_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	heel_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	hip_left	pelvis	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	hip_right	pelvis	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	index_left	hand_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	index_right	hand_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	iris_left	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	iris_right	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	jawline	head	straightforward region split	feature-supporting topology exists in the visible body
+region	knee_left	leg_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	knee_right	leg_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	labia_majora_left	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	labia_majora_right	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	labia_minora_left	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	labia_minora_right	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	lip_lower	head	straightforward region split	feature-supporting topology exists in the visible body
+region	lip_upper	head	straightforward region split	feature-supporting topology exists in the visible body
+region	little_left	hand_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	little_right	hand_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	lower_leg_left	leg_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	lower_leg_right	leg_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	middle_left	hand_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	middle_right	hand_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	midfoot_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	midfoot_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	mons	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	mouth_external	mouth	straightforward region split	feature-supporting topology exists in the visible body
+region	mouth_internal	mouth_cavity	requires new module geometry	separate accepted component or optional module
+region	navel	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	neck	neck	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	nipple_left	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	nipple_right	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	nose	head	straightforward region split	feature-supporting topology exists in the visible body
+region	oral_mucosa	mouth_cavity	requires new module geometry	separate accepted component or optional module
+region	palate	gums_palate_upper	requires new module geometry	separate accepted component or optional module
+region	palm_left	hand_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	palm_right	hand_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	pectoral_left	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	pectoral_right	torso	straightforward region split	feature-supporting topology exists in the visible body
+region	pelvis	pelvis	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	penis_base	penis_module_01	requires new module geometry	separate accepted component or optional module
+region	penis_foreskin	penis_module_01	requires new module geometry	separate accepted component or optional module
+region	penis_glans	penis_module_01	requires new module geometry	separate accepted component or optional module
+region	penis_shaft	penis_module_01	requires new module geometry	separate accepted component or optional module
+region	penis_urethral_opening	penis_module_01	requires new module geometry	separate accepted component or optional module
+region	perianal	anus_module_01	requires new module geometry	separate accepted component or optional module
+region	perineal	pelvis	requires local retopology	module-receiver and perineal foundation needs project-specific loops
+region	pubic	pelvis	requires local retopology	module-receiver and perineal foundation needs project-specific loops
+region	pupil_left	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	pupil_right	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	ring_left	hand_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	ring_right	hand_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	scalp	head	straightforward region split	feature-supporting topology exists in the visible body
+region	sclera_left	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	sclera_right	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+region	scrotum	scrotum_testicles_module_01	requires new module geometry	separate accepted component or optional module
+region	shin_left	leg_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	shin_right	leg_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	shoulder_left	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	shoulder_right	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	sole_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	sole_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	sternum	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	testicle_left	scrotum_testicles_module_01	requires new module geometry	separate accepted component or optional module
+region	testicle_right	scrotum_testicles_module_01	requires new module geometry	separate accepted component or optional module
+region	thigh_left	leg_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	thigh_right	leg_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	throat	neck	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	thumb_left	hand_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	thumb_right	hand_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_big_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_big_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_index_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_index_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_little_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_little_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_middle_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_middle_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_pad_big_left	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_big_right	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_index_left	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_index_right	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_little_left	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_little_right	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_middle_left	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_middle_right	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_ring_left	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_pad_ring_right	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+region	toe_ring_left	foot_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toe_ring_right	foot_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	toenail_index_left	toenail_index_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_index_right	toenail_index_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_little_left	toenail_little_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_little_right	toenail_little_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_middle_left	toenail_middle_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_middle_right	toenail_middle_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_ring_left	toenail_ring_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_ring_right	toenail_ring_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_thumb_left	toenail_thumb_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	toenail_thumb_right	toenail_thumb_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+region	tongue	tongue	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_canine	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_central_incisor	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_lateral_incisor	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_molar_01	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_molar_02	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_molar_03	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_premolar_01	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_left_premolar_02	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_canine	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_central_incisor	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_lateral_incisor	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_molar_01	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_molar_02	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_molar_03	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_premolar_01	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_lower_right_premolar_02	teeth_lower	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_canine	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_central_incisor	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_lateral_incisor	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_molar_01	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_molar_02	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_molar_03	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_premolar_01	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_left_premolar_02	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_canine	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_central_incisor	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_lateral_incisor	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_molar_01	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_molar_02	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_molar_03	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_premolar_01	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	tooth_upper_right_premolar_02	teeth_upper	requires new module geometry	separate accepted component or optional module
+region	torso	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	upper_arm_left	arm_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	upper_arm_right	arm_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	urethral_opening	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	vaginal_canal	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	vaginal_opening	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	vestibule	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+region	waist	torso	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	wrist_left	arm_left_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+region	wrist_right	arm_right_01	direct mapping	continuous visible-body skin has corresponding anatomical coverage
+surface	abdomen_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	anal_canal_surface	anus_module_01	requires new module geometry	separate accepted component or optional module
+surface	ankle_left_surface	leg_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	ankle_right_surface	leg_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	anus_external_surface	anus_module_01	requires new module geometry	separate accepted component or optional module
+surface	areola_left_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	areola_right_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	back_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	breast_left_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	breast_right_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	brow_left_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	brow_right_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	calf_left_surface	leg_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	calf_right_surface	leg_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	cheek_left_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	cheek_right_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	chest_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	chin_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	clitoral_region_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	cornea_left_surface	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	cornea_right_surface	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	ear_left_surface	ear_left_01	straightforward region split	external ear is integrated in the continuous hm08 body
+surface	ear_right_surface	ear_right_01	straightforward region split	external ear is integrated in the continuous hm08 body
+surface	elbow_left_surface	arm_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	elbow_right_surface	arm_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eye_left_surface	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	eye_right_surface	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	eyelid_lower_left_center_surface	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_lower_left_inner_surface	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_lower_left_outer_surface	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_lower_right_center_surface	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_lower_right_inner_surface	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_lower_right_outer_surface	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_upper_left_center_surface	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_upper_left_inner_surface	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_upper_left_outer_surface	eye_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_upper_right_center_surface	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_upper_right_inner_surface	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	eyelid_upper_right_outer_surface	eye_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	face_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	fingernail_index_left_surface	fingernail_index_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_index_right_surface	fingernail_index_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_little_left_surface	fingernail_little_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_little_right_surface	fingernail_little_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_middle_left_surface	fingernail_middle_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_middle_right_surface	fingernail_middle_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_ring_left_surface	fingernail_ring_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_ring_right_surface	fingernail_ring_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_thumb_left_surface	fingernail_thumb_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	fingernail_thumb_right_surface	fingernail_thumb_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	forearm_left_surface	arm_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	forearm_right_surface	arm_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	forefoot_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	forefoot_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	forehead_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	glute_left_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	glute_right_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	gluteal_cleft_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	groin_left_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	groin_right_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	gums_lower_surface	gums_lower	requires new module geometry	separate accepted component or optional module
+surface	gums_upper_surface	gums_palate_upper	requires new module geometry	separate accepted component or optional module
+surface	hand_dorsum_left_surface	hand_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	hand_dorsum_right_surface	hand_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	head_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	heel_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	heel_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	hip_left_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	hip_right_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	index_left_surface	hand_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	index_right_surface	hand_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	iris_left_surface	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	iris_right_surface	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	jawline_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	knee_left_surface	leg_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	knee_right_surface	leg_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	labia_majora_left_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	labia_majora_right_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	labia_minora_left_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	labia_minora_right_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	lip_lower_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	lip_upper_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	little_left_surface	hand_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	little_right_surface	hand_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	lower_leg_left_surface	leg_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	lower_leg_right_surface	leg_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	middle_left_surface	hand_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	middle_right_surface	hand_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	midfoot_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	midfoot_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	mons_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	mouth_external_surface	mouth	straightforward region split	feature-supporting topology exists in the visible body
+surface	mouth_internal_surface	mouth_cavity	requires new module geometry	separate accepted component or optional module
+surface	navel_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	neck_surface	neck	straightforward region split	feature-supporting topology exists in the visible body
+surface	nipple_left_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	nipple_right_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	nose_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	oral_mucosa_surface	mouth_cavity	requires new module geometry	separate accepted component or optional module
+surface	palate_surface	gums_palate_upper	requires new module geometry	separate accepted component or optional module
+surface	palm_left_surface	hand_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	palm_right_surface	hand_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	pectoral_left_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	pectoral_right_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	pelvis_surface	pelvis	straightforward region split	feature-supporting topology exists in the visible body
+surface	penis_base_surface	penis_module_01	requires new module geometry	separate accepted component or optional module
+surface	penis_foreskin_surface	penis_module_01	requires new module geometry	separate accepted component or optional module
+surface	penis_glans_surface	penis_module_01	requires new module geometry	separate accepted component or optional module
+surface	penis_shaft_surface	penis_module_01	requires new module geometry	separate accepted component or optional module
+surface	penis_urethral_opening_surface	penis_module_01	requires new module geometry	separate accepted component or optional module
+surface	perianal_surface	anus_module_01	requires new module geometry	separate accepted component or optional module
+surface	perineal_surface	pelvis	requires local retopology	module-receiver and perineal foundation needs project-specific loops
+surface	pubic_surface	pelvis	requires local retopology	module-receiver and perineal foundation needs project-specific loops
+surface	pupil_left_surface	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	pupil_right_surface	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	ring_left_surface	hand_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	ring_right_surface	hand_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	scalp_surface	head	straightforward region split	feature-supporting topology exists in the visible body
+surface	sclera_left_surface	eye_left_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	sclera_right_surface	eye_right_01	requires new module geometry	eyeball and corneal geometry is separate from visible hm08 skin
+surface	scrotum_surface	scrotum_testicles_module_01	requires new module geometry	separate accepted component or optional module
+surface	shin_left_surface	leg_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	shin_right_surface	leg_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	shoulder_left_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	shoulder_right_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	sole_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	sole_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	sternum_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	testicle_left_surface	scrotum_testicles_module_01	requires new module geometry	separate accepted component or optional module
+surface	testicle_right_surface	scrotum_testicles_module_01	requires new module geometry	separate accepted component or optional module
+surface	thigh_left_surface	leg_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	thigh_right_surface	leg_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	throat_surface	neck	straightforward region split	feature-supporting topology exists in the visible body
+surface	thumb_left_surface	hand_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	thumb_right_surface	hand_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_big_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_big_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_index_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_index_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_little_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_little_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_middle_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_middle_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_big_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_big_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_index_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_index_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_little_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_little_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_middle_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_middle_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_ring_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_pad_ring_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_ring_left_surface	foot_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toe_ring_right_surface	foot_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	toenail_index_left_surface	toenail_index_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_index_right_surface	toenail_index_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_little_left_surface	toenail_little_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_little_right_surface	toenail_little_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_middle_left_surface	toenail_middle_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_middle_right_surface	toenail_middle_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_ring_left_surface	toenail_ring_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_ring_right_surface	toenail_ring_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_thumb_left_surface	toenail_thumb_left	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	toenail_thumb_right_surface	toenail_thumb_right	requires new module geometry	nail geometry is separate from visible hm08 skin
+surface	tongue_surface	tongue	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_canine_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_central_incisor_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_lateral_incisor_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_molar_01_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_molar_02_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_molar_03_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_premolar_01_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_left_premolar_02_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_canine_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_central_incisor_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_lateral_incisor_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_molar_01_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_molar_02_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_molar_03_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_premolar_01_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_lower_right_premolar_02_surface	teeth_lower	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_canine_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_central_incisor_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_lateral_incisor_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_molar_01_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_molar_02_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_molar_03_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_premolar_01_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_left_premolar_02_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_canine_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_central_incisor_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_lateral_incisor_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_molar_01_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_molar_02_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_molar_03_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_premolar_01_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	tooth_upper_right_premolar_02_surface	teeth_upper	requires new module geometry	separate accepted component or optional module
+surface	torso_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	upper_arm_left_surface	arm_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	upper_arm_right_surface	arm_right_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	urethral_opening_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	vaginal_canal_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	vaginal_opening_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	vestibule_surface	vulva_vaginal_canal_module_01	requires new module geometry	separate accepted component or optional module
+surface	waist_surface	torso	straightforward region split	feature-supporting topology exists in the visible body
+surface	wrist_left_surface	arm_left_01	straightforward region split	feature-supporting topology exists in the visible body
+surface	wrist_right_surface	arm_right_01	straightforward region split	feature-supporting topology exists in the visible body

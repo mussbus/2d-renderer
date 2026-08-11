@@ -1,0 +1,1531 @@
+{
+  "candidate_authoring_sha256": "35a7ab3c433795bcd47975050a5f7ee74a72c43ba3c5d754f9ebbce7886716f7",
+  "topology_revision": 4,
+  "shape_only": true,
+  "topology_edit_count": 0,
+  "vertices_added": 0,
+  "vertices_retired": 0,
+  "faces_added": 0,
+  "faces_retired": 0,
+  "next_vertex_id": 13380,
+  "next_face_id": 13378,
+  "geometry": {
+    "vertex_count": 13380,
+    "quad_count": 13378,
+    "triangle_count": 26756,
+    "boundary_edge_count": 0,
+    "non_manifold_edge_count": 0,
+    "aspect_ratio": {
+      "maximum": 14.088067850133468,
+      "p95": 4.936391400203405,
+      "p99": 7.204559414372054,
+      "over_8_count": 86,
+      "outliers": [
+        {
+          "face_id": 2412,
+          "surface_id": "palm_left_surface",
+          "aspect_ratio": 14.088067850133468,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 9031,
+          "surface_id": "palm_right_surface",
+          "aspect_ratio": 14.088067850133468,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 2406,
+          "surface_id": "palm_left_surface",
+          "aspect_ratio": 13.018236689848935,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 9025,
+          "surface_id": "palm_right_surface",
+          "aspect_ratio": 13.018236689848935,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 486,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.974571903720264,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7108,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.974571903720264,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 4954,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.918260078246357,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11678,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.918260078246357,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 442,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 12.635838191792761,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7066,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 12.635838191792761,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 4951,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.463515403822035,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11675,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.463515403822035,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5596,
+          "surface_id": "forefoot_left_surface",
+          "aspect_ratio": 12.325314909538207,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 12321,
+          "surface_id": "forefoot_right_surface",
+          "aspect_ratio": 12.325314909538207,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 482,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.318541530995976,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7104,
+          "surface_id": "face_surface",
+          "aspect_ratio": 12.318541530995976,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5597,
+          "surface_id": "sole_left_surface",
+          "aspect_ratio": 11.928743161578216,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 12322,
+          "surface_id": "sole_right_surface",
+          "aspect_ratio": 11.928743161578216,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 3113,
+          "surface_id": "palm_left_surface",
+          "aspect_ratio": 11.741678130682299,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 9732,
+          "surface_id": "palm_right_surface",
+          "aspect_ratio": 11.741678130682299,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5878,
+          "surface_id": "toe_little_left_surface",
+          "aspect_ratio": 11.578565756063476,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 12605,
+          "surface_id": "toe_little_right_surface",
+          "aspect_ratio": 11.578565756063476,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 2414,
+          "surface_id": "palm_left_surface",
+          "aspect_ratio": 11.107618848487585,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 9033,
+          "surface_id": "palm_right_surface",
+          "aspect_ratio": 11.107618848487585,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 437,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 11.082189536758904,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7062,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 11.082189536758904,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 2408,
+          "surface_id": "palm_left_surface",
+          "aspect_ratio": 10.527311644400076,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 9027,
+          "surface_id": "palm_right_surface",
+          "aspect_ratio": 10.527311644400076,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 483,
+          "surface_id": "face_surface",
+          "aspect_ratio": 10.214710740492961,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7105,
+          "surface_id": "face_surface",
+          "aspect_ratio": 10.214710740492961,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 468,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.939052973268701,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7090,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.939052973268701,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 484,
+          "surface_id": "face_surface",
+          "aspect_ratio": 9.916384940049186,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7106,
+          "surface_id": "face_surface",
+          "aspect_ratio": 9.916384940049186,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5194,
+          "surface_id": "ear_left_surface",
+          "aspect_ratio": 9.838616670233469,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11917,
+          "surface_id": "ear_right_surface",
+          "aspect_ratio": 9.838616670233469,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 487,
+          "surface_id": "face_surface",
+          "aspect_ratio": 9.735305016756469,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7109,
+          "surface_id": "face_surface",
+          "aspect_ratio": 9.735305016756469,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 477,
+          "surface_id": "face_surface",
+          "aspect_ratio": 9.601457716876192,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7099,
+          "surface_id": "face_surface",
+          "aspect_ratio": 9.601457716876192,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 421,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.521812795380187,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7047,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.521812795380187,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 4474,
+          "surface_id": "toe_little_left_surface",
+          "aspect_ratio": 9.504167211611515,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 11202,
+          "surface_id": "toe_little_right_surface",
+          "aspect_ratio": 9.504167211611515,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 426,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.503371628837737,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7052,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.503371628837737,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 470,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.402702634148396,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7092,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 9.402702634148396,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 6625,
+          "surface_id": "eyelid_upper_left_center_surface",
+          "aspect_ratio": 9.147239445684647,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 13356,
+          "surface_id": "eyelid_upper_right_center_surface",
+          "aspect_ratio": 9.147239445684647,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 465,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 8.923447472028837,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7087,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 8.923447472028837,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 448,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 8.858472124681395,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7072,
+          "surface_id": "nose_surface",
+          "aspect_ratio": 8.858472124681395,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 331,
+          "surface_id": "lip_upper_surface",
+          "aspect_ratio": 8.743679344306367,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 6958,
+          "surface_id": "lip_upper_surface",
+          "aspect_ratio": 8.743679344306367,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5578,
+          "surface_id": "sole_left_surface",
+          "aspect_ratio": 8.710660173906263,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 12303,
+          "surface_id": "sole_right_surface",
+          "aspect_ratio": 8.710660173906263,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 6626,
+          "surface_id": "eyelid_upper_left_center_surface",
+          "aspect_ratio": 8.683575610595359,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 13357,
+          "surface_id": "eyelid_upper_right_center_surface",
+          "aspect_ratio": 8.683575610595359,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 6615,
+          "surface_id": "eyelid_upper_left_inner_surface",
+          "aspect_ratio": 8.591271364828566,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 13346,
+          "surface_id": "eyelid_upper_right_inner_surface",
+          "aspect_ratio": 8.591271364828566,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 4945,
+          "surface_id": "face_surface",
+          "aspect_ratio": 8.522091712002617,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11669,
+          "surface_id": "face_surface",
+          "aspect_ratio": 8.522091712002617,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5575,
+          "surface_id": "sole_left_surface",
+          "aspect_ratio": 8.430391332387398,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 12300,
+          "surface_id": "sole_right_surface",
+          "aspect_ratio": 8.430391332387398,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 802,
+          "surface_id": "eyelid_upper_left_inner_surface",
+          "aspect_ratio": 8.408350058465553,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7423,
+          "surface_id": "eyelid_upper_right_inner_surface",
+          "aspect_ratio": 8.408350058465553,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5083,
+          "surface_id": "cheek_left_surface",
+          "aspect_ratio": 8.399606678744068,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11806,
+          "surface_id": "cheek_right_surface",
+          "aspect_ratio": 8.399606678744068,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 6605,
+          "surface_id": "eyelid_upper_left_inner_surface",
+          "aspect_ratio": 8.392552373757658,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 13336,
+          "surface_id": "eyelid_upper_right_inner_surface",
+          "aspect_ratio": 8.392552373757658,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 848,
+          "surface_id": "eyelid_upper_left_inner_surface",
+          "aspect_ratio": 8.344467142004325,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7469,
+          "surface_id": "eyelid_upper_right_inner_surface",
+          "aspect_ratio": 8.344467142004325,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 4950,
+          "surface_id": "face_surface",
+          "aspect_ratio": 8.342643025790291,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11674,
+          "surface_id": "face_surface",
+          "aspect_ratio": 8.342643025790291,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11098,
+          "surface_id": "shin_left_surface",
+          "aspect_ratio": 8.235830857843338,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 11101,
+          "surface_id": "shin_right_surface",
+          "aspect_ratio": 8.235830857843338,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 6050,
+          "surface_id": "sole_left_surface",
+          "aspect_ratio": 8.192886624189534,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 12777,
+          "surface_id": "sole_right_surface",
+          "aspect_ratio": 8.192886624189534,
+          "classification": "CONTACT_CRITICAL"
+        },
+        {
+          "face_id": 792,
+          "surface_id": "eyelid_upper_left_inner_surface",
+          "aspect_ratio": 8.181570688280724,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 7413,
+          "surface_id": "eyelid_upper_right_inner_surface",
+          "aspect_ratio": 8.181570688280724,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 5719,
+          "surface_id": "shin_left_surface",
+          "aspect_ratio": 8.0927734409123,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 12446,
+          "surface_id": "shin_right_surface",
+          "aspect_ratio": 8.0927734409123,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 2741,
+          "surface_id": "palm_left_surface",
+          "aspect_ratio": 8.050974889040694,
+          "classification": "DEFORMATION_CRITICAL"
+        },
+        {
+          "face_id": 9360,
+          "surface_id": "palm_right_surface",
+          "aspect_ratio": 8.050974889040694,
+          "classification": "DEFORMATION_CRITICAL"
+        }
+      ]
+    },
+    "valence_distribution": {
+      "3": 164,
+      "4": 13060,
+      "5": 156
+    },
+    "extraordinary_vertex_count": 320,
+    "maximum_valence": 5,
+    "overall_bounds": {
+      "minimum": [
+        -0.9102939367294312,
+        0.0,
+        -0.11146975308656693
+      ],
+      "maximum": [
+        0.9102939367294312,
+        1.8287999629974365,
+        0.21461381018161774
+      ]
+    }
+  },
+  "landmarks": {
+    "surface_correspondence": {
+      "count": 18,
+      "median_m": 0.003482046925487937,
+      "p90_m": 0.008228291084511468,
+      "maximum_m": 0.020506918213832742
+    },
+    "internal_structural_reference": {
+      "count": 17,
+      "median_offset_m": 0.002749087452079653,
+      "p90_offset_m": 0.0668779364828107,
+      "maximum_offset_m": 0.0894079038089538
+    },
+    "binding_requires_review_count": 0
+  },
+  "measurements": {
+    "mesh_visible_height": 1.8287999629974365,
+    "mesh_visible_shoulder_width": 0.5598341822624207,
+    "mesh_chest_width": 0.4275118112564087,
+    "mesh_chest_depth": 0.2264130339026451,
+    "mesh_waist_width": 0.3633454442024231,
+    "mesh_hip_width": 0.38257119059562683,
+    "mesh_hip_depth": 0.2624032273888588,
+    "mesh_head_height": 0.3300974369049072,
+    "mesh_head_width": 0.19202570617198944,
+    "mesh_hand_length": 0.1413693368325163,
+    "mesh_foot_length": 0.27840301394462585,
+    "mesh_foot_width": 0.10576122254133224
+  },
+  "eye_socket_fit": {
+    "left": {
+      "m02_center": [
+        -0.032,
+        1.725,
+        0.085
+      ],
+      "opening_center": [
+        -0.04525211324945172,
+        1.6951601119602429,
+        0.14234101003344685
+      ],
+      "offset_m": 0.06598506539708354
+    },
+    "right": {
+      "m02_center": [
+        0.032,
+        1.725,
+        0.085
+      ],
+      "opening_center": [
+        0.04525211324945172,
+        1.6951601119602429,
+        0.14234101003344685
+      ],
+      "offset_m": 0.06598506539708354
+    }
+  },
+  "landmark_rows": [
+    {
+      "landmark_id": "ankle_left_landmark",
+      "anchor_id": "ankle_left_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 4374,
+      "surface_id": "heel_left_surface",
+      "local_u": 0.4407877068007647,
+      "local_v": 0.6101471198297583,
+      "anchor": [
+        -0.1,
+        0.06999999,
+        0.0
+      ],
+      "surface": [
+        -0.10241506189741005,
+        0.06951045630988116,
+        0.00028134357126367426
+      ],
+      "offset": [
+        -0.002415061897410045,
+        -0.0004895336901188374,
+        0.00028134357126367426
+      ],
+      "distance_m": 0.0024801857606184608,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "ankle_right_landmark",
+      "anchor_id": "ankle_right_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 11088,
+      "surface_id": "heel_right_surface",
+      "local_u": 0.6101471198297583,
+      "local_v": 0.4407877068007647,
+      "anchor": [
+        0.1,
+        0.06999999,
+        0.0
+      ],
+      "surface": [
+        0.10241506189741005,
+        0.06951045630988116,
+        0.00028134357126367426
+      ],
+      "offset": [
+        0.002415061897410045,
+        -0.0004895336901188374,
+        0.00028134357126367426
+      ],
+      "distance_m": 0.0024801857606184608,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "chin_landmark",
+      "anchor_id": "chin_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 621,
+      "surface_id": "chin_surface",
+      "local_u": 0.0,
+      "local_v": 0.0,
+      "anchor": [
+        0.0,
+        1.52,
+        0.04
+      ],
+      "surface": [
+        0.0,
+        1.5211282968521118,
+        0.03999999910593033
+      ],
+      "offset": [
+        0.0,
+        0.0011282968521117986,
+        -8.940696724635266e-10
+      ],
+      "distance_m": 0.0011282968521121527,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "elbow_left_landmark",
+      "anchor_id": "elbow_left_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 2957,
+      "surface_id": "elbow_left_surface",
+      "local_u": 0.7607623791387572,
+      "local_v": 0.032962605546554426,
+      "anchor": [
+        -0.45595545,
+        1.3189883,
+        0.0
+      ],
+      "surface": [
+        -0.456990383426348,
+        1.320974278961632,
+        -0.001594453569773667
+      ],
+      "offset": [
+        -0.001034933426348028,
+        0.0019859789616321066,
+        -0.001594453569773667
+      ],
+      "distance_m": 0.002749087452079653,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "elbow_right_landmark",
+      "anchor_id": "elbow_right_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 9576,
+      "surface_id": "elbow_right_surface",
+      "local_u": 0.032962605546554426,
+      "local_v": 0.7607623791387572,
+      "anchor": [
+        0.45595545,
+        1.3189883,
+        0.0
+      ],
+      "surface": [
+        0.456990383426348,
+        1.320974278961632,
+        -0.001594453569773667
+      ],
+      "offset": [
+        0.001034933426348028,
+        0.0019859789616321066,
+        -0.001594453569773667
+      ],
+      "distance_m": 0.002749087452079653,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "face_center_landmark",
+      "anchor_id": "face_center_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 450,
+      "surface_id": "nose_surface",
+      "local_u": 0.9146922532348694,
+      "local_v": 1.0,
+      "anchor": [
+        0.0,
+        1.68,
+        0.09
+      ],
+      "surface": [
+        -0.005499935708940029,
+        1.6605449852111613,
+        0.09343319113834678
+      ],
+      "offset": [
+        -0.005499935708940029,
+        -0.019455014788838598,
+        0.0034331911383467806
+      ],
+      "distance_m": 0.020506918213832742,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_index_left_landmark",
+      "anchor_id": "fingertip_index_left_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 2786,
+      "surface_id": "index_left_surface",
+      "local_u": 0.0,
+      "local_v": 0.0,
+      "anchor": [
+        -0.815356,
+        1.1114883,
+        -0.022
+      ],
+      "surface": [
+        -0.8140432834625244,
+        1.1144471168518066,
+        -0.021345674991607666
+      ],
+      "offset": [
+        0.0013127165374755556,
+        0.002958816851806656,
+        0.0006543250083923327
+      ],
+      "distance_m": 0.0033024177638367454,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_index_right_landmark",
+      "anchor_id": "fingertip_index_right_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 9405,
+      "surface_id": "index_right_surface",
+      "local_u": 0.0,
+      "local_v": 0.0,
+      "anchor": [
+        0.815356,
+        1.1114883,
+        -0.022
+      ],
+      "surface": [
+        0.8140432834625244,
+        1.1144471168518066,
+        -0.021345674991607666
+      ],
+      "offset": [
+        -0.0013127165374755556,
+        0.002958816851806656,
+        0.0006543250083923327
+      ],
+      "distance_m": 0.0033024177638367454,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_little_left_landmark",
+      "anchor_id": "fingertip_little_left_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 2742,
+      "surface_id": "little_left_surface",
+      "local_u": 0.0,
+      "local_v": 0.8696501494598506,
+      "anchor": [
+        -0.815356,
+        1.1114883,
+        0.044
+      ],
+      "surface": [
+        -0.8156555830947921,
+        1.113467463561546,
+        0.042913595682694886
+      ],
+      "offset": [
+        -0.00029958309479216627,
+        0.001979163561546038,
+        -0.0010864043173051119
+      ],
+      "distance_m": 0.002277523386201783,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_little_right_landmark",
+      "anchor_id": "fingertip_little_right_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 9361,
+      "surface_id": "little_right_surface",
+      "local_u": 0.8696501494598506,
+      "local_v": 0.0,
+      "anchor": [
+        0.815356,
+        1.1114883,
+        0.044
+      ],
+      "surface": [
+        0.8156555830947921,
+        1.113467463561546,
+        0.042913595682694886
+      ],
+      "offset": [
+        0.00029958309479216627,
+        0.001979163561546038,
+        -0.0010864043173051119
+      ],
+      "distance_m": 0.002277523386201783,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_middle_left_landmark",
+      "anchor_id": "fingertip_middle_left_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 3590,
+      "surface_id": "middle_left_surface",
+      "local_u": 0.9743574133062334,
+      "local_v": 0.0,
+      "anchor": [
+        -0.815356,
+        1.1114883,
+        0.0
+      ],
+      "surface": [
+        -0.8118812216649911,
+        1.112677185742383,
+        -0.0002564551785205864
+      ],
+      "offset": [
+        0.0034747783350088657,
+        0.0011888857423829613,
+        -0.0002564551785205864
+      ],
+      "distance_m": 0.003681481093864057,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_middle_right_landmark",
+      "anchor_id": "fingertip_middle_right_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 10208,
+      "surface_id": "middle_right_surface",
+      "local_u": 0.0,
+      "local_v": 0.9743574133062334,
+      "anchor": [
+        0.815356,
+        1.1114883,
+        0.0
+      ],
+      "surface": [
+        0.8118812216649911,
+        1.112677185742383,
+        -0.0002564551785205864
+      ],
+      "offset": [
+        -0.0034747783350088657,
+        0.0011888857423829613,
+        -0.0002564551785205864
+      ],
+      "distance_m": 0.003681481093864057,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_ring_left_landmark",
+      "anchor_id": "fingertip_ring_left_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 3487,
+      "surface_id": "ring_left_surface",
+      "local_u": 0.0,
+      "local_v": 1.0,
+      "anchor": [
+        -0.815356,
+        1.1114883,
+        0.021999998
+      ],
+      "surface": [
+        -0.8124819397926331,
+        1.1157594919204712,
+        0.028418835252523422
+      ],
+      "offset": [
+        0.002874060207366913,
+        0.004271191920471207,
+        0.0064188372525234225
+      ],
+      "distance_m": 0.008228291084511468,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_ring_right_landmark",
+      "anchor_id": "fingertip_ring_right_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 10105,
+      "surface_id": "ring_right_surface",
+      "local_u": 1.0,
+      "local_v": 0.0,
+      "anchor": [
+        0.815356,
+        1.1114883,
+        0.021999998
+      ],
+      "surface": [
+        0.8124819397926331,
+        1.1157594919204712,
+        0.028418835252523422
+      ],
+      "offset": [
+        -0.002874060207366913,
+        0.004271191920471207,
+        0.0064188372525234225
+      ],
+      "distance_m": 0.008228291084511468,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_thumb_left_landmark",
+      "anchor_id": "fingertip_thumb_left_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 3497,
+      "surface_id": "thumb_left_surface",
+      "local_u": 1.0,
+      "local_v": 1.0,
+      "anchor": [
+        -0.76821494,
+        1.1098377,
+        0.03
+      ],
+      "surface": [
+        -0.7682149410247803,
+        1.1124645471572876,
+        0.029999999329447746
+      ],
+      "offset": [
+        -1.0247802606500045e-09,
+        0.0026268471572876706,
+        -6.705522526129215e-10
+      ],
+      "distance_m": 0.0026268471572879564,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "fingertip_thumb_right_landmark",
+      "anchor_id": "fingertip_thumb_right_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 10115,
+      "surface_id": "thumb_right_surface",
+      "local_u": 1.0,
+      "local_v": 1.0,
+      "anchor": [
+        0.76821494,
+        1.1098377,
+        0.03
+      ],
+      "surface": [
+        0.7682149410247803,
+        1.1124645471572876,
+        0.029999999329447746
+      ],
+      "offset": [
+        1.0247802606500045e-09,
+        0.0026268471572876706,
+        -6.705522526129215e-10
+      ],
+      "distance_m": 0.0026268471572879564,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "head_top_landmark",
+      "anchor_id": "head_top_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 5397,
+      "surface_id": "forehead_surface",
+      "local_u": 0.0,
+      "local_v": 0.27420587730557605,
+      "anchor": [
+        0.0,
+        1.8288,
+        0.0
+      ],
+      "surface": [
+        0.0,
+        1.8148648084588288,
+        0.006064191306913077
+      ],
+      "offset": [
+        0.0,
+        -0.013935191541171177,
+        0.006064191306913077
+      ],
+      "distance_m": 0.015197499119788389,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "heel_left_landmark",
+      "anchor_id": "heel_contact_left_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 5662,
+      "surface_id": "heel_left_surface",
+      "local_u": 0.0,
+      "local_v": 0.0,
+      "anchor": [
+        -0.1,
+        3.2e-08,
+        -0.055
+      ],
+      "surface": [
+        -0.10000000149011612,
+        0.006681913044303656,
+        -0.054999999701976776
+      ],
+      "offset": [
+        -1.4901161138336505e-09,
+        0.006681881044303656,
+        2.980232241545089e-10
+      ],
+      "distance_m": 0.0066818810443038295,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "heel_right_landmark",
+      "anchor_id": "heel_contact_right_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 12388,
+      "surface_id": "heel_right_surface",
+      "local_u": 0.0,
+      "local_v": 0.0,
+      "anchor": [
+        0.1,
+        3.2e-08,
+        -0.055
+      ],
+      "surface": [
+        0.10000000149011612,
+        0.006681913044303656,
+        -0.054999999701976776
+      ],
+      "offset": [
+        1.4901161138336505e-09,
+        0.006681881044303656,
+        2.980232241545089e-10
+      ],
+      "distance_m": 0.0066818810443038295,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "hip_left_landmark",
+      "anchor_id": "hip_left_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 3977,
+      "surface_id": "hip_left_surface",
+      "local_u": 0.5463053658428307,
+      "local_v": 0.6142170322503363,
+      "anchor": [
+        -0.1,
+        0.95,
+        0.0
+      ],
+      "surface": [
+        -0.16014358932310338,
+        0.9496055672206017,
+        -0.028019246644255685
+      ],
+      "offset": [
+        -0.060143589323103375,
+        -0.00039443277939821275,
+        -0.028019246644255685
+      ],
+      "distance_m": 0.06635122528179274,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "hip_right_landmark",
+      "anchor_id": "hip_right_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 10641,
+      "surface_id": "hip_right_surface",
+      "local_u": 0.6142170322503363,
+      "local_v": 0.5463053658428307,
+      "anchor": [
+        0.1,
+        0.95,
+        0.0
+      ],
+      "surface": [
+        0.16014358932310338,
+        0.9496055672206017,
+        -0.028019246644255685
+      ],
+      "offset": [
+        0.060143589323103375,
+        -0.00039443277939821275,
+        -0.028019246644255685
+      ],
+      "distance_m": 0.06635122528179274,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "knee_left_landmark",
+      "anchor_id": "knee_left_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 6120,
+      "surface_id": "knee_left_surface",
+      "local_u": 0.7254615157233927,
+      "local_v": 0.6603149349872381,
+      "anchor": [
+        -0.1,
+        0.5,
+        0.0
+      ],
+      "surface": [
+        -0.10025656022708959,
+        0.5000082735067634,
+        0.00012447258293317096
+      ],
+      "offset": [
+        -0.00025656022708958615,
+        8.273506763356586e-06,
+        0.00012447258293317096
+      ],
+      "distance_m": 0.00028528060736839164,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "knee_right_landmark",
+      "anchor_id": "knee_right_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 12847,
+      "surface_id": "knee_right_surface",
+      "local_u": 0.6603149349872381,
+      "local_v": 0.7254615157233927,
+      "anchor": [
+        0.1,
+        0.5,
+        0.0
+      ],
+      "surface": [
+        0.10025656022708959,
+        0.5000082735067634,
+        0.00012447258293317096
+      ],
+      "offset": [
+        0.00025656022708958615,
+        8.273506763356586e-06,
+        0.00012447258293317096
+      ],
+      "distance_m": 0.00028528060736839164,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "navel_landmark",
+      "anchor_id": "navel_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 3846,
+      "surface_id": "navel_surface",
+      "local_u": 1.0,
+      "local_v": 1.0,
+      "anchor": [
+        0.0,
+        1.08,
+        0.07
+      ],
+      "surface": [
+        0.0,
+        1.0827360153198242,
+        0.07000000029802322
+      ],
+      "offset": [
+        0.0,
+        0.0027360153198241477,
+        2.98023217215615e-10
+      ],
+      "distance_m": 0.002736015319824164,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "palm_center_left_landmark",
+      "anchor_id": "palm_center_left_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 3060,
+      "surface_id": "palm_left_surface",
+      "local_u": 0.6439140012700343,
+      "local_v": 0.6843496017690276,
+      "anchor": [
+        -0.7027726,
+        1.1764883,
+        0.0
+      ],
+      "surface": [
+        -0.7025405500832895,
+        1.176189449941702,
+        0.0008939127746574126
+      ],
+      "offset": [
+        0.00023204991671044173,
+        -0.0002988500582978837,
+        0.0008939127746574126
+      ],
+      "distance_m": 0.0009706897392502331,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "palm_center_right_landmark",
+      "anchor_id": "palm_center_right_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 9679,
+      "surface_id": "palm_right_surface",
+      "local_u": 0.6843496017690276,
+      "local_v": 0.6439140012700343,
+      "anchor": [
+        0.7027726,
+        1.1764883,
+        0.0
+      ],
+      "surface": [
+        0.7025405500832895,
+        1.176189449941702,
+        0.0008939127746574126
+      ],
+      "offset": [
+        -0.00023204991671044173,
+        -0.0002988500582978837,
+        0.0008939127746574126
+      ],
+      "distance_m": 0.0009706897392502331,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "pelvis_center_landmark",
+      "anchor_id": "pelvis_center_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 3943,
+      "surface_id": "gluteal_cleft_surface",
+      "local_u": 0.4259872967066104,
+      "local_v": 0.0,
+      "anchor": [
+        0.0,
+        0.95,
+        0.0
+      ],
+      "surface": [
+        0.0,
+        0.8999981332855123,
+        -0.05839228278707469
+      ],
+      "offset": [
+        0.0,
+        -0.0500018667144877,
+        -0.05839228278707469
+      ],
+      "distance_m": 0.07687551862601703,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "shoulder_left_landmark",
+      "anchor_id": "shoulder_left_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 1098,
+      "surface_id": "shoulder_left_surface",
+      "local_u": 0.0,
+      "local_v": 1.0,
+      "anchor": [
+        -0.175,
+        1.45,
+        0.0
+      ],
+      "surface": [
+        -0.2017591893672943,
+        1.408265471458435,
+        0.04488689452409744
+      ],
+      "offset": [
+        -0.026759189367294323,
+        -0.0417345285415649,
+        0.04488689452409744
+      ],
+      "distance_m": 0.0668779364828107,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "shoulder_right_landmark",
+      "anchor_id": "shoulder_right_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 7719,
+      "surface_id": "shoulder_right_surface",
+      "local_u": 1.0,
+      "local_v": 0.0,
+      "anchor": [
+        0.175,
+        1.45,
+        0.0
+      ],
+      "surface": [
+        0.2017591893672943,
+        1.408265471458435,
+        0.04488689452409744
+      ],
+      "offset": [
+        0.026759189367294323,
+        -0.0417345285415649,
+        0.04488689452409744
+      ],
+      "distance_m": 0.0668779364828107,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "sternum_center_landmark",
+      "anchor_id": "sternum_center_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 1564,
+      "surface_id": "sternum_surface",
+      "local_u": 1.0,
+      "local_v": 0.42833048962803594,
+      "anchor": [
+        0.0,
+        1.3299999,
+        0.06
+      ],
+      "surface": [
+        -0.007018210573324776,
+        1.3515201370069247,
+        0.14649507143777266
+      ],
+      "offset": [
+        -0.007018210573324776,
+        0.021520237006924736,
+        0.08649507143777266
+      ],
+      "distance_m": 0.0894079038089538,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "toe_tip_left_landmark",
+      "anchor_id": "toe_tip_left_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 4476,
+      "surface_id": "toe_little_left_surface",
+      "local_u": 0.5275015511713308,
+      "local_v": 0.09522728103176863,
+      "anchor": [
+        -0.1,
+        0.0,
+        0.20500001
+      ],
+      "surface": [
+        -0.10240197516813158,
+        0.0016240375656577555,
+        0.20307188446769883
+      ],
+      "offset": [
+        -0.0024019751681315787,
+        0.0016240375656577555,
+        -0.0019281255323011781
+      ],
+      "distance_m": 0.003482046925487937,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "toe_tip_right_landmark",
+      "anchor_id": "toe_tip_right_anchor",
+      "classification": "SURFACE_CORRESPONDENCE",
+      "face_id": 11204,
+      "surface_id": "toe_little_right_surface",
+      "local_u": 0.09522728103176863,
+      "local_v": 0.5275015511713308,
+      "anchor": [
+        0.1,
+        0.0,
+        0.20500001
+      ],
+      "surface": [
+        0.10240197516813158,
+        0.0016240375656577555,
+        0.20307188446769883
+      ],
+      "offset": [
+        0.0024019751681315787,
+        0.0016240375656577555,
+        -0.0019281255323011781
+      ],
+      "distance_m": 0.003482046925487937,
+      "interpretation": "visible_surface_registration"
+    },
+    {
+      "landmark_id": "waist_center_landmark",
+      "anchor_id": "waist_center_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 3844,
+      "surface_id": "waist_surface",
+      "local_u": 0.679136429866904,
+      "local_v": 0.0,
+      "anchor": [
+        0.0,
+        1.03,
+        0.06
+      ],
+      "surface": [
+        0.0,
+        1.08076706252859,
+        0.0761784593880371
+      ],
+      "offset": [
+        0.0,
+        0.05076706252858987,
+        0.01617845938803711
+      ],
+      "distance_m": 0.05328261617030567,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "wrist_left_landmark",
+      "anchor_id": "wrist_left_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 3047,
+      "surface_id": "palm_left_surface",
+      "local_u": 0.18368433497249045,
+      "local_v": 0.31643387925805005,
+      "anchor": [
+        -0.68978226,
+        1.1839883,
+        0.0
+      ],
+      "surface": [
+        -0.689862361025394,
+        1.1840682225983303,
+        -0.00033952931885492584
+      ],
+      "offset": [
+        -8.010102539401931e-05,
+        7.992259833033977e-05,
+        -0.00033952931885492584
+      ],
+      "distance_m": 0.00035788818694549847,
+      "interpretation": "intentional_internal_to_surface_offset"
+    },
+    {
+      "landmark_id": "wrist_right_landmark",
+      "anchor_id": "wrist_right_anchor",
+      "classification": "INTERNAL_STRUCTURAL_REFERENCE",
+      "face_id": 9666,
+      "surface_id": "palm_right_surface",
+      "local_u": 0.31643387925805005,
+      "local_v": 0.18368433497249045,
+      "anchor": [
+        0.68978226,
+        1.1839883,
+        0.0
+      ],
+      "surface": [
+        0.689862361025394,
+        1.1840682225983303,
+        -0.00033952931885492584
+      ],
+      "offset": [
+        8.010102539401931e-05,
+        7.992259833033977e-05,
+        -0.00033952931885492584
+      ],
+      "distance_m": 0.00035788818694549847,
+      "interpretation": "intentional_internal_to_surface_offset"
+    }
+  ]
+}

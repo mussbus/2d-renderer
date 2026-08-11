@@ -59,6 +59,190 @@ derived canonical JSON and structural report. Ordinary `test`, `check`,
 `test-full`, `test-stress`, and `verify` routes never invoke it to repair a
 golden mismatch.
 
+### M03 Prompt 2A canonical-geometry route
+
+The renderer-independent generic geometry foundation has one focused fast
+route:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-geometry -j1
+```
+
+It covers strict file loading, M02 normalized-source compatibility, stable
+mesh/vertex/face identities and allocation cursors, quad semantics, canonical
+surface coordinates, independent UVs and declared overlaps, seam/binding and
+module-interface records, collision proxies, deterministic canonical JSON and
+hash boundaries, explicit triangulation, Catmull-Clark v1 level one, and the
+file-backed generic invalid-case matrix. The fixture geometry is synthetic;
+this route does not imply that production human geometry exists. The same test
+root is scheduled by `test`, and therefore by `check`, `test-full`, and
+`verify`.
+
+### M03 Prompt 2B human scaffold routes
+
+The first file-backed production human geometry has a focused fast route:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-geometry-scaffold -j1
+```
+
+It loads both authoritative M02 and M03 sources, then validates the continuous
+main-body identity, stable topology, closed connectedness, height/ground,
+bilateral symmetry, broad semantic coverage, all 11 M02 seam loops, all 35
+landmark bindings, the anus receiver closure interface, deterministic hashes,
+triangulation, Catmull-Clark level one, and committed evidence inventory. The
+target depends on the Prompt 2A generic route and is scheduled by `test`. Its
+evidence assertions remain pinned to the accepted Prompt 2B historical package
+while its structural assertions ensure the current geometry still preserves
+the approved scaffold contracts.
+
+### M03 Prompt 2C/R1 historical-evidence route
+
+The superseded Prompt 2C/R1 packages retain a focused historical-evidence route:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-geometry-refinement -j1
+```
+
+It validates the frozen topology-revision-3 report, explicit Prompt 2C-to-R1
+face-ID delta, and committed high-resolution R1 report/visual inventory. It no
+longer treats R1 as current authority. The route depends on Prompt 2B/2A and is
+scheduled by `test`.
+
+### M03 Prompt 2C-T3/R3/R4 HM08 topology and neutral-adaptation routes
+
+The current topology-v2 authority retains its adoption/provenance route:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-geometry-adoption -j1
+```
+
+It validates topology compatibility 2.0.0/revision 4, fresh scoped IDs and
+cursors, the current five identities, 13,380 vertices/13,378 quads, closed
+connected symmetry and current R4 quality baseline, semantic classification of all 416
+M02 region/surface records, all 11 seam bindings, all 35 landmark bindings,
+43 deformation zones, provisional imported UV separation, minimal anus
+receiver metadata, pinned provenance, five-run determinism, and Blender
+round-trip evidence. It depends on the generic/scaffold/historical routes and
+is scheduled by `test`.
+
+R3 shape adaptation, landmark semantics, topology preservation, persistent
+visual evidence, and explicit bridge edit authorization have a focused route:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-geometry-r3 -j1
+```
+
+It verifies that the neutral adaptation changes geometry without changing
+control topology or triangulation, keeps topology-v2 IDs/cursors and all
+integrity invariants, classifies all 35 bindings into surface or internal
+semantics, enforces the surface-correspondence registration targets, checks
+the six carried receiver-retopology dispositions, and inventories 43
+high-resolution images, three mobile sheets, and nine T3-vs-R3 comparisons.
+It is scheduled by `test`; ordinary tests never launch Blender or rewrite
+canonical authority/evidence.
+
+R4 final shared-human neutrality, unchanged topology identities, measurement
+deltas, 18/17 landmark semantics, outlier lineage, and owner-review evidence
+have a focused route:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-geometry-r4 -j1
+```
+
+It depends on the R3/T3/historical/generic chain and is scheduled by `test`.
+It verifies the current five identities, exact topology preservation, locked
+height/ground, bilateral symmetry, zero topology-integrity defects, zero new
+above-8 aspect outliers, the persistent Blender self-intersection result, and
+all three R4 mobile sheets plus R3-vs-R4 comparisons.
+
+The non-adjacent derived-triangle self-intersection audit is isolated in:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-canonical-human-geometry-full -j1
+```
+
+It is scheduled by `test-full`, not duplicated in the fast tier. The audit
+uses canonical f32 positions with f64 separating-axis calculations and a
+documented validation-only epsilon. It depends on the current R4 route.
+
+Prompt 2B and original Prompt 2C evidence are frozen historical evidence.
+Derived Prompt 2C-R1 OBJ, report, high-resolution PPM, downsampled PNG, and
+owner contact-sheet updates are explicit:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build update-human-geometry-r1-evidence -j1
+```
+
+Ordinary test/check/full/verify routes compare committed evidence; they never
+invoke the update step or rewrite geometry or evidence.
+
+### M03 Prompt 2C-T1 Blender bridge route
+
+The pinned offline Blender bridge has a specialized authoring/tooling gate:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-blender-bridge -j1
+```
+
+This route verifies Blender 4.5.9 LTS and its locked portable-archive hash,
+canonical/Blender coordinate conversion, handedness and f32 round trips,
+source/sidecar/working-file binding, stable-ID preservation, fail-closed
+missing/duplicate/unallocated/retired-ID behavior, explicit semantic metadata,
+allocation cursors, seam/binding preservation, and the exact current
+topology-v2 normalized, topology, triangulation, and neutral identities after a
+no-op round trip. It
+also runs a malformed candidate through the normal canonical geometry loader
+and requires rejection.
+
+The bridge gate is intentionally specialized: normal runtime builds and the
+ordinary canonical parser/validation routes do not require Blender. Prompt
+2C-T1 runs this gate explicitly in addition to `test`, `check`, and
+`test-full`. Candidate validation without Blender is available through:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build validate-human-geometry-candidate -j1 -- .authoring-work/human_base_geometry.candidate.json .authoring-work/human_base_geometry.candidate.validation.txt
+```
+
+Full command and promotion policy is documented in
+`docs/implementation/3d_pipeline_m03_blender_bridge.md`.
+
+### M03 Prompt 2C-T2 hm08 qualification route
+
+The read-only external topology-seed qualification is reproduced with:
+
+```powershell
+& '.\tools\hm08_qualification.ps1'
+```
+
+The route verifies the pinned MPFB2 revision, exact `hm08` OBJ and CC0 license
+hashes, visible-body/helper range separation, topology/manifold/symmetry and
+self-intersection evidence, provisional M02 seams and all 35 landmark
+relationships, then rebuilds the ignored Blender comparison scene and the
+persistent high-resolution evidence package. `-SkipRender` retains all
+text/scene qualification checks without regenerating PNGs. The route never
+writes the canonical geometry authority or assigns canonical stable IDs to the
+external mesh. It is an explicit authoring/qualification gate and is not part
+of ordinary runtime, `test`, or `check` execution.
+
+The qualification method and owner-facing result are documented in
+`docs/implementation/3d_pipeline_m03_hm08_qualification.md`. T3 subsequently
+adopted only the visible-body topology; this T2 command remains a provenance
+and qualification reproducer and never rewrites current authority.
+
+T3's derived visual package is frozen historical evidence and its renderer is
+hash-bound to the historical T3 authority. It must not be regenerated from the
+current R3 authority. R3 review evidence is explicitly regenerated from the
+current source with:
+
+```powershell
+& '.\tools\render_human_geometry_r3_evidence.ps1'
+& '.\tools\compose_human_geometry_r3_review.ps1'
+```
+
+These source-driven evidence commands are not scheduled by ordinary
+test/check/full/verify and refuse an unexpected authority hash.
+
 The 2026-08-08 M01.5 measurements use isolated task-local caches and report
 wall time, so compiler cache state and the known Windows test-runner IPC
 variability can move the outer time without changing test work. The measured

@@ -562,6 +562,62 @@ Future 3D authoring remains offline:
 
 The runtime has no dependency on that future editor.
 
+### M03 renderer-independent canonical geometry boundary
+
+`src/canonical_geometry/` is a separate offline data layer. It imports the
+renderer-independent M01/M02 canonical model only to validate typed structural
+references and coordinate/source compatibility. SDL, the production renderer,
+runtime sprite registration, physics, animation execution, and the current 2D
+anatomy pipeline do not own or reinterpret its records.
+
+Geometry source identity is split deliberately: normalized source hash covers
+all canonical geometry data; control-topology hash covers stable mesh, vertex,
+and face identities plus ordered quad connectivity; triangulation hash also
+covers each explicitly authored diagonal; the neutral signature length-prefixes
+its fixed domain and contributing identities. Positions and semantic channels
+therefore cannot accidentally masquerade as topology, while a position-only
+edit remains compatible with stable topology consumers.
+
+The schema is quad-only at version 1.0.0. Array order is never stable identity,
+but ordered face corners and directed loop edges are semantic. Per-mesh
+subdivision policy is either `none` or deterministic `catmull_clark_v1`.
+Canonical surface coordinates and texture UVs are independent per-corner
+channels; UV overlap is valid only through a shared explicit overlap-group ID.
+M02 landmarks, sites, seams, components, materials, and anchors remain
+structural authority, with M03 records expressing correspondence only.
+
+The public loader owns its source buffer and parsed arena, applies an explicit
+configurable safety ceiling, and returns allocator-owned deterministic
+diagnostics on validation failure. The initial 128 MiB default is an
+OPEN/TUNING tool-safety value, not a schema or format limit.
+
+### M03 Prompt 2B human geometry authority
+
+`assets/canonical_model/human_base/geometry/human_base_geometry.authoring.json`
+is the sole human geometry authority for implemented M03 content. The
+human-specific layer under `src/canonical_geometry/human_base/` loads the M02
+structural authority, derives its normalized SHA-256, and supplies that context
+to the generic geometry loader before exposing the parsed mesh. Neither the
+evidence exporter nor tests reconstruct production vertices or faces.
+
+The Prompt 2B `human_base_main_body` is one closed, connected, quad-only A-pose
+control mesh with stable numeric vertex/face IDs and `catmull_clark_v1`
+subdivision policy. Direct face membership binds M02 surfaces, owning regions,
+and material instances. All 11 M02 seams bind to real internal topology edge
+loops, and all 35 M02 landmarks retain their anchor authority while gaining
+geometry correspondence records.
+
+An internal topology-loop record distinguishes a closed receiver loop from an
+open mesh boundary. Suppressing `anus_receiver_closure_faces_01` exposes the
+six-edge `anus_body_receiver_loop_01`; the separate default-enabled anus module
+and its root boundary remain Prompt 2E work. This does not introduce an M02
+seam identity or make the scaffold body open in its neutral source state.
+
+Prompt 2B evidence generation is offline and explicit. Its CPU rasterizer
+produces review-only PPMs, then Windows `System.Drawing` creates PNG inspection
+copies. These artifacts are not production rendering, are not runtime input,
+and do not alter the established SDL3 GPU production path.
+
 ### VF-01 visual truth snapshot and capture boundary
 
 VF-01 adds one read-only inspection branch after the production character and

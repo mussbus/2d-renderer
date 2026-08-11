@@ -175,6 +175,145 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const canonical_geometry_module = b.createModule(.{
+        .root_source_file = b.path("src/canonical_geometry/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_geometry_module.addImport("canonical_model", canonical_model_module);
+    const canonical_human_geometry_module = b.createModule(.{
+        .root_source_file = b.path("src/canonical_geometry/human_base/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_geometry_module.addImport("canonical_model", canonical_model_module);
+    canonical_human_geometry_module.addImport("canonical_geometry", canonical_geometry_module);
+    const human_geometry_refinement_export_module = b.createModule(.{
+        .root_source_file = b.path("tools/export_human_geometry_refinement_evidence.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    human_geometry_refinement_export_module.addImport("canonical_model", canonical_model_module);
+    human_geometry_refinement_export_module.addImport("canonical_geometry", canonical_geometry_module);
+    human_geometry_refinement_export_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const human_geometry_refinement_export = b.addExecutable(.{
+        .name = "export-human-geometry-refinement-evidence",
+        .root_module = human_geometry_refinement_export_module,
+    });
+    const run_human_geometry_refinement_export = b.addRunArtifact(human_geometry_refinement_export);
+    const convert_human_geometry_refinement_images = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    convert_human_geometry_refinement_images.addFileArg(b.path("tools/convert_human_geometry_ppm_to_png.ps1"));
+    convert_human_geometry_refinement_images.addArgs(&.{
+        "-EvidenceDirectory",
+        "assets/canonical_model/human_base/geometry/evidence/prompt_2c",
+        "-ContactSheetName",
+        "human_base_main_body_owner_review_contact_sheet.png",
+    });
+    convert_human_geometry_refinement_images.setName("convert Prompt 2C PPM evidence and compose the owner contact sheet");
+    convert_human_geometry_refinement_images.step.dependOn(&run_human_geometry_refinement_export.step);
+    const human_geometry_refinement_export_step = b.step(
+        "update-human-geometry-refinement-evidence",
+        "Explicitly regenerate Prompt 2C derived OBJ, report, PPM, PNG, and contact-sheet evidence",
+    );
+    human_geometry_refinement_export_step.dependOn(&convert_human_geometry_refinement_images.step);
+    const human_geometry_r1_export_module = b.createModule(.{
+        .root_source_file = b.path("tools/export_human_geometry_r1_evidence.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    human_geometry_r1_export_module.addImport("canonical_model", canonical_model_module);
+    human_geometry_r1_export_module.addImport("canonical_geometry", canonical_geometry_module);
+    human_geometry_r1_export_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const human_geometry_r1_export = b.addExecutable(.{
+        .name = "export-human-geometry-r1-evidence",
+        .root_module = human_geometry_r1_export_module,
+    });
+    const run_human_geometry_r1_export = b.addRunArtifact(human_geometry_r1_export);
+    const convert_human_geometry_r1_images = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    convert_human_geometry_r1_images.addFileArg(b.path("tools/convert_human_geometry_ppm_to_png.ps1"));
+    convert_human_geometry_r1_images.addArgs(&.{
+        "-EvidenceDirectory",
+        "assets/canonical_model/human_base/geometry/evidence/prompt_2c_r1",
+        "-ContactSheetName",
+        "human_base_main_body_r1_owner_review_contact_sheet.png",
+        "-Columns",
+        "4",
+        "-OutputWidth",
+        "960",
+        "-OutputHeight",
+        "1200",
+    });
+    convert_human_geometry_r1_images.setName("convert Prompt 2C-R1 PPM evidence and compose the owner contact sheet");
+    convert_human_geometry_r1_images.step.dependOn(&run_human_geometry_r1_export.step);
+    const human_geometry_r1_export_step = b.step(
+        "update-human-geometry-r1-evidence",
+        "Explicitly regenerate Prompt 2C-R1 derived OBJ, report, PPM, PNG, and contact-sheet evidence",
+    );
+    human_geometry_r1_export_step.dependOn(&convert_human_geometry_r1_images.step);
+    const human_geometry_candidate_validator_module = b.createModule(.{
+        .root_source_file = b.path("tools/validate_human_geometry_candidate.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    human_geometry_candidate_validator_module.addImport("canonical_geometry", canonical_geometry_module);
+    human_geometry_candidate_validator_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const human_geometry_candidate_validator = b.addExecutable(.{
+        .name = "validate-human-geometry-candidate",
+        .root_module = human_geometry_candidate_validator_module,
+    });
+    const install_human_geometry_candidate_validator = b.addInstallArtifact(
+        human_geometry_candidate_validator,
+        .{},
+    );
+    const run_human_geometry_candidate_validator = b.addRunArtifact(human_geometry_candidate_validator);
+    if (b.args) |args| run_human_geometry_candidate_validator.addArgs(args);
+    const human_geometry_candidate_validator_step = b.step(
+        "validate-human-geometry-candidate",
+        "Validate and hash an explicitly selected human geometry candidate without promotion",
+    );
+    human_geometry_candidate_validator_step.dependOn(&run_human_geometry_candidate_validator.step);
+    const blender_bridge_tests = b.addSystemCommand(&.{
+        "pwsh",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+    });
+    blender_bridge_tests.addFileArg(b.path("tools/blender_bridge.ps1"));
+    blender_bridge_tests.addArgs(&.{
+        "-Command",
+        "Test",
+        "-Working",
+        ".authoring-work/blender-bridge-test/human_base_geometry_t3_working.blend",
+        "-Sidecar",
+        ".authoring-work/blender-bridge-test/human_base_geometry_t3_working.sidecar.json",
+        "-Candidate",
+        ".authoring-work/blender-bridge-test/human_base_geometry.candidate.json",
+        "-Evidence",
+        ".authoring-work/blender-bridge-test/human_base_geometry.candidate.validation.txt",
+    });
+    blender_bridge_tests.setName("run pinned Blender bridge fail-closed and no-op round-trip tests");
+    blender_bridge_tests.step.dependOn(&install_human_geometry_candidate_validator.step);
+    const blender_bridge_test_step = b.step(
+        "test-blender-bridge",
+        "Run specialized pinned Blender 4.5.9 bridge and canonical round-trip tests",
+    );
+    blender_bridge_test_step.dependOn(&blender_bridge_tests.step);
     const human_base_export_module = b.createModule(.{
         .root_source_file = b.path("tools/export_human_base_evidence.zig"),
         .target = target,
@@ -245,6 +384,54 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     canonical_human_base_test_module.addImport("canonical_model", canonical_model_module);
+    const canonical_geometry_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_geometry_foundation_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_geometry_test_module.addImport("canonical_model", canonical_model_module);
+    canonical_geometry_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    const canonical_human_geometry_scaffold_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_geometry_scaffold_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_geometry_scaffold_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    canonical_human_geometry_scaffold_test_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const canonical_human_geometry_refinement_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_geometry_refinement_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_geometry_refinement_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    canonical_human_geometry_refinement_test_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const canonical_human_geometry_adoption_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_geometry_adoption_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_geometry_adoption_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    canonical_human_geometry_adoption_test_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const canonical_human_geometry_r3_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_geometry_r3_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_geometry_r3_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    canonical_human_geometry_r3_test_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const canonical_human_geometry_r4_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_geometry_r4_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_geometry_r4_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    canonical_human_geometry_r4_test_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
+    const canonical_human_geometry_full_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/canonical_human_geometry_full_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    canonical_human_geometry_full_test_module.addImport("canonical_human_geometry", canonical_human_geometry_module);
     const test_module = b.createModule(.{
         .root_source_file = b.path("tests/test_all.zig"),
         .target = target,
@@ -1850,6 +2037,89 @@ pub fn build(b: *std.Build) void {
     canonical_human_base_test_step.dependOn(&run_canonical_human_base_tests.step);
     canonical_human_base_test_step.dependOn(canonical_human_structural_test_step);
 
+    const canonical_geometry_tests = b.addTest(.{
+        .name = "canonical-geometry-foundation-tests",
+        .root_module = canonical_geometry_test_module,
+    });
+    const run_canonical_geometry_tests = b.addRunArtifact(canonical_geometry_tests);
+    const canonical_geometry_test_step = b.step(
+        "test-canonical-geometry",
+        "Run renderer-independent M03 canonical geometry schema and topology tests",
+    );
+    canonical_geometry_test_step.dependOn(&run_canonical_geometry_tests.step);
+
+    const canonical_human_geometry_scaffold_tests = b.addTest(.{
+        .name = "canonical-human-geometry-scaffold-tests",
+        .root_module = canonical_human_geometry_scaffold_test_module,
+    });
+    const run_canonical_human_geometry_scaffold_tests = b.addRunArtifact(canonical_human_geometry_scaffold_tests);
+    const canonical_human_geometry_scaffold_test_step = b.step(
+        "test-canonical-human-geometry-scaffold",
+        "Run M03 Prompt 2B file-backed continuous human main-body scaffold tests",
+    );
+    canonical_human_geometry_scaffold_test_step.dependOn(&run_canonical_human_geometry_scaffold_tests.step);
+    canonical_human_geometry_scaffold_test_step.dependOn(canonical_geometry_test_step);
+
+    const canonical_human_geometry_refinement_tests = b.addTest(.{
+        .name = "canonical-human-geometry-refinement-tests",
+        .root_module = canonical_human_geometry_refinement_test_module,
+    });
+    const run_canonical_human_geometry_refinement_tests = b.addRunArtifact(canonical_human_geometry_refinement_tests);
+    const canonical_human_geometry_refinement_test_step = b.step(
+        "test-canonical-human-geometry-refinement",
+        "Run frozen M03 Prompt 2C and Prompt 2C-R1 historical-evidence tests",
+    );
+    canonical_human_geometry_refinement_test_step.dependOn(&run_canonical_human_geometry_refinement_tests.step);
+    canonical_human_geometry_refinement_test_step.dependOn(canonical_human_geometry_scaffold_test_step);
+
+    const canonical_human_geometry_adoption_tests = b.addTest(.{
+        .name = "canonical-human-geometry-adoption-tests",
+        .root_module = canonical_human_geometry_adoption_test_module,
+    });
+    const run_canonical_human_geometry_adoption_tests = b.addRunArtifact(canonical_human_geometry_adoption_tests);
+    const canonical_human_geometry_adoption_test_step = b.step(
+        "test-canonical-human-geometry-adoption",
+        "Run M03 Prompt 2C-T3 HM08 topology-reset, mapping, provenance, and determinism tests",
+    );
+    canonical_human_geometry_adoption_test_step.dependOn(&run_canonical_human_geometry_adoption_tests.step);
+    canonical_human_geometry_adoption_test_step.dependOn(canonical_human_geometry_refinement_test_step);
+
+    const canonical_human_geometry_r3_tests = b.addTest(.{
+        .name = "canonical-human-geometry-r3-tests",
+        .root_module = canonical_human_geometry_r3_test_module,
+    });
+    const run_canonical_human_geometry_r3_tests = b.addRunArtifact(canonical_human_geometry_r3_tests);
+    const canonical_human_geometry_r3_test_step = b.step(
+        "test-canonical-human-geometry-r3",
+        "Run M03 Prompt 2C-R3 neutral-human adaptation and evidence tests",
+    );
+    canonical_human_geometry_r3_test_step.dependOn(&run_canonical_human_geometry_r3_tests.step);
+    canonical_human_geometry_r3_test_step.dependOn(canonical_human_geometry_adoption_test_step);
+
+    const canonical_human_geometry_r4_tests = b.addTest(.{
+        .name = "canonical-human-geometry-r4-tests",
+        .root_module = canonical_human_geometry_r4_test_module,
+    });
+    const run_canonical_human_geometry_r4_tests = b.addRunArtifact(canonical_human_geometry_r4_tests);
+    const canonical_human_geometry_r4_test_step = b.step(
+        "test-canonical-human-geometry-r4",
+        "Run M03 Prompt 2C-R4 final neutral shared-human shape and evidence tests",
+    );
+    canonical_human_geometry_r4_test_step.dependOn(&run_canonical_human_geometry_r4_tests.step);
+    canonical_human_geometry_r4_test_step.dependOn(canonical_human_geometry_r3_test_step);
+
+    const canonical_human_geometry_full_tests = b.addTest(.{
+        .name = "canonical-human-geometry-full-tests",
+        .root_module = canonical_human_geometry_full_test_module,
+    });
+    const run_canonical_human_geometry_full_tests = b.addRunArtifact(canonical_human_geometry_full_tests);
+    const canonical_human_geometry_full_test_step = b.step(
+        "test-canonical-human-geometry-full",
+        "Run expensive M03 human-geometry self-intersection validation",
+    );
+    canonical_human_geometry_full_test_step.dependOn(&run_canonical_human_geometry_full_tests.step);
+    canonical_human_geometry_full_test_step.dependOn(canonical_human_geometry_r4_test_step);
+
     const deterministic_test_filter = b.option(
         []const u8,
         "test-filter",
@@ -1904,6 +2174,12 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_canonical_human_joint_control_tests.step);
     test_step.dependOn(&run_canonical_human_structural_tests.step);
     test_step.dependOn(&run_canonical_human_base_tests.step);
+    test_step.dependOn(&run_canonical_geometry_tests.step);
+    test_step.dependOn(&run_canonical_human_geometry_scaffold_tests.step);
+    test_step.dependOn(&run_canonical_human_geometry_refinement_tests.step);
+    test_step.dependOn(&run_canonical_human_geometry_adoption_tests.step);
+    test_step.dependOn(&run_canonical_human_geometry_r3_tests.step);
+    test_step.dependOn(&run_canonical_human_geometry_r4_tests.step);
 
     const full_test_step = b.step(
         "test-full",
@@ -1916,6 +2192,7 @@ pub fn build(b: *std.Build) void {
     full_test_step.dependOn(&run_visual_geometry_tests.step);
     full_test_step.dependOn(&run_environment_tests.step);
     full_test_step.dependOn(&run_visual_foundation_tests.step);
+    full_test_step.dependOn(&run_canonical_human_geometry_full_tests.step);
 
     const format = b.addSystemCommand(&.{ b.graph.zig_exe, "fmt", "--check", "build.zig", "build.zig.zon", "src", "tests" });
     format.setName("verify Zig formatting");

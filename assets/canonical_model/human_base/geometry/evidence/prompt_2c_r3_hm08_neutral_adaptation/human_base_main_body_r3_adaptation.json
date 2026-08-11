@@ -1,0 +1,65 @@
+{
+  "adaptation_id": "hm08_neutral_human_base_v1",
+  "source_authority_sha256": "29552addc3d550c4a423609598a0dfbc5d28629e62329fb11ef6ce52cab875bf",
+  "structural_compatibility_sha256": "b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda",
+  "topology_edit_count": 0,
+  "shape_only": true,
+  "vertex_count": 13380,
+  "moved_vertex_count": 13379,
+  "maximum_vertex_displacement_m": 0.4757712266882893,
+  "height_before_normalization_m": 1.8355063791386783,
+  "height_after_m": 1.8288,
+  "ground_y_m": 0.0,
+  "corrections": [
+    {
+      "target": "thumb_left_surface",
+      "delta_m": 0.0370687845857217,
+      "vertices_moved": 64
+    },
+    {
+      "target": "index_left_surface",
+      "delta_m": 0.022376223340592333,
+      "vertices_moved": 84
+    },
+    {
+      "target": "middle_left_surface",
+      "delta_m": 0.008302420024221682,
+      "vertices_moved": 130
+    },
+    {
+      "target": "ring_left_surface",
+      "delta_m": 0.03061725550464165,
+      "vertices_moved": 350
+    },
+    {
+      "target": "little_left_surface",
+      "delta_m": 0.035143734522158604,
+      "vertices_moved": 306
+    },
+    {
+      "target": "chin_surface",
+      "delta_m": 0.03794479274241614,
+      "vertices_moved": 1747
+    },
+    {
+      "target": "navel",
+      "delta_m": 0.059788370801598746,
+      "vertices_moved": 31
+    },
+    {
+      "target": "eye_opening_left_right_audit_only",
+      "delta_m": 0.06477778267095644,
+      "vertices_moved": 0
+    },
+    {
+      "target": "heel_left_surface",
+      "delta_m": 0.017389089897551037,
+      "vertices_moved": 60
+    },
+    {
+      "target": "toe_big_left_surface",
+      "delta_m": 0.014084507156644896,
+      "vertices_moved": 340
+    }
+  ]
+}

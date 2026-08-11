@@ -6,8 +6,8 @@ const authoring_path = "assets/canonical_model/human_base/human_base.authoring.j
 const canonical_path = "assets/canonical_model/human_base/human_base.canonical.json";
 const report_path = "assets/canonical_model/human_base/human_base.structural_report.txt";
 const invalid_directory = "tests/fixtures/canonical_model/human_base/invalid";
-const canonical_byte_count: usize = 379_458;
-const canonical_sha256 = "7b579784f239d90ae9757a0aec1967fc37cf752733a4ac13409977f6f3212381";
+const canonical_byte_count: usize = 380_208;
+const canonical_sha256 = "b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda";
 const m01_phase_f_sha256 = "b1da6274c03d4a70de124f9ab81af8d870882c53ff759ca7d3c9e68b482d7f6d";
 
 test "Prompt 2E readable human_base normalizes to the committed canonical golden" {
@@ -184,7 +184,7 @@ test "Prompt 2E structural evidence locks counts measurements modules and anatom
     const report = try readFixture(report_path);
     defer std.testing.allocator.free(report);
     inline for (.{
-        "LOCKED_COUNTS components=48 bones=149 shared_bones=140 optional_penis_bones=9 joints=148 controls=116 spine_controls=5 regions=206 surfaces=206 materials=11 anchors=106 sockets=22 mounts=20 attachments=20 landmarks=35 seams=11 sites=25 effectors=6 collision_proxies=0",
+        "LOCKED_COUNTS components=48 bones=149 shared_bones=140 optional_penis_bones=9 joints=148 controls=116 spine_controls=5 regions=208 surfaces=208 materials=11 anchors=106 sockets=22 mounts=20 attachments=20 landmarks=35 seams=11 sites=25 effectors=6 collision_proxies=0",
         "total_height=1.828800 shoulder_breadth=0.350000 hip_breadth=0.200000 arm_span=1.630712 torso_length=0.560000 leg_length=0.950000 upper_arm_length=0.310000 forearm_length=0.270000 thigh_length=0.450000 lower_leg_length=0.430000 hand_length=0.145000 foot_length=0.260000 head_height=0.308800",
         "component=anus_module_01 requirement=optional default_state=enabled multiplicity=0..1",
         "component=vulva_vaginal_canal_module_01 requirement=optional default_state=disabled multiplicity=0..1",

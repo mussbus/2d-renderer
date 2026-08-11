@@ -20846,6 +20846,15 @@
       ]
     },
     {
+      "region_id": "penis_foreskin",
+      "display_name": null,
+      "owner_component_id": "penis_module_01",
+      "semantic_tags": [
+        "human",
+        "semantic_region"
+      ]
+    },
+    {
       "region_id": "penis_glans",
       "display_name": null,
       "owner_component_id": "penis_module_01",
@@ -20856,6 +20865,15 @@
     },
     {
       "region_id": "penis_shaft",
+      "display_name": null,
+      "owner_component_id": "penis_module_01",
+      "semantic_tags": [
+        "human",
+        "semantic_region"
+      ]
+    },
+    {
+      "region_id": "penis_urethral_opening",
       "display_name": null,
       "owner_component_id": "penis_module_01",
       "semantic_tags": [
@@ -22702,6 +22720,15 @@
       "visibility_metadata_id": null
     },
     {
+      "surface_id": "penis_foreskin_surface",
+      "display_name": null,
+      "owner_component_id": "penis_module_01",
+      "region_id": "penis_foreskin",
+      "material_instance_id": "human_base_skin",
+      "coordinate_metadata_id": null,
+      "visibility_metadata_id": null
+    },
+    {
       "surface_id": "penis_glans_surface",
       "display_name": null,
       "owner_component_id": "penis_module_01",
@@ -22715,6 +22742,15 @@
       "display_name": null,
       "owner_component_id": "penis_module_01",
       "region_id": "penis_shaft",
+      "material_instance_id": "human_base_skin",
+      "coordinate_metadata_id": null,
+      "visibility_metadata_id": null
+    },
+    {
+      "surface_id": "penis_urethral_opening_surface",
+      "display_name": null,
+      "owner_component_id": "penis_module_01",
+      "region_id": "penis_urethral_opening",
       "material_instance_id": "human_base_skin",
       "coordinate_metadata_id": null,
       "visibility_metadata_id": null

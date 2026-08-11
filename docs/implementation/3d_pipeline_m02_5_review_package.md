@@ -5,6 +5,16 @@ Scope: M02.5 cleanup only
 Disposition: **READY FOR OWNER REVIEW**
 M03 status: **NOT STARTED**
 
+> **Additive pre-M03 correction note (owner-accepted):** This historical M02.5
+> package records the authority handoff before two semantic region/surface pairs
+> were added. The sole authority and loader path are unchanged. The current M02
+> source contains 208 regions and 208 surfaces; its accepted authoring,
+> normalized, and report SHA-256 identities are
+> `61127b694b5bfce3148f6ac2a4c40f11bf981cc4a72ab6427bbd3bd878e8eb88`,
+> `b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda`,
+> and `1a06c33712224d522968eb54945197aae1c34573d8808e49a34cf0ed5416f011`.
+> The original tables below remain historical evidence.
+
 ## A. Original audit blockers
 
 The approved audit found three blockers: a complete current-human definition

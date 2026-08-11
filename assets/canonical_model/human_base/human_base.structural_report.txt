@@ -1,7 +1,7 @@
 HUMAN_BASE_STRUCTURAL_EVIDENCE_V1
 asset_id=human_base schema_version=1.1.0 asset_version=1.0.0
 coordinate=right_handed,+X_right,+Y_up,+Z_forward origin=centered_between_feet_on_ground_in_a_pose unit=meter precision=f32
-LOCKED_COUNTS components=48 bones=149 shared_bones=140 optional_penis_bones=9 joints=148 controls=116 spine_controls=5 regions=206 surfaces=206 materials=11 anchors=106 sockets=22 mounts=20 attachments=20 landmarks=35 seams=11 sites=25 effectors=6 collision_proxies=0
+LOCKED_COUNTS components=48 bones=149 shared_bones=140 optional_penis_bones=9 joints=148 controls=116 spine_controls=5 regions=208 surfaces=208 materials=11 anchors=106 sockets=22 mounts=20 attachments=20 landmarks=35 seams=11 sites=25 effectors=6 collision_proxies=0
 COLLISION_PROXY decision=defer_from_m02 count=0 rationale=owner_approved_prompt_1_defer_until_resolved_geometry_can_validate_fit
 DERIVED_PROFILES decision=deferred_until_configuration_records_can_prove_shared_human_base_without_duplicate_rigs
 COMPONENT_TREE

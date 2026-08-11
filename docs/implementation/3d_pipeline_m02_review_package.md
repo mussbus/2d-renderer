@@ -5,6 +5,17 @@ Scope: Prompt 3 audit only
 Disposition: **OWNER-ACCEPTED**
 M03 status: **NOT STARTED**
 
+> **Additive pre-M03 correction note (owner-accepted):** This historical M02
+> review package records the original 206-region/206-surface baseline and its
+> then-current hashes. Before M03 Prompt 2A, the owner approved the addition of
+> `penis_foreskin` and `penis_urethral_opening` plus their matching surfaces.
+> The current M02 source has 208 regions and 208 surfaces. Its accepted
+> authoring, normalized, and report SHA-256 identities are respectively
+> `61127b694b5bfce3148f6ac2a4c40f11bf981cc4a72ab6427bbd3bd878e8eb88`,
+> `b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda`,
+> and `1a06c33712224d522968eb54945197aae1c34573d8808e49a34cf0ed5416f011`.
+> Tables below remain unchanged as historical acceptance evidence.
+
 This package audits the complete M02 implementation against the M02 brief, the
 canonical decision record, the start-here contract, every Prompt 1 through 2E
 owner decision, the current testing policy, and the accepted M01 evidence. The

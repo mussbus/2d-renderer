@@ -1,11 +1,11 @@
 # 3D Model Pipeline — Codex Start Here
 
-**Status:** M02.5 authority/handoff cleanup complete; awaiting owner review
-**Current milestone:** M02.5 — File-backed `human_base` authority and M03 handoff cleanup
-**Accepted foundation:** M01, M01.5, and M02
+**Status:** M03 Prompts 2A and 2B are owner-approved; Prompt 2C remains open; the R4 final neutral shared-human adaptation is an automated-gate-passing candidate awaiting owner review
+**Current milestone:** M03 — Canonical Human Mesh & Surface Foundation, Prompt 2C-R4 final owner-review gate
+**Accepted foundation:** M01, M01.5, M02, and M02.5
 **Testing foundation:** M01.5 — Tiered verification / test-streamlining pass  
-**Next milestone:** M03 — Canonical Human Mesh & Surface Foundation; not started and requires explicit authorization
-**Owner-review gate:** Required for this M02.5 cleanup before any M03 work
+**Next prompt:** final owner review of R4; Prompt 2D remains unauthorized
+**Owner-review gate:** Required now for the R4 neutral shared-human candidate
 **Primary runtime boundary:** The current production runtime remains 2D-only. Canonical 3D authoring, validation, and representation generation are offline/build-time concerns unless a later milestone explicitly changes that boundary.
 
 ---
@@ -61,7 +61,7 @@ Read:
 
 - `docs/implementation/3d_pipeline_milestone_02.md`
 
-### Current cleanup and next milestone
+### Current milestone
 
 **M02.5** enforces the accepted authority boundary: the sole authoritative
 human source is `assets/canonical_model/human_base/human_base.authoring.json`.
@@ -71,12 +71,35 @@ It reads that file, parses it, runs generic and human structural validation,
 normalizes it, and returns an ownership wrapper for the canonical in-memory
 definition. Evidence files and the current 2D runtime are never source authority.
 
-**M03 — Canonical Human Mesh & Surface Foundation** begins only after explicit
-owner authorization with its engineering brief.
+**M03 — Canonical Human Mesh & Surface Foundation** is active under its explicit
+engineering brief and Prompt 1 owner-approved architecture.
 
 M03 will attach actual continuous canonical human geometry to the structural identities established in M02. It must consume M02 IDs, skeleton, landmarks, seams, anchors, and semantic ownership rather than redefining them.
 
-M03 has not started.
+Prompt 2A lives in `src/canonical_geometry/`. Its separate
+`canonical_geometry_schema` 1.0.0 records, strict JSON parser, structural
+compatibility validation, canonical serialization/hashes, deterministic
+triangulation, Catmull-Clark level-one primitive, loader, diagnostics, and
+synthetic fixtures are owner-approved.
+
+Prompt 2B added the authoritative
+`assets/canonical_model/human_base/geometry/human_base_geometry.authoring.json`
+source and its source-driven human-specific validation/evidence layer. The
+single `human_base_main_body` Prompt 2B checkpoint is the owner-approved
+structural scaffold.
+
+Prompt 2C-R1 is preserved as historical superseded development evidence.
+Prompt 2C-T1 added the owner-approved lossless Blender bridge, T2 qualified the
+official MPFB2 `hm08` body, and T3 promoted only that pinned visible-body
+topology into canonical JSON. Owner-authorized R3 fitted that accepted
+topology-v2 seed to M02, and R4 performs the final low-dimorphism shared-human
+shape adaptation while
+preserving topology compatibility 2.0.0/revision 4, 13,380 vertices, 13,378
+quads, all 11 M02 seams, all 35 classified landmark bindings, and zero detected
+self-intersections. It adds/retires no topology IDs. Full R4 identities,
+registration, quality, and review evidence are in
+`docs/implementation/3d_pipeline_m03_final_neutral_adaptation.md`. Prompt 2C is
+not owner-accepted; Prompt 2D and M04 have not started.
 
 ---
 
@@ -482,11 +505,17 @@ If the problem is a genuine defect in accepted prior work, report it as a regres
 
 ---
 
-## 13. Current M02.5 → M03 gate
+## 13. Current M03 Prompt 2C gate
 
-M02 is owner-accepted. M02.5 is limited to enforcing its source-authority and
-handoff boundary. M03 remains unauthorized until its explicit engineering
-brief/prompt is provided.
+M02 and M02.5 are owner-accepted. M03 Prompt 1 architecture and the reviewed
+pre-M03 structural correction are owner-approved. Prompts 2A and 2B are
+owner-approved. Prompt 2C remains open. Prompt 2C-T1's source-bound Blender
+working representation, fail-closed candidate exporter, and no-op semantic
+round-trip are owner-approved. T2 qualified hm08, T3 promoted its visible-body
+topology at compatibility 2.0.0/revision 4, R3 fitted it to M02, and R4 has
+completed the owner-authorized final low-dimorphism shape-only adaptation. The R4 candidate now
+waits at the visual/engineering owner-review gate; no later prompt is
+authorized.
 
 The sole supported M03 consumption path is:
 
@@ -498,16 +527,40 @@ M03 must not treat the canonical JSON, report, hashes, traces, old Zig
 validation tables, current 2D runtime anatomy, or renderer registration data as
 source authority.
 
-Until explicit M03 authorization:
+The sole supported production-human geometry path is:
 
-- do not begin production canonical human mesh topology;
-- do not attach real skin weights;
-- do not implement morphology sculpting/correctives;
-- do not create real-geometry UVs;
-- do not implement garment fitting;
-- do not begin 3D-to-2D representation generation.
+1. call `canonical_geometry.human_base.authority.loadAuthoritative(allocator, io)`;
+2. consume the returned M02 structural definition and independently parsed,
+   validated, normalized M03 geometry while the ownership wrapper remains alive.
 
-When authorized, M03 may create the continuous canonical human mesh and surface foundation **using the structural identities produced by M02**.
+Prompt 2C contains only main-body topology/anatomical refinement and its
+offline evidence. It does not:
+
+- begin separate eyes, oral meshes, teeth, tongue, or nails;
+- begin optional adult-module geometry;
+- fit collision proxies;
+- finalize UVs or texture imagery;
+- attach real skin weights;
+- implement morphology sculpting/correctives;
+- implement garment fitting;
+- begin 3D-to-2D representation generation.
+
+Prompt 2D remains unauthorized until the Prompt 2C owner-review gate is cleared.
+
+The Blender bridge is offline authoring tooling only. Its `.blend`, sidecar,
+candidate JSON, and reports are derived and ignored. The sole geometry
+authority remains `human_base_geometry.authoring.json`; see
+`docs/implementation/3d_pipeline_m03_blender_bridge.md`.
+
+The ignored hm08 checkout and Blender files remain provenance/working inputs
+only. Canonical topology-v2 element IDs now live exclusively in the promoted
+JSON; they are not upstream OBJ indexes and have no R1 correspondence. R1 is
+frozen historical evidence. See
+`docs/implementation/3d_pipeline_m03_hm08_adoption.md`.
+
+The current R4 shape, classified landmark bindings, source-driven evidence,
+and remaining OPEN/TUNING inventory are documented in
+`docs/implementation/3d_pipeline_m03_final_neutral_adaptation.md`.
 
 The handoff is successful only if M03 can proceed without casually renaming core IDs, replacing the accepted skeleton, inventing a parallel landmark/seam system, or making renderer-specific data authoritative.
 

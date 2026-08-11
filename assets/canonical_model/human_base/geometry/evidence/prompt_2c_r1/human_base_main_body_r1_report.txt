@@ -1,0 +1,532 @@
+M03 PROMPT 2C-R1 TARGETED ANATOMICAL AND DEFORMATION-TOPOLOGY EVIDENCE
+authority_path=assets/canonical_model/human_base/geometry/human_base_geometry.authoring.json
+structural_authority_path=assets/canonical_model/human_base/human_base.authoring.json
+structural_normalized_sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda
+authoring_bytes=31808755
+authoring_sha256=e501458b9cf78991aa4290bcecd81ebcc5cb112d4c735c2a9e0a381653766623
+canonical_bytes=15450886
+geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae
+control_topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+triangulation_sha256=1e587d27b6524888f14fe50b9e8912f107dea8627abf9435378f556d65f5fc5b
+neutral_geometry_signature=aa7352786b5e564f2bab96f4f12edcaf08a837204ab70667be75a0ca488e89c8
+mesh_id=human_base_main_body
+topology_revision=3
+next_vertex_id=11506
+next_face_id=14598
+vertices=11506
+quads=11504
+derived_triangles=23008
+prompt_2b_authoring_sha256=23ba78843920eae23053c9654add7b05e67822d0e627963e0af1aed4e019b898
+prompt_2b_vertices=2878
+prompt_2b_quads=2876
+prompt_2b_triangles=5752
+prompt_2c_vertices=11506
+prompt_2c_quads=11504
+prompt_2c_topology_revision=2
+prompt_2c_r1_topology_delta_vertices_added=0
+prompt_2c_r1_topology_delta_vertices_retired=0
+prompt_2c_r1_topology_delta_faces_added=218
+prompt_2c_r1_topology_delta_faces_retired=218
+prompt_2c_r1_regions_topology_redirected=head_face,shoulder_armpit,breast_root,hands,pelvis_glute_thigh,knee,ankle_foot
+prompt_2c_r1_regions_materially_rebuilt=none_review_blocking
+prompt_2c_before_quad_aspect max=29.142155930863858 p95=6.751697331608973 p99=14.202419001245524 over_8=460
+prompt_2c_before_landmarks max_m=0.098477602188602 median_m=0.04078810366511899 p90_m=0.07599180077977244
+prompt_2b_quality unique_edges=5752 boundary_edges=0 non_manifold_edges=0 degenerate_quads=0
+prompt_2b_quality valence_3=156 valence_4=2574 valence_5=148 valence_other=0 extraordinary_vertices=304
+prompt_2b_quality edge_length_m min=0.025399999999999867 p25=0.025399999999999978 median=0.025400000000000006 p75=0.025400000000460155 p90=0.027297787777516715 max=0.27 mean=0.03624801578101608
+prompt_2b_quality quad_aspect_ratio min=1 p25=1.000000000000001 median=1.0000000000000044 p75=1.0132600008617227 p90=4.330708661417327 max=10.62992125984253 mean=1.8419359108024635
+connected_components=1
+open_boundary_loops=0
+topology_loops_total=56
+prompt_2c_critical_face_sets=39
+prompt_2c_deformation_loops=55
+subdivision_policy=catmull_clark_v1
+structural_seam_loops=11
+seam id=ankle_foot_left_seam edges=28 side_a=ankle_left_surface side_b=midfoot_left_surface
+seam id=ankle_foot_right_seam edges=28 side_a=ankle_right_surface side_b=midfoot_right_surface
+seam id=neck_head_seam edges=28 side_a=neck_surface side_b=head_surface
+seam id=pelvis_thigh_left_seam edges=36 side_a=hip_left_surface side_b=thigh_left_surface
+seam id=pelvis_thigh_right_seam edges=36 side_a=hip_right_surface side_b=thigh_right_surface
+seam id=torso_arm_left_seam edges=24 side_a=shoulder_left_surface side_b=upper_arm_left_surface
+seam id=torso_arm_right_seam edges=24 side_a=shoulder_right_surface side_b=upper_arm_right_surface
+seam id=torso_neck_seam edges=28 side_a=torso_surface side_b=neck_surface
+seam id=torso_pelvis_seam edges=76 side_a=torso_surface side_b=pelvis_surface
+seam id=wrist_hand_left_seam edges=28 side_a=wrist_left_surface side_b=palm_left_surface
+seam id=wrist_hand_right_seam edges=28 side_a=wrist_right_surface side_b=palm_right_surface
+geometry_landmark_bindings=35
+landmark_error_count=35
+landmark_error_min_m=0.0013130193598510035
+landmark_error_median_m=0.036739414679649085
+landmark_error_p90_m=0.0756178050551147
+landmark_error_max_m=0.09541839144313213
+landmark_error_mean_m=0.041278936937640454
+landmark_outlier id=ankle_left_landmark anchor=[-0.1,0.06999999,0] binding=[-0.058211904,0.109370366,0.00017431378] error_vector=[0.041788097470998764,0.039370372891426086,0.00017431378364562988] distance_m=0.05741342819542132 classification=geometry_misregistration_or_binding_selection_review_required
+landmark_outlier id=ankle_right_landmark anchor=[0.1,0.06999999,0] binding=[0.058211904,0.109370366,0.00017431378] error_vector=[-0.041788097470998764,0.039370372891426086,0.00017431378364562988] distance_m=0.05741342819542132 classification=geometry_misregistration_or_binding_selection_review_required
+landmark_outlier id=face_center_landmark anchor=[0,1.68,0.09] binding=[-0.022140555,1.7071378,0.13901165] error_vector=[-0.02214055508375168,0.0271378755569458,0.04901164770126343] distance_m=0.06023960557269344 classification=legitimate_internal_anchor_vs_external_surface_offset
+landmark_outlier id=hip_left_landmark anchor=[-0.1,0.95,0] binding=[-0.065807946,0.861142,-0.0063108727] error_vector=[0.034192055463790894,-0.08885800838470459,-0.006310872733592987] distance_m=0.09541839144313213 classification=legitimate_internal_anchor_vs_external_surface_offset
+landmark_outlier id=hip_right_landmark anchor=[0.1,0.95,0] binding=[0.065807946,0.861142,-0.0063108727] error_vector=[-0.034192055463790894,-0.08885800838470459,-0.006310872733592987] distance_m=0.09541839144313213 classification=legitimate_internal_anchor_vs_external_surface_offset
+landmark_outlier id=knee_left_landmark anchor=[-0.1,0.5,0] binding=[-0.042340603,0.50498784,-0.013249757] error_vector=[0.05765939876437187,0.004987835884094238,-0.013249756768345833] distance_m=0.0593720542603659 classification=geometry_misregistration_or_binding_selection_review_required
+landmark_outlier id=knee_right_landmark anchor=[0.1,0.5,0] binding=[0.042340603,0.50498784,-0.013249757] error_vector=[-0.05765939876437187,0.004987835884094238,-0.013249756768345833] distance_m=0.0593720542603659 classification=geometry_misregistration_or_binding_selection_review_required
+landmark_outlier id=pelvis_center_landmark anchor=[0,0.95,0] binding=[-0.00015507932,0.86413383,0.00079116225] error_vector=[-0.0001550793240312487,-0.08586615324020386,0.0007911622524261475] distance_m=0.08586993804339547 classification=legitimate_internal_anchor_vs_external_surface_offset
+landmark_outlier id=sternum_center_landmark anchor=[0,1.3299999,0.06] binding=[0,1.3317312,0.15461193] error_vector=[0,0.001731276512145996,0.09461193159222603] distance_m=0.09462777033183 classification=legitimate_internal_anchor_vs_external_surface_offset
+landmark_outlier id=waist_center_landmark anchor=[0,1.03,0.06] binding=[-0.0009358238,1.0335394,0.118507266] error_vector=[-0.000935823773033917,0.003539443016052246,0.05850726738572121] distance_m=0.058621700418380336 classification=legitimate_internal_anchor_vs_external_surface_offset
+semantic_surfaces=97
+surface id=abdomen_surface faces=128
+surface id=ankle_left_surface faces=224
+surface id=ankle_right_surface faces=224
+surface id=areola_left_surface faces=56
+surface id=areola_right_surface faces=56
+surface id=back_surface faces=1272
+surface id=breast_left_surface faces=56
+surface id=breast_right_surface faces=56
+surface id=brow_left_surface faces=12
+surface id=brow_right_surface faces=12
+surface id=calf_left_surface faces=216
+surface id=calf_right_surface faces=216
+surface id=cheek_left_surface faces=20
+surface id=cheek_right_surface faces=20
+surface id=chest_surface faces=600
+surface id=ear_left_surface faces=116
+surface id=ear_right_surface faces=116
+surface id=elbow_left_surface faces=112
+surface id=elbow_right_surface faces=112
+surface id=eyelid_lower_left_center_surface faces=8
+surface id=eyelid_lower_right_center_surface faces=8
+surface id=eyelid_upper_left_center_surface faces=8
+surface id=eyelid_upper_right_center_surface faces=8
+surface id=face_surface faces=24
+surface id=forearm_left_surface faces=344
+surface id=forearm_right_surface faces=344
+surface id=forefoot_left_surface faces=24
+surface id=forefoot_right_surface faces=24
+surface id=forehead_surface faces=40
+surface id=glute_left_surface faces=192
+surface id=glute_right_surface faces=192
+surface id=gluteal_cleft_surface faces=24
+surface id=hand_dorsum_left_surface faces=16
+surface id=hand_dorsum_right_surface faces=16
+surface id=head_surface faces=184
+surface id=heel_left_surface faces=120
+surface id=heel_right_surface faces=120
+surface id=hip_left_surface faces=216
+surface id=hip_right_surface faces=216
+surface id=index_left_surface faces=76
+surface id=index_right_surface faces=76
+surface id=jawline_surface faces=8
+surface id=knee_left_surface faces=168
+surface id=knee_right_surface faces=168
+surface id=lip_lower_surface faces=24
+surface id=lip_upper_surface faces=24
+surface id=little_left_surface faces=56
+surface id=little_right_surface faces=56
+surface id=lower_leg_left_surface faces=72
+surface id=lower_leg_right_surface faces=72
+surface id=middle_left_surface faces=52
+surface id=middle_right_surface faces=52
+surface id=midfoot_left_surface faces=96
+surface id=midfoot_right_surface faces=96
+surface id=navel_surface faces=16
+surface id=neck_surface faces=176
+surface id=nipple_left_surface faces=8
+surface id=nipple_right_surface faces=8
+surface id=nose_surface faces=16
+surface id=palm_left_surface faces=80
+surface id=palm_right_surface faces=80
+surface id=pectoral_left_surface faces=80
+surface id=pectoral_right_surface faces=80
+surface id=pelvis_surface faces=216
+surface id=perineal_surface faces=16
+surface id=pubic_surface faces=136
+surface id=ring_left_surface faces=8
+surface id=ring_right_surface faces=8
+surface id=scalp_surface faces=168
+surface id=shin_left_surface faces=216
+surface id=shin_right_surface faces=216
+surface id=shoulder_left_surface faces=48
+surface id=shoulder_right_surface faces=48
+surface id=sole_left_surface faces=24
+surface id=sole_right_surface faces=24
+surface id=sternum_surface faces=56
+surface id=thigh_left_surface faces=616
+surface id=thigh_right_surface faces=616
+surface id=throat_surface faces=48
+surface id=thumb_left_surface faces=24
+surface id=thumb_right_surface faces=24
+surface id=toe_big_left_surface faces=16
+surface id=toe_big_right_surface faces=16
+surface id=toe_index_left_surface faces=16
+surface id=toe_index_right_surface faces=16
+surface id=toe_little_left_surface faces=16
+surface id=toe_little_right_surface faces=16
+surface id=toe_middle_left_surface faces=32
+surface id=toe_middle_right_surface faces=32
+surface id=toe_ring_left_surface faces=16
+surface id=toe_ring_right_surface faces=16
+surface id=torso_surface faces=352
+surface id=upper_arm_left_surface faces=376
+surface id=upper_arm_right_surface faces=376
+surface id=waist_surface faces=72
+surface id=wrist_left_surface faces=116
+surface id=wrist_right_surface faces=116
+measurement overall min=[-0.873328,0,-0.2102133] max=[0.873328,1.8288,0.2259152] width=1.746656 height=1.8288 depth=0.4361285
+measurement chest min=[-0.30595803,1.1296262,-0.15367992] max=[0.30595803,1.4982815,0.2259152] width=0.61191607 height=0.36865532 depth=0.3795951
+measurement waist min=[-0.20369457,1.0279281,-0.13389729] max=[0.20369457,1.1169139,0.11886119] width=0.40738913 height=0.0889858 depth=0.25275847
+measurement hip_glute min=[-0.23838152,0.82453215,-0.2102133] max=[0.23838152,1.0152159,0.14193286] width=0.47676304 height=0.19068372 depth=0.35214615
+measurement head min=[-0.13769872,1.6126918,-0.1214062] max=[0.13769872,1.8288,0.20329161] width=0.27539745 height=0.2161082 depth=0.3246978
+measurement arms min=[-0.7112,1.1619425,-0.07972872] max=[0.7112,1.500361,0.082404755] width=1.4224 height=0.33841848 depth=0.16213349
+measurement hands min=[-0.873328,1.1112041,-0.027365962] max=[0.873328,1.2222649,0.027365962] width=1.746656 height=0.11106074 depth=0.054731924
+measurement legs min=[-0.19682707,0.105633825,-0.107050054] max=[0.19682707,0.8118199,0.107050054] width=0.39365414 height=0.70618606 depth=0.21410011
+measurement feet min=[-0.16386616,0,-0.065] max=[0.16386616,0.110941,0.205] width=0.32773232 height=0.110941 depth=0.26999998
+self_intersections=0
+quality unique_edges=23008 boundary_edges=0 non_manifold_edges=0 degenerate_quads=0
+quality valence_3=293 valence_4=10910 valence_5=275 valence_other=28 extraordinary_vertices=596
+quality quad_aspect_ratio_over_8=396
+quality edge_length_m min=0.0018606843119375017 p25=0.010443789640731274 median=0.012821481354065327 p75=0.014342901898314456 p90=0.025414326651210996 p95=0.04599257397510911 p99=0.09914811477797564 max=0.29064015562564655 mean=0.016612588203312004
+quality quad_aspect_ratio min=1.0020664035342304 p25=1.2492048129511935 median=1.5292408667583843 p75=2.3046196621105706 p90=4.595535014152553 p95=6.632861460722528 p99=13.460528107913149 max=30.079186169546446 mean=2.3734124158182466
+pole_audit extraordinary_vertices=596
+deformation_loop id=prompt_2c_ankle_left_deformation_loop_01 edges=28 status=closed local_max_aspect=7.194457247088484 local_valence_anomalies=1 critical_poles=1
+deformation_loop id=prompt_2c_ankle_left_deformation_loop_02 edges=28 status=closed local_max_aspect=4.732379699865282 local_valence_anomalies=1 critical_poles=1
+deformation_loop id=prompt_2c_ankle_right_deformation_loop_01 edges=28 status=closed local_max_aspect=7.194457247088484 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_ankle_right_deformation_loop_02 edges=28 status=closed local_max_aspect=4.732379699865282 local_valence_anomalies=1 critical_poles=1
+deformation_loop id=prompt_2c_breast_root_left_deformation_loop_01 edges=44 status=closed local_max_aspect=4.946066823287498 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_breast_root_right_deformation_loop_01 edges=44 status=closed local_max_aspect=4.946066823287498 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_elbow_left_deformation_loop_01 edges=24 status=closed local_max_aspect=4.09055069970785 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_elbow_left_deformation_loop_02 edges=24 status=closed local_max_aspect=4.087855229164399 local_valence_anomalies=3 critical_poles=3
+deformation_loop id=prompt_2c_elbow_right_deformation_loop_01 edges=24 status=closed local_max_aspect=4.09055069970785 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_elbow_right_deformation_loop_02 edges=24 status=closed local_max_aspect=4.087855229164399 local_valence_anomalies=3 critical_poles=3
+deformation_loop id=prompt_2c_eye_left_deformation_loop_01 edges=16 status=closed local_max_aspect=3.9114562610427184 local_valence_anomalies=1 critical_poles=1
+deformation_loop id=prompt_2c_eye_right_deformation_loop_01 edges=16 status=closed local_max_aspect=3.9114562610427184 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_index_left_deformation_loop_01 edges=32 status=closed local_max_aspect=3.384430730138421 local_valence_anomalies=4 critical_poles=4
+deformation_loop id=prompt_2c_finger_index_right_deformation_loop_01 edges=32 status=closed local_max_aspect=3.384430730138421 local_valence_anomalies=4 critical_poles=4
+deformation_loop id=prompt_2c_finger_little_left_deformation_loop_01 edges=20 status=closed local_max_aspect=4.825205082751638 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_finger_little_right_deformation_loop_01 edges=20 status=closed local_max_aspect=4.825205082751638 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_finger_middle_left_deformation_loop_01 edges=24 status=closed local_max_aspect=3.7230241398259425 local_valence_anomalies=4 critical_poles=4
+deformation_loop id=prompt_2c_finger_middle_left_deformation_loop_02 edges=12 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_middle_left_deformation_loop_03 edges=12 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_middle_right_deformation_loop_01 edges=24 status=closed local_max_aspect=3.7230241398259425 local_valence_anomalies=4 critical_poles=4
+deformation_loop id=prompt_2c_finger_middle_right_deformation_loop_02 edges=12 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_middle_right_deformation_loop_03 edges=12 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_ring_left_deformation_loop_01 edges=8 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_ring_left_deformation_loop_02 edges=8 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_ring_right_deformation_loop_01 edges=8 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_ring_right_deformation_loop_02 edges=8 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_finger_thumb_left_deformation_loop_01 edges=20 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_finger_thumb_right_deformation_loop_01 edges=20 status=closed local_max_aspect=4.992758241924162 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_foot_left_deformation_loop_01 edges=28 status=closed local_max_aspect=7.194457247088484 local_valence_anomalies=1 critical_poles=1
+deformation_loop id=prompt_2c_foot_right_deformation_loop_01 edges=28 status=closed local_max_aspect=7.194457247088484 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_glute_perineal_deformation_loop_01 edges=100 status=closed local_max_aspect=9.542283553188634 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_knee_left_deformation_loop_01 edges=28 status=closed local_max_aspect=5.397770708853275 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_knee_left_deformation_loop_02 edges=28 status=closed local_max_aspect=5.6328834643709325 local_valence_anomalies=1 critical_poles=1
+deformation_loop id=prompt_2c_knee_right_deformation_loop_01 edges=28 status=closed local_max_aspect=5.397770708853275 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_knee_right_deformation_loop_02 edges=28 status=closed local_max_aspect=5.234709695761985 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_lips_deformation_loop_01 edges=32 status=closed local_max_aspect=30.079186169546446 local_valence_anomalies=4 critical_poles=4
+deformation_loop id=prompt_2c_perineal_receiver_deformation_loop_01 edges=16 status=closed local_max_aspect=7.127180733406838 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_shoulder_left_deformation_loop_01 edges=24 status=closed local_max_aspect=10.328016256323865 local_valence_anomalies=4 critical_poles=4
+deformation_loop id=prompt_2c_shoulder_left_deformation_loop_02 edges=24 status=closed local_max_aspect=27.645379433825067 local_valence_anomalies=4 critical_poles=4
+deformation_loop id=prompt_2c_shoulder_right_deformation_loop_01 edges=24 status=closed local_max_aspect=27.645379433825067 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_shoulder_right_deformation_loop_02 edges=24 status=closed local_max_aspect=10.328016256323865 local_valence_anomalies=3 critical_poles=3
+deformation_loop id=prompt_2c_toe_big_left_deformation_loop_01 edges=20 status=closed local_max_aspect=14.686378900332121 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_toe_big_right_deformation_loop_01 edges=20 status=closed local_max_aspect=14.686378900332121 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_toe_index_left_deformation_loop_01 edges=20 status=closed local_max_aspect=11.9621639603994 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_toe_index_right_deformation_loop_01 edges=20 status=closed local_max_aspect=11.9621639603994 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_toe_little_left_deformation_loop_01 edges=20 status=closed local_max_aspect=14.685152914181389 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_toe_little_right_deformation_loop_01 edges=20 status=closed local_max_aspect=14.685152914181389 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_toe_middle_left_deformation_loop_01 edges=24 status=closed local_max_aspect=9.170689692616378 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_toe_middle_right_deformation_loop_01 edges=24 status=closed local_max_aspect=9.170689692616378 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_toe_ring_left_deformation_loop_01 edges=20 status=closed local_max_aspect=11.841385456588043 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_toe_ring_right_deformation_loop_01 edges=20 status=closed local_max_aspect=11.841385456588043 local_valence_anomalies=0 critical_poles=0
+deformation_loop id=prompt_2c_wrist_left_deformation_loop_01 edges=28 status=closed local_max_aspect=2.983852848787091 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_wrist_left_deformation_loop_02 edges=24 status=closed local_max_aspect=3.6077349585498246 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_wrist_right_deformation_loop_01 edges=24 status=closed local_max_aspect=3.6077349585498246 local_valence_anomalies=2 critical_poles=2
+deformation_loop id=prompt_2c_wrist_right_deformation_loop_02 edges=28 status=closed local_max_aspect=2.983852848787091 local_valence_anomalies=2 critical_poles=2
+deformation_outlier face=3711 surface=ankle_left_surface aspect=11.543006726167974 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3713 surface=ankle_left_surface aspect=12.401669777194101 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3720 surface=ankle_left_surface aspect=9.80148578026779 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3723 surface=ankle_left_surface aspect=8.385579147267384 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3724 surface=ankle_left_surface aspect=11.007188272521883 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3725 surface=ankle_left_surface aspect=9.913096692304768 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3732 surface=ankle_left_surface aspect=9.165946625167145 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3740 surface=ankle_left_surface aspect=8.805685445773726 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3741 surface=ankle_left_surface aspect=9.213851540758608 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3744 surface=ankle_left_surface aspect=8.45198209670552 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3747 surface=ankle_left_surface aspect=9.895445631557376 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3748 surface=ankle_left_surface aspect=10.00429422296251 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3749 surface=ankle_left_surface aspect=11.138808646995491 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3752 surface=ankle_left_surface aspect=11.664563358630154 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_outlier face=3756 surface=ankle_left_surface aspect=12.5706674688802 face_set=prompt_2c_ankle_left_zone_faces_01
+deformation_region face_set=prompt_2c_ankle_left_zone_faces_01 meaningful_loops=2 local_max_aspect=12.5706674688802 quads_over_8=15
+deformation_outlier face=3767 surface=ankle_right_surface aspect=11.664563358630154 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3769 surface=ankle_right_surface aspect=12.5706674688802 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3776 surface=ankle_right_surface aspect=9.895445631557376 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3779 surface=ankle_right_surface aspect=8.45198209670552 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3780 surface=ankle_right_surface aspect=11.138808646995491 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3781 surface=ankle_right_surface aspect=10.00429422296251 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3788 surface=ankle_right_surface aspect=9.213851540758608 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3789 surface=ankle_right_surface aspect=8.805685445773726 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3797 surface=ankle_right_surface aspect=9.165946625167145 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3800 surface=ankle_right_surface aspect=8.385579147267384 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3803 surface=ankle_right_surface aspect=9.80148578026779 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3804 surface=ankle_right_surface aspect=9.913096692304768 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3805 surface=ankle_right_surface aspect=11.007188272521883 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3808 surface=ankle_right_surface aspect=11.543006726167974 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_outlier face=3812 surface=ankle_right_surface aspect=12.401669777194101 face_set=prompt_2c_ankle_right_zone_faces_01
+deformation_region face_set=prompt_2c_ankle_right_zone_faces_01 meaningful_loops=2 local_max_aspect=12.5706674688802 quads_over_8=15
+deformation_region face_set=prompt_2c_breast_root_left_zone_faces_01 meaningful_loops=1 local_max_aspect=3.4860078846681883 quads_over_8=0
+deformation_region face_set=prompt_2c_breast_root_right_zone_faces_01 meaningful_loops=1 local_max_aspect=3.4860078846681883 quads_over_8=0
+deformation_region face_set=prompt_2c_elbow_left_zone_faces_01 meaningful_loops=2 local_max_aspect=4.861511241094162 quads_over_8=0
+deformation_region face_set=prompt_2c_elbow_right_zone_faces_01 meaningful_loops=2 local_max_aspect=4.898434601349774 quads_over_8=0
+deformation_region face_set=prompt_2c_eye_left_zone_faces_01 meaningful_loops=1 local_max_aspect=2.066176512494259 quads_over_8=0
+deformation_region face_set=prompt_2c_eye_right_zone_faces_01 meaningful_loops=1 local_max_aspect=2.4224075884108798 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_index_left_zone_faces_01 meaningful_loops=1 local_max_aspect=3.384430730138421 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_index_right_zone_faces_01 meaningful_loops=1 local_max_aspect=3.384430730138421 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_little_left_zone_faces_01 meaningful_loops=1 local_max_aspect=4.11153237051454 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_little_right_zone_faces_01 meaningful_loops=1 local_max_aspect=4.11153237051454 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_middle_left_zone_faces_01 meaningful_loops=3 local_max_aspect=3.7230241398259425 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_middle_right_zone_faces_01 meaningful_loops=3 local_max_aspect=3.7230241398259425 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_ring_left_zone_faces_01 meaningful_loops=2 local_max_aspect=4.82534924782731 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_ring_right_zone_faces_01 meaningful_loops=2 local_max_aspect=4.82534924782731 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_thumb_left_zone_faces_01 meaningful_loops=1 local_max_aspect=4.992758241924162 quads_over_8=0
+deformation_region face_set=prompt_2c_finger_thumb_right_zone_faces_01 meaningful_loops=1 local_max_aspect=4.992758241924162 quads_over_8=0
+deformation_outlier face=2885 surface=sole_left_surface aspect=12.973144348470132 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2886 surface=sole_left_surface aspect=11.841385456588043 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2890 surface=midfoot_left_surface aspect=14.606239034475077 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2891 surface=midfoot_left_surface aspect=11.322907326766423 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2900 surface=sole_left_surface aspect=10.951304009533974 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2901 surface=sole_left_surface aspect=9.467467154511954 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2902 surface=sole_left_surface aspect=9.110256929210559 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2903 surface=sole_left_surface aspect=10.261436974613119 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2912 surface=sole_left_surface aspect=8.50968860722548 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2913 surface=sole_left_surface aspect=8.048189846267482 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2914 surface=sole_left_surface aspect=8.033248130830394 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2915 surface=sole_left_surface aspect=8.378997633675771 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2924 surface=sole_left_surface aspect=8.062984373927188 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2925 surface=sole_left_surface aspect=8.554242153266575 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2926 surface=sole_left_surface aspect=8.405253022941977 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2927 surface=sole_left_surface aspect=8.038547206373442 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2936 surface=sole_left_surface aspect=9.544323128414558 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2937 surface=sole_left_surface aspect=11.062407449936083 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2938 surface=sole_left_surface aspect=10.354771857905144 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2939 surface=sole_left_surface aspect=9.170689692616378 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2948 surface=sole_left_surface aspect=13.117989506502521 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2951 surface=sole_left_surface aspect=11.9621639603994 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2953 surface=midfoot_left_surface aspect=11.316546427073458 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=2954 surface=midfoot_left_surface aspect=14.607471644092229 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3044 surface=midfoot_left_surface aspect=13.512872269424587 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3045 surface=midfoot_left_surface aspect=14.620406166234421 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3046 surface=midfoot_left_surface aspect=13.876165286866643 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3047 surface=midfoot_left_surface aspect=13.485374704534204 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3088 surface=midfoot_left_surface aspect=13.505281107314971 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3089 surface=midfoot_left_surface aspect=13.477768054819228 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3090 surface=midfoot_left_surface aspect=13.877333377027025 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3091 surface=midfoot_left_surface aspect=14.621637581882041 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3156 surface=midfoot_left_surface aspect=13.460600345669457 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3157 surface=midfoot_left_surface aspect=14.639054192666862 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3158 surface=midfoot_left_surface aspect=14.654052635505709 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3159 surface=midfoot_left_surface aspect=13.43856415383157 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3200 surface=midfoot_left_surface aspect=13.452979687922355 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3201 surface=midfoot_left_surface aspect=13.430930992841171 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3202 surface=midfoot_left_surface aspect=14.655281223347513 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3203 surface=midfoot_left_surface aspect=14.640284039801859 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3268 surface=midfoot_left_surface aspect=13.41927960618369 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3269 surface=midfoot_left_surface aspect=14.6694283630382 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3270 surface=midfoot_left_surface aspect=14.685152914181389 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3271 surface=midfoot_left_surface aspect=13.402758678475925 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3312 surface=midfoot_left_surface aspect=13.411635469500062 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3313 surface=midfoot_left_surface aspect=13.395105113856944 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3314 surface=midfoot_left_surface aspect=14.686378900332121 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3315 surface=midfoot_left_surface aspect=14.670655664542023 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3378 surface=forefoot_left_surface aspect=21.055437853262514 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3379 surface=forefoot_left_surface aspect=9.901819117940057 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3380 surface=midfoot_left_surface aspect=13.389011579657858 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3390 surface=forefoot_left_surface aspect=18.79934223369974 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3391 surface=forefoot_left_surface aspect=19.802301097016205 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3398 surface=forefoot_left_surface aspect=17.666905122827533 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3399 surface=forefoot_left_surface aspect=18.076712740351997 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3406 surface=forefoot_left_surface aspect=18.113700884018677 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3407 surface=forefoot_left_surface aspect=17.683242417012714 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3414 surface=forefoot_left_surface aspect=19.874443015913407 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3415 surface=forefoot_left_surface aspect=18.854998575580517 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3422 surface=forefoot_left_surface aspect=10.818216829845044 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3423 surface=forefoot_left_surface aspect=21.013172950020277 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3424 surface=midfoot_left_surface aspect=13.381350152283849 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3427 surface=midfoot_left_surface aspect=13.664917864249645 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3492 surface=midfoot_left_surface aspect=8.324922418020886 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_outlier face=3536 surface=midfoot_left_surface aspect=8.279928963199248 face_set=prompt_2c_foot_left_zone_faces_01
+deformation_region face_set=prompt_2c_foot_left_zone_faces_01 meaningful_loops=1 local_max_aspect=21.055437853262514 quads_over_8=65
+deformation_outlier face=2965 surface=sole_right_surface aspect=13.117989506502521 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2966 surface=sole_right_surface aspect=11.9621639603994 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2970 surface=midfoot_right_surface aspect=14.607471644092229 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2971 surface=midfoot_right_surface aspect=11.316546427073458 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2980 surface=sole_right_surface aspect=11.062407449936083 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2981 surface=sole_right_surface aspect=9.544323128414558 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2982 surface=sole_right_surface aspect=9.170689692616378 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2983 surface=sole_right_surface aspect=10.354771857905144 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2992 surface=sole_right_surface aspect=8.554242153266575 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2993 surface=sole_right_surface aspect=8.062984373927188 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2994 surface=sole_right_surface aspect=8.038547206373442 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=2995 surface=sole_right_surface aspect=8.405253022941977 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3004 surface=sole_right_surface aspect=8.048189846267482 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3005 surface=sole_right_surface aspect=8.50968860722548 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3006 surface=sole_right_surface aspect=8.378997633675771 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3007 surface=sole_right_surface aspect=8.033248130830394 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3016 surface=sole_right_surface aspect=9.467467154511954 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3017 surface=sole_right_surface aspect=10.951304009533974 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3018 surface=sole_right_surface aspect=10.261436974613119 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3019 surface=sole_right_surface aspect=9.110256929210559 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3028 surface=sole_right_surface aspect=12.973144348470132 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3031 surface=sole_right_surface aspect=11.841385456588043 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3033 surface=midfoot_right_surface aspect=11.322907326766423 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3034 surface=midfoot_right_surface aspect=14.606239034475077 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3100 surface=midfoot_right_surface aspect=13.505281107314971 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3101 surface=midfoot_right_surface aspect=14.621637581882041 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3102 surface=midfoot_right_surface aspect=13.877333377027025 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3103 surface=midfoot_right_surface aspect=13.477768054819228 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3144 surface=midfoot_right_surface aspect=13.512872269424587 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3145 surface=midfoot_right_surface aspect=13.485374704534204 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3146 surface=midfoot_right_surface aspect=13.876165286866643 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3147 surface=midfoot_right_surface aspect=14.620406166234421 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3212 surface=midfoot_right_surface aspect=13.452979687922355 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3213 surface=midfoot_right_surface aspect=14.640284039801859 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3214 surface=midfoot_right_surface aspect=14.655281223347513 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3215 surface=midfoot_right_surface aspect=13.430930992841171 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3256 surface=midfoot_right_surface aspect=13.460600345669457 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3257 surface=midfoot_right_surface aspect=13.43856415383157 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3258 surface=midfoot_right_surface aspect=14.654052635505709 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3259 surface=midfoot_right_surface aspect=14.639054192666862 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3324 surface=midfoot_right_surface aspect=13.411635469500062 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3325 surface=midfoot_right_surface aspect=14.670655664542023 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3326 surface=midfoot_right_surface aspect=14.686378900332121 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3327 surface=midfoot_right_surface aspect=13.395105113856944 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3368 surface=midfoot_right_surface aspect=13.41927960618369 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3369 surface=midfoot_right_surface aspect=13.402758678475925 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3370 surface=midfoot_right_surface aspect=14.685152914181389 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3371 surface=midfoot_right_surface aspect=14.6694283630382 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3434 surface=forefoot_right_surface aspect=21.013172950020277 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3435 surface=forefoot_right_surface aspect=10.818216829845044 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3436 surface=midfoot_right_surface aspect=13.381350152283849 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3446 surface=forefoot_right_surface aspect=18.854998575580517 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3447 surface=forefoot_right_surface aspect=19.874443015913407 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3454 surface=forefoot_right_surface aspect=17.683242417012714 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3455 surface=forefoot_right_surface aspect=18.113700884018677 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3462 surface=forefoot_right_surface aspect=18.076712740351997 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3463 surface=forefoot_right_surface aspect=17.666905122827533 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3470 surface=forefoot_right_surface aspect=19.802301097016205 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3471 surface=forefoot_right_surface aspect=18.79934223369974 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3478 surface=forefoot_right_surface aspect=9.901819117940057 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3479 surface=forefoot_right_surface aspect=21.055437853262514 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3480 surface=midfoot_right_surface aspect=13.389011579657858 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3483 surface=midfoot_right_surface aspect=13.663777147387705 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3548 surface=midfoot_right_surface aspect=8.279928963199248 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_outlier face=3592 surface=midfoot_right_surface aspect=8.324922418020886 face_set=prompt_2c_foot_right_zone_faces_01
+deformation_region face_set=prompt_2c_foot_right_zone_faces_01 meaningful_loops=1 local_max_aspect=21.055437853262514 quads_over_8=65
+deformation_region face_set=prompt_2c_glute_perineal_zone_faces_01 meaningful_loops=1 local_max_aspect=3.366983495962691 quads_over_8=0
+deformation_region face_set=prompt_2c_knee_left_zone_faces_01 meaningful_loops=2 local_max_aspect=5.397770708853275 quads_over_8=0
+deformation_region face_set=prompt_2c_knee_right_zone_faces_01 meaningful_loops=2 local_max_aspect=5.397770708853275 quads_over_8=0
+deformation_region face_set=prompt_2c_lips_zone_faces_01 meaningful_loops=1 local_max_aspect=7.550332871884227 quads_over_8=0
+deformation_region face_set=prompt_2c_perineal_receiver_zone_faces_01 meaningful_loops=1 local_max_aspect=2.499665553027318 quads_over_8=0
+deformation_outlier face=12120 surface=shoulder_left_surface aspect=10.328016256323865 face_set=prompt_2c_shoulder_left_zone_faces_01
+deformation_outlier face=12121 surface=shoulder_left_surface aspect=13.458192420459254 face_set=prompt_2c_shoulder_left_zone_faces_01
+deformation_outlier face=13118 surface=shoulder_left_surface aspect=23.01191680879221 face_set=prompt_2c_shoulder_left_zone_faces_01
+deformation_outlier face=13119 surface=shoulder_left_surface aspect=27.645379433825067 face_set=prompt_2c_shoulder_left_zone_faces_01
+deformation_region face_set=prompt_2c_shoulder_left_zone_faces_01 meaningful_loops=2 local_max_aspect=27.645379433825067 quads_over_8=4
+deformation_outlier face=12276 surface=shoulder_right_surface aspect=13.458192420459254 face_set=prompt_2c_shoulder_right_zone_faces_01
+deformation_outlier face=12277 surface=shoulder_right_surface aspect=10.328016256323865 face_set=prompt_2c_shoulder_right_zone_faces_01
+deformation_outlier face=12279 surface=shoulder_right_surface aspect=10.32931870278335 face_set=prompt_2c_shoulder_right_zone_faces_01
+deformation_outlier face=13320 surface=shoulder_right_surface aspect=27.645379433825067 face_set=prompt_2c_shoulder_right_zone_faces_01
+deformation_outlier face=13321 surface=shoulder_right_surface aspect=23.01191680879221 face_set=prompt_2c_shoulder_right_zone_faces_01
+deformation_region face_set=prompt_2c_shoulder_right_zone_faces_01 meaningful_loops=2 local_max_aspect=27.645379433825067 quads_over_8=5
+deformation_region face_set=prompt_2c_toe_big_left_zone_faces_01 meaningful_loops=1 local_max_aspect=5.346803082042606 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_big_right_zone_faces_01 meaningful_loops=1 local_max_aspect=5.346803082042606 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_index_left_zone_faces_01 meaningful_loops=1 local_max_aspect=3.2883240917243435 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_index_right_zone_faces_01 meaningful_loops=1 local_max_aspect=3.2883240917243435 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_little_left_zone_faces_01 meaningful_loops=1 local_max_aspect=5.4092640957355735 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_little_right_zone_faces_01 meaningful_loops=1 local_max_aspect=5.4092640957355735 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_middle_left_zone_faces_01 meaningful_loops=1 local_max_aspect=2.7970926130222735 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_middle_right_zone_faces_01 meaningful_loops=1 local_max_aspect=2.7970926130222735 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_ring_left_zone_faces_01 meaningful_loops=1 local_max_aspect=3.2665557139588426 quads_over_8=0
+deformation_region face_set=prompt_2c_toe_ring_right_zone_faces_01 meaningful_loops=1 local_max_aspect=3.2665557139588426 quads_over_8=0
+deformation_region face_set=prompt_2c_wrist_left_zone_faces_01 meaningful_loops=2 local_max_aspect=3.599255499957349 quads_over_8=0
+deformation_region face_set=prompt_2c_wrist_right_zone_faces_01 meaningful_loops=2 local_max_aspect=3.599255499957349 quads_over_8=0
+duplicate_faces=0_by_generic_validation
+inconsistent_winding=0_by_generic_validation
+unexpected_boundaries=0_by_generic_validation
+left_right_limb_intersection=none_by_triangle_audit
+hand_body_overlap=none_by_triangle_audit
+breast_torso_relationship=continuous_integrated_surface
+leg_groin_overlap=none_by_triangle_audit
+toe_foot_relationship=continuous_integrated_surface
+OPEN_TUNING.landmark_binding_legacy_guard_m=0.1
+OPEN_TUNING.prompt_2c_r1_landmark_target_max_m=0.05
+OPEN_TUNING.prompt_2c_r1_landmark_target_median_m=0.025
+OPEN_TUNING.prompt_2c_r1_landmark_target_p90_m=0.04
+OPEN_TUNING.prompt_2c_r1_deformation_aspect_target=8
+OPEN_TUNING.review_render_internal=1440x1800
+OPEN_TUNING.review_render_png=960x1200
+VALIDATION_ONLY.locked_extent_tolerance_m=0.000001
+VALIDATION_ONLY.symmetry_tolerance_m=0.000001
+VALIDATION_ONLY.intersection_epsilon_m=0.000000001
+OPEN_TUNING.topology_density=11506_vertices_11504_quads
+OPEN_TUNING.surface_charts=face_local_scaffold_charts
+OPEN_TUNING.texture_uvs=face_local_scaffold_islands
+collision_proxies=0_deferred_to_prompt_2f
+prompt_2c_r1_implemented=true
+prompt_2d_started=false
+m04_started=false
+visual_review whole-body_proportions=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=partial remaining=torso_and_pelvis_still_boxy_limbs_columnar_transitions_abrupt
+visual_review head_skull=STILL_BLOCKING vs_prompt_2b=better vs_prompt_2c=not_better remaining=stepped_box_cranium_flat_crown_nonhuman_midface
+visual_review eyes_eyelids=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=partial remaining=loops_exist_but_openings_canthus_and_blink_flow_are_not_credible
+visual_review nose_cheeks=STILL_BLOCKING vs_prompt_2b=better vs_prompt_2c=not_better remaining=planar_bands_without_alar_nostril_or_malar_form
+visual_review lips_chin_jaw=STILL_BLOCKING vs_prompt_2b=better vs_prompt_2c=not_better remaining=mouth_is_block_opening_and_jaw_has_no_human_taper
+visual_review ears=STILL_BLOCKING vs_prompt_2b=partial vs_prompt_2c=not_better remaining=large_side_blocks_without_external_ear_scaffold
+visual_review neck_head=STILL_BLOCKING vs_prompt_2b=partial vs_prompt_2c=partial remaining=abrupt_head_to_column_neck_transition
+visual_review shoulder_armpit=STILL_BLOCKING vs_prompt_2b=better vs_prompt_2c=partial remaining=shelf_shoulders_compressed_strips_and_aspect_outliers
+visual_review torso=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=waist_taper_improved_but_ribcage_abdomen_and_back_remain_planar
+visual_review breast_nipple_areola=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=rounded_roots_present_but_volume_is_lumpy_and_nipple_areola_transition_unresolved
+visual_review upper_arms_elbows=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=taper_improved_but_elbow_form_and_transition_steps_remain
+visual_review forearms_wrists=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=forearm_belly_exists_but_silhouette_is_jagged_and_wrist_abrupt
+visual_review hands_thumb_fingers=STILL_BLOCKING vs_prompt_2b=better vs_prompt_2c=partial remaining=mitten_stair_step_silhouette_no_credible_digit_separation_or_thumb_web
+visual_review pelvis_glutes=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=glute_projection_and_cleft_added_but_pelvis_and_thigh_roots_remain_blocky
+visual_review groin_perineal_base=STILL_BLOCKING vs_prompt_2b=partial vs_prompt_2c=partial remaining=receiver_is_identifiable_but_groin_crease_and_inner_thigh_flow_are_not_credible
+visual_review thighs=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=taper_improved_but_upper_thigh_transition_remains_abrupt
+visual_review knees=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=patellar_hint_and_loops_exist_but_posterior_medial_lateral_form_is_weak
+visual_review calves_shins=PARTIALLY_IMPROVED vs_prompt_2b=better vs_prompt_2c=better remaining=calf_belly_added_but_shin_is_still_columnar
+visual_review ankles_achilles=STILL_BLOCKING vs_prompt_2b=partial vs_prompt_2c=partial remaining=box_transition_without_readable_malleoli_or_Achilles
+visual_review feet_toes=STILL_BLOCKING vs_prompt_2b=partial vs_prompt_2c=not_better remaining=slab_foot_overlapping_toe_forms_and_high_aspect_forefoot_topology
+visual_review_final=PROMPT_2C_R1_BLOCKED_FURTHER_TOPOLOGY_WORK_REQUIRED
+inspection image=human_base_main_body_front_smooth.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_back_smooth.ppm purpose=back_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_left_smooth.ppm purpose=left_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_right_smooth.ppm purpose=right_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_front_three_quarter_smooth.ppm purpose=three_quarter_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_wireframe_front.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_wireframe_side.ppm purpose=right_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_semantic_surface_front.ppm purpose=front_semantic geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_head_front_smooth.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_head_side_smooth.ppm purpose=right_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_face_wireframe.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_eye_eyelid_topology.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_nose_lips_chin_jaw.ppm purpose=front_semantic geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_ear_head_transition.ppm purpose=right_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_shoulder_armpit_smooth.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_shoulder_armpit_wireframe.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_torso_front.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_torso_side.ppm purpose=right_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_breast_nipple_areola_smooth.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_breast_nipple_areola_wireframe.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_hand_palm.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_hand_back.ppm purpose=back_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_thumb_base.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_finger_topology.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_hand_wireframe.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_pelvis_front.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_glutes_back.ppm purpose=back_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_pelvis_glute_wireframe.ppm purpose=back_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_groin_perineal_base.ppm purpose=front_semantic geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_thigh_groin_aspect_region.ppm purpose=front_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_knee_front.ppm purpose=front_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_knee_side.ppm purpose=right_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_calf_ankle_achilles.ppm purpose=right_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_foot_side.ppm purpose=right_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_foot_top.ppm purpose=top_neutral geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_foot_toe_wireframe.ppm purpose=top_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931
+inspection image=human_base_main_body_forefoot_aspect_region.ppm purpose=right_wireframe geometry_source_sha256=88ed9f846a3ddc048bf219e5f8f63d6ffa75e167a07e64ecc527f1fec1be56ae topology_sha256=23a3575d1e8aa25bc14f630ead9e5f1fabef36b18acfccd0cdc407a6e750b931

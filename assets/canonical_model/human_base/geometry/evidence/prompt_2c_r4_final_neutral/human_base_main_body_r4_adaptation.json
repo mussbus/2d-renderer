@@ -1,0 +1,42 @@
+{
+  "adaptation_id": "hm08_final_neutral_shared_human_v1",
+  "source_r3_authority_sha256": "35a7ab3c433795bcd47975050a5f7ee74a72c43ba3c5d754f9ebbce7886716f7",
+  "candidate_r4_authority_sha256": "4bed342c289f1f1238c7397c524b63e32d2037737cde08304fe5c47af1b43b8f",
+  "shape_only": true,
+  "topology_edit_count": 0,
+  "id_change_count": 0,
+  "connectivity_change_count": 0,
+  "moved_vertex_count": 2709,
+  "maximum_vertex_displacement_m": 0.052528809799150304,
+  "topology_revision": 4,
+  "vertex_count": 13380,
+  "face_count": 13378,
+  "region_vertex_participation": {
+    "shoulder_upper_torso": 1691,
+    "ribcage": 1366,
+    "waist": 405,
+    "pelvis_hips": 509,
+    "glutes": 189,
+    "breasts": 480,
+    "upper_thighs": 388
+  },
+  "deterministic_shape_operations": [
+    "broaden shoulder surface and upper torso with smooth bilateral position scaling",
+    "raise the outer shoulder presentation by at most 0.0055 m without moving the head",
+    "broaden ribcage width and depth modestly",
+    "reduce waist taper while preserving a natural waist",
+    "reduce external hip fullness around unchanged M02 hip references",
+    "reduce posterior glute projection while preserving cleft and fold topology",
+    "reduce semantic breast and nipple projection while retaining breast-root, nipple, and areola topology",
+    "reduce upper-thigh lateral fullness around unchanged hip centers"
+  ],
+  "preserved": [
+    "exact 1.8288 m visible height",
+    "ground Y=0",
+    "bilateral symmetry",
+    "all stable VertexIds and FaceIds",
+    "all face connectivity and triangulation diagonals",
+    "all 11 M02 seam bindings",
+    "all semantic membership and provisional UV data"
+  ]
+}

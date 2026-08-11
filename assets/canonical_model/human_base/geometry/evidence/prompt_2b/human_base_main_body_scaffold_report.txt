@@ -1,0 +1,155 @@
+M03 PROMPT 2B HUMAN MAIN-BODY SCAFFOLD EVIDENCE
+authority_path=assets/canonical_model/human_base/geometry/human_base_geometry.authoring.json
+structural_authority_path=assets/canonical_model/human_base/human_base.authoring.json
+structural_normalized_sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda
+authoring_bytes=7821762
+authoring_sha256=23ba78843920eae23053c9654add7b05e67822d0e627963e0af1aed4e019b898
+canonical_bytes=3809967
+geometry_source_sha256=d3000ce3eadb200d6468b1b47ad0cc129b418b81ef22f0a973238bc1d7851fae
+control_topology_sha256=0637911b42c167f3dc05bbc3e8aac01224d6b035fd79a9e159f7c567ec96ccad
+triangulation_sha256=486c58345505bf6f84d8c205a77fcbd4937e15ae257586f29c89b44845598af5
+neutral_geometry_signature=3bd042c1b0fac4e3d59d31f409b5087078835cc04f27fc7aab9db6745fe38895
+mesh_id=human_base_main_body
+vertices=2878
+quads=2876
+derived_triangles=5752
+connected_components=1
+open_boundary_loops=0
+internal_receiver_loops=1
+subdivision_policy=catmull_clark_v1
+structural_seam_loops=11
+seam id=ankle_foot_left_seam edges=14 side_a=ankle_left_surface side_b=midfoot_left_surface
+seam id=ankle_foot_right_seam edges=14 side_a=ankle_right_surface side_b=midfoot_right_surface
+seam id=neck_head_seam edges=14 side_a=neck_surface side_b=head_surface
+seam id=pelvis_thigh_left_seam edges=18 side_a=hip_left_surface side_b=thigh_left_surface
+seam id=pelvis_thigh_right_seam edges=18 side_a=hip_right_surface side_b=thigh_right_surface
+seam id=torso_arm_left_seam edges=12 side_a=shoulder_left_surface side_b=upper_arm_left_surface
+seam id=torso_arm_right_seam edges=12 side_a=shoulder_right_surface side_b=upper_arm_right_surface
+seam id=torso_neck_seam edges=14 side_a=torso_surface side_b=neck_surface
+seam id=torso_pelvis_seam edges=38 side_a=torso_surface side_b=pelvis_surface
+seam id=wrist_hand_left_seam edges=14 side_a=wrist_left_surface side_b=palm_left_surface
+seam id=wrist_hand_right_seam edges=14 side_a=wrist_right_surface side_b=palm_right_surface
+geometry_landmark_bindings=35
+semantic_surfaces=97
+surface id=abdomen_surface faces=32
+surface id=ankle_left_surface faces=56
+surface id=ankle_right_surface faces=56
+surface id=areola_left_surface faces=14
+surface id=areola_right_surface faces=14
+surface id=back_surface faces=318
+surface id=breast_left_surface faces=14
+surface id=breast_right_surface faces=14
+surface id=brow_left_surface faces=3
+surface id=brow_right_surface faces=3
+surface id=calf_left_surface faces=54
+surface id=calf_right_surface faces=54
+surface id=cheek_left_surface faces=5
+surface id=cheek_right_surface faces=5
+surface id=chest_surface faces=150
+surface id=ear_left_surface faces=29
+surface id=ear_right_surface faces=29
+surface id=elbow_left_surface faces=28
+surface id=elbow_right_surface faces=28
+surface id=eyelid_lower_left_center_surface faces=2
+surface id=eyelid_lower_right_center_surface faces=2
+surface id=eyelid_upper_left_center_surface faces=2
+surface id=eyelid_upper_right_center_surface faces=2
+surface id=face_surface faces=6
+surface id=forearm_left_surface faces=86
+surface id=forearm_right_surface faces=86
+surface id=forefoot_left_surface faces=6
+surface id=forefoot_right_surface faces=6
+surface id=forehead_surface faces=10
+surface id=glute_left_surface faces=48
+surface id=glute_right_surface faces=48
+surface id=gluteal_cleft_surface faces=6
+surface id=hand_dorsum_left_surface faces=4
+surface id=hand_dorsum_right_surface faces=4
+surface id=head_surface faces=46
+surface id=heel_left_surface faces=30
+surface id=heel_right_surface faces=30
+surface id=hip_left_surface faces=54
+surface id=hip_right_surface faces=54
+surface id=index_left_surface faces=19
+surface id=index_right_surface faces=19
+surface id=jawline_surface faces=2
+surface id=knee_left_surface faces=42
+surface id=knee_right_surface faces=42
+surface id=lip_lower_surface faces=6
+surface id=lip_upper_surface faces=6
+surface id=little_left_surface faces=14
+surface id=little_right_surface faces=14
+surface id=lower_leg_left_surface faces=18
+surface id=lower_leg_right_surface faces=18
+surface id=middle_left_surface faces=13
+surface id=middle_right_surface faces=13
+surface id=midfoot_left_surface faces=24
+surface id=midfoot_right_surface faces=24
+surface id=navel_surface faces=4
+surface id=neck_surface faces=44
+surface id=nipple_left_surface faces=2
+surface id=nipple_right_surface faces=2
+surface id=nose_surface faces=4
+surface id=palm_left_surface faces=20
+surface id=palm_right_surface faces=20
+surface id=pectoral_left_surface faces=20
+surface id=pectoral_right_surface faces=20
+surface id=pelvis_surface faces=54
+surface id=perineal_surface faces=4
+surface id=pubic_surface faces=34
+surface id=ring_left_surface faces=2
+surface id=ring_right_surface faces=2
+surface id=scalp_surface faces=42
+surface id=shin_left_surface faces=54
+surface id=shin_right_surface faces=54
+surface id=shoulder_left_surface faces=12
+surface id=shoulder_right_surface faces=12
+surface id=sole_left_surface faces=6
+surface id=sole_right_surface faces=6
+surface id=sternum_surface faces=14
+surface id=thigh_left_surface faces=154
+surface id=thigh_right_surface faces=154
+surface id=throat_surface faces=12
+surface id=thumb_left_surface faces=6
+surface id=thumb_right_surface faces=6
+surface id=toe_big_left_surface faces=4
+surface id=toe_big_right_surface faces=4
+surface id=toe_index_left_surface faces=4
+surface id=toe_index_right_surface faces=4
+surface id=toe_little_left_surface faces=4
+surface id=toe_little_right_surface faces=4
+surface id=toe_middle_left_surface faces=8
+surface id=toe_middle_right_surface faces=8
+surface id=toe_ring_left_surface faces=4
+surface id=toe_ring_right_surface faces=4
+surface id=torso_surface faces=88
+surface id=upper_arm_left_surface faces=94
+surface id=upper_arm_right_surface faces=94
+surface id=waist_surface faces=18
+surface id=wrist_left_surface faces=29
+surface id=wrist_right_surface faces=29
+measurement overall min=[-0.8636,0,-0.15] max=[0.8636,1.8288,0.205] width=1.7272 height=1.8288 depth=0.35500002
+measurement chest min=[-0.3048,1.1176,-0.105] max=[0.3048,1.4986,0.14987774] width=0.6096 height=0.38100004 depth=0.25487775
+measurement waist min=[-0.2286,1.016,-0.15] max=[0.2286,1.1176,0.115157604] width=0.4572 height=0.10159993 depth=0.2651576
+measurement hip_glute min=[-0.2286,0.8128,-0.15] max=[0.2286,1.016,0.105] width=0.4572 height=0.20320004 depth=0.255
+measurement head min=[-0.1524,1.6002,-0.105] max=[0.1524,1.8288,0.13924271] width=0.3048 height=0.2285999 depth=0.2442427
+measurement arms min=[-0.7112,1.143,-0.055] max=[0.7112,1.4986,0.055] width=1.4224 height=0.3556 depth=0.11
+measurement hands min=[-0.8636,1.0668,-0.055] max=[0.8636,1.2446,0.055] width=1.7272 height=0.17780006 depth=0.11
+measurement legs min=[-0.2286,0.1524,-0.09] max=[0.2286,0.8128,0.205] width=0.4572 height=0.6604 depth=0.29500002
+measurement feet min=[-0.1778,0,-0.065] max=[0.1778,0.1524,0.205] width=0.3556 height=0.1524 depth=0.26999998
+self_intersections=0
+left_right_limb_intersection=none_by_triangle_audit
+hand_body_overlap=none_by_triangle_audit
+breast_torso_relationship=continuous_integrated_surface
+leg_groin_overlap=none_by_triangle_audit
+toe_foot_relationship=continuous_integrated_surface
+OPEN_TUNING.landmark_binding_tolerance_m=0.16
+VALIDATION_ONLY.locked_extent_tolerance_m=0.000001
+VALIDATION_ONLY.symmetry_tolerance_m=0.000001
+VALIDATION_ONLY.intersection_epsilon_m=0.000000001
+OPEN_TUNING.topology_density=2878_vertices_2876_quads
+OPEN_TUNING.surface_charts=face_local_scaffold_charts
+OPEN_TUNING.texture_uvs=face_local_scaffold_islands
+collision_proxies=0_deferred_to_prompt_2f
+prompt_2c_started=false
+m04_started=false
