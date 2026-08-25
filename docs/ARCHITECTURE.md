@@ -1,5 +1,12 @@
 # Architecture
 
+The accepted F1 cross-track engine/scene foundation contract is recorded in
+[`architecture/shared_engine_scene_foundation_architecture_v1.md`](architecture/shared_engine_scene_foundation_architecture_v1.md).
+The architecture record is owner-approved at Revision 2, but it is not an
+implemented production contract. Each F2 milestone and downstream track still
+requires a dedicated implementation request; the current runtime authorities
+documented below remain unchanged until their separately approved migration.
+
 ## Scope and invariants
 
 This design separates a deterministic CPU simulation from an SDL3 GPU renderer. The simulation can run in tests without SDL initialization, a window, or a GPU device. The renderer consumes immutable render snapshots and never owns gameplay state.
