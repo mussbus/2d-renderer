@@ -423,6 +423,13 @@ pub fn build(b: *std.Build) void {
     });
     scene_core_authored_test_module.addImport("foundation", foundation_module);
     scene_core_authored_test_module.addImport("scene_core", scene_core_module);
+    const scene_core_runtime_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/scene_core/test_scene_core_runtime.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    scene_core_runtime_test_module.addImport("foundation", foundation_module);
+    scene_core_runtime_test_module.addImport("scene_core", scene_core_module);
     const canonical_human_geometry_scaffold_test_module = b.createModule(.{
         .root_source_file = b.path("tests/canonical_human_geometry_scaffold_tests.zig"),
         .target = target,
@@ -2101,6 +2108,16 @@ pub fn build(b: *std.Build) void {
         "Run F2B authored prefab, level, world, serialization, migration, and validation tests",
     );
     scene_core_authored_test_step.dependOn(&run_scene_core_authored_tests.step);
+    const scene_core_runtime_tests = b.addTest(.{
+        .name = "scene-core-runtime-tests",
+        .root_module = scene_core_runtime_test_module,
+    });
+    const run_scene_core_runtime_tests = b.addRunArtifact(scene_core_runtime_tests);
+    const scene_core_runtime_test_step = b.step(
+        "test-scene-core-runtime",
+        "Run F2C runtime scene assembly, registry, lifecycle, snapshot, and consumer tests",
+    );
+    scene_core_runtime_test_step.dependOn(&run_scene_core_runtime_tests.step);
 
     const canonical_human_geometry_scaffold_tests = b.addTest(.{
         .name = "canonical-human-geometry-scaffold-tests",
@@ -2231,6 +2248,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_canonical_geometry_tests.step);
     test_step.dependOn(&run_foundation_primitive_tests.step);
     test_step.dependOn(&run_scene_core_authored_tests.step);
+    test_step.dependOn(&run_scene_core_runtime_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_scaffold_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_refinement_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_adoption_tests.step);

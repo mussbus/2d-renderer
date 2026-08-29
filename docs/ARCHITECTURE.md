@@ -6,9 +6,12 @@ The architecture record is owner-approved at Revision 2. F2A is recorded in
 [`implementation/f2a_shared_foundation_primitives.md`](implementation/f2a_shared_foundation_primitives.md),
 and the final local F2B owner-review candidate is recorded in
 [`implementation/f2b_authored_scene_definitions.md`](implementation/f2b_authored_scene_definitions.md).
-Neither milestone changes a production runtime route. F2C and every downstream
-track still require dedicated authorization; the runtime authorities documented
-below remain unchanged until a separately approved migration.
+The final local F2C owner-review candidate is recorded in
+[`implementation/f2c_runtime_scene_assembly.md`](implementation/f2c_runtime_scene_assembly.md).
+None of these foundation milestones changes a production runtime route. Every
+downstream track and production migration still requires dedicated
+authorization; the runtime authorities documented below remain unchanged until
+a separately approved migration.
 
 ## Scope and invariants
 

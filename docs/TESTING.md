@@ -20,7 +20,7 @@ pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
 
 | Tier | Primary command | Purpose | Required use |
 | --- | --- | --- | --- |
-| Fast development | `zig build test -j1` | Pure/deterministic CPU behavior, the 27 F2A primitive declarations, the 39 F2B authored-scene declarations, cheap format-independent asset checks, visual registration, all 50 M01 canonical-model declarations, and all 53 M02 canonical-human declarations | During normal implementation and before handing a local change to another engineer |
+| Fast development | `zig build test -j1` | Pure/deterministic CPU behavior, the 27 F2A primitive declarations, the 39 F2B authored-scene declarations, the 25 F2C runtime-scene declarations, cheap format-independent asset checks, visual registration, all 50 M01 canonical-model declarations, and all 53 M02 canonical-human declarations | During normal implementation and before handing a local change to another engineer |
 | Fast repository gate | `zig build check -j1` | Fast development tier plus formatting and every static repository, art, golden, and policy audit | Before every review request; this remains the required non-GPU static gate |
 | Full regression | `zig build test-full -j1` | Fast tier plus the bounded production-route integration, foundation, wardrobe, visual-geometry, environment, and visual-foundation suites | Before milestone acceptance, after cross-system changes, and when a focused suite affects an adjacent subsystem |
 | Stress/exhaustive | `zig build test-stress -j1` | The unchanged 1,000-handshake lifecycle audit and 100,000-integrated-tick stability/resource audit | Before milestone acceptance and after interaction, IK, foot-planting, reset, allocation, or long-duration simulation changes |
@@ -129,6 +129,44 @@ The focused route does not construct a RuntimeScene, allocate or recycle
 handles, mutate hierarchies, unload levels, publish snapshots, compile
 downstream component tables, or exercise renderer/physics/editor integration.
 Those remain F2C and separately authorized track responsibilities.
+
+### F2C runtime scene route
+
+The CPU-only registry, assembly, hierarchy, lifecycle, publication, snapshot,
+and consumer-boundary gate is:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-scene-core-runtime -j1
+```
+
+Its 25 declarations cover generation-checked slot reuse and retirement,
+persistent-ID lookup, bounded capacity growth, deterministic runtime hierarchy,
+explicit reparent/removal policies, affine transform caching and dirty
+propagation, exact Level origins, multi-Level unload, world-persistent anchors,
+host-scoped temporary authority, fail-closed gameplay promotion origin policy,
+dedicated promotion diagnostics, successful world-affine preservation, nested prefab
+expansion and overrides, exact
+asset resolution, owned F2B slice lifetime, extension preservation, atomic
+two-phase publication, immutable bounded snapshots, stable diagnostics, and
+test-only R/P/gameplay/C consumers of one shared scene view.
+
+The route is a direct dependency of `test`, so `check` and `test-full` include
+it. F2C acceptance uses this bounded order:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-scene-core-runtime -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build test-scene-core-authored -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build test-foundation-primitives -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build test -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build check -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build test-full -j1 --summary all
+```
+
+This route uses synthetic definitions, a neutral mock asset resolver, and
+test-only downstream consumers. It does not initialize SDL, create a GPU
+device, import production R/P/gameplay/C implementations, migrate existing
+runtime routes, serialize a RuntimeScene, or exercise future W streaming,
+procedural generation, save games, or floating-origin work.
 
 ### M03 Prompt 2A canonical-geometry route
 
