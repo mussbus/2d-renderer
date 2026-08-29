@@ -1,0 +1,35 @@
+{
+  "asset_identity": {
+    "asset_id": "8b0bff06-f67d-5ac9-a3d0-5534844ae2cd",
+    "asset_version": "1.0.0",
+    "kind": "f.level",
+    "slug": "legacy"
+  },
+  "dependencies": [],
+  "payload": {
+    "entities": [
+      {
+        "entity_id": "a0610ba8-d264-5dcd-9c43-7ce374501e0d",
+        "extensions": [],
+        "local_transform": {
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1],
+          "translation_m": [2, 0, 3]
+        },
+        "parent": null,
+        "prefab_ref": null
+      }
+    ],
+    "origin_m": [4000000, 0, -2000000]
+  },
+  "presentation_ref": null,
+  "producer_identity": {
+    "producer_id": "7bcd9782-6252-5d2f-94be-47e477f0a5aa",
+    "producer_version": "1.0.0"
+  },
+  "provenance": null,
+  "schema_identity": {
+    "schema_id": "01a04ad0-e800-7345-a789-abcdef012233",
+    "schema_version": "0.9.0"
+  }
+}

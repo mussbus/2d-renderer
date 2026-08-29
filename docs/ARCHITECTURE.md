@@ -2,10 +2,13 @@
 
 The accepted F1 cross-track engine/scene foundation contract is recorded in
 [`architecture/shared_engine_scene_foundation_architecture_v1.md`](architecture/shared_engine_scene_foundation_architecture_v1.md).
-The architecture record is owner-approved at Revision 2, but it is not an
-implemented production contract. Each F2 milestone and downstream track still
-requires a dedicated implementation request; the current runtime authorities
-documented below remain unchanged until their separately approved migration.
+The architecture record is owner-approved at Revision 2. F2A is recorded in
+[`implementation/f2a_shared_foundation_primitives.md`](implementation/f2a_shared_foundation_primitives.md),
+and the final local F2B owner-review candidate is recorded in
+[`implementation/f2b_authored_scene_definitions.md`](implementation/f2b_authored_scene_definitions.md).
+Neither milestone changes a production runtime route. F2C and every downstream
+track still require dedicated authorization; the runtime authorities documented
+below remain unchanged until a separately approved migration.
 
 ## Scope and invariants
 

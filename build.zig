@@ -175,6 +175,12 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const scene_core_module = b.createModule(.{
+        .root_source_file = b.path("src/scene_core/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    scene_core_module.addImport("foundation", foundation_module);
     const current_transform2d_conformance_module = b.createModule(.{
         .root_source_file = b.path("src/math/transform2d.zig"),
         .target = target,
@@ -410,6 +416,13 @@ pub fn build(b: *std.Build) void {
     foundation_primitive_test_module.addImport("canonical_model", canonical_model_module);
     foundation_primitive_test_module.addImport("canonical_geometry", canonical_geometry_module);
     foundation_primitive_test_module.addImport("current_transform2d", current_transform2d_conformance_module);
+    const scene_core_authored_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/scene_core/test_scene_core_authored.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    scene_core_authored_test_module.addImport("foundation", foundation_module);
+    scene_core_authored_test_module.addImport("scene_core", scene_core_module);
     const canonical_human_geometry_scaffold_test_module = b.createModule(.{
         .root_source_file = b.path("tests/canonical_human_geometry_scaffold_tests.zig"),
         .target = target,
@@ -2078,6 +2091,17 @@ pub fn build(b: *std.Build) void {
     );
     foundation_primitive_test_step.dependOn(&run_foundation_primitive_tests.step);
 
+    const scene_core_authored_tests = b.addTest(.{
+        .name = "scene-core-authored-tests",
+        .root_module = scene_core_authored_test_module,
+    });
+    const run_scene_core_authored_tests = b.addRunArtifact(scene_core_authored_tests);
+    const scene_core_authored_test_step = b.step(
+        "test-scene-core-authored",
+        "Run F2B authored prefab, level, world, serialization, migration, and validation tests",
+    );
+    scene_core_authored_test_step.dependOn(&run_scene_core_authored_tests.step);
+
     const canonical_human_geometry_scaffold_tests = b.addTest(.{
         .name = "canonical-human-geometry-scaffold-tests",
         .root_module = canonical_human_geometry_scaffold_test_module,
@@ -2206,6 +2230,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_canonical_human_base_tests.step);
     test_step.dependOn(&run_canonical_geometry_tests.step);
     test_step.dependOn(&run_foundation_primitive_tests.step);
+    test_step.dependOn(&run_scene_core_authored_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_scaffold_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_refinement_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_adoption_tests.step);
