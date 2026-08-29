@@ -20,7 +20,7 @@ pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
 
 | Tier | Primary command | Purpose | Required use |
 | --- | --- | --- | --- |
-| Fast development | `zig build test -j1` | Pure/deterministic CPU behavior, cheap format-independent asset checks, visual registration, all 50 M01 canonical-model declarations, and all 53 M02 canonical-human declarations | During normal implementation and before handing a local change to another engineer |
+| Fast development | `zig build test -j1` | Pure/deterministic CPU behavior, the 27 F2A shared-foundation declarations, cheap format-independent asset checks, visual registration, all 50 M01 canonical-model declarations, and all 53 M02 canonical-human declarations | During normal implementation and before handing a local change to another engineer |
 | Fast repository gate | `zig build check -j1` | Fast development tier plus formatting and every static repository, art, golden, and policy audit | Before every review request; this remains the required non-GPU static gate |
 | Full regression | `zig build test-full -j1` | Fast tier plus the bounded production-route integration, foundation, wardrobe, visual-geometry, environment, and visual-foundation suites | Before milestone acceptance, after cross-system changes, and when a focused suite affects an adjacent subsystem |
 | Stress/exhaustive | `zig build test-stress -j1` | The unchanged 1,000-handshake lifecycle audit and 100,000-integrated-tick stability/resource audit | Before milestone acceptance and after interaction, IK, foot-planting, reset, allocation, or long-duration simulation changes |
@@ -58,6 +58,41 @@ It reads the authoritative authoring JSON and may regenerate only the reviewed
 derived canonical JSON and structural report. Ordinary `test`, `check`,
 `test-full`, `test-stress`, and `verify` routes never invoke it to repair a
 golden mismatch.
+
+### F2A shared-foundation primitive route
+
+The accepted F1 contract has one renderer-independent, CPU-only F2A route:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-foundation-primitives -j1
+```
+
+Its 27 declarations cover strong RFC 9562 UUID identity kinds, explicit
+UUIDv5/v7 inputs and fixed identity vectors, semantic-version kinds, exact
+asset references and fixed direct/transitive dependency hashes, the
+non-persistent `EntityHandle` value, 3D TRS/affine composition, canonical
+negative-X reflection and decomposition tolerances, canonical JSON/hash
+primitives and a fixed domain-hash vector, protected canonical-model and
+canonical-geometry byte/hash conformance, fixed seed/key derivation vectors,
+normalized rational scene time including negative time, and stable
+diagnostic ordering. Test-only imports compare the new façade with the
+protected H canonical pipelines and the current 2D transform route; production
+foundation code does not import or replace those systems.
+
+The focused route is a dependency of `test`, so it is also exercised by
+`check` and `test-full`. F2A acceptance uses this bounded order:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build test-foundation-primitives -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build test -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build check -j1 --summary all
+& '.\.deps\zig-0.16.0\zig.exe' build test-full -j1 --summary all
+```
+
+This route does not test slot reuse, generation increment, stale-handle
+registries, scene compilation, world/level/prefab schemas, extension framing,
+or runtime publication. Those remain F2C or F2B responsibilities under the
+F1 Revision 2 gate table.
 
 ### M03 Prompt 2A canonical-geometry route
 

@@ -170,6 +170,16 @@ pub fn build(b: *std.Build) void {
     const gpu_smoke_step = b.step("gpu-smoke", "Require and verify D3D12/DXIL rendering with GPU readback");
     gpu_smoke_step.dependOn(&gpu_smoke_command.step);
 
+    const foundation_module = b.createModule(.{
+        .root_source_file = b.path("src/foundation/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const current_transform2d_conformance_module = b.createModule(.{
+        .root_source_file = b.path("src/math/transform2d.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const canonical_model_module = b.createModule(.{
         .root_source_file = b.path("src/canonical_model/root.zig"),
         .target = target,
@@ -391,6 +401,15 @@ pub fn build(b: *std.Build) void {
     });
     canonical_geometry_test_module.addImport("canonical_model", canonical_model_module);
     canonical_geometry_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    const foundation_primitive_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/foundation/test_foundation_primitives.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    foundation_primitive_test_module.addImport("foundation", foundation_module);
+    foundation_primitive_test_module.addImport("canonical_model", canonical_model_module);
+    foundation_primitive_test_module.addImport("canonical_geometry", canonical_geometry_module);
+    foundation_primitive_test_module.addImport("current_transform2d", current_transform2d_conformance_module);
     const canonical_human_geometry_scaffold_test_module = b.createModule(.{
         .root_source_file = b.path("tests/canonical_human_geometry_scaffold_tests.zig"),
         .target = target,
@@ -2048,6 +2067,17 @@ pub fn build(b: *std.Build) void {
     );
     canonical_geometry_test_step.dependOn(&run_canonical_geometry_tests.step);
 
+    const foundation_primitive_tests = b.addTest(.{
+        .name = "foundation-primitive-tests",
+        .root_module = foundation_primitive_test_module,
+    });
+    const run_foundation_primitive_tests = b.addRunArtifact(foundation_primitive_tests);
+    const foundation_primitive_test_step = b.step(
+        "test-foundation-primitives",
+        "Run F2A identity, reference, spatial, canonical-data, and determinism tests",
+    );
+    foundation_primitive_test_step.dependOn(&run_foundation_primitive_tests.step);
+
     const canonical_human_geometry_scaffold_tests = b.addTest(.{
         .name = "canonical-human-geometry-scaffold-tests",
         .root_module = canonical_human_geometry_scaffold_test_module,
@@ -2175,6 +2205,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_canonical_human_structural_tests.step);
     test_step.dependOn(&run_canonical_human_base_tests.step);
     test_step.dependOn(&run_canonical_geometry_tests.step);
+    test_step.dependOn(&run_foundation_primitive_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_scaffold_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_refinement_tests.step);
     test_step.dependOn(&run_canonical_human_geometry_adoption_tests.step);

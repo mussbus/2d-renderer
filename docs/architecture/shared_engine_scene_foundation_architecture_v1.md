@@ -599,13 +599,23 @@ a new domain version and cannot reinterpret an existing hash.
 The accepted scene transform is renderer-independent 3D and matches the
 accepted canonical-model contract:
 
-- right-handed; `+X` right, `+Y` up, `+Z` toward the camera;
+- right-handed; `+X` right, `+Y` up, `+Z` forward (`+X × +Y = +Z`; the
+  canonical human reference view historically describes this same axis as
+  toward the camera);
 - metres, `f32`, radians;
 - local parent-relative translation, quaternion `[x,y,z,w]`, and XYZ scale;
 - local point order is scale, rotate, translate;
 - `world_affine = parent_world_affine * local_affine`;
 - global affine is derived and may contain shear; decomposed global TRS is not
   canonical authority.
+
+Vectors are columns. Local application is `T * R * S * point`, and hierarchy
+composition means `world_point = parent(local(point))`; multiplication is not
+interpreted in reverse. `AffineTransform.x_axis`, `y_axis`, and `z_axis` are
+the three linear-matrix basis columns, with translation as the affine fourth
+column. Quaternion storage is `[x,y,z,w]`. Canonicalization chooses positive
+`w`; when `w == 0`, it chooses the sign whose first nonzero `x`, then `y`, then
+`z` component is positive, and normalizes signed zero.
 
 Quaternion finite/unit/hemisphere and `-0.0` normalization rules match
 `canonical_model.math3d`. Scene scale must be finite and nonzero on every axis;
@@ -628,8 +638,8 @@ tested fixtures:
 | Quaternion unit validation | `abs(length_squared - 1) <= 1e-5` before canonical normalization |
 | Minimum scale for inversion/decomposition | `abs(scale_axis) >= 1e-6`; authored nonzero values below this may exist but `keep_world` must fail |
 | Normalized-basis orthogonality/shear test | absolute dot product `<= 1e-5` |
-| Affine recompose comparison | per element `abs_error <= 1e-5 + 1e-5 * max(abs(expected), 1)` |
-| Inverse singularity test | `abs(det) > 1e-8 * max(max_abs_linear^3, 1)` |
+| Affine recompose comparison | per element `abs(a - b) <= 1e-5 + 1e-5 * max(abs(a), abs(b))` |
+| Inverse singularity test | `abs(det) > 1e-8 * (length(x_axis) * length(y_axis) * length(z_axis))` |
 
 All values must first be finite. Equality/hashing of canonical values is not
 defined by these tolerances; tolerances govern validation and representability
@@ -643,7 +653,11 @@ only when extracted signed scales and an orthonormal quaternion recompose every
 matrix element within the published tolerance. Shear beyond the orthogonality
 or recompose limits returns `not_representable`; negative determinant uses one
 documented canonical signed-scale assignment compatible with the current
-negative-X 2D reflection. It never returns a closest or approximate TRS.
+negative-X 2D reflection. The decomposed representation preserves the affine
+transformation but does not promise to restore the exact authored signs of all
+three scale components; a reflected transform always receives the canonical
+negative X scale plus an adjusted rotation. It never returns a closest or
+approximate TRS.
 
 ### E.2 Serialized hierarchy
 
@@ -810,8 +824,12 @@ For identical canonical definitions and registered descriptors, F guarantees:
   generation or all roll back.
 
 `SceneTime` is represented as an integer simulation tick plus an optional
-rational sub-tick numerator/denominator for sampling; canonical evaluation does
-not use wall-clock time. The current 240 Hz simulation remains P-owned. A
+rational sub-tick numerator/denominator for sampling. Its exact value is
+`tick + numerator / denominator`; the fraction is reduced, nonnegative, and
+less than one, so `tick = -1` plus `1/2` represents `-0.5` ticks. Whole ticks
+use no sub-tick rather than an arbitrary `0/N`. `SceneTime` defines no seconds-
+per-tick rate, and canonical evaluation does not use wall-clock time. The
+current 240 Hz simulation remains P-owned. A
 cinematic may declare another rational evaluation rate, but must convert
 explicitly and record it.
 
