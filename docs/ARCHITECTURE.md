@@ -4,14 +4,24 @@ The accepted F1 cross-track engine/scene foundation contract is recorded in
 [`architecture/shared_engine_scene_foundation_architecture_v1.md`](architecture/shared_engine_scene_foundation_architecture_v1.md).
 The architecture record is owner-approved at Revision 2. F2A is recorded in
 [`implementation/f2a_shared_foundation_primitives.md`](implementation/f2a_shared_foundation_primitives.md),
-and the final local F2B owner-review candidate is recorded in
+the owner-approved F2B implementation is recorded in
 [`implementation/f2b_authored_scene_definitions.md`](implementation/f2b_authored_scene_definitions.md).
-The final local F2C owner-review candidate is recorded in
+The owner-approved F2C implementation and authority-encapsulation amendment are
+recorded in
 [`implementation/f2c_runtime_scene_assembly.md`](implementation/f2c_runtime_scene_assembly.md).
-None of these foundation milestones changes a production runtime route. Every
-downstream track and production migration still requires dedicated
-authorization; the runtime authorities documented below remain unchanged until
-a separately approved migration.
+The independent F3 finding and subsequent accepted disposition are recorded in
+[`implementation/f3_shared_foundation_acceptance_audit.md`](implementation/f3_shared_foundation_acceptance_audit.md).
+F1 through F3 are accepted. The owner-approved, read-only F4A repository audit
+and its decisions are recorded in
+[`implementation/f4a_production_architecture_audit.md`](implementation/f4a_production_architecture_audit.md).
+
+F4 is the current production-architecture hardening track; F4 itself is not
+accepted, and F4B has not begun. None of these administrative status updates
+changes a production runtime route. Every downstream track and production
+migration still requires dedicated authorization. Accepted F identity,
+canonical-data, scene-core ownership, mutation authority, snapshot,
+publication, hierarchy and lifecycle contracts remain closed unless a future
+owner-approved amendment explicitly reopens them.
 
 ## Scope and invariants
 

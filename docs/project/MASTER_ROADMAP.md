@@ -1,5 +1,34 @@
 # Master Roadmap
 
+## Current production-architecture hardening track
+
+The Foundation milestones F1, F2A, F2B, F2C and F3 are owner-approved. The
+F2C authority-encapsulation amendment at
+`685383a9012f10769c89b363d2eeff820410e0ae` is accepted.
+
+F4A, the read-only whole-repository production-architecture audit, is
+owner-approved. F4 is not yet accepted, F4B has not begun, and the major
+post-F4 parallel feature fan-out remains blocked. The accepted sequence is:
+
+```text
+F4A (owner-approved)
+  -> F4-ADMIN (current state-recording step)
+  -> F4B1 safe hygiene and retention groundwork
+  -> F4B2 superseded demo/test retirement with replacement coverage
+  -> F4C production architecture migration
+  -> F4D independent-engine and decoupling proof
+  -> F4E repository canonicalization and provenance cleanup
+  -> final F4 acceptance
+  -> post-F4 parallel development
+```
+
+F4B1 is the next implementation phase, but it requires a dedicated request.
+See the
+[owner-approved F4A record](../implementation/f4a_production_architecture_audit.md).
+
+The renderer/character phases below remain useful implementation history and
+capability inventory. They do not supersede the current F4 gate.
+
 ## Product target
 
 The present project target is:
@@ -123,7 +152,8 @@ collision, theme, or atlas-identity models.
 
 ## Milestone gate
 
-Prompts 0–27C are implemented. Prompt 27D and later milestones have not
-started. Current non-blocking limitations, the pending Prompt 27A/27B/27C
-owner review, and future schema triggers are recorded in
-[KNOWN_GAPS.md](KNOWN_GAPS.md).
+Prompts 0–27C remain the historical implementation sequence. The current
+architecture gate is F4: F4A is owner-approved, F4B has not begun, and no
+post-F4 feature track is authorized before final F4 acceptance. Current
+non-blocking visual limitations, pending Prompt 27A/27B/27C owner review, and
+future schema triggers remain recorded in [KNOWN_GAPS.md](KNOWN_GAPS.md).

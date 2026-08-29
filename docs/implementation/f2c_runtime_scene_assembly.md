@@ -1,7 +1,8 @@
 # F2C — Runtime Scene Assembly, Registry, Lifecycle, and Snapshots
 
-**Status:** F2C owner-approved; authority-encapsulation amendment candidate
-pending owner acceptance and independent F3 rerun
+**Status:** F2C owner-approved; authority-encapsulation amendment at
+`685383a9012f10769c89b363d2eeff820410e0ae` owner-approved; subsequent F3
+follow-up owner-approved
 
 **Revision date:** 2026-08-29
 
@@ -9,9 +10,25 @@ pending owner acceptance and independent F3 rerun
 
 **Authority-amendment base:** `29b01df8c2e39e0447b5270faa23708afcd6b99d`
 
+**Accepted authority-amendment commit:**
+`685383a9012f10769c89b363d2eeff820410e0ae`
+
 **Authority:** `../architecture/shared_engine_scene_foundation_architecture_v1.md` Revision 2
 
 **Gate:** Runtime portions of L7 and L9, L14–L15, plus the accepted F2B schemas
+
+## Current owner disposition
+
+The authority-encapsulation amendment described below is accepted. The
+independent F3 follow-up was subsequently reviewed and owner-approved, and the
+Foundation is accepted as the substrate for F4 production-architecture
+hardening. The earlier candidate wording and the original F3 finding remain
+historical evidence; they are not the current F2C or Foundation disposition.
+
+F4 does not reopen F identity, canonical-data, scene-core ownership, runtime
+mutation authority, snapshots, publication, hierarchy, lifecycle, or another
+accepted F contract unless a future owner-approved amendment explicitly does
+so.
 
 ## Outcome and boundary
 
@@ -388,6 +405,7 @@ The authority-encapsulation amendment was validated on 2026-08-29 with:
 - targeted root-export, production/test import, authored-runtime
   serialization, and protected-path scans: zero findings.
 
-These results make F3-MAJ-001 ready for independent re-audit. They do not
-approve the Foundation freeze; F3 must be rerun from the separately accepted
-and committed amendment base.
+At amendment completion, these results made F3-MAJ-001 ready for independent
+re-audit but did not themselves approve the Foundation freeze. The required
+follow-up was subsequently reviewed and owner-approved, as recorded in the
+current disposition at the top of this document.

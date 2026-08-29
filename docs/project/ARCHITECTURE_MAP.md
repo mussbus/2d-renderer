@@ -1,5 +1,12 @@
 # Architecture Map
 
+> **Current authority note (2026-08-29):** F1, F2A, F2B, F2C and F3 are
+> owner-approved. F4A is owner-approved, and F4 production-architecture
+> hardening is the current track. The composition map below describes the
+> existing demo-driven runtime audited by F4A; it is not the accepted post-F4
+> target architecture. F4B has not begun. See the
+> [F4A audit record](../implementation/f4a_production_architecture_audit.md).
+
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
 modules and their authority boundaries through Prompt 27.

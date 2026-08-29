@@ -1,13 +1,35 @@
 # F3 Shared Foundation Independent Acceptance Audit
 
-Status: Rejected at the public-contract and mutation-authority gate; candidate
-fix implemented, independent F3 rerun required
+Status: Historical initial audit rejected at F3-MAJ-001; authority amendment
+and independent follow-up subsequently owner-approved; Foundation accepted
 
-Revision: 1
+Revision: 2
 
 Date: 2026-08-29
 
 Audited base: `29b01df8c2e39e0447b5270faa23708afcd6b99d`
+
+Accepted amendment commit:
+`685383a9012f10769c89b363d2eeff820410e0ae`
+
+## Current owner disposition
+
+This document preserves the initial F3 audit and its valid historical finding,
+F3-MAJ-001. It is no longer the current Foundation disposition.
+
+After this audit stopped, the F2C authority-encapsulation amendment was
+implemented at commit
+`685383a9012f10769c89b363d2eeff820410e0ae`. An independent follow-up was
+subsequently reviewed and owner-approved. The resulting current state is:
+
+- F2C, including its authority-encapsulation amendment: **OWNER-APPROVED**;
+- F3: **OWNER-APPROVED**;
+- Foundation: **ACCEPTED** as the substrate for F4 production-architecture
+  hardening.
+
+The original rejection below remains evidence that the pre-amendment public
+surface violated the accepted authority contract. It must not be read as a
+current rejection of the amended Foundation.
 
 ## 1. Scope and stop condition
 
@@ -155,7 +177,7 @@ protected H-facing API or behavior. No such change is made by this audit.
 | Aggregate `test`/`check`/`test-full` gates | NOT RUN | Mandatory stop reached |
 | Parallel-development freeze | **REJECT** | One unresolved freeze-blocking MAJOR |
 
-## 7. Recommendation
+## 7. Historical recommendation
 
 **REJECT FOUNDATION FREEZE.** Do not authorize parallel W/R/P/E/U/C/A/H
 implementation against the current public F2C surface. Owner review and a
@@ -165,3 +187,10 @@ base.
 
 No F2, F3 repair, downstream implementation, commit, or push was performed by
 this audit.
+
+## 8. Subsequent disposition
+
+The historical recommendation was followed: the authority surface was
+amended, independently followed up, and accepted by the owner. No statement in
+Sections 1–7 overrides that later disposition. F4 may rely on the accepted F
+contracts but may not reopen them without a separate owner-approved amendment.

@@ -1,7 +1,37 @@
 # Current State
 
-Snapshot basis: height-relative camera worktree based on HEAD
-`bbc4f0ffd9328940ceeb269e2bc294bb4914beed`, inspected on 2026-07-31.
+Current architecture-status basis: clean `master` at
+`685383a9012f10769c89b363d2eeff820410e0ae`, recorded on 2026-08-29 after
+owner approval of F3 and F4A.
+
+The detailed production-system inventory below retains the visual/runtime
+status accumulated through the earlier Prompt-era roadmap. This administrative
+update changes Foundation and F4 authority status only; it does not grant new
+visual acceptance or revise historical evidence claims.
+
+## Foundation and current architecture track
+
+| Milestone | Current status |
+|---|---|
+| F1 | **ACCEPTED** |
+| F2A | **ACCEPTED** |
+| F2B | **ACCEPTED** |
+| F2C | **ACCEPTED**, including the authority-encapsulation amendment at `685383a9012f10769c89b363d2eeff820410e0ae` |
+| F3 | **ACCEPTED** after independent follow-up and owner review |
+| F4A | **OWNER-APPROVED** whole-repository production-architecture audit |
+| F4 overall | In progress; **not accepted** |
+
+Current track: **F4 — Production Architecture Hardening**.
+
+Current immediate step: **F4-ADMIN — record current approval/state truth**.
+
+Next implementation: **F4B1 — Safe Hygiene & Retention Groundwork**. Its
+approved low-risk candidate scope is recorded, but implementation has not
+begun and requires a dedicated request.
+
+Major post-F4 parallel feature fan-out remains blocked until final F4
+acceptance. See the
+[owner-approved F4A record](../implementation/f4a_production_architecture_audit.md).
 
 Status vocabulary:
 

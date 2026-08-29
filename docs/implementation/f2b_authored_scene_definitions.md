@@ -1,6 +1,6 @@
 # F2B — Authored Scene and World Definitions
 
-**Status:** Final local owner-review state; awaiting owner acceptance
+**Status:** OWNER-APPROVED
 
 **Revision date:** 2026-08-29
 

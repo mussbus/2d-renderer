@@ -1,6 +1,6 @@
 # F2A — Shared Foundation Primitives and Canonical-Data Substrate
 
-**Status:** Hardened locally; awaiting final owner verification
+**Status:** OWNER-APPROVED
 
 **Revision date:** 2026-08-28
 

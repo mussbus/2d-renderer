@@ -9,6 +9,15 @@ Project navigation:
 - [architecture decisions](docs/decisions/README.md);
 - [implementation-report archive](docs/reports/README.md).
 
+Current architecture status: F1 through F3 are owner-approved, including the
+F2C authority-encapsulation amendment at
+`685383a9012f10769c89b363d2eeff820410e0ae`. The read-only F4A
+whole-repository architecture audit is owner-approved. F4 production-
+architecture hardening is in progress; F4B has not begun, and post-F4 feature
+tracks remain blocked pending final F4 acceptance. See the
+[current state](docs/project/CURRENT_STATE.md) and
+[F4A record](docs/implementation/f4a_production_architecture_audit.md).
+
 Bootstrap the exact dependencies once from PowerShell, then normal build operations are offline:
 
 ```powershell
