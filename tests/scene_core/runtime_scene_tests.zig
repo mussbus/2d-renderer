@@ -75,8 +75,8 @@ fn expectTranslation(expected: foundation.spatial.Vec3, actual: foundation.spati
 }
 
 fn expectWorldTransformEquivalent(
-    expected: scene_core.runtime_entity.WorldTransform,
-    actual: scene_core.runtime_entity.WorldTransform,
+    expected: scene_core.runtime_scene.WorldTransform,
+    actual: scene_core.runtime_scene.WorldTransform,
 ) !void {
     try std.testing.expectEqual(expected.origin, actual.origin);
     try std.testing.expect(foundation.spatial.approximatelyEqual(expected.affine, actual.affine));
@@ -942,7 +942,7 @@ test "runtime owns authored slices and neutral mock consumers share one publishe
     const render_handle = shared.handle;
     const render_world = shared.world_transform;
     try std.testing.expectEqual(scene_core.metadata.VisibilityIntent.visible, shared.visibility);
-    try std.testing.expectEqual(scene_core.runtime_entity.AssetRole.presentation, shared.assetAt(0).?.role);
+    try std.testing.expectEqual(scene_core.runtime_scene.AssetRole.presentation, shared.assetAt(0).?.role);
     try std.testing.expectEqual(@as(u32, 2), shared.assetAt(0).?.token.value);
 
     // Mock P consumes the same handle/world plus only its namespaced envelope.
@@ -1069,10 +1069,10 @@ test "runtime failures map to stable machine-readable F diagnostics" {
 }
 
 const GrowthProbe = struct {
-    events: [16]scene_core.registry.GrowthEvent = undefined,
+    events: [16]scene_core.runtime_scene.GrowthEvent = undefined,
     count: usize = 0,
 
-    fn emit(context: ?*anyopaque, event: scene_core.registry.GrowthEvent) void {
+    fn emit(context: ?*anyopaque, event: scene_core.runtime_scene.GrowthEvent) void {
         const self: *GrowthProbe = @ptrCast(@alignCast(context.?));
         if (self.count < self.events.len) {
             self.events[self.count] = event;

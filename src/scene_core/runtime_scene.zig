@@ -16,6 +16,19 @@ const zero_origin = level.WorldCoordinateOrigin{ .x_mm = 0, .y_mm = 0, .z_mm = 0
 pub const ParentMode = enum { keep_local, keep_world };
 pub const RemovalPolicy = enum { reject_if_children, cascade, orphan_keep_world };
 
+// Stable runtime contract types are re-exported here so consumers do not need
+// access to the mutable registry/entity implementation modules.
+pub const MutationAuthority = runtime_entity.MutationAuthority;
+pub const TransientOwner = runtime_entity.TransientOwner;
+pub const Lifetime = runtime_entity.Lifetime;
+pub const AssetRole = runtime_entity.AssetRole;
+pub const WorldTransform = runtime_entity.WorldTransform;
+pub const RegistryConfig = registry_module.Config;
+pub const GrowthCategory = registry_module.GrowthCategory;
+pub const GrowthCause = registry_module.GrowthCause;
+pub const GrowthEvent = registry_module.GrowthEvent;
+pub const GrowthSink = registry_module.GrowthSink;
+
 pub const RuntimeErrorCode = enum {
     invalid_handle,
     stale_handle,
@@ -259,24 +272,33 @@ const State = struct {
 };
 
 pub const Config = struct {
-    registry: registry_module.Config,
+    registry: RegistryConfig,
     initial_level_capacity: usize = 1,
     hard_level_capacity: usize = 16,
     max_snapshot_leases: usize = 4,
-    growth_sink: ?registry_module.GrowthSink = null,
+    growth_sink: ?GrowthSink = null,
 };
 
-pub const RuntimeScene = struct {
+const RuntimeSceneStorage = struct {
     allocator: std.mem.Allocator,
     state: State,
     publication_generation: u64 = 0,
     snapshot_leases: usize = 0,
     max_snapshot_leases: usize,
-    growth_sink: ?registry_module.GrowthSink,
+    growth_sink: ?GrowthSink,
+};
+
+pub const RuntimeScene = struct {
+    /// Opaque implementation context. The const pointee prevents supported
+    /// consumers from obtaining writable runtime storage; all authoritative
+    /// mutation remains operation-specific below.
+    opaque_context: *const anyopaque,
 
     pub fn init(allocator: std.mem.Allocator, config: Config) !RuntimeScene {
         if (config.max_snapshot_leases == 0) return error.InvalidSnapshotCapacity;
-        return .{
+        const storage = try allocator.create(RuntimeSceneStorage);
+        errdefer allocator.destroy(storage);
+        storage.* = .{
             .allocator = allocator,
             .state = try State.init(
                 allocator,
@@ -287,24 +309,29 @@ pub const RuntimeScene = struct {
             .max_snapshot_leases = config.max_snapshot_leases,
             .growth_sink = config.growth_sink,
         };
+        return .{ .opaque_context = storage };
     }
 
     pub fn deinit(self: *RuntimeScene) error{OutstandingSnapshotLeases}!void {
-        if (self.snapshot_leases != 0) return error.OutstandingSnapshotLeases;
-        self.state.deinit();
+        const storage = runtimeSceneStorage(self);
+        if (storage.snapshot_leases != 0) return error.OutstandingSnapshotLeases;
+        const allocator = storage.allocator;
+        storage.state.deinit();
+        allocator.destroy(storage);
         self.* = undefined;
     }
 
     pub fn activateLevel(self: *RuntimeScene, context: MutationContext, activation: LevelActivation) !void {
+        const storage = runtimeSceneStorage(self);
         if (context.authority != .world) return error.UnauthorizedMutation;
         try verifySource(activation.source, activation.definition.header, asset.level_kind);
-        if (self.state.findLevel(activation.source.revision.asset_id) != null) return error.LevelAlreadyActive;
-        var candidate = try self.state.clone();
+        if (storage.state.findLevel(activation.source.revision.asset_id) != null) return error.LevelAlreadyActive;
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         try candidate.reserveLevel(.level_activation);
         const source_token = try activation.resolver.resolve(activation.source);
         candidate.levels[candidate.level_count] = .{
-            .source = try ActiveAsset.init(self.allocator, activation.source, source_token),
+            .source = try ActiveAsset.init(storage.allocator, activation.source, source_token),
             .origin = activation.definition.origin,
         };
         candidate.level_count += 1;
@@ -321,17 +348,18 @@ pub const RuntimeScene = struct {
     }
 
     pub fn activateWorld(self: *RuntimeScene, context: MutationContext, activation: WorldActivation) !void {
+        const storage = runtimeSceneStorage(self);
         if (context.authority != .world) return error.UnauthorizedMutation;
         try verifySource(activation.source, activation.definition.header, asset.world_kind);
-        if (self.state.active_world != null) return error.WorldAlreadyActive;
-        var candidate = try self.state.clone();
+        if (storage.state.active_world != null) return error.WorldAlreadyActive;
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         const source_token = try activation.resolver.resolve(activation.source);
         for (activation.definition.level_refs) |level_reference| {
             if (!level_reference.expected_kind.eql(asset.level_kind)) return error.SourceRevisionMismatch;
             _ = try activation.resolver.resolve(level_reference);
         }
-        candidate.active_world = try ActiveAsset.init(self.allocator, activation.source, source_token);
+        candidate.active_world = try ActiveAsset.init(storage.allocator, activation.source, source_token);
         try assembleEntities(
             &candidate,
             activation.definition.persistent_entities,
@@ -349,9 +377,10 @@ pub const RuntimeScene = struct {
         context: MutationContext,
         level_id: foundation.identity.AssetId,
     ) !void {
+        const storage = runtimeSceneStorage(self);
         if (context.authority != .world) return error.UnauthorizedMutation;
-        const active_index = self.state.findLevel(level_id) orelse return error.LevelNotActive;
-        var candidate = try self.state.clone();
+        const active_index = storage.state.findLevel(level_id) orelse return error.LevelNotActive;
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
 
         var active_index_scan: usize = 0;
@@ -382,7 +411,7 @@ pub const RuntimeScene = struct {
             index += 1;
         }
 
-        candidate.levels[active_index].deinit(self.allocator);
+        candidate.levels[active_index].deinit(storage.allocator);
         if (active_index + 1 < candidate.level_count) {
             std.mem.copyForwards(
                 ActiveLevel,
@@ -400,13 +429,14 @@ pub const RuntimeScene = struct {
         context: MutationContext,
         definition: TransientDefinition,
     ) !foundation.identity.EntityHandle {
+        const storage = runtimeSceneStorage(self);
         try authorizeTransientOwner(context.authority, definition.owner);
-        if (ownerLevel(definition)) |id| if (self.state.findLevel(id) == null) return error.LevelNotActive;
-        var candidate = try self.state.clone();
+        if (ownerLevel(definition)) |id| if (storage.state.findLevel(id) == null) return error.LevelNotActive;
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         const lifetime = runtime_entity.Lifetime{ .transient = definition.owner };
         var record = try runtime_entity.RuntimeEntity.initOwned(
-            self.allocator,
+            storage.allocator,
             .{
                 .persistent_id = null,
                 .lifetime = lifetime,
@@ -421,7 +451,7 @@ pub const RuntimeScene = struct {
             try candidate.rootOrigin(lifetime),
         );
         var caller_owns_record = true;
-        errdefer if (caller_owns_record) record.deinit(self.allocator);
+        errdefer if (caller_owns_record) record.deinit(storage.allocator);
         const handle = try candidate.registry.insert(record, growthCauseForAuthority(context.authority), &candidate.growth);
         caller_owns_record = false;
         if (definition.parent) |parent| try assignParentInternal(&candidate, handle, parent);
@@ -436,8 +466,9 @@ pub const RuntimeScene = struct {
         handle: foundation.identity.EntityHandle,
         persistent_id: foundation.identity.EntityId,
     ) !void {
+        const storage = runtimeSceneStorage(self);
         if (context.authority != .physics_gameplay) return error.UnauthorizedMutation;
-        const current = try self.state.registry.get(handle);
+        const current = try storage.state.registry.get(handle);
         const level_host = switch (current.lifetime) {
             .transient => |owner| switch (owner) {
                 .physics_gameplay => |host| host,
@@ -446,7 +477,7 @@ pub const RuntimeScene = struct {
             else => return error.EntityAlreadyPersistent,
         };
         if (current.parent) |parent| {
-            if (!(try self.state.registry.get(parent)).lifetime.isPersistentWorld()) return error.PersistentBelowLevelOwned;
+            if (!(try storage.state.registry.get(parent)).lifetime.isPersistentWorld()) return error.PersistentBelowLevelOwned;
         } else if (level_host != null) {
             // An unparented Level-hosted transient is evaluated relative to its
             // exact Level origin. World persistence would reinterpret the same
@@ -455,7 +486,7 @@ pub const RuntimeScene = struct {
             return error.PromotionRequiresWorldRebase;
         }
         const world_before = current.world_transform;
-        var candidate = try self.state.clone();
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         try candidate.registry.assignPersistentId(handle, persistent_id, .runtime_create, &candidate.growth);
         (try candidate.registry.getMutable(handle)).lifetime = .world_persistent;
@@ -476,9 +507,10 @@ pub const RuntimeScene = struct {
         handle: foundation.identity.EntityHandle,
         local_transform: foundation.spatial.LocalTransform,
     ) !void {
+        const storage = runtimeSceneStorage(self);
         local_transform.validate() catch return error.InvalidRuntimeTransform;
-        try authorizeMutation(try self.state.registry.get(handle), context.authority);
-        var candidate = try self.state.clone();
+        try authorizeMutation(try storage.state.registry.get(handle), context.authority);
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         const record = try candidate.registry.getMutable(handle);
         record.local_transform = local_transform;
@@ -494,8 +526,9 @@ pub const RuntimeScene = struct {
         handle: foundation.identity.EntityHandle,
         enabled: metadata.EnabledIntent,
     ) !void {
-        try authorizeMutation(try self.state.registry.get(handle), context.authority);
-        var candidate = try self.state.clone();
+        const storage = runtimeSceneStorage(self);
+        try authorizeMutation(try storage.state.registry.get(handle), context.authority);
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         const record = try candidate.registry.getMutable(handle);
         record.authored_enabled = enabled;
@@ -511,9 +544,10 @@ pub const RuntimeScene = struct {
         new_parent: ?foundation.identity.EntityHandle,
         mode: ParentMode,
     ) !void {
-        try authorizeMutation(try self.state.registry.get(child), context.authority);
-        if (new_parent) |parent| _ = try self.state.registry.get(parent);
-        var candidate = try self.state.clone();
+        const storage = runtimeSceneStorage(self);
+        try authorizeMutation(try storage.state.registry.get(child), context.authority);
+        if (new_parent) |parent| _ = try storage.state.registry.get(parent);
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         try reparentInternal(&candidate, child, new_parent, mode);
         try evaluateAll(&candidate);
@@ -526,8 +560,9 @@ pub const RuntimeScene = struct {
         handle: foundation.identity.EntityHandle,
         policy: RemovalPolicy,
     ) !void {
-        try authorizeRemovalSubtree(&self.state, handle, context.authority, policy);
-        var candidate = try self.state.clone();
+        const storage = runtimeSceneStorage(self);
+        try authorizeRemovalSubtree(&storage.state, handle, context.authority, policy);
+        var candidate = try storage.state.clone();
         errdefer candidate.deinit();
         switch (policy) {
             .reject_if_children => {
@@ -542,22 +577,24 @@ pub const RuntimeScene = struct {
     }
 
     pub fn acquireSnapshot(self: *RuntimeScene, time: SceneTime) !SceneSnapshot {
+        const runtime_storage = runtimeSceneStorage(self);
         try time.validate();
-        if (self.snapshot_leases == self.max_snapshot_leases) return error.SnapshotCapacity;
-        const storage = try self.allocator.create(SnapshotStorage);
-        errdefer self.allocator.destroy(storage);
-        storage.* = .{ .state = try self.state.clone() };
-        self.snapshot_leases += 1;
+        if (runtime_storage.snapshot_leases == runtime_storage.max_snapshot_leases) return error.SnapshotCapacity;
+        const snapshot_storage = try runtime_storage.allocator.create(SnapshotStorage);
+        errdefer runtime_storage.allocator.destroy(snapshot_storage);
+        snapshot_storage.* = .{ .state = try runtime_storage.state.clone() };
+        runtime_storage.snapshot_leases += 1;
         return .{
             .owner_context = self,
-            .storage_context = storage,
-            .publication_generation = self.publication_generation,
+            .storage_context = snapshot_storage,
+            .publication_generation = runtime_storage.publication_generation,
             .time = time,
         };
     }
 
     fn publish(self: *RuntimeScene, candidate: *State, participants: []const PublicationParticipant) !void {
-        const next_generation = std.math.add(u64, self.publication_generation, 1) catch return error.GenerationExhausted;
+        const storage = runtimeSceneStorage(self);
+        const next_generation = std.math.add(u64, storage.publication_generation, 1) catch return error.GenerationExhausted;
         const candidate_view = SceneReadView.init(candidate, next_generation);
         var prepared: usize = 0;
         errdefer {
@@ -574,16 +611,20 @@ pub const RuntimeScene = struct {
             };
             prepared += 1;
         }
-        var previous = self.state;
-        self.state = candidate.*;
+        var previous = storage.state;
+        storage.state = candidate.*;
         candidate.* = undefined;
-        self.publication_generation = next_generation;
+        storage.publication_generation = next_generation;
         for (participants) |participant| participant.commit_fn(participant.context, next_generation);
         previous.deinit();
-        if (self.growth_sink) |sink| sink.emit(self.state.growth.values());
-        self.state.growth.count = 0;
+        if (storage.growth_sink) |sink| sink.emit(storage.state.growth.values());
+        storage.state.growth.count = 0;
     }
 };
+
+fn runtimeSceneStorage(self: *RuntimeScene) *RuntimeSceneStorage {
+    return @ptrCast(@alignCast(@constCast(self.opaque_context)));
+}
 
 fn ownerLevel(definition: TransientDefinition) ?foundation.identity.AssetId {
     return switch (definition.owner) {
@@ -601,8 +642,8 @@ const SnapshotStorage = struct {
 };
 
 pub const SceneSnapshot = struct {
-    owner_context: *anyopaque,
-    storage_context: *anyopaque,
+    owner_context: *const anyopaque,
+    storage_context: *const anyopaque,
     publication_generation: u64,
     time: SceneTime,
     released: bool = false,
@@ -614,11 +655,12 @@ pub const SceneSnapshot = struct {
 
     pub fn deinit(self: *SceneSnapshot) void {
         if (self.released) return;
-        const owner: *RuntimeScene = @ptrCast(@alignCast(self.owner_context));
-        const storage: *SnapshotStorage = @ptrCast(@alignCast(self.storage_context));
-        storage.state.deinit();
-        owner.allocator.destroy(storage);
-        owner.snapshot_leases -= 1;
+        const owner: *RuntimeScene = @ptrCast(@alignCast(@constCast(self.owner_context)));
+        const runtime_storage = runtimeSceneStorage(owner);
+        const snapshot_storage: *SnapshotStorage = @ptrCast(@alignCast(@constCast(self.storage_context)));
+        snapshot_storage.state.deinit();
+        runtime_storage.allocator.destroy(snapshot_storage);
+        runtime_storage.snapshot_leases -= 1;
         self.released = true;
     }
 };

@@ -1,10 +1,13 @@
 # F2C — Runtime Scene Assembly, Registry, Lifecycle, and Snapshots
 
-**Status:** Final local owner-review candidate; awaiting owner acceptance
+**Status:** F2C owner-approved; authority-encapsulation amendment candidate
+pending owner acceptance and independent F3 rerun
 
 **Revision date:** 2026-08-29
 
 **Baseline commit:** `ae6b76e82be11d2532f8cc668e4398946e47e4ba`
+
+**Authority-amendment base:** `29b01df8c2e39e0447b5270faa23708afcd6b99d`
 
 **Authority:** `../architecture/shared_engine_scene_foundation_architecture_v1.md` Revision 2
 
@@ -41,6 +44,51 @@ The existing authored modules are unchanged. The runtime root imports only
 the Zig standard library, F2A `foundation`, and F2B/F2C F-owned modules. The
 existing character-specific registry in `src/scene/character.zig` remains an
 H/current-route implementation and was neither imported nor modified.
+
+## Authority-encapsulation amendment
+
+F3-MAJ-001 found that the implementation contradicted the documented
+authority boundary. Before this amendment, the supported `scene_core` root
+re-exported both `registry.zig` and `runtime_entity.zig`; a consumer could
+therefore construct `EntityRegistry`, call `insert`, `destroy`, `getMutable`,
+or `assignPersistentId`, and directly edit `RuntimeEntity`. `RuntimeScene`
+also exposed its registry-bearing state, publication generation, snapshot
+lease counters, and growth sink as ordinary struct fields. `SceneSnapshot`
+carried mutable opaque context pointers. The registry tests demonstrated the
+root-level route by importing `scene_core.registry` as a normal consumer.
+
+The amendment narrows accessibility without changing runtime semantics:
+
+| Surface | Classification |
+| --- | --- |
+| `runtime_scene.RuntimeScene` | Public authority façade; implementation held behind a const opaque context |
+| `runtime_scene.SceneSnapshot` | Public deep-owned immutable read contract with const opaque contexts |
+| `runtime_scene.SceneReadView` / `EntityView` / subordinate views | Public read-only borrowed views |
+| `foundation.identity.EntityHandle` | Public runtime value; never serialized |
+| `runtime_scene.MutationContext` and operation-specific APIs | Public authority-checked mutation surface |
+| `runtime_asset.Resolver` / `ResolvedAssetToken` | Public neutral exact-resolution boundary |
+| `registry.EntityRegistry` | F2C internal implementation |
+| `runtime_entity.RuntimeEntity` | F2C internal mutable storage |
+| Registry slots, mappings, generations, and hierarchy adjacency | F2C internal implementation |
+| Candidate state, dirty/cache state, publication and lease bookkeeping | F2C internal implementation |
+
+Zig declarations used across sibling source files remain `pub` where the
+compiler requires cross-file visibility, but neither internal module is
+re-exported by `scene_core/root.zig`. A separate
+`src/scene_core/internal_test_root.zig` is wired only into the registry
+white-box test artifact. Production modules outside `src/scene_core/` may
+import the supported `scene_core` module but may not directly import
+`registry.zig`, `runtime_entity.zig`, or the named internal test module. The
+repository source-policy audit enforces that rule.
+
+`RuntimeScene` retains the existing activation, lifecycle, transform,
+hierarchy, promotion, publication, and snapshot operations. Public contract
+aliases for lifetime, authority, world-transform, asset-role, registry
+configuration, and growth diagnostics are provided by `runtime_scene`; no
+consumer needs the mutable storage module. Mock R/P/gameplay/C consumers use
+only the supported root, snapshots, and const views. Const opaque contexts do
+not grant supported writable access; internal methods alone cast them back to
+F-owned storage while applying the existing validation and publication path.
 
 ## Registry and handle lifecycle
 
@@ -307,7 +355,9 @@ The focused CPU-only gate is:
 & '.\.deps\zig-0.16.0\zig.exe' build test-scene-core-runtime -j1 --summary all --seed 0x6f084e2a
 ```
 
-Its 25 declarations cover allocation and persistent lookup, duplicate IDs,
+Its 27 declarations run as 22 public/runtime-scene tests plus 5 F-owned
+registry white-box tests. They cover public-surface encapsulation, allocation
+and persistent lookup, duplicate IDs,
 destroy/reuse/stale rejection, invalid handles, logical growth and handle
 preservation, terminal generation retirement policy, deterministic hierarchy,
 effective enabled/lifecycle ordering, exact large origins, dirty subtrees,
@@ -323,3 +373,21 @@ and common mock-consumer identity/transform/camera/extension observations.
 The target is a direct dependency of `test`, and therefore of `check` and
 `test-full`. It requires no SDL initialization, window, GPU, or downstream
 implementation.
+
+The authority-encapsulation amendment was validated on 2026-08-29 with:
+
+- runtime focused: 27/27, split into 22 public/runtime-scene tests and 5
+  internal registry white-box tests;
+- authored focused: 39/39;
+- foundation focused: 27/27;
+- aggregate `test`: 518/518;
+- static `check`: 53/53 build steps and 518/518 tests, including the new F2C
+  authority import/export policy;
+- `test-full`: 60/60 build steps and 629/629 tests;
+- explicit requested `zig fmt --check` and `git diff --check`: pass; and
+- targeted root-export, production/test import, authored-runtime
+  serialization, and protected-path scans: zero findings.
+
+These results make F3-MAJ-001 ready for independent re-audit. They do not
+approve the Foundation freeze; F3 must be rerun from the separately accepted
+and committed amendment base.

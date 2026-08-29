@@ -1,4 +1,4 @@
 test {
-    _ = @import("registry_tests.zig");
+    _ = @import("public_surface_tests.zig");
     _ = @import("runtime_scene_tests.zig");
 }

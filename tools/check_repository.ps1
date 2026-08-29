@@ -62,6 +62,42 @@ foreach ($match in $unreachableMatches) {
     $failed = $true
 }
 
+$sceneCoreRootPath = Join-Path $repositoryRoot 'src/scene_core/root.zig'
+$sceneCoreRootSource = Get-Content -Raw -LiteralPath $sceneCoreRootPath
+$runtimeSceneSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene_core/runtime_scene.zig')
+if ([regex]::IsMatch($sceneCoreRootSource, 'pub\s+const\s+(registry|runtime_entity)\s*=') -or
+    $runtimeSceneSource.Contains('pub const EntityRegistry') -or
+    $runtimeSceneSource.Contains('pub const RuntimeEntity')) {
+    Write-Error 'The supported scene_core surface may not export mutable registry or runtime-entity storage.' -ErrorAction Continue
+    $failed = $true
+}
+$productionOutsideSceneCore = @(
+    Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot 'src') -ErrorAction Stop |
+        Where-Object { -not $_.FullName.StartsWith((Join-Path $repositoryRoot 'src/scene_core') + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) }
+)
+$directSceneCoreInternalImport = '@import\s*\(\s*"[^"]*scene_core[/\\](registry|runtime_entity)\.zig"\s*\)'
+$namedSceneCoreInternalImport = '@import\s*\(\s*"scene_core_(internal|registry_internal|runtime_entity_internal)"\s*\)'
+foreach ($sourceFile in $productionOutsideSceneCore) {
+    $source = Get-Content -Raw -LiteralPath $sourceFile.FullName
+    if ([regex]::IsMatch($source, $directSceneCoreInternalImport) -or
+        [regex]::IsMatch($source, $namedSceneCoreInternalImport)) {
+        Write-Error "Production source directly imports an internal F2C module: $($sourceFile.FullName)." -ErrorAction Continue
+        $failed = $true
+    }
+}
+$publicSceneCoreTests = @(
+    Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot 'tests/scene_core') -ErrorAction Stop |
+        Where-Object { $_.Name -ne 'registry_tests.zig' }
+)
+foreach ($testFile in $publicSceneCoreTests) {
+    $source = Get-Content -Raw -LiteralPath $testFile.FullName
+    if ([regex]::IsMatch($source, $directSceneCoreInternalImport) -or
+        [regex]::IsMatch($source, $namedSceneCoreInternalImport)) {
+        Write-Error "A public/downstream scene_core contract test imports an F2C internal module: $($testFile.FullName)." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -2565,6 +2601,7 @@ if ($failed) {
 Write-Host "Repository source audit passed for $($sourceFiles.Count) files."
 Write-Host 'Forbidden SDL high-level renderer and alternate-renderer symbols are absent.'
 Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test markers were found in audited implementation files.')
+Write-Host 'F2C authority audit passed: mutable registry/entity storage is absent from the supported root and production code has no direct internal imports.'
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'

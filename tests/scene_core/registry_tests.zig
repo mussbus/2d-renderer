@@ -1,21 +1,21 @@
 const std = @import("std");
 const foundation = @import("foundation");
-const scene_core = @import("scene_core");
+const scene_core_internal = @import("scene_core_internal");
 
-const Registry = scene_core.registry.EntityRegistry;
+const Registry = scene_core_internal.registry.EntityRegistry;
 
-fn acceptAsset(_: ?*anyopaque, _: foundation.reference.AssetRef) anyerror!scene_core.runtime_asset.ResolvedAssetToken {
-    return scene_core.runtime_asset.ResolvedAssetToken.init(1);
+fn acceptAsset(_: ?*anyopaque, _: foundation.reference.AssetRef) anyerror!scene_core_internal.runtime_asset.ResolvedAssetToken {
+    return scene_core_internal.runtime_asset.ResolvedAssetToken.init(1);
 }
 
-const resolver = scene_core.runtime_asset.Resolver{ .context = null, .resolve_fn = acceptAsset };
+const resolver = scene_core_internal.runtime_asset.Resolver{ .context = null, .resolve_fn = acceptAsset };
 
 fn id(text: []const u8) !foundation.identity.EntityId {
     return foundation.identity.EntityId.parseCanonical(text);
 }
 
-fn record(entity_id: ?foundation.identity.EntityId) !scene_core.runtime_entity.RuntimeEntity {
-    return scene_core.runtime_entity.RuntimeEntity.initOwned(
+fn record(entity_id: ?foundation.identity.EntityId) !scene_core_internal.runtime_entity.RuntimeEntity {
+    return scene_core_internal.runtime_entity.RuntimeEntity.initOwned(
         std.testing.allocator,
         .{
             .persistent_id = entity_id,
@@ -43,7 +43,7 @@ fn initRegistry(initial: usize, hard: usize) !Registry {
 test "registry allocates resolves destroys reuses and rejects stale handles" {
     var registry = try initRegistry(1, 4);
     defer registry.deinit();
-    var growth = scene_core.registry.GrowthEvents{};
+    var growth = scene_core_internal.registry.GrowthEvents{};
     const first_id = try id("9b7e2c18-6f3a-5d41-8c20-1234567890ab");
     const second_id = try id("a47e2c18-6f3a-5d41-8c20-1234567890ab");
     const first = try registry.insert(try record(first_id), .runtime_create, &growth);
@@ -63,7 +63,7 @@ test "registry allocates resolves destroys reuses and rejects stale handles" {
 test "registry rejects invalid and duplicate persistent identities" {
     var registry = try initRegistry(1, 2);
     defer registry.deinit();
-    var growth = scene_core.registry.GrowthEvents{};
+    var growth = scene_core_internal.registry.GrowthEvents{};
     const persistent_id = try id("b57e2c18-6f3a-5d41-8c20-1234567890ab");
     _ = try registry.insert(try record(persistent_id), .runtime_create, &growth);
     var duplicate = try record(persistent_id);
@@ -75,13 +75,13 @@ test "registry rejects invalid and duplicate persistent identities" {
 test "registry logical growth preserves handles and reports bounded capacity" {
     var registry = try initRegistry(1, 3);
     defer registry.deinit();
-    var growth = scene_core.registry.GrowthEvents{};
+    var growth = scene_core_internal.registry.GrowthEvents{};
     const first = try registry.insert(try record(null), .runtime_create, &growth);
     const second = try registry.insert(try record(null), .runtime_create, &growth);
     try std.testing.expect((try registry.get(first)).handle.eql(first));
     try std.testing.expect((try registry.get(second)).handle.eql(second));
     try std.testing.expectEqual(@as(usize, 1), growth.values().len);
-    try std.testing.expectEqual(scene_core.registry.GrowthCategory.entity_slots, growth.values()[0].category);
+    try std.testing.expectEqual(scene_core_internal.registry.GrowthCategory.entity_slots, growth.values()[0].category);
     try std.testing.expectEqual(@as(usize, 2), registry.entityCapacity());
     _ = try registry.insert(try record(null), .runtime_create, &growth);
     var overflow = try record(null);
@@ -90,6 +90,6 @@ test "registry logical growth preserves handles and reports bounded capacity" {
 }
 
 test "generation exhaustion retires instead of wrapping" {
-    try std.testing.expectEqual(@as(?u32, 2), scene_core.registry.nextGenerationAfterDestroy(1));
-    try std.testing.expectEqual(@as(?u32, null), scene_core.registry.nextGenerationAfterDestroy(std.math.maxInt(u32)));
+    try std.testing.expectEqual(@as(?u32, 2), scene_core_internal.registry.nextGenerationAfterDestroy(1));
+    try std.testing.expectEqual(@as(?u32, null), scene_core_internal.registry.nextGenerationAfterDestroy(std.math.maxInt(u32)));
 }
