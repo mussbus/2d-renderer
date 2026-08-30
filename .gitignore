@@ -14,5 +14,10 @@ zig-out/
 # Local bootstrap test data
 .bootstrap-test*/
 
+# Disposable repository-local staging and Python bytecode
+.tmp/
+__pycache__/
+*.py[cod]
+
 # references
 reference

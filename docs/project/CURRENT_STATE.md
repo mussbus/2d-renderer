@@ -1,8 +1,8 @@
 # Current State
 
-Current architecture-status basis: clean `master` at
-`685383a9012f10769c89b363d2eeff820410e0ae`, recorded on 2026-08-29 after
-owner approval of F3 and F4A.
+Current F4B1 implementation basis: clean, synchronized `master` at
+`a05118e7ec69bf6b8485a536f83413d298febb5d`, recorded on 2026-08-29 after
+owner approval and publication of F4-ADMIN.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -19,15 +19,19 @@ visual acceptance or revise historical evidence claims.
 | F2C | **ACCEPTED**, including the authority-encapsulation amendment at `685383a9012f10769c89b363d2eeff820410e0ae` |
 | F3 | **ACCEPTED** after independent follow-up and owner review |
 | F4A | **OWNER-APPROVED** whole-repository production-architecture audit |
+| F4B1 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
+| F4B2 | **NOT BEGUN** |
+| F4C | **NOT BEGUN** |
 | F4 overall | In progress; **not accepted** |
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4-ADMIN — record current approval/state truth**.
+Current immediate step: **F4B1 owner review**.
 
-Next implementation: **F4B1 — Safe Hygiene & Retention Groundwork**. Its
-approved low-risk candidate scope is recorded, but implementation has not
-begun and requires a dedicated request.
+F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
+[repository retention policy](REPOSITORY_RETENTION.md). Its implementation
+record is [awaiting owner review](../implementation/f4b1_safe_hygiene_and_retention.md).
+F4B2 and F4C require separate authorization and have not begun.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the
