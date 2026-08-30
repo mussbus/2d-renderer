@@ -84,13 +84,13 @@ Walk emits anatomical left-foot contact at `0.00` seconds and anatomical right-f
 
 ## Demonstration and allocation contract
 
-Run:
+F4B2 retired the standalone animation route after its continuing invariants
+were mapped to `tests/animation_tests.zig`, which runs through
+`zig build test`.
 
-```powershell
-zig build run -- --frames 360 --demo animation
-```
-
-Frames 0-59 show idle. Frame 60 requests the 0.30-second idle-to-walk transition. Walk continues through frame 299, spanning multiple cycles. Frame 300 requests the 0.30-second walk-to-idle transition, which completes at frame 317; the remainder is idle.
+The retired route historically staged idle-to-walk and walk-to-idle timelines.
+Sampling boundaries, transitions, multiple loops, event traversal, fallback,
+replay, and allocation behavior are now asserted directly.
 
 The animation definition, animator buffers, pose, skeleton, sockets, and attachments are initialized from one fixed buffer. The loop records the allocator position around animator update, hierarchy evaluation, socket reads, and attachment submission. All remain unchanged after initialization. Clip sampling, blending, event traversal, state transitions, and animator update contain no allocator call. Animation state changes create no GPU resource and all 15 page-zero attachments remain one sprite range and one indexed-instanced draw.
 

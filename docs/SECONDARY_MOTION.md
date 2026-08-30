@@ -92,10 +92,11 @@ All state and evidence storage is embedded or fixed capacity. Walk update, landi
 
 The pure schedule test applies the identical per-tick trace under one-tick, four-tick, and mixed zero/one/multi-tick render groupings and compares all visual channels within `1e-5`. The physics-invariance test replays the same 600-frame input with procedural motion enabled and disabled; final position, velocity, grounding, support ID, and landing count must agree.
 
-The bounded GPU evidence command is:
+F4B2 retired the standalone secondary-motion route after its useful
+fixed-tick/controller integration invariants were mapped to
+`tests/secondary_motion_tests.zig`, which runs through `zig build test`.
 
-```powershell
-zig build run -- --frames 900 --demo secondary-motion --scripted-input
-```
-
-It demonstrates partial and full speed, alternating contacts, head lag, a reset-safe transition into the unchanged controller route, multiple physical landings, impact-scaled peaks, recovery, and final idle. It logs impact, impulse, per-landing peak, final residuals, allocation counters, draw metrics, and procedural GPU-resource creations, and fails if the evidence is incomplete.
+The retired route historically staged partial/full speed, alternating contacts,
+head lag, reset, physical landings, impact-scaled peaks, and recovery. Permanent
+tests now assert those responses, replay determinism, controller equivalence,
+and zero hot-path allocation directly.

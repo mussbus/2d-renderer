@@ -38,21 +38,11 @@ The bounded Prompt 14 camera and parallax route is:
 
 It holds the mapped left control until the character crosses the extended cave, then releases to demonstrate normal controller deceleration. The deterministic camera uses a `3.25 m` horizontal dead zone; cave background, midground, and gameplay layers respond at `0.125`, `0.45`, and `1.0` respectively. This route does not write controller position or bypass collision.
 
-The bounded Prompt 20 modular attachment-secondary route is timeline-driven and needs no physical input:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo attachment-secondary
-```
-
-It uses copied authoritative velocity/landing/facing samples to demonstrate cape, long-hair, ponytail, and loose-sleeve response plus cape unequip/re-equip. It never creates `CharacterIntent`, moves a controller root, or assigns spring nodes from the script.
-
-The Prompt 24 visual-inspection route is:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --interactive
-```
-
-`Q` cycles automatic, force side, and force front. `H` toggles bald/buzz hair for the controlled male. These are frame-level presentation commands: neither changes gameplay facing or constructs a gameplay intent. The scripted acceptance route uses exactly 360 frames and requires `--scripted-input` instead of `--interactive`.
+F4B2 retired the duplicate Prompt 20 attachment-secondary route and the
+standalone Prompt 24 character-presentation routes. Attachment behavior remains
+covered by permanent tests plus the retained `mesh-attachments` route.
+Presentation behavior remains covered by permanent tests plus the retained
+`foundation` and `anatomy-quality` inspection routes.
 
 The visible playground window is resizable. Its 640×480 reference composition
 uses 82 pixels per metre; every valid high-DPI drawable derives its scale as
@@ -80,29 +70,10 @@ zig build run -- --frames 600 --demo controller --scripted-input
 
 The scripted mode generates raw platform-neutral button and axis state, passes it through the same frame snapshot, pending-edge, `CharacterIntent`, controller, animation, sprite-batch, and SDL GPU path as interactive control, and exits nonzero if its required milestones do not complete.
 
-Run the Prompt 6 procedural-motion evidence route with:
-
-```powershell
-zig build run -- --frames 900 --demo secondary-motion --scripted-input
-```
-
-This separate script starts idle, walks at a rescaled `0.60` gamepad axis, changes to full reverse input, settles, and sends a real reset edge. It then delegates to the unchanged controller route. Every spring update occurs inside a resulting fixed simulation tick; the script never assigns controller or spring state directly.
-
-Run the deterministic Prompt 7 two-character occlusion route with:
-
-```powershell
-zig build run -- --frames 720 --demo multi-character
-```
-
-This route is timeline-driven rather than player-controlled. Nine fixed 80-frame phases demonstrate both actor orders, both hand-over-hand orders, forearm-over-torso interleaving, exact restoration, and independent character mirroring. It does not implement a handshake or character-to-character physics.
-
-Run the deterministic Prompt 8 paired-interaction route with:
-
-```powershell
-zig build run -- --frames 720 --demo handshake --scripted-input
-```
-
-This route generates two real `interact_pressed` edges through `SnapshotBuilder`, `PendingInput`, and `CharacterIntent`. The first starts with A left of B; after normal completion the demo stages the same stable entities in the mirrored idle arrangement and issues a new press. The coordinator never moves either root. Holding the button across several render frames produces only one request, and a release/new press is required for the mirrored run.
+F4B2 retired the Prompt 6 secondary-motion, Prompt 7 multi-character, and
+Prompt 8 non-IK handshake scenario shells. Their fixed-tick, isolation,
+ordering, transaction, ownership, cleanup, and allocation invariants now run
+through `zig build test`.
 
 Run the deterministic Prompt 9 IK route with:
 
@@ -112,13 +83,9 @@ zig build run -- --frames 720 --demo handshake-ik --scripted-input
 
 This route issues three real interaction requests. It demonstrates nominal contact, the mirrored arrangement, then a legal `3.74 m` perturbed spacing. Each run shows fixed-tick blend-in, full contact, blend-out, cleanup, and ordinary idle restoration. The target is the shared midpoint of both pre-IK hand sockets; demo code never assigns arm rotations directly.
 
-Run the deterministic Prompt 10 foot-placement route with:
-
-```powershell
-zig build run -- --frames 1200 --demo foot-planting --scripted-input
-```
-
-The feedback-driven script idles, walks with alternating contacts, jumps from a live foot lock, verifies no airborne locks, lands and replants from fresh samples, then uses ordinary controller movement to jump onto the first raised platform and records its different ground height. It ends idle and grounded on that platform. A hidden IK-disabled character receives the identical intent trace for exact physics and animation-timing comparison; only the enabled character is rendered.
+F4B2 retired the Prompt 10 foot-planting scenario shell. Ground-query,
+contact, leg-IK, jump/reset, schedule, and interaction-coexistence invariants
+now run through `zig build test`.
 
 ## Keyboard
 
@@ -167,7 +134,7 @@ Keyboard gameplay edges come from previous/current polled physical state, never 
 
 On keyboard-focus loss, the current keyboard hold state is cleared, pending jump/dash/interaction presses are discarded, and a required jump release is retained for the next fixed tick. Reset, debug, and interaction presses are not synthesized. Keys physically held across focus regain remain suppressed until released, so regain cannot create a phantom press. Gamepad polling remains independent; its live state continues to participate in the merged snapshot. Existing pending edges are cleared before new state from the focus-loss frame is accepted.
 
-The bounded Prompt 21 route is `zig build run -- --frames 240 --demo properties`. It synthesizes controller intents only after resolving real equipment declarations, proves denied and allowed dash behavior, and checks wall collision, facing, cooldown state, and restoration without adding a second input path.
+F4B2 retired the bounded Prompt 21 properties shell. Permanent property/controller tests synthesize the same production intents and retain denied/allowed dash, wall collision, facing, cooldown, and restoration coverage.
 
 The original Prompt 22 procedural foundation scene is retained as a focused
 1,800-frame regression:

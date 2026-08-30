@@ -10,7 +10,6 @@ const authored = @import("authored_clips");
 const animation_system = @import("animation_system");
 const controller_demo = @import("controller_demo");
 const character = @import("character");
-const multi_character_demo = @import("multi_character_demo");
 const sprite = @import("sprite_batch");
 
 const tolerance: f32 = 1e-5;
@@ -655,31 +654,6 @@ test "draw-order mutations leave animation procedural pose and physics state inv
     reordered.clearOverrides();
     _ = try reordered.applySemanticOverride(.right_forearm, .{ .interaction_layer = 3, .body_part_layer = 80 });
     try std.testing.expectEqualDeep(physics_before, controller.state);
-}
-
-test "multi-character scene runs all deterministic phases with steady fixed storage" {
-    var storage: [256 * 1024]u8 = undefined;
-    var fixed_allocator = std.heap.FixedBufferAllocator.init(&storage);
-    var scene = try multi_character_demo.Scene.init(fixed_allocator.allocator(), null);
-    defer scene.deinit();
-    var batch = try sprite.SpriteBatch.init(fixed_allocator.allocator(), 64, 1);
-    defer batch.deinit();
-    batch.markStabilized();
-    const initialized_bytes = fixed_allocator.end_index;
-
-    for (0..multi_character_demo.required_frames) |frame| {
-        batch.beginFrame();
-        try scene.updateFrame(@intCast(frame));
-        try std.testing.expectEqual(@as(u32, 30), try scene.submit(&batch));
-        const prepared = batch.prepare();
-        try std.testing.expectEqual(@as(usize, 30), prepared.sprites.len);
-        try std.testing.expectEqual(@as(usize, 1), prepared.ranges.len);
-    }
-    try scene.validateComplete();
-    try std.testing.expectEqual(initialized_bytes, fixed_allocator.end_index);
-    try std.testing.expectEqual(@as(u64, 0), batch.lifetime_metrics.cpu_allocations_after_stabilization);
-    try std.testing.expectEqual(@as(u64, 0), scene.character_a.metrics.pose_allocations);
-    try std.testing.expectEqual(@as(u64, 0), scene.character_b.metrics.layer_resolution_allocations);
 }
 
 comptime {

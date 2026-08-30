@@ -72,13 +72,12 @@ Both demonstration characters share texture page zero. Their 15 attachments each
 
 ## Deterministic demonstration
 
-Run:
+F4B2 retired the standalone multi-character route after its useful invariants
+were mapped to `tests/multi_character_tests.zig`, which runs through
+`zig build test`.
 
-```powershell
-zig build run -- --frames 720 --demo multi-character
-```
-
-Each 80-frame phase logs the six final submitted keys for both torsos, right forearms, and right hands, then validates the required comparison:
+The retired route historically logged staged submission-key comparisons. The
+permanent suite now validates the required comparisons directly:
 
 1. A behind B.
 2. B behind A.

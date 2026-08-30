@@ -124,17 +124,14 @@ $controllerDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot
 $springSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/spring.zig')
 $proceduralMotionSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/procedural_motion.zig')
 $characterSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character.zig')
-$multiCharacterSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/multi_character_demo.zig')
 $interactionDefinitionSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/interaction/interaction.zig')
 $handshakeDefinitionSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/interaction/handshake.zig')
 $interactionSystemSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/interaction/interaction_system.zig')
-$handshakeDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/handshake_demo.zig')
 $twoBoneIkSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/two_bone_ik.zig')
 $armIkSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/arm_ik.zig')
 $handshakeIkDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/handshake_ik_demo.zig')
 $legIkSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/leg_ik.zig')
 $footPlantingSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/foot_planting.zig')
-$footPlantingDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foot_planting_demo.zig')
 $diagnosticsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/debug/diagnostics.zig')
 $debugDrawSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/debug/debug_draw.zig')
 $integratedDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/integrated_demo.zig')
@@ -152,10 +149,8 @@ $equipmentSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src
 $equipmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment_demo.zig')
 $equipmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/equipment_tests.zig')
 $characterPropertiesSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_properties.zig')
-$characterPropertiesDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_properties_demo.zig')
 $characterPropertiesTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/character_properties_tests.zig')
 $deformationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/deformation.zig')
-$breathingDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/breathing_demo.zig')
 $deformationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/deformation_tests.zig')
 $deformableMeshSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/deformable_mesh.zig')
 $renderQueueSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/render_queue.zig')
@@ -172,7 +167,6 @@ $imageDecodeTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRo
 $presentationViewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/presentation_view.zig')
 $presentationPoseSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/presentation_pose.zig')
 $characterArtSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_art.zig')
-$characterPresentationDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_presentation_demo.zig')
 $characterPresentationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/character_presentation_tests.zig')
 $visualGeometryTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/visual_geometry_tests.zig')
 $wardrobeCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/wardrobe_catalog.zig')
@@ -295,12 +289,6 @@ if (-not $characterSource.Contains('foot_plants: foot_planting.State') -or
 }
 if ([regex]::IsMatch($footSources, 'SDL_|SpriteBatch|batch\.submit|CreateGPU|createTexture|createBuffer|createPipeline|DrawGPU')) {
     Write-Error 'Ground queries, plant state, and leg IK may not own GPU resources or rendering commands.' -ErrorAction Continue
-    $failed = $true
-}
-if ([regex]::Matches($gpuSource, 'foot_planting_scene\s*=\s*try foot_planting_demo\.Scene\.init').Count -ne 1 -or
-    [regex]::IsMatch($footPlantingDemoSource, 'SDL_DrawGPU|CreateGPU|createPipeline|createTexture|SpriteBatch\.init') -or
-    -not $footPlantingDemoSource.Contains('scene.enabled.submitAttachments(batch)')) {
-    Write-Error 'The foot-planting demo must use one scene and the established global sprite batch/draw path.' -ErrorAction Continue
     $failed = $true
 }
 if ([regex]::IsMatch($authoredClipSource + [Environment]::NewLine + $footPlantingSource, 'controller\.state\.grounded\s*=|supporting_collider\s*=|acceptJump\s*\(')) {
@@ -634,7 +622,7 @@ foreach ($section in $proceduralHotSections) {
     }
 }
 
-$multiCharacterSources = $characterSource + [Environment]::NewLine + $multiCharacterSource
+$multiCharacterSources = $characterSource
 if ([regex]::IsMatch($multiCharacterSources, 'SpriteBatch\.init|SDL_DrawGPU|CreateGPU|createTexture|createBuffer|createPipeline')) {
     Write-Error 'Characters must share the established global sprite batch and may not create a per-character GPU path.' -ErrorAction Continue
     $failed = $true
@@ -685,21 +673,12 @@ if (-not $humanoidSource.Contains('pub fn defaultBodyPartLayer') -or
 $multiCharacterHotSections = @(
     Get-FunctionSection $characterSource '    pub fn advanceVisualTick' '    pub fn stepController'
     Get-FunctionSection $characterSource '    pub fn submitAttachments' '    fn applyValidatedOverride'
-    Get-FunctionSection $multiCharacterSource '    pub fn updateFrame' '    pub fn submit'
-    Get-FunctionSection $multiCharacterSource '    pub fn submit' '    pub fn validateComplete'
 )
 foreach ($section in $multiCharacterHotSections) {
     if ([regex]::IsMatch($section, '\.alloc\s*\(|\.create\s*\(|std\.mem\.Allocator|ArrayList|HashMap|StringHashMap')) {
         Write-Error 'Character update, facing, layer resolution, override, and global submission hot paths must remain allocation-free.' -ErrorAction Continue
         $failed = $true
     }
-}
-if ([regex]::Matches($gpuSource, 'multi_character_scene\s*=\s*try multi_character_demo\.Scene\.init').Count -ne 1 -or
-    -not $gpuSource.Contains('humanoid_instances = try scene.submit(&self.batch.?)') -or
-    -not $gpuSource.Contains('metrics.draw_ranges != 1') -or
-    -not $gpuSource.Contains('metrics.draw_calls != 1')) {
-    Write-Error 'The multi-character demonstration must use one scene, one global batch submission, one range, and one actual draw.' -ErrorAction Continue
-    $failed = $true
 }
 
 if ($failed) {
@@ -756,12 +735,6 @@ if (-not $interactionSystemSource.Contains('anchor_error') -or
     -not $interactionSystemSource.Contains('world_distance') -or
     -not $interactionSystemSource.Contains('left.receiver.raw() < right.receiver.raw()')) {
     Write-Error 'Candidate ranking must use alignment error, world distance, and stable entity-ID tie-breaking.' -ErrorAction Continue
-    $failed = $true
-}
-if ([regex]::Matches($gpuSource, 'handshake_scene\s*=\s*try handshake_demo\.Scene\.init').Count -ne 1 -or
-    -not $handshakeDemoSource.Contains('character.submitGlobally') -or
-    [regex]::IsMatch($handshakeDemoSource, 'SDL_DrawGPU|CreateGPU|createPipeline|createTexture')) {
-    Write-Error 'The handshake demo must use one scene and the established global sprite submission/draw path.' -ErrorAction Continue
     $failed = $true
 }
 
@@ -1370,23 +1343,8 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'four_independent_sleeve_bindings',
-    'isolated_sleeve_override',
-    'rigid_opt_out',
-    'body_clothing_agreement',
-    'fixed_ticks_per_frame',
-    'BREATHING AND SHARED DEFORMATION EVIDENCE'
-)) {
-    if (-not $breathingDemoSource.Contains($phrase) -and -not $gpuSource.Contains($phrase)) {
-        Write-Error "Prompt 18 bounded evidence is missing: '$phrase'." -ErrorAction Continue
-        $failed = $true
-    }
-}
-foreach ($phrase in @(
     'deformation_module.addImport("fixed_step", fixed_step_module)',
-    'character_module.addImport("deformation", deformation_module)',
-    'app_module.addImport("breathing_demo", breathing_demo_module)',
-    'test_module.addImport("breathing_demo", breathing_demo_module)'
+    'character_module.addImport("deformation", deformation_module)'
 )) {
     if (-not $buildSource.Contains($phrase)) {
         Write-Error "Prompt 18 build wiring is missing: '$phrase'." -ErrorAction Continue
@@ -1620,21 +1578,6 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'default_movement_observed',
-    'modified_movement_observed',
-    'stronger_jump_observed',
-    'double_jump_denied',
-    'double_jump_allowed',
-    'dash_collision_observed',
-    'duplicate_grants_preserved',
-    'character_isolation_observed'
-)) {
-    if (-not $characterPropertiesDemoSource.Contains($phrase)) {
-        Write-Error "Prompt 21 deterministic evidence is missing: '$phrase'." -ErrorAction Continue
-        $failed = $true
-    }
-}
-foreach ($phrase in @(
     'attribute definitions modifiers and base overrides reject invalid data',
     'resolution uses deterministic additive then multiplicative stacking and clamps bounds',
     'capabilities count independent sources and removal preserves remaining grants',
@@ -1650,8 +1593,7 @@ foreach ($phrase in @(
 }
 foreach ($phrase in @(
     'app_module.addImport("character_properties", character_properties_module)',
-    'test_module.addImport("character_properties", character_properties_module)',
-    'app_module.addImport("character_properties_demo", character_properties_demo_module)'
+    'test_module.addImport("character_properties", character_properties_module)'
 )) {
     if (-not $buildSource.Contains($phrase)) {
         Write-Error "Prompt 21 build wiring is missing: '$phrase'." -ErrorAction Continue
@@ -1926,22 +1868,9 @@ if ($characterArtSource.Contains('p24_male_character_atlas.png') -or
     Write-Error 'Prompt 24A production bindings must not retain the original clothing-baked atlas paths.' -ErrorAction Continue
     $failed = $true
 }
-if ([regex]::IsMatch($characterArtSource + [Environment]::NewLine + $characterPresentationDemoSource, 'FemaleRenderer|MaleRenderer|SDL_CreateGPU|SDL_DrawGPU|CharacterController\s*=|controller\.state\.(position|velocity|grounded|supporting_collider)\s*=')) {
+if ([regex]::IsMatch($characterArtSource, 'FemaleRenderer|MaleRenderer|SDL_CreateGPU|SDL_DrawGPU|CharacterController\s*=|controller\.state\.(position|velocity|grounded|supporting_collider)\s*=')) {
     Write-Error 'Prompt 24 must not add sex-specific renderers, scene-owned GPU calls, or presentation-owned gameplay mutation.' -ErrorAction Continue
     $failed = $true
-}
-foreach ($phrase in @(
-    'male_front_idle',
-    'front_preserved_left_facing',
-    'long_hair_motion_observed',
-    'handshake_side_view_observed',
-    'returned_to_front_after_interaction',
-    'update_allocations={d} submission_allocations={d} queue_allocations={d} gpu_resource_delta={d}'
-)) {
-    if (-not ($characterPresentationDemoSource + [Environment]::NewLine + $gpuSource).Contains($phrase)) {
-        Write-Error "Prompt 24 bounded evidence is missing: '$phrase'." -ErrorAction Continue
-        $failed = $true
-    }
 }
 foreach ($phrase in @(
     'p27c_male_base_anatomy_atlas.png',
@@ -1949,7 +1878,6 @@ foreach ($phrase in @(
     'p27c_anatomy_components_atlas.png',
     'app_module.addImport("presentation_view", presentation_view_module)',
     'app_module.addImport("character_art", character_art_module)',
-    'app_module.addImport("character_presentation_demo", character_presentation_demo_module)',
     '"test-presentation",'
 )) {
     if (-not $buildSource.Contains($phrase)) {

@@ -72,13 +72,12 @@ The canonical semantic key table remains limited to the original 15 primary body
 
 ## Deterministic demonstration
 
-Run:
+F4B2 retired the standalone humanoid route after its continuing invariants
+were mapped to `tests/skeleton_tests.zig`, which runs through `zig build test`.
 
-```powershell
-zig build run -- --frames 300 --demo humanoid
-```
-
-Frames 0–74 use rest pose. Frames 75–149 rotate the right upper arm and forearm. Frames 150–224 additionally rotate the left thigh and shin. Frames 225 onward additionally translate and rotate the character root. The program logs right shoulder, elbow, hand socket, left knee, and foot socket positions at frames 0, 100, 200, and 299.
+The retired route historically staged rest pose, arm/leg edits, and root
+movement. Those hierarchy and socket relationships are now asserted directly
+without retaining the visual timeline shell.
 
 The demo definition, appearance runtime, and pose use a fixed allocator during initialization. Its exact used byte count is recorded before the frame loop. Pose evaluation, attachment-point/module/visual evaluation, socket queries, and attachment submission compare allocator position before and after their operations, providing separate runtime zero-allocation evidence. Pure tests repeat the proof, including zero and extended visual counts, two independent runtimes sharing one immutable definition, module-local pose/reset, hierarchy rejection, mirroring, and deterministic ordering.
 

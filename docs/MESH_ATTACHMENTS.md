@@ -66,7 +66,11 @@ Pure coverage is in `tests/mesh_attachment_tests.zig`. The GPU-backed route is:
 
 Success requires real sprite and mesh work, fitted garments, two/four topology-expanded sleeves, capes, rigid clasps, separately measured build and breathing deformation, mirrored facing, deterministic cape unequip/re-equip, nonzero honest ranges/draws, and zero steady-state allocator or GPU-resource growth.
 
-The Prompt 20 alias `--demo attachment-secondary` runs the same GPU path with additional required evidence for cape acceleration/sustained/reversal/stop/jump/fall/landing response, long hair, ponytail, repeated flexible-sleeve state, lifecycle reset, and facing reset. Detailed ownership and equations are in `docs/ATTACHMENT_SECONDARY_MOTION.md`.
+F4B2 retired the Prompt 20 `attachment-secondary` alias. Its acceleration,
+sustained/reversal/stop/jump/fall/landing, hair, sleeve, lifecycle, and facing
+invariants remain in `tests/attachment_secondary_motion_tests.zig`; this
+`mesh-attachments` route remains the shared GPU inspection path. Detailed
+ownership and equations are in `docs/ATTACHMENT_SECONDARY_MOTION.md`.
 
 ## Prompt 22 focused foundation integration
 

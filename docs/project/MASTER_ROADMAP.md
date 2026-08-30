@@ -6,8 +6,8 @@ The Foundation milestones F1, F2A, F2B, F2C and F3 are owner-approved. The
 F2C authority-encapsulation amendment at
 `685383a9012f10769c89b363d2eeff820410e0ae` is accepted.
 
-F4A, the read-only whole-repository production-architecture audit, is
-owner-approved. F4 is not yet accepted, F4B has not begun, and the major
+F4A, F4-ADMIN, and F4B1 are owner-approved. F4B2 is implemented and awaiting
+owner review. F4 is not yet accepted, F4C/F4D/F4E have not begun, and the major
 post-F4 parallel feature fan-out remains blocked. The accepted sequence is:
 
 ```text
@@ -22,9 +22,9 @@ F4A (owner-approved)
   -> post-F4 parallel development
 ```
 
-F4B1 is the next implementation phase, but it requires a dedicated request.
-See the
-[owner-approved F4A record](../implementation/f4a_production_architecture_audit.md).
+F4B2 stops at owner review. After acceptance, F4C is the next expected phase
+and requires a dedicated request. See the
+[F4B2 implementation record](../implementation/f4b2_superseded_demo_retirement.md).
 
 The renderer/character phases below remain useful implementation history and
 capability inventory. They do not supersede the current F4 gate.

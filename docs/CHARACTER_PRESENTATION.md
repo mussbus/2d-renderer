@@ -104,21 +104,19 @@ and no per-part command submission.
 
 ## Demonstration
 
-The deterministic D3D12/DXIL evidence route is:
+F4B2 retired the standalone scripted character-presentation route after its
+continuing invariants were mapped to `tests/character_presentation_tests.zig`.
+Run them with `zig build test-presentation` or the aggregate `zig build test`.
 
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --scripted-input --frames 360
-```
+The permanent suite retains automatic/forced views, facing invariance,
+front/side projection, bald/buzz/long-hair mapping, interaction-owned side view
+and cleanup, spring reset, character isolation, input behavior, and bounded
+queue submission.
 
-At four 240 Hz simulation ticks per rendered frame, it demonstrates male front idle, left side movement, front idle retaining left facing, right side movement, jump/fall/land, bald/buzz switching, female front idle and side movement, breathing, long-hair motion, forced views, a side-view IK handshake, and return to front. It rejects missing evidence, incomplete interaction cleanup, post-stabilization CPU allocation, and GPU-resource growth.
-
-The open-ended inspection route is:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --interactive
-```
-
-`Q` cycles automatic, force side, and force front for the controlled character without changing facing. `H` toggles its bald/buzz choice. Movement, jump, dash, interaction, reset, and exit retain their production mappings.
+The retired open-ended shell formerly exposed `Q` and `H` directly. Current
+visual inspection uses the retained production `foundation` and
+`anatomy-quality` routes; their movement, interaction, presentation, and reset
+mappings remain documented in `CONTROLS.md`.
 
 ## Prompt 27C production anatomy presentation
 

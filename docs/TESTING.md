@@ -678,17 +678,17 @@ The reference GPU/CPU and measured percentile frame times will be added when per
 
 Prompt 2's executable evidence run is `zig build run -- --frames 300`. Its final metrics must show 1,000 submitted/visible/sorted sprites, zero culled sprites, one range, one actual `SDL_DrawGPUIndexedPrimitives` call with 1,000 instances, 60,000 uploaded instance bytes, no post-stabilization CPU allocation, no GPU slot growth, and identical persistent-resource creation counts before the run, after warm-up, and after frame 300. Frame-slot waits are acceptable only when a reused slot's fence was observed unsignaled.
 
-Prompt 3's executable evidence run is `zig build run -- --frames 300 --demo humanoid`. It must report 16 bones, four sockets, 15 attachments and humanoid sprite instances, one texture-page range, one actual draw, zero pose/socket/submission allocation after initialization, and zero GPU-resource creation from pose changes. Frame 0 and modified-pose logs must show different right-hand and left-foot socket positions resulting from actual ancestor rotations.
+F4B2 retired Prompt 3's standalone humanoid shell. Its useful hierarchy, socket, attachment, pose-independence, allocation, and submission invariants remain in `tests/skeleton_tests.zig` and run through `zig build test`.
 
-Prompt 4's executable evidence run is `zig build run -- --frames 360 --demo animation`. It must report eight clips/states, the two idle/walk transitions, bounded foot-contact logs, 15 humanoid instances, one texture-page range, one actual draw, unchanged character-world root, and zero measured sampling/blending/event/update/pose/submission allocation or animation-created GPU resources. Logged idle and walk socket positions must differ through actual ancestor tracks.
+F4B2 retired Prompt 4's standalone animation shell. Clip sampling, transition, event, state-machine, replay, independence, and zero-allocation invariants remain in `tests/animation_tests.zig` and run through `zig build test`.
 
 Prompt 5's executable evidence run is `zig build run -- --frames 600 --demo controller --scripted-input`. It must complete 2,400 physics ticks and exactly 2,400 animator ticks; exercise ceiling, both raised platforms, coyote jump, buffered jump, wall, and stable final ground; submit 15 humanoid sprites plus five collider sprites as one page-zero range and one indexed-instanced draw; report bounded clock/discard metrics; and report zero clock/input/intent/controller/collision/animation-selection/animator/interpolation allocations plus zero GPU resources created by movement. Incomplete scripted milestones cause a nonzero exit.
 
-Prompt 6's executable evidence run is `zig build run -- --frames 900 --demo secondary-motion --scripted-input`. Its raw-input prelude demonstrates idle, partial-speed and full-speed walk, alternating contact semantics, acceleration-driven head lag, settling, and a reset edge. It then delegates to the unchanged Prompt 5 route for jump, platform fall, five measured landings, coyote/buffered behavior, and stable idle. The run exits nonzero unless at least two impact speeds differ, the harder impact has greater measured compression, partial/full amplitudes differ, spring residuals settle, the route completes, steady-state allocations remain zero, and procedural motion creates no GPU resources.
+F4B2 retired Prompt 6's standalone secondary-motion shell. The permanent `secondary_motion_tests.zig` suite retains speed-scaled walk response, contact semantics, head lag, landing compression, recovery, reset replay, render-group determinism, controller equivalence, and zero hot-path allocation.
 
-Prompt 7's executable evidence run is `zig build run -- --frames 720 --demo multi-character`. It must log all nine resolved-order phases, shared immutable definition tokens, distinct pose/animator/procedural storage, independent animation/procedural samples, reflected socket positions, exact default restoration, 30 humanoid sprites, one texture page, one range, one actual draw, unchanged fixed-buffer usage, zero hot-path counters, and zero GPU-resource creation from facing or ordering.
+F4B2 retired Prompt 7's standalone multi-character shell. The permanent `multi_character_tests.zig` suite retains immutable-definition sharing, mutable-state isolation, deterministic entity ordering, reflection, override/reset behavior, passive-character physics equivalence, and one-batch submission.
 
-Prompt 10's executable evidence run is `zig build run -- --frames 1200 --demo foot-planting --scripted-input`. It must record both contact/plant ticks, collider IDs and immutable targets, stable-plant slip/penetration/hover below `0.0002 m`, floor and `1.15 m` raised-platform pre/post error reduction, jump lock clearing, zero false airborne plants, fresh post-landing acquisition, exact enabled/disabled physics and animator timing, 15 humanoid plus five collider sprites, one page/range/draw, zero hot-path allocation, and zero foot-created GPU resources. Missing evidence is a nonzero exit.
+F4B2 retired Prompt 10's standalone foot-planting shell. The permanent `foot_planting_tests.zig` suite retains contact acquisition/release, immutable targets, slip/penetration/hover tolerances, floor/platform IK, jump/reset clearing, schedule determinism, physics/animator invariance, interaction coexistence, and allocation behavior.
 
 Prompt 11 originally added 11 deterministic integration tests. They cover a 32-entry diagnostic ring's overwrite order, fixed-capacity debug overflow (512 commands after Prompt 25C), debug-off/on authoritative equivalence, never-read/read-every-tick diagnostics equivalence, repeated non-destructive getters, landing-event single delivery, animation-contact physics invariance, pre-arm-IK target freezing, final hierarchy evaluation, reset during plant/airborne/pre-contact/contact, character-local isolation and interaction-peer release, three render grouping schedules, sequential complete handshakes, and a repeated integrated route. The final adversarial audit strengthens those same cases to 1,000 handshakes and 100,000 fixed ticks. The long route executes at least 30 complete walk/jump/platform/handshake/cleanup cycles, checks finite controller, spring, and foot state on every tick, rejects airborne locks, bounds slip to `0.0002 m`, and ends with zero allocation/resource growth and no stale interaction, override, or IK state.
 
@@ -730,7 +730,7 @@ It drives the real mapped `A` input through the 240 Hz controller into the exten
 
 Prompt 15 adds eight grouped deterministic tests, bringing the aggregate Zig count from 205 to 213. They prove the canonical 16-bone rig, rest transforms, semantics, and four sockets remain unchanged while a definition adds custom attachment-point, region, group, visual, module, joint, and socket IDs. They cover zero and extended visual counts; multiple visuals sharing one point; visual-parent hierarchy; duplicate, dangling, self/cycle, and transactional cleanup failures; character-local visibility, deformation, and module pose with exact reset; mirrored point/module/child visuals; stable equal-layer input ordering; and 128 repeated appearance mutations/evaluations/submissions with no allocator movement after initialization.
 
-Prompt 15 does not add a new renderer or GPU acceptance route. The existing humanoid, animation, multi-character, handshake, foot-planting, integrated, playground, side-scroller, and GPU-smoke routes exercise the unchanged canonical semantics and global sprite batch. The extended test definition is intentionally headless and uses abstract harmless visuals plus a two-joint module to prove Prompt 16 can add real modular anatomy without changing locomotion topology.
+Prompt 15 does not add a new renderer or GPU acceptance route. The permanent humanoid, animation, multi-character, interaction, IK, and foot-planting suites exercise the unchanged canonical semantics; retained `integrated`, `playground`, `side-scroller`, and `gpu-smoke` routes continue to exercise the shared GPU batch. The extended test definition is intentionally headless and uses abstract harmless visuals plus a two-joint module to prove Prompt 16 can add real modular anatomy without changing locomotion topology.
 
 Prompt 16 adds ten grouped deterministic tests, bringing the aggregate Zig count from 213 to 223. They cover exact morphology interpolation at 0/50/100; channel and per-instance override precedence; invalid values/ranges; preset isolation and reset; conventional and repeated adult-module configurations; dangling parent and cycle rejection; independently addressable face features and three hair styles; two validated face groups using the same generic feature definition while resolving materially different visual transforms, sizes, tints, visibility, and independent character state; presentation switching with an unchanged topology fingerprint; explicit module-local articulation; unchanged controller, animation, interaction-owner, canonical rest, and IK length state; independent runtimes; repeated-run equality; and fixed-buffer zero-allocation updates.
 
@@ -754,13 +754,10 @@ It must report the same sweatshirt definition, exactly two conventional sleeves 
 
 Prompt 18 adds eight grouped deterministic tests, bringing the aggregate Zig count from 228 to 236. Coverage lives in `tests/deformation_tests.zig` and separately checks breathing neutral/extreme samples, repeated bounded cycles, reset, independent character rate/phase, body/clothing agreement, exact topology-expanded sleeve drivers, per-part isolation, rigid response, global morph composition, equip/unequip at non-neutral phase, physics/controller/canonical-IK/effect invariance, handshake timing, render-frame grouping, and fixed-buffer allocation stability.
 
-The bounded Prompt 18 GPU-backed breathing/clothing evidence route is:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo breathing
-```
-
-It represents 960 authoritative ticks per character, requires observable restrained torso motion and clothing agreement, validates one sweatshirt across four independent arms, and fails on allocation growth, GPU-resource creation, alternate draw ranges, or gameplay-state drift.
+F4B2 retired the standalone Prompt 18 breathing shell. The eight grouped
+production-facing deformation tests above remain the acceptance path; retained
+`mesh-attachments` and `foundation` routes continue to exercise breathing
+through the real unified GPU composition.
 
 Prompt 19 adds seven grouped deterministic tests, bringing the aggregate Zig count from 236 to 243. Coverage lives in `tests/mesh_attachment_tests.zig` and checks finite/UV/topology/index/degenerate/capacity validation; immutable definition and persistent topology-catalog ownership; partial allocation cleanup; exact CPU/HLSL record sizes; bounded weighted deformation; one semantic sprite/mesh ordering stream; compatible mesh instancing; topology-expanded two/four-sleeve binding; distinct repeated and cross-character mutable state; mirrored facing; equip/unequip; deterministic queue capacity failures; and zero fixed-buffer movement after stabilization.
 
@@ -774,23 +771,16 @@ It requires two segmented characters, body sprites, fitted garments, six topolog
 
 Prompt 20 adds six grouped deterministic tests in `tests/attachment_secondary_motion_tests.zig`; the repository contains 249 top-level Zig test declarations after this change. Coverage includes definition/finite/stability validation; exact rest; acceleration, sustained motion, reversal, sudden stop, jump, fall, and landing direction; facing reset and reset replay; extreme valid parameters; 24,000-tick convergence; deterministic repeated runs; independent states sharing one immutable definition; long-hair/ponytail and cape ownership across two characters; flexible topology-expanded repeated instances; equip/unequip/re-equip cleanup; grouped unified rendering; controller/physics and interaction invariance; the complete 240-frame headless evidence script; and fixed-buffer/resource stability.
 
-The bounded Prompt 20 GPU-backed route is:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo attachment-secondary
-```
-
-It reuses the Prompt 19 topology catalog, unified queue, mesh shader, and persistent buffers. Success additionally requires cape acceleration/sustained/reversal/stop/jump/fall/landing evidence, moved long hair and ponytail, independent repeated flexible-sleeve state, cleared unequip state, exact re-equip rest, exact facing-change rest, zero steady-state fixed-buffer or queue allocation growth, and zero spring-caused GPU-resource creation.
+F4B2 retired the duplicate Prompt 20 attachment-secondary route. The six
+permanent production-facing tests above retain the motion/lifecycle/authority
+contract, while the retained `mesh-attachments` route continues to exercise
+the shared sprite/mesh GPU path.
 
 Prompt 21 adds seven grouped deterministic tests in `tests/character_properties_tests.zig` and extends the existing input tests; the repository contains 257 top-level Zig test declarations after this change. Coverage includes attribute definition/range/base validation; additive and multiplicative modifier validation and combinations; deterministic source-key sorting; clamping; base overrides; capability defaults and independent source counts; duplicate-source rejection; removing one of two grants; character isolation; equipment gain/loss/replace/reset; two-item attribute stacking; carrying capacity, armor, and damage-reduction queries; appearance independence; movement-speed and jump-strength controller consumption; denied/allowed/exhausted double jump; airborne removal; denied/allowed dash; facing and active-removal behavior; wall collision; exact default-controller regression; and zero property-resolution allocation.
 
-The bounded Prompt 21 GPU-backed route is:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo properties
-```
-
-It executes real controller behavior for default and modified movement, default and stronger jump, double-jump denial/grant, dash denial/grant, and dash wall collision. It directly verifies carry, armor, damage reduction, duplicate-grant removal, restoration, and independent characters, then renders both characters through one range and one indexed-instanced draw. Missing evidence, allocation growth, or GPU-resource growth returns nonzero.
+F4B2 retired the standalone Prompt 21 properties shell. The seven permanent
+property/controller tests above retain movement, jump, capability, dash,
+collision, isolation, restoration, and allocation coverage.
 
 Prompt 22 adds four grouped deterministic tests in `tests/foundation_playground_tests.zig`, bringing the repository to 261 top-level Zig test declarations. The focused command is:
 
@@ -888,15 +878,18 @@ Run the focused platform-independent suite:
 
 It covers the complete automatic view policy; override/interaction precedence and cleanup; facing and root invariance; reset; single-root side reflection; non-reflected front projection; both-view region completeness; bald, buzz-cut, and long-hair resolution; explicit front semantic layers; interaction cancellation; deterministic spring reset; allocation-free view changes; two-character isolation; `Q` input; and bounded submission on both views. Prompt 24A additionally resolves every canonical male/female side/front base region with no garment, proves torso and vest semantic/region IDs differ while their real production page is shared, removes and re-resolves the optional garment without changing the base result, and asserts zero fixed-buffer growth across repeated resolution. Aggregate `zig build test` retains the existing deformation, IK, foot-planting, interaction, controller, and reset regression suites.
 
-The GPU-backed acceptance route is:
+F4B2 retired the standalone Prompt 24 scripted and interactive shells. The
+focused suite above remains authoritative for presentation policy, mapping,
+interaction cleanup, secondary reset, input, and bounded submission. Current
+GPU inspection uses the retained production `foundation` and
+`anatomy-quality` routes; historical Prompt 24 evidence remains preserved.
 
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --scripted-input --frames 360
-```
-
-The route executes exactly 1,440 fixed ticks. Its runtime evidence must include front idle, left and right side movement, preserved left facing while front, jump/rise/fall/land, bald/buzz switching, female front/side states, breathing, long-hair displacement, both debug overrides, side-view handshake ownership, completion cleanup, and return to front. Prompt 24A startup also validates the anatomy/clothing boundary over the actual page bindings and logs the distinct male/female front torso and vest region IDs. The final two-character frame must retain three real art pages, 68 regions, 96 bindings, bounded texture-page ranges/draws, no update/submission/queue allocation after stabilization, and no steady-state GPU-resource delta.
-
-Manual visual acceptance is separate from the automated verdict. Inspect both source atlases at native resolution and run the interactive route to check coherent silhouettes, face readability, hair shape, consistent lighting/scale, shoulder/elbow/wrist/hip/knee/ankle/neck overlaps, front semantic ordering, movement articulation, breathing, hair response, view transitions, and handshake contact. For Prompt 24A, inspect male/female front and side captures from the live D3D12 window and confirm bare neutral limbs/feet, featureless torso/pelvis base-presentation surfaces, and preserved joints/overlaps. Automated success proves routing and invariants but cannot by itself prove subjective joint/art quality.
+Manual visual acceptance remains separate from automated regression coverage.
+Use the retained production visual routes to inspect coherent silhouettes,
+face readability, hair shape, consistent lighting/scale, joint overlaps,
+front semantic ordering, movement articulation, breathing, hair response,
+view transitions, and handshake contact. Automated success proves routing and
+invariants but cannot by itself prove subjective joint/art quality.
 
 ## Prompt 25 wardrobe verification
 

@@ -88,13 +88,15 @@ There is no action framework, damage, attack, invulnerability, status timer, or 
 
 ## Bounded evidence
 
-Pure and integrated coverage lives in `tests/character_properties_tests.zig`. The GPU-backed deterministic evidence route is:
+Pure and integrated coverage lives in `tests/character_properties_tests.zig`
+and runs through `zig build test`. F4B2 retired the standalone properties route
+after this production-facing coverage was confirmed.
 
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo properties
-```
-
-Initialization runs actual controller steps for default/modified movement, default/stronger jump, denied/allowed double jump, denied/allowed dash, and dash collision. It also proves carrying capacity, armor, physical damage reduction, duplicate-source removal, restoration, and two-character isolation. The visible phase submits the two independently equipped characters through the existing one-range, one-draw sprite batch. The route fails on missing behavioral evidence, frame mismatch, fixed-buffer growth, batch allocation, or property-created GPU resources.
+The permanent suite runs actual controller steps for default/modified movement,
+default/stronger jump, denied/allowed double jump, denied/allowed dash, and dash
+collision. It also proves carrying capacity, armor, physical damage reduction,
+duplicate-source removal, restoration, two-character isolation, and
+fixed-buffer stability without retaining the historical visual timeline.
 
 ## Prompt 22 focused integrated consumers
 

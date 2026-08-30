@@ -997,33 +997,6 @@ pub fn build(b: *std.Build) void {
     wardrobe_presentation_module.addImport("visual_geometry", visual_geometry_module);
     wardrobe_presentation_module.addImport("visual_registration", visual_registration_module);
     wardrobe_presentation_module.addImport("character_art", character_art_module);
-    const multi_character_demo_module = b.createModule(.{
-        .root_source_file = b.path("src/scene/multi_character_demo.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    multi_character_demo_module.addImport("math", math_module);
-    multi_character_demo_module.addImport("humanoid", humanoid_module);
-    multi_character_demo_module.addImport("authored_clips", authored_clips_module);
-    multi_character_demo_module.addImport("character", character_module);
-    multi_character_demo_module.addImport("state_machine", state_machine_module);
-    multi_character_demo_module.addImport("sprite_batch", sprite_batch_module);
-    multi_character_demo_module.addImport("fault_injection", fault_injection_module);
-    const handshake_demo_module = b.createModule(.{
-        .root_source_file = b.path("src/scene/handshake_demo.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    handshake_demo_module.addImport("math", math_module);
-    handshake_demo_module.addImport("input", input_module);
-    handshake_demo_module.addImport("humanoid", humanoid_module);
-    handshake_demo_module.addImport("authored_clips", authored_clips_module);
-    handshake_demo_module.addImport("character", character_module);
-    handshake_demo_module.addImport("interaction", interaction_module);
-    handshake_demo_module.addImport("interaction_system", interaction_system_module);
-    handshake_demo_module.addImport("handshake", handshake_module);
-    handshake_demo_module.addImport("sprite_batch", sprite_batch_module);
-    handshake_demo_module.addImport("state_machine", state_machine_module);
     const handshake_ik_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/handshake_ik_demo.zig"),
         .target = target,
@@ -1039,24 +1012,6 @@ pub fn build(b: *std.Build) void {
     handshake_ik_demo_module.addImport("interaction_system", interaction_system_module);
     handshake_ik_demo_module.addImport("handshake", handshake_module);
     handshake_ik_demo_module.addImport("sprite_batch", sprite_batch_module);
-    const foot_planting_demo_module = b.createModule(.{
-        .root_source_file = b.path("src/scene/foot_planting_demo.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    foot_planting_demo_module.addImport("math", math_module);
-    foot_planting_demo_module.addImport("input", input_module);
-    foot_planting_demo_module.addImport("fixed_step", fixed_step_module);
-    foot_planting_demo_module.addImport("collider", collider_module);
-    foot_planting_demo_module.addImport("collision_world", collision_world_module);
-    foot_planting_demo_module.addImport("character_controller", character_controller_module);
-    foot_planting_demo_module.addImport("events", events_module);
-    foot_planting_demo_module.addImport("humanoid", humanoid_module);
-    foot_planting_demo_module.addImport("authored_clips", authored_clips_module);
-    foot_planting_demo_module.addImport("character", character_module);
-    foot_planting_demo_module.addImport("foot_planting", foot_planting_module);
-    foot_planting_demo_module.addImport("leg_ik", leg_ik_module);
-    foot_planting_demo_module.addImport("sprite_batch", sprite_batch_module);
     const diagnostics_module = b.createModule(.{
         .root_source_file = b.path("src/debug/diagnostics.zig"),
         .target = target,
@@ -1172,23 +1127,6 @@ pub fn build(b: *std.Build) void {
     modular_body_demo_module.addImport("character", character_module);
     modular_body_demo_module.addImport("sprite_batch", sprite_batch_module);
     modular_body_demo_module.addImport("fault_injection", fault_injection_module);
-    const character_presentation_demo_module = b.createModule(.{
-        .root_source_file = b.path("src/scene/character_presentation_demo.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    character_presentation_demo_module.addImport("fixed_step", fixed_step_module);
-    character_presentation_demo_module.addImport("input", input_module);
-    character_presentation_demo_module.addImport("collision_world", collision_world_module);
-    character_presentation_demo_module.addImport("character_controller", character_controller_module);
-    character_presentation_demo_module.addImport("authored_clips", authored_clips_module);
-    character_presentation_demo_module.addImport("humanoid", humanoid_module);
-    character_presentation_demo_module.addImport("character", character_module);
-    character_presentation_demo_module.addImport("character_art", character_art_module);
-    character_presentation_demo_module.addImport("modular_body_demo", modular_body_demo_module);
-    character_presentation_demo_module.addImport("interaction_system", interaction_system_module);
-    character_presentation_demo_module.addImport("handshake", handshake_module);
-    character_presentation_demo_module.addImport("render_queue", render_queue_module);
     const wardrobe_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/wardrobe_demo.zig"),
         .target = target,
@@ -1225,30 +1163,6 @@ pub fn build(b: *std.Build) void {
     equipment_demo_module.addImport("equipment", equipment_module);
     equipment_demo_module.addImport("modular_body_demo", modular_body_demo_module);
     equipment_demo_module.addImport("sprite_batch", sprite_batch_module);
-    const character_properties_demo_module = b.createModule(.{
-        .root_source_file = b.path("src/scene/character_properties_demo.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    character_properties_demo_module.addImport("input", input_module);
-    character_properties_demo_module.addImport("collider", collider_module);
-    character_properties_demo_module.addImport("collision_world", collision_world_module);
-    character_properties_demo_module.addImport("character_controller", character_controller_module);
-    character_properties_demo_module.addImport("character", character_module);
-    character_properties_demo_module.addImport("equipment_demo", equipment_demo_module);
-    character_properties_demo_module.addImport("sprite_batch", sprite_batch_module);
-    const breathing_demo_module = b.createModule(.{
-        .root_source_file = b.path("src/scene/breathing_demo.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    breathing_demo_module.addImport("math", math_module);
-    breathing_demo_module.addImport("deformation", deformation_module);
-    breathing_demo_module.addImport("anatomy", anatomy_module);
-    breathing_demo_module.addImport("equipment", equipment_module);
-    breathing_demo_module.addImport("character", character_module);
-    breathing_demo_module.addImport("equipment_demo", equipment_demo_module);
-    breathing_demo_module.addImport("sprite_batch", sprite_batch_module);
     const mesh_attachment_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/mesh_attachment_demo.zig"),
         .target = target,
@@ -1433,21 +1347,16 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("controller_demo", controller_demo_module);
     app_module.addImport("procedural_motion", procedural_motion_module);
     app_module.addImport("character", character_module);
-    app_module.addImport("multi_character_demo", multi_character_demo_module);
     app_module.addImport("interaction", interaction_module);
     app_module.addImport("handshake", handshake_module);
     app_module.addImport("interaction_system", interaction_system_module);
-    app_module.addImport("handshake_demo", handshake_demo_module);
     app_module.addImport("handshake_ik_demo", handshake_ik_demo_module);
-    app_module.addImport("foot_planting_demo", foot_planting_demo_module);
     app_module.addImport("diagnostics", diagnostics_module);
     app_module.addImport("debug_draw", debug_draw_module);
     app_module.addImport("integrated_demo", integrated_demo_module);
     app_module.addImport("playground_demo", playground_demo_module);
     app_module.addImport("modular_body_demo", modular_body_demo_module);
     app_module.addImport("equipment_demo", equipment_demo_module);
-    app_module.addImport("character_properties_demo", character_properties_demo_module);
-    app_module.addImport("breathing_demo", breathing_demo_module);
     app_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
     app_module.addImport("foundation_playground", foundation_playground_module);
     app_module.addImport("art_pack", art_pack_module);
@@ -1456,7 +1365,6 @@ pub fn build(b: *std.Build) void {
     app_module.addImport("presentation_view", presentation_view_module);
     app_module.addImport("presentation_pose", presentation_pose_module);
     app_module.addImport("character_art", character_art_module);
-    app_module.addImport("character_presentation_demo", character_presentation_demo_module);
     app_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
     app_module.addImport("wardrobe_art", wardrobe_art_module);
     app_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
@@ -1510,20 +1418,16 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("controller_demo", controller_demo_module);
     test_module.addImport("procedural_motion", procedural_motion_module);
     test_module.addImport("character", character_module);
-    test_module.addImport("multi_character_demo", multi_character_demo_module);
     test_module.addImport("interaction", interaction_module);
     test_module.addImport("handshake", handshake_module);
     test_module.addImport("interaction_system", interaction_system_module);
-    test_module.addImport("handshake_demo", handshake_demo_module);
     test_module.addImport("handshake_ik_demo", handshake_ik_demo_module);
-    test_module.addImport("foot_planting_demo", foot_planting_demo_module);
     test_module.addImport("diagnostics", diagnostics_module);
     test_module.addImport("debug_draw", debug_draw_module);
     test_module.addImport("integrated_demo", integrated_demo_module);
     test_module.addImport("playground_demo", playground_demo_module);
     test_module.addImport("modular_body_demo", modular_body_demo_module);
     test_module.addImport("equipment_demo", equipment_demo_module);
-    test_module.addImport("breathing_demo", breathing_demo_module);
     test_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
     test_module.addImport("foundation_playground", foundation_playground_module);
     test_module.addImport("art_pack", art_pack_module);
@@ -1531,7 +1435,6 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("presentation_view", presentation_view_module);
     test_module.addImport("presentation_pose", presentation_pose_module);
     test_module.addImport("character_art", character_art_module);
-    test_module.addImport("character_presentation_demo", character_presentation_demo_module);
     test_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
     test_module.addImport("wardrobe_art", wardrobe_art_module);
     test_module.addImport("wardrobe_presentation", wardrobe_presentation_module);

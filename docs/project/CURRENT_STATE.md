@@ -1,8 +1,8 @@
 # Current State
 
-Current F4B1 implementation basis: clean, synchronized `master` at
-`a05118e7ec69bf6b8485a536f83413d298febb5d`, recorded on 2026-08-29 after
-owner approval and publication of F4-ADMIN.
+Current F4B2 implementation basis: clean, synchronized `master` at
+`b7790698290d83edd367b54222020898d49803c5`, recorded on 2026-08-29 after
+owner approval and publication of F4B1.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -19,19 +19,25 @@ visual acceptance or revise historical evidence claims.
 | F2C | **ACCEPTED**, including the authority-encapsulation amendment at `685383a9012f10769c89b363d2eeff820410e0ae` |
 | F3 | **ACCEPTED** after independent follow-up and owner review |
 | F4A | **OWNER-APPROVED** whole-repository production-architecture audit |
-| F4B1 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4B2 | **NOT BEGUN** |
+| F4B1 | **OWNER-APPROVED** |
+| F4B2 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
 | F4C | **NOT BEGUN** |
+| F4D | **NOT BEGUN** |
+| F4E | **NOT BEGUN** |
 | F4 overall | In progress; **not accepted** |
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4B1 owner review**.
+Current immediate step: **F4B2 owner review**.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
-[repository retention policy](REPOSITORY_RETENTION.md). Its implementation
-record is [awaiting owner review](../implementation/f4b1_safe_hygiene_and_retention.md).
-F4B2 and F4C require separate authorization and have not begun.
+[repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
+historical runnable scenario shells after permanent regression coverage was
+mapped, retained one candidate because production extraction is required in
+F4C, and retained two candidates for active coverage/debugging value. The
+[F4B2 implementation record](../implementation/f4b2_superseded_demo_retirement.md)
+awaits owner review. F4C, F4D, and F4E have not begun and require separate
+authorization; the next expected phase after owner acceptance is F4C.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the
@@ -206,12 +212,13 @@ These are diagnostic candidates, not approved goldens.
 
 ## Focused demonstrations
 
-- `--demo animation`, `--demo controller`, and the focused
-  character/physics/interaction diagnostic routes.
-- Anatomy, equipment, deformation, secondary-motion, properties, and the
-  retained Prompt 22 `foundation_playground.Scene` regression.
+- `--demo controller`, `--demo handshake-ik`, `--demo integrated`, and the
+  focused character/physics/interaction diagnostic routes.
+- Anatomy, equipment, mesh-attachment, wardrobe, environment, and the retained
+  Prompt 22 `foundation_playground.Scene` regression.
 - Prompt 23 art-pack acceptance.
-- Prompt 24 front/side character presentation.
+- Prompt 24 front/side character presentation through permanent tests and the
+  retained production foundation/anatomy routes.
 - Prompt 25 wardrobe presets and custom outfit.
 - Prompt 25C/25D visual-geometry reports, debug overlays, and approved goldens.
 - Prompt 26 `environment` theme/collision-readability route.

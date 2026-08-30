@@ -146,8 +146,11 @@ The Prompt 24 character pack uses the same decoder, GPU page owner, texture tabl
 
 ```powershell
 & '.\.deps\zig-0.16.0\zig.exe' build test-presentation
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo character-presentation --scripted-input --frames 360
 ```
+
+F4B2 retired the standalone Prompt 24 shell; the focused presentation tests and
+retained production visual routes continue to use the same decoder, page
+owner, texture table, and global queue.
 
 Semantic strings are resolved once while `Presentation` is initialized. Each frame selects fixed numeric side/front bindings and submits ordinary sprite requests; it does not reopen an atlas, search a name, allocate, or create a GPU object.
 

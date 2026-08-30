@@ -124,13 +124,14 @@ The default `Manager.init` route preserves Prompt 8 with no arm constraint. `Man
 
 ## Demonstration evidence
 
-Run:
+F4B2 retired the standalone non-IK handshake route after its continuing
+invariants were mapped to `tests/interaction_tests.zig`, which runs through
+`zig build test`.
 
-```powershell
-zig build run -- --frames 720 --demo handshake --scripted-input
-```
-
-The route waits visibly in an eligible idle arrangement, holds one real interaction press across five render frames, completes, stages the same IDs in the mirrored idle arrangement outside any interaction, then issues a release/new press. Starts occur at ticks 121 and 841. Their contact/release/complete ticks are 265/409/481 and 985/1129/1201. At contact both normalized role times are 0.375. The first socket positions are approximately `(0.000232, 3.452835)` and `(-0.000232, 3.452835)`, separated by `0.000464 m`; mirrored positions negate X and retain the same separation within `0.00001 m`.
+The retired route historically staged eligible, completed, mirrored, and
+release/new-press timelines. Permanent tests now assert shared timing,
+transactional start, participant ownership, cleanup, mirrored roles, schedule
+invariance, and physics independence directly.
 
 Both characters keep 15 page-zero attachments in one global submission set: 30 sprites, one compatible range, one 1,800-byte upload, and one actual `SDL_DrawGPUIndexedPrimitives` call. Interaction initialization and both runtime sessions create zero GPU resources, and request, eligibility, selection, sampling, events, overrides, and completion report zero steady-state allocations.
 

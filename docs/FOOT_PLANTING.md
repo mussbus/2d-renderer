@@ -67,13 +67,14 @@ The required absolute tolerance is `0.0002 m`. The scripted evidence route repor
 
 Ground hits are values, bindings and plant states are inline, and solve temporaries are stack values. Ground query, plant update, binding use, IK, target storage, and hierarchy evaluation allocate zero bytes after initialization. Foot placement creates zero GPU resources, adds no pass or buffer, and submits through the existing global page-zero sprite batch.
 
-Run the deterministic route with:
+F4B2 retired the standalone foot-planting route after its useful invariants
+were mapped to `tests/foot_planting_tests.zig`, which runs through
+`zig build test`.
 
-```powershell
-.\.deps\zig-0.16.0\zig.exe build run -- --frames 1200 --demo foot-planting --scripted-input
-```
-
-It exits nonzero unless idle/walk contacts, alternating plants, jump clearing, airborne rejection, fresh landing plants, raised-platform adaptation, final stability, exact physics/animation agreement, one draw range, one actual indexed-instanced draw, zero hot-path allocation, and zero foot-created GPU resources are all observed.
+Permanent tests directly retain contact acquisition/release, alternating plant
+ownership, jump and airborne clearing, fresh landing acquisition,
+raised-platform alignment, render-schedule determinism, physics/animation
+agreement, coexistence with arm IK/interaction, and allocation behavior.
 
 Prompt 27 reuses this same ground-query and leg-IK authority in the production
 art `foundation` route. Its deterministic matrix includes walk, short/full/

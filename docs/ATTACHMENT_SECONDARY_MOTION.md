@@ -79,13 +79,14 @@ All point arrays are embedded and fixed capacity. A steady-state update performs
 
 Headless coverage is in `tests/attachment_secondary_motion_tests.zig`. It covers definition validation, exact rest, acceleration, sustained motion, reversal, sudden stop, jump, fall, landing, facing reset, explicit reset replay, extreme valid parameters, long-run convergence, shared definitions with independent instances, two characters, equip/unequip/re-equip, hair ownership, grouped mesh rendering, controller/physics invariance, interaction invariance, and fixed-buffer stability.
 
-The bounded GPU-backed route is:
+F4B2 retired the duplicate `attachment-secondary` route alias after its useful
+invariants were mapped to `tests/attachment_secondary_motion_tests.zig` and the
+retained `mesh-attachments` route.
 
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 240 --demo attachment-secondary
-```
-
-It uses the same real unified sprite/mesh queue and SDL GPU resources as Prompt 19. The evidence run requires cape, long hair, ponytail, repeated flexible sleeves, deterministic cape removal/restoration, every scripted motion phase, facing reset, honest grouped draw metrics, zero steady-state CPU allocation, and zero GPU-resource growth after initialization.
+Permanent tests retain cape, long-hair, ponytail, repeated flexible-sleeve,
+lifecycle, facing-reset, authority, and grouped-rendering behavior. The
+surviving `mesh-attachments` route continues to exercise the real unified
+sprite/mesh GPU path.
 
 ## Prompt 22 focused integrated motion
 

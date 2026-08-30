@@ -77,10 +77,11 @@ Prompt 19 does not integrate a second morph system. `deformable_mesh.InstanceSta
 
 Pure deterministic coverage is in `tests/deformation_tests.zig`. It covers neutral/extreme samples, long-run cycles, reset, independent characters, shared body/clothing resolution, exact four-sleeve binding, isolated part overrides, rigid opt-out, composition, loadout changes, physics/controller/IK/effect invariance, interaction timing, render grouping, and fixed-buffer no-growth.
 
-The bounded GPU-backed route is:
+F4B2 retired the standalone breathing route after its continuing invariants
+were mapped to `tests/deformation_tests.zig`, which runs through
+`zig build test`.
 
-```text
-zig build run -- --frames 240 --demo breathing
-```
-
-It advances four 240 Hz ticks per nominal frame for one complete four-second breathing cycle, renders two different character-local rates/phases, keeps the four-arm sweatshirt topology, performs an isolated extra-arm sleeve override, checks rigid opt-out and gameplay invariants, and requires one global draw range/draw call with zero steady-state allocation or GPU-resource growth.
+Permanent tests directly advance the 240 Hz breathing state, compare
+character-local rates/phases, retain topology-expanded clothing and isolated
+overrides, check rigid opt-out and gameplay authority, and assert steady-state
+allocation invariants.

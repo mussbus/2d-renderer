@@ -15,7 +15,6 @@ const fixed_step = @import("fixed_step");
 const interaction = @import("interaction");
 const interaction_system = @import("interaction_system");
 const handshake = @import("handshake");
-const foot_planting_demo = @import("foot_planting_demo");
 
 const tolerance: f32 = 0.0002;
 
@@ -731,16 +730,4 @@ test "handshake lifecycle arm IK and character local foot locks coexist without 
     try std.testing.expectApproxEqAbs(baseline_instance.contact.post_separation, planted_instance.contact.post_separation, tolerance);
     try std.testing.expect(planted_a.foot_plants.left.hasLock());
     try std.testing.expect(planted_b.foot_plants.right.hasLock());
-}
-
-test "scripted foot planting demonstration deterministically crosses floor jump landing and raised platform" {
-    var scene = try foot_planting_demo.Scene.init(std.testing.allocator);
-    defer scene.deinit();
-    for (0..foot_planting_demo.required_frames) |_| try scene.updateFrame();
-    try scene.validateComplete();
-    try std.testing.expectEqual(@as(?collider.ColliderId, @intFromEnum(collision_world.DemoColliderId.raised_platform_1)), scene.enabled.controller.?.state.supporting_collider);
-    try std.testing.expect(scene.flat.pre_ik_sole_error > scene.flat.post_ik_sole_error * 100);
-    try std.testing.expect(scene.raised.pre_ik_sole_error > scene.raised.post_ik_sole_error * 100);
-    try std.testing.expect(scene.physics.positions_agree and scene.physics.velocities_agree);
-    try std.testing.expectEqual(@as(u32, 0), scene.jump.false_airborne_plant_count);
 }
