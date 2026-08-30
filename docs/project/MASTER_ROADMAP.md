@@ -6,9 +6,10 @@ The Foundation milestones F1, F2A, F2B, F2C and F3 are owner-approved. The
 F2C authority-encapsulation amendment at
 `685383a9012f10769c89b363d2eeff820410e0ae` is accepted.
 
-F4A, F4-ADMIN, and F4B1 are owner-approved. F4B2 is implemented and awaiting
-owner review. F4 is not yet accepted, F4C/F4D/F4E have not begun, and the major
-post-F4 parallel feature fan-out remains blocked. The accepted sequence is:
+F4A, F4-ADMIN, F4B1, and F4B2 are owner-approved. F4C1 is implemented and
+awaiting owner review. F4 is not yet accepted; F4C2 through F4C5, F4D, and F4E
+have not begun, and the major post-F4 parallel feature fan-out remains
+blocked. The accepted sequence is:
 
 ```text
 F4A (owner-approved)
@@ -22,9 +23,8 @@ F4A (owner-approved)
   -> post-F4 parallel development
 ```
 
-F4B2 stops at owner review. After acceptance, F4C is the next expected phase
-and requires a dedicated request. See the
-[F4B2 implementation record](../implementation/f4b2_superseded_demo_retirement.md).
+F4C1 stops at owner review. F4C2 requires a dedicated request. See the
+[F4C1 implementation record](../implementation/f4c1_production_definition_extraction.md).
 
 The renderer/character phases below remain useful implementation history and
 capability inventory. They do not supersede the current F4 gate.
@@ -153,7 +153,8 @@ collision, theme, or atlas-identity models.
 ## Milestone gate
 
 Prompts 0–27C remain the historical implementation sequence. The current
-architecture gate is F4: F4A is owner-approved, F4B has not begun, and no
-post-F4 feature track is authorized before final F4 acceptance. Current
+architecture gate is F4: F4A, F4B1, and F4B2 are owner-approved; F4C1 awaits
+owner review; and no post-F4 feature track is authorized before final F4
+acceptance. Current
 non-blocking visual limitations, pending Prompt 27A/27B/27C owner review, and
 future schema triggers remain recorded in [KNOWN_GAPS.md](KNOWN_GAPS.md).

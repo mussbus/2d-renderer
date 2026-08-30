@@ -1,8 +1,8 @@
 # Current State
 
-Current F4B2 implementation basis: clean, synchronized `master` at
-`b7790698290d83edd367b54222020898d49803c5`, recorded on 2026-08-29 after
-owner approval and publication of F4B1.
+Current F4C1 implementation basis: clean, synchronized `master` at
+`4fcdf67b298323935fe99e18df95023c41a20740`, recorded on 2026-08-29 after
+owner approval and publication of F4B2.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -20,15 +20,19 @@ visual acceptance or revise historical evidence claims.
 | F3 | **ACCEPTED** after independent follow-up and owner review |
 | F4A | **OWNER-APPROVED** whole-repository production-architecture audit |
 | F4B1 | **OWNER-APPROVED** |
-| F4B2 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4C | **NOT BEGUN** |
+| F4B2 | **OWNER-APPROVED** |
+| F4C1 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
+| F4C2 | **NOT BEGUN** |
+| F4C3 | **NOT BEGUN** |
+| F4C4 | **NOT BEGUN** |
+| F4C5 | **NOT BEGUN** |
 | F4D | **NOT BEGUN** |
 | F4E | **NOT BEGUN** |
 | F4 overall | In progress; **not accepted** |
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4B2 owner review**.
+Current immediate step: **F4C1 owner review**.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -36,8 +40,15 @@ historical runnable scenario shells after permanent regression coverage was
 mapped, retained one candidate because production extraction is required in
 F4C, and retained two candidates for active coverage/debugging value. The
 [F4B2 implementation record](../implementation/f4b2_superseded_demo_retirement.md)
-awaits owner review. F4C, F4D, and F4E have not begun and require separate
-authorization; the next expected phase after owner acceptance is F4C.
+remains the milestone-time implementation history; the owner now approves it.
+F4C1 moves reusable humanoid, equipment, attachment-mesh, art-asset, and
+foundation-world definitions out of demo ownership. Nine source edges that
+borrowed production authority from a demo were removed. Three deliberate
+cross-demo scenario-composition edges and sixteen application/report routing
+edges remain explicitly classified. See the
+[F4C1 implementation record](../implementation/f4c1_production_definition_extraction.md).
+F4C2 through F4C5, F4D, and F4E have not begun and require separate
+authorization.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the

@@ -7,11 +7,12 @@ const authored = @import("authored_clips");
 const character = @import("character");
 const collision_world = @import("collision_world");
 const modular = @import("modular_body_demo");
+const modular_humanoid = @import("modular_humanoid");
 
 const tolerance: f32 = 0.000001;
 
 test "morphology interpolates exactly and override precedence reset and preset isolation are deterministic" {
-    var definition = try modular.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     const anatomy_definition = definition.anatomy_definition.?.view();
     var runtime = try anatomy.Runtime.init(std.testing.allocator, anatomy_definition, null);
@@ -48,7 +49,7 @@ test "morphology interpolates exactly and override precedence reset and preset i
 }
 
 test "morphology rejects invalid user values and invalid preset ranges" {
-    var definition = try modular.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     const anatomy_definition = definition.anatomy_definition.?.view();
     var runtime = try anatomy.Runtime.init(std.testing.allocator, anatomy_definition, null);
@@ -74,7 +75,7 @@ test "morphology rejects invalid user values and invalid preset ranges" {
 }
 
 test "repeated adult modules and conventional presets are compositional data" {
-    var definition = try modular.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     const anatomy_definition = definition.anatomy_definition.?.view();
     var runtime = try anatomy.Runtime.init(std.testing.allocator, anatomy_definition, null);
@@ -124,7 +125,7 @@ test "hierarchical anatomy rejects dangling parents and cycles" {
 }
 
 test "faces and hair are per-head groups with independently addressable features" {
-    var definition = try modular.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     const anatomy_definition = definition.anatomy_definition.?.view();
     var runtime = try anatomy.Runtime.init(std.testing.allocator, anatomy_definition, null);
@@ -199,7 +200,7 @@ test "two facial configurations use shared modular data and derive distinct inde
 }
 
 test "presentation switching changes visuals without changing anatomy topology" {
-    var definition = try modular.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     var character_state = try humanoid.HumanoidCharacter.init(std.testing.allocator, &definition, null);
     defer character_state.deinit();
@@ -225,7 +226,7 @@ test "presentation switching changes visuals without changing anatomy topology" 
 }
 
 test "module articulation morphology and presentation leave canonical controller animation interaction and IK state unchanged" {
-    var definition = try modular.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     var animations = try authored.Definitions.init(std.testing.allocator, &definition.skeleton_definition, null);
     defer animations.deinit();
@@ -286,7 +287,7 @@ test "module articulation morphology and presentation leave canonical controller
 }
 
 test "characters share immutable presets but own independent anatomy runtime state" {
-    var definition = try modular.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     const anatomy_definition = definition.anatomy_definition.?.view();
     var first = try anatomy.Runtime.init(std.testing.allocator, anatomy_definition, null);

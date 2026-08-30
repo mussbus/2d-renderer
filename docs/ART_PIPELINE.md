@@ -12,7 +12,7 @@ installed PNG
   -> existing unified sprite/mesh queue
 ```
 
-`src/graphics/art_pack.zig` owns style-independent presentation definitions. `src/graphics/image_decode.zig` owns PNG decoding and decoded CPU pixels. `GpuDemo` owns the corresponding SDL GPU textures and samplers. `src/scene/art_asset_demo.zig` is focused technical evidence; it is not a second renderer and does not replace character, anatomy, equipment, animation, physics, interaction, camera, sprite-batch, or deformable-mesh systems.
+`src/graphics/art_pack.zig` owns style-independent presentation definitions. `src/scene/art_asset_catalog.zig` owns the concrete Prompt 23 page, region, binding, and definition inputs. `src/graphics/image_decode.zig` owns PNG decoding and decoded CPU pixels. `GpuDemo` owns the corresponding SDL GPU textures and samplers. `src/scene/art_asset_demo.zig` consumes the production catalog as focused technical evidence; it is not a second renderer and does not replace character, anatomy, equipment, animation, physics, interaction, camera, sprite-batch, or deformable-mesh systems.
 
 The runtime consumes 2D images, stable region IDs, semantic/view bindings, authored dimensions, and pivots. It does not care whether an offline source was a human drawing, an image editor, a procedural tool, or a future 3D-to-2D authoring tool. A future exporter must emit the same validated definition data. Atlas coordinates are derived presentation data and are never gameplay identity.
 

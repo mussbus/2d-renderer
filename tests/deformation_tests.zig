@@ -4,7 +4,8 @@ const deformation = @import("deformation");
 const anatomy = @import("anatomy");
 const equipment = @import("equipment");
 const equipment_demo = @import("equipment_demo");
-const modular_body = @import("modular_body_demo");
+const equipment_catalog = @import("equipment_catalog");
+const modular_humanoid = @import("modular_humanoid");
 const authored = @import("authored_clips");
 const character = @import("character");
 const collider = @import("collider");
@@ -196,7 +197,7 @@ test "breathing and morph changes preserve physics controller canonical IK and d
     }};
     var world = try collision_world.CollisionWorld.init(std.testing.allocator, &floor_input, null);
     defer world.deinit();
-    var definition = try modular_body.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     var animations = try authored.Definitions.init(std.testing.allocator, &definition.skeleton_definition, null);
     defer animations.deinit();
@@ -242,7 +243,7 @@ test "breathing and morph changes preserve physics controller canonical IK and d
     try std.testing.expectApproxEqAbs(lower_length_before, instance.right_arm_binding.lower_length, 0);
     try std.testing.expect(hand_socket_before.approxEqAbs(try instance.socketPosition(.right_hand), 0));
 
-    var equipment_definition = try equipment_demo.initDefinition(std.testing.allocator, &definition);
+    var equipment_definition = try equipment_catalog.initDefinition(std.testing.allocator, &definition);
     defer equipment_definition.deinit();
     try instance.initializeEquipment(equipment_definition.view());
     const modifier_before = modifierFingerprint(&instance.equipment_loadout.?);

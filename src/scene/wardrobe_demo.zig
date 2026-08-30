@@ -9,7 +9,7 @@ const authored = @import("authored_clips");
 const humanoid = @import("humanoid");
 const character = @import("character");
 const character_art = @import("character_art");
-const modular_body_demo = @import("modular_body_demo");
+const modular_humanoid = @import("modular_humanoid");
 const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_art = @import("wardrobe_art");
 const wardrobe_presentation = @import("wardrobe_presentation");
@@ -54,7 +54,7 @@ pub const Initialization = struct {
     female_spawn: math.Vec2 = .{ .x = -1.02, .y = 1.05 },
     male_facing: humanoid.Facing = .left,
     female_facing: humanoid.Facing = .left,
-    optional_arm_root_contract: modular_body_demo.OptionalArmRootContract =
+    optional_arm_root_contract: modular_humanoid.OptionalArmRootContract =
         .standard,
 };
 
@@ -140,7 +140,7 @@ pub const Scene = struct {
         var wardrobe_art_definition = try wardrobe_art.Definition.init(allocator);
         errdefer wardrobe_art_definition.deinit();
         var definition =
-            try modular_body_demo.initDefinitionWithOptionalArmRootContract(
+            try modular_humanoid.initDefinitionWithOptionalArmRootContract(
                 allocator,
                 configuration.optional_arm_root_contract,
             );

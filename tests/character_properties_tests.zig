@@ -2,7 +2,8 @@ const std = @import("std");
 const properties = @import("character_properties");
 const skeleton = @import("skeleton");
 const equipment_demo = @import("equipment_demo");
-const modular_body = @import("modular_body_demo");
+const equipment_catalog = @import("equipment_catalog");
+const modular_humanoid = @import("modular_humanoid");
 const authored = @import("authored_clips");
 const character = @import("character");
 const character_controller = @import("character_controller");
@@ -261,9 +262,9 @@ test "equipment lifecycle resolves modifiers grants replacement reset and appear
 }
 
 test "resolved equipment properties drive movement jump double jump and dash through the controller" {
-    var definition = try modular_body.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
-    var equipment_definition = try equipment_demo.initDefinition(std.testing.allocator, &definition);
+    var equipment_definition = try equipment_catalog.initDefinition(std.testing.allocator, &definition);
     defer equipment_definition.deinit();
     var animations = try authored.Definitions.init(std.testing.allocator, &definition.skeleton_definition, null);
     defer animations.deinit();

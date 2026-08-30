@@ -2,7 +2,7 @@ const std = @import("std");
 const anatomy = @import("anatomy");
 const equipment = @import("equipment");
 const equipment_demo = @import("equipment_demo");
-const modular_body = @import("modular_body_demo");
+const modular_humanoid = @import("modular_humanoid");
 const sprite = @import("sprite_batch");
 
 const tolerance: f32 = 0.000001;
@@ -69,7 +69,7 @@ fn minimalInputs() equipment.DefinitionInputs {
 }
 
 test "equipment definition registration validates duplicates missing references and future identifiers" {
-    var humanoid_definition = try modular_body.initDefinition(std.testing.allocator);
+    var humanoid_definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer humanoid_definition.deinit();
     const anatomy_definition = humanoid_definition.anatomy_definition.?.view();
     const appearance_definition = humanoid_definition.visual_definition.view();
@@ -126,7 +126,7 @@ test "equipment definition registration validates duplicates missing references 
 }
 
 test "one garment expands deterministically to two and four arms with bounded required matching" {
-    var humanoid_definition = try modular_body.initDefinition(std.testing.allocator);
+    var humanoid_definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer humanoid_definition.deinit();
     const anatomy_definition = humanoid_definition.anatomy_definition.?.view();
     var equipment_definition = try equipment.Definition.init(

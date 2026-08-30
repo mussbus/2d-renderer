@@ -144,9 +144,11 @@ $cameraTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 't
 $appearanceTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/appearance_tests.zig')
 $anatomySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy.zig')
 $modularBodySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/modular_body_demo.zig')
+$modularHumanoidSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/modular_humanoid.zig')
 $anatomyTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/anatomy_tests.zig')
 $equipmentSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment.zig')
 $equipmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment_demo.zig')
+$equipmentCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/equipment_catalog.zig')
 $equipmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/equipment_tests.zig')
 $characterPropertiesSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_properties.zig')
 $characterPropertiesTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/character_properties_tests.zig')
@@ -156,12 +158,15 @@ $deformableMeshSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot
 $renderQueueSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/render_queue.zig')
 $meshCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/mesh_gpu_catalog.zig')
 $meshAttachmentDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/mesh_attachment_demo.zig')
+$attachmentMeshesSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/attachment_meshes.zig')
 $meshAttachmentTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/mesh_attachment_tests.zig')
 $foundationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_playground.zig')
+$foundationWorldSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/foundation_world.zig')
 $foundationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/foundation_playground_tests.zig')
 $artPackSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/art_pack.zig')
 $imageDecodeSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/image_decode.zig')
 $artAssetDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/art_asset_demo.zig')
+$artAssetCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/art_asset_catalog.zig')
 $artPipelineTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/art_pipeline_tests.zig')
 $imageDecodeTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/image_decode_tests.zig')
 $presentationViewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/presentation_view.zig')
@@ -1130,7 +1135,7 @@ foreach ($phrase in $requiredAppearanceTestPhrases) {
     }
 }
 
-if ([regex]::IsMatch($anatomySource + [Environment]::NewLine + $modularBodySource, '\bis_male\b|BodyType\.(male|female)') -or
+if ([regex]::IsMatch($anatomySource + [Environment]::NewLine + $modularHumanoidSource, '\bis_male\b|BodyType\.(male|female)') -or
     -not $anatomySource.Contains('pub const BodyPartDefinition = struct') -or
     -not $anatomySource.Contains('pub const BodyPartInstance = struct') -or
     -not $anatomySource.Contains('pub const BodyPartInstanceId = enum(u16)') -or
@@ -1155,16 +1160,16 @@ if (-not $anatomySource.Contains('pub const PresentationProfile = struct') -or
     Write-Error 'Presentation and morphology must remain allocation-free CPU appearance state with no GPU, controller, animation, or canonical IK ownership.' -ErrorAction Continue
     $failed = $true
 }
-if (-not $modularBodySource.Contains('"conventional_male"') -or
-    -not $modularBodySource.Contains('"conventional_female"') -or
-    -not $modularBodySource.Contains('"nonstandard_humanoid"') -or
-    -not $modularBodySource.Contains('"two_penises"') -or
-    -not $modularBodySource.Contains('"three_breasts"') -or
-    -not $modularBodySource.Contains('"extra_arm_module"') -or
-    -not $modularBodySource.Contains('"tail_module"') -or
-    -not $modularBodySource.Contains('"angular_face"') -or
-    -not $modularBodySource.Contains('"angular_left_eye"') -or
-    -not $modularBodySource.Contains('"ponytail"')) {
+if (-not $modularHumanoidSource.Contains('"conventional_male"') -or
+    -not $modularHumanoidSource.Contains('"conventional_female"') -or
+    -not $modularHumanoidSource.Contains('"nonstandard_humanoid"') -or
+    -not $modularHumanoidSource.Contains('"two_penises"') -or
+    -not $modularHumanoidSource.Contains('"three_breasts"') -or
+    -not $modularHumanoidSource.Contains('"extra_arm_module"') -or
+    -not $modularHumanoidSource.Contains('"tail_module"') -or
+    -not $modularHumanoidSource.Contains('"angular_face"') -or
+    -not $modularHumanoidSource.Contains('"angular_left_eye"') -or
+    -not $modularHumanoidSource.Contains('"ponytail"')) {
     Write-Error 'The modular-body content route must prove two visibly distinct data-defined faces, conventional and repeated adult modules, articulated appendages, horns, and multi-style hair data.' -ErrorAction Continue
     $failed = $true
 }
@@ -1272,7 +1277,9 @@ foreach ($phrase in @(
     'speed_boots',
     'winged_boots'
 )) {
-    if (-not $equipmentDemoSource.Contains($phrase) -and -not $gpuSource.Contains($phrase)) {
+    if (-not ($equipmentCatalogSource + [Environment]::NewLine +
+        $equipmentDemoSource + [Environment]::NewLine +
+        $gpuSource).Contains($phrase)) {
         Write-Error "Prompt 17 demonstration evidence is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
@@ -1484,7 +1491,7 @@ foreach ($phrase in @(
     'build_deformation_changed',
     'mirrored_facing'
 )) {
-    if (-not $meshAttachmentDemoSource.Contains($phrase)) {
+    if (-not ($attachmentMeshesSource + [Environment]::NewLine + $meshAttachmentDemoSource).Contains($phrase)) {
         Write-Error "Prompt 19 bounded mixed-scene evidence is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
@@ -1612,7 +1619,9 @@ foreach ($phrase in @(
     'runtime_allocation_delta != 0',
     'gpu_resource_delta != 0'
 )) {
-    if (-not ($foundationSource + [Environment]::NewLine + $gpuSource).Contains($phrase)) {
+    if (-not ($foundationWorldSource + [Environment]::NewLine +
+        $foundationSource + [Environment]::NewLine +
+        $gpuSource).Contains($phrase)) {
         Write-Error "Prompt 22 integrated foundation contract is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
@@ -1747,7 +1756,7 @@ foreach ($phrase in @(
     '.kind = .environment',
     'renderer_page_offset'
 )) {
-    if (-not $artAssetDemoSource.Contains($phrase)) {
+    if (-not ($artAssetCatalogSource + [Environment]::NewLine + $artAssetDemoSource).Contains($phrase)) {
         Write-Error "Prompt 23 focused proof content is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
@@ -2522,6 +2531,93 @@ foreach ($phrase in @(
     }
 }
 
+# F4C1 keeps scenario imports only at named application, composition, and
+# acceptance-report roots. This explicit allowlist is intentionally narrow and
+# is expected to shrink when F4C2 consolidates the application layer.
+$scenarioModuleNames = @(
+    'controller_demo',
+    'handshake_ik_demo',
+    'integrated_demo',
+    'playground_demo',
+    'modular_body_demo',
+    'equipment_demo',
+    'mesh_attachment_demo',
+    'foundation_playground',
+    'visual_foundation',
+    'art_asset_demo',
+    'wardrobe_demo',
+    'environment_demo'
+)
+$allowedScenarioImports = @{
+    'src/main.zig' = @('visual_foundation')
+    'src/graphics/gpu_demo.zig' = $scenarioModuleNames
+    'src/scene/anatomy_quality_report.zig' = @('wardrobe_demo')
+    'src/scene/environment_demo.zig' = @('wardrobe_demo')
+    'src/scene/foundation_coherence_report.zig' = @('visual_foundation')
+    'src/scene/visual_foundation.zig' = @('environment_demo', 'wardrobe_demo')
+    'src/scene/visual_geometry_report.zig' = @('wardrobe_demo')
+}
+$productionSourceFiles = @(
+    Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot 'src') -ErrorAction Stop
+)
+$scenarioImportPattern = '@import\s*\(\s*"(?<module>' + (($scenarioModuleNames | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')"\s*\)'
+foreach ($productionSourceFile in $productionSourceFiles) {
+    $relativePath = [IO.Path]::GetRelativePath($repositoryRoot, $productionSourceFile.FullName).Replace('\', '/')
+    $allowedModules = @($allowedScenarioImports[$relativePath])
+    $source = Get-Content -Raw -LiteralPath $productionSourceFile.FullName
+    foreach ($scenarioImport in [regex]::Matches($source, $scenarioImportPattern)) {
+        $moduleName = $scenarioImport.Groups['module'].Value
+        if ($moduleName -notin $allowedModules) {
+            Write-Error "F4C1 dependency violation: '$relativePath' imports scenario module '$moduleName' outside the explicit application/composition/report allowlist." -ErrorAction Continue
+            $failed = $true
+        }
+    }
+}
+
+$requiredProductionOwnership = @(
+    @($modularHumanoidSource, 'pub fn initDefinition', 'modular humanoid definition factory'),
+    @($equipmentCatalogSource, 'pub fn initDefinition', 'equipment catalog factory'),
+    @($attachmentMeshesSource, 'pub fn initFittedGarmentMesh', 'fitted garment mesh factory'),
+    @($attachmentMeshesSource, 'pub fn initSleeveMesh', 'sleeve mesh factory'),
+    @($attachmentMeshesSource, 'pub fn initCapeMesh', 'cape mesh factory'),
+    @($artAssetCatalogSource, 'pub fn definitionInput', 'art asset definition input'),
+    @($foundationWorldSource, 'pub fn colliderInputs', 'foundation collider input')
+)
+foreach ($ownershipRequirement in $requiredProductionOwnership) {
+    if (-not $ownershipRequirement[0].Contains($ownershipRequirement[1])) {
+        Write-Error "F4C1 production ownership is missing $($ownershipRequirement[2])." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$forbiddenDemoAuthority = @(
+    @($modularBodySource, 'pub fn initDefinition', 'modular_body_demo'),
+    @($modularBodySource, 'pub const OptionalArmRootContract', 'modular_body_demo'),
+    @($equipmentDemoSource, 'pub fn initDefinition', 'equipment_demo'),
+    @($meshAttachmentDemoSource, 'pub fn initFittedGarmentMesh', 'mesh_attachment_demo'),
+    @($meshAttachmentDemoSource, 'pub fn initSleeveMesh', 'mesh_attachment_demo'),
+    @($meshAttachmentDemoSource, 'pub fn initCapeMesh', 'mesh_attachment_demo'),
+    @($artAssetDemoSource, 'pub fn definitionInput', 'art_asset_demo'),
+    @($foundationSource, 'pub fn worldColliderInputs', 'foundation_playground')
+)
+foreach ($forbiddenAuthority in $forbiddenDemoAuthority) {
+    if ($forbiddenAuthority[0].Contains($forbiddenAuthority[1])) {
+        Write-Error "F4C1 dependency violation: $($forbiddenAuthority[2]) still owns '$($forbiddenAuthority[1])'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$testSources = @(
+    Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot 'tests') -ErrorAction Stop |
+        ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }
+)
+$combinedTestSource = $testSources -join [Environment]::NewLine
+$legacyFixtureProviderPattern = '(modular|modular_body_demo)\.initDefinition|equipment_demo\.initDefinition|mesh_demo\.init(FittedGarment|Sleeve|Cape)Mesh|art_asset_demo\.definitionInput|foundation\.worldColliderInputs'
+if ([regex]::IsMatch($combinedTestSource, $legacyFixtureProviderPattern)) {
+    Write-Error 'F4C1 test ownership violation: a test still calls a demo-owned production definition or factory.' -ErrorAction Continue
+    $failed = $true
+}
+
 if ($failed) {
     exit 1
 }
@@ -2530,6 +2626,7 @@ Write-Host "Repository source audit passed for $($sourceFiles.Count) files."
 Write-Host 'Forbidden SDL high-level renderer and alternate-renderer symbols are absent.'
 Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test markers were found in audited implementation files.')
 Write-Host 'F2C authority audit passed: mutable registry/entity storage is absent from the supported root and production code has no direct internal imports.'
+Write-Host 'F4C1 ownership audit passed: reusable definitions and factories are production-owned; scenario imports are confined to the explicit application/composition/report allowlist.'
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'

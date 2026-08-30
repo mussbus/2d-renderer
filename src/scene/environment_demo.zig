@@ -2,7 +2,8 @@ const std = @import("std");
 const math = @import("math");
 const input = @import("input");
 const character_controller = @import("character_controller");
-const foundation_playground = @import("foundation_playground");
+const foundation_world = @import("foundation_world");
+const modular_humanoid = @import("modular_humanoid");
 const camera2d = @import("camera2d");
 const character = @import("character");
 const humanoid = @import("humanoid");
@@ -20,7 +21,7 @@ pub const character_count: u32 = 2;
 pub const mesh_definition_count: usize = wardrobe_demo.mesh_definition_count;
 pub const configured_texture_page_count: u32 =
     environment_theme.environment_renderer_offset + environment_art.texture_page_count;
-pub const interaction_position = math.Vec2{ .x = -2.275, .y = foundation_playground.player_spawn.y };
+pub const interaction_position = math.Vec2{ .x = -2.275, .y = foundation_world.player_spawn.y };
 pub const presentation_camera_center_y: f32 = camera2d.default_center.y + 0.72;
 
 pub const Evidence = struct {
@@ -38,8 +39,8 @@ pub const Evidence = struct {
     jump_observed: bool = false,
     landing_observed: bool = false,
     raised_platform_landing_observed: bool = false,
-    maximum_airborne_x: f32 = foundation_playground.player_spawn.x,
-    last_landing_position: math.Vec2 = foundation_playground.player_spawn,
+    maximum_airborne_x: f32 = foundation_world.player_spawn.x,
+    last_landing_position: math.Vec2 = foundation_world.player_spawn,
     last_landing_collider: ?u16 = null,
     raised_platform_landing_frame: ?u32 = null,
     reset_observed: bool = false,
@@ -89,13 +90,13 @@ pub const Scene = struct {
 
     pub fn initWithOptionalArmRootContract(
         allocator: std.mem.Allocator,
-        root_contract: @import("modular_body_demo").OptionalArmRootContract,
+        root_contract: modular_humanoid.OptionalArmRootContract,
     ) !Scene {
-        const world_inputs = foundation_playground.worldColliderInputs();
+        const world_inputs = foundation_world.colliderInputs();
         var production = try wardrobe_demo.Scene.initWithConfiguration(allocator, .{
             .collider_inputs = &world_inputs,
-            .male_spawn = foundation_playground.partner_spawn,
-            .female_spawn = foundation_playground.player_spawn,
+            .male_spawn = foundation_world.partner_spawn,
+            .female_spawn = foundation_world.player_spawn,
             .male_facing = .right,
             .female_facing = .right,
             .optional_arm_root_contract = root_contract,
@@ -112,7 +113,7 @@ pub const Scene = struct {
         );
         var camera = camera2d.Camera2D.initDefault();
         try camera.setCenter(.{
-            .x = foundation_playground.player_spawn.x,
+            .x = foundation_world.player_spawn.x,
             .y = presentation_camera_center_y,
         });
         const collision_fingerprint = environment_theme.collisionFingerprint(&production.world);

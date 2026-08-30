@@ -14,9 +14,13 @@ The independent F3 finding and subsequent accepted disposition are recorded in
 F1 through F3 are accepted. The owner-approved, read-only F4A repository audit
 and its decisions are recorded in
 [`implementation/f4a_production_architecture_audit.md`](implementation/f4a_production_architecture_audit.md).
+The F4C1 production-definition ownership migration awaiting owner review is
+recorded in
+[`implementation/f4c1_production_definition_extraction.md`](implementation/f4c1_production_definition_extraction.md).
 
 F4 is the current production-architecture hardening track; F4 itself is not
-accepted, and F4B has not begun. None of these administrative status updates
+accepted. F4B1 and F4B2 are owner-approved, F4C1 awaits owner review, and F4C2
+through F4C5, F4D, and F4E have not begun. None of these status updates
 changes a production runtime route. Every downstream track and production
 migration still requires dedicated authorization. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,

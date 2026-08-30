@@ -4,8 +4,9 @@
 > owner-approved. F4A is owner-approved, and F4 production-architecture
 > hardening is the current track. The composition map below describes the
 > existing demo-driven runtime audited by F4A; it is not the accepted post-F4
-> target architecture. F4B has not begun. See the
-> [F4A audit record](../implementation/f4a_production_architecture_audit.md).
+> target architecture. F4B1 and F4B2 are owner-approved; F4C1 has extracted
+> reusable production definitions and awaits owner review. See the
+> [F4C1 record](../implementation/f4c1_production_definition_extraction.md).
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production

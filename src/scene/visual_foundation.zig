@@ -15,7 +15,7 @@ const skeleton = @import("skeleton");
 const environment_demo = @import("environment_demo");
 const environment_art = @import("environment_art");
 const environment_theme = @import("environment_theme");
-const foundation_playground = @import("foundation_playground");
+const foundation_world = @import("foundation_world");
 const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_demo = @import("wardrobe_demo");
 const render_queue = @import("render_queue");
@@ -25,7 +25,7 @@ const visual_geometry = @import("visual_geometry");
 const visual_geometry_overlay = @import("visual_geometry_overlay");
 const visual_truth = @import("visual_truth");
 const foundation_coherence = @import("foundation_coherence");
-const modular_body_demo = @import("modular_body_demo");
+const modular_humanoid = @import("modular_humanoid");
 
 pub const required_frames: u32 = 2_400;
 pub const character_count: u32 = 2;
@@ -33,7 +33,7 @@ pub const mesh_definition_count: usize = environment_demo.mesh_definition_count;
 pub const configured_texture_page_count: u32 = environment_demo.configured_texture_page_count;
 pub const required_handshake_count: usize = 3;
 pub const handshake_target_x: f32 =
-    foundation_playground.partner_spawn.x - handshake.authored_horizontal_separation;
+    foundation_world.partner_spawn.x - handshake.authored_horizontal_separation;
 pub const raised_platform_collider: u32 = 4;
 pub const partner_clear_x: f32 = 12;
 pub const partner_route_speed_mps: f32 = 3;
@@ -233,7 +233,7 @@ pub const ComponentProofCase = enum(u8) {
 
     pub fn rootContract(
         value: ComponentProofCase,
-    ) modular_body_demo.OptionalArmRootContract {
+    ) modular_humanoid.OptionalArmRootContract {
         return switch (value) {
             .intentional_gap_front,
             .intentional_gap_side_left,
@@ -427,7 +427,7 @@ pub const Scene = struct {
     interaction_root_b: ?math.Vec2 = null,
     interaction_record_index: ?usize = null,
     initial_breathing_sample: f32,
-    last_grounded_y: f32 = foundation_playground.player_spawn.y,
+    last_grounded_y: f32 = foundation_world.player_spawn.y,
     frame_physics: FramePhysicsEvidence = .{},
     theme_transition: ThemeTransitionEvidence = .{},
     debug_commands: *debug_draw.CommandBuffer,
@@ -441,12 +441,12 @@ pub const Scene = struct {
     male_ground_alignment_y: f32 = 0,
     viewport_recenter_pending: bool = false,
     partner_motion: PartnerMotion = .stopped,
-    partner_motion_target_x: f32 = foundation_playground.partner_spawn.x,
+    partner_motion_target_x: f32 = foundation_world.partner_spawn.x,
     debug_counts: foundation_evidence.DebugCounts = .{},
     debug_enabled_ticks: u32 = 0,
     reset_generation: u32 = 0,
     evidence: Evidence = .{},
-    component_proof_root_contract: modular_body_demo.OptionalArmRootContract = .standard,
+    component_proof_root_contract: modular_humanoid.OptionalArmRootContract = .standard,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -481,7 +481,7 @@ pub const Scene = struct {
         const root_contract = if (component_proof_case) |proof_case|
             proof_case.rootContract()
         else
-            modular_body_demo.OptionalArmRootContract.standard;
+            modular_humanoid.OptionalArmRootContract.standard;
         var integrated =
             try environment_demo.Scene.initWithOptionalArmRootContract(
                 allocator,
@@ -635,8 +635,8 @@ pub const Scene = struct {
         scene.evidence.camera_follow = scene.evidence.camera_follow or camera_delta > 2;
         scene.evidence.parallax = scene.evidence.parallax or
             (scene.evidence.camera_follow and
-                foundation_playground.distant_camera_x_factor <
-                    foundation_playground.midground_camera_x_factor);
+                foundation_world.distant_camera_x_factor <
+                    foundation_world.midground_camera_x_factor);
         scene.observePresentation();
         scene.integrated.production.frame_index +|= 1;
     }
@@ -1553,7 +1553,7 @@ pub const Scene = struct {
         );
         try scene.integrated.production.male.reset();
         scene.partner_motion = .stopped;
-        scene.partner_motion_target_x = foundation_playground.partner_spawn.x;
+        scene.partner_motion_target_x = foundation_world.partner_spawn.x;
         try scene.integrated.production.male.setFacing(.left);
         try configureLineup(&scene.integrated.production);
         scene.integrated.production.pending_input.reset();
@@ -1563,7 +1563,7 @@ pub const Scene = struct {
         scene.integrated.production.paused = false;
         scene.integrated.environment.reset();
         try scene.integrated.camera.setCenter(.{
-            .x = foundation_playground.player_spawn.x,
+            .x = foundation_world.player_spawn.x,
             .y = environment_demo.presentation_camera_center_y,
         });
         scene.time_mode = .normal;
@@ -1574,7 +1574,7 @@ pub const Scene = struct {
         scene.interaction_root_a = null;
         scene.interaction_root_b = null;
         scene.interaction_record_index = null;
-        scene.last_grounded_y = foundation_playground.player_spawn.y;
+        scene.last_grounded_y = foundation_world.player_spawn.y;
         scene.frame_physics = .{};
         scene.debug_counts = .{};
         scene.debug_enabled_ticks = 0;
@@ -1712,7 +1712,7 @@ pub const Scene = struct {
             }
         }
         const final = scene.integrated.production.female.controller.?.state;
-        if (!final.position.approxEqAbs(foundation_playground.player_spawn, 0.000001) or
+        if (!final.position.approxEqAbs(foundation_world.player_spawn, 0.000001) or
             !final.velocity.approxEqAbs(math.Vec2.zero, 0.000001) or
             !final.grounded or
             scene.manager.activeCount() != 0 or
@@ -2353,7 +2353,7 @@ pub const ScriptedInput = struct {
                     raw.keyboard.a = true;
                     raw.keyboard.space = true;
                 } else if (state.position.x >
-                    foundation_playground.player_spawn.x + 0.5)
+                    foundation_world.player_spawn.x + 0.5)
                 {
                     raw.keyboard.a = true;
                 } else {
@@ -2563,21 +2563,21 @@ pub const ScriptedInput = struct {
                 if (script.phase_frame < 20) {
                     script.return_nudge_direction = 0;
                 } else if (state.position.x >
-                    foundation_playground.player_spawn.x + 0.5)
+                    foundation_world.player_spawn.x + 0.5)
                 {
                     script.return_nudge_direction = 0;
                 } else if (script.return_nudge_direction != 0) {
                     script.return_nudge_direction = 0;
                 } else if (@abs(state.velocity.x) < 0.02) {
                     const error_value =
-                        foundation_playground.player_spawn.x - state.position.x;
+                        foundation_world.player_spawn.x - state.position.x;
                     if (error_value > 0.04) {
                         script.return_nudge_direction = 1;
                     } else if (error_value < -0.04) {
                         script.return_nudge_direction = -1;
                     } else {
                         try scene.startPartnerMotion(
-                            foundation_playground.partner_spawn.x,
+                            foundation_world.partner_spawn.x,
                         );
                         script.transition(.partner_return);
                     }

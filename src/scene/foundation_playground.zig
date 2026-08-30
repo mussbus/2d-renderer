@@ -20,20 +20,19 @@ const foot_planting = @import("foot_planting");
 const render_queue = @import("render_queue");
 const camera2d = @import("camera2d");
 const debug_draw = @import("debug_draw");
-const modular_body = @import("modular_body_demo");
-const mesh_attachment_demo = @import("mesh_attachment_demo");
+const modular_humanoid = @import("modular_humanoid");
+const attachment_meshes = @import("attachment_meshes");
+const foundation_world = @import("foundation_world");
 
 pub const required_frames: u32 = 1800;
 pub const character_count: usize = 3;
 pub const mesh_definition_count: usize = 3;
-pub const player_spawn = math.Vec2{ .x = -3.15, .y = 1.05 };
-pub const partner_spawn = math.Vec2{ .x = -1.40, .y = 1.05 };
-pub const showcase_spawn = math.Vec2{ .x = 14.0, .y = 1.05 };
+const player_spawn = foundation_world.player_spawn;
+const partner_spawn = foundation_world.partner_spawn;
+const showcase_spawn = foundation_world.showcase_spawn;
 pub const handshake_player_x: f32 = partner_spawn.x - handshake.authored_horizontal_separation;
-pub const world_min_x: f32 = -36;
-pub const world_max_x: f32 = 36;
-pub const distant_camera_x_factor: f32 = 0.12;
-pub const midground_camera_x_factor: f32 = 0.46;
+const distant_camera_x_factor = foundation_world.distant_camera_x_factor;
+const midground_camera_x_factor = foundation_world.midground_camera_x_factor;
 pub const loadout_count: u8 = 3;
 
 pub const TimeMode = enum(u8) {
@@ -195,13 +194,13 @@ pub const Scene = struct {
     debug_commands: debug_draw.CommandBuffer = .{},
 
     pub fn init(allocator: std.mem.Allocator, debug_visualization: bool) !Scene {
-        var definition = try modular_body.initDefinition(allocator);
+        var definition = try modular_humanoid.initDefinition(allocator);
         errdefer definition.deinit();
-        var fitted_mesh = try mesh_attachment_demo.initFittedGarmentMesh(allocator);
+        var fitted_mesh = try attachment_meshes.initFittedGarmentMesh(allocator);
         errdefer fitted_mesh.deinit();
-        var sleeve_mesh = try mesh_attachment_demo.initSleeveMesh(allocator);
+        var sleeve_mesh = try attachment_meshes.initSleeveMesh(allocator);
         errdefer sleeve_mesh.deinit();
-        var cape_mesh = try mesh_attachment_demo.initCapeMesh(allocator);
+        var cape_mesh = try attachment_meshes.initCapeMesh(allocator);
         errdefer cape_mesh.deinit();
         var equipment_definition = try initEquipmentDefinition(
             allocator,
@@ -213,7 +212,7 @@ pub const Scene = struct {
         errdefer equipment_definition.deinit();
         var animations = try authored.Definitions.init(allocator, &definition.skeleton_definition, null);
         errdefer animations.deinit();
-        const colliders = worldColliderInputs();
+        const colliders = foundation_world.colliderInputs();
         var world = try collision_world.CollisionWorld.init(allocator, &colliders, null);
         errdefer world.deinit();
         var player = try character.CharacterInstance.initControlled(
@@ -1082,37 +1081,6 @@ pub fn gameplayStatesEqual(left: GameplayState, right: GameplayState, tolerance:
         left.selected_body_preset == right.selected_body_preset and
         left.selected_hair == right.selected_hair and
         @abs(left.global_build_normalized - right.global_build_normalized) <= tolerance;
-}
-
-pub fn worldColliderInputs() [8]collider.StaticColliderInput {
-    return .{
-        staticCollider(1, world_min_x, -1, world_max_x, 0, true),
-        staticCollider(2, world_max_x - 0.3, 0, world_max_x, 7, false),
-        staticCollider(3, world_min_x, 0, world_min_x + 0.3, 7, false),
-        staticCollider(4, 4.5, 0.75, 7.0, 1.0, true),
-        staticCollider(5, 9.0, 1.45, 11.5, 1.70, true),
-        staticCollider(6, 15.0, 0.85, 18.0, 1.10, true),
-        staticCollider(7, 23.0, 1.75, 26.0, 2.0, true),
-        staticCollider(8, -27.0, 1.15, -23.0, 1.40, true),
-    };
-}
-
-fn staticCollider(
-    id: collider.ColliderId,
-    minimum_x: f32,
-    minimum_y: f32,
-    maximum_x: f32,
-    maximum_y: f32,
-    ground_query_eligible: bool,
-) collider.StaticColliderInput {
-    return .{
-        .id = id,
-        .bounds = .{
-            .minimum = .{ .x = minimum_x, .y = minimum_y },
-            .maximum = .{ .x = maximum_x, .y = maximum_y },
-        },
-        .ground_query_eligible = ground_query_eligible,
-    };
 }
 
 const CaveQuad = struct {

@@ -3,6 +3,7 @@ const input = @import("input");
 const render_queue = @import("render_queue");
 const camera2d = @import("camera2d");
 const foundation = @import("foundation_playground");
+const foundation_world = @import("foundation_world");
 
 test "bounded foundation script verifies world customization properties abilities interaction resize and reset" {
     var scene = try foundation.Scene.init(std.testing.allocator, false);
@@ -84,7 +85,7 @@ test "foundation reset restores the complete configured baseline without stale m
         try scene.updateFrame(1.0 / 60.0, snapshot);
     }
     const state = scene.gameplayState();
-    try std.testing.expect(state.position.approxEqAbs(foundation.player_spawn, 0.000001));
+    try std.testing.expect(state.position.approxEqAbs(foundation_world.player_spawn, 0.000001));
     try std.testing.expect(state.velocity.approxEqAbs(@import("math").Vec2.zero, 0.000001));
     try std.testing.expect(state.grounded);
     try std.testing.expectEqual(scene.evidence.default_loadout_fingerprint, state.loadout_fingerprint);

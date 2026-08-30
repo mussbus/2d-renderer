@@ -5,7 +5,7 @@ const collider = @import("collider");
 const collision_world = @import("collision_world");
 const character = @import("character");
 const render_queue = @import("render_queue");
-const foundation_playground = @import("foundation_playground");
+const foundation_world = @import("foundation_world");
 const environment_art = @import("environment_art");
 const environment_theme = @import("environment_theme");
 const environment_demo = @import("environment_demo");
@@ -76,13 +76,13 @@ test "theme data owns presentation only and contains no collision spawn or inter
     try std.testing.expect(!@hasField(environment_theme.ThemeInput, "spawn"));
     try std.testing.expect(!@hasField(environment_theme.ThemeInput, "interaction"));
     try std.testing.expectEqual(
-        foundation_playground.player_spawn.y,
+        foundation_world.player_spawn.y,
         environment_demo.interaction_position.y,
     );
 }
 
 test "standable surface overlay is an exact collision-authority projection" {
-    const inputs = foundation_playground.worldColliderInputs();
+    const inputs = foundation_world.colliderInputs();
     var world = try collision_world.CollisionWorld.init(std.testing.allocator, &inputs, null);
     defer world.deinit();
     const overlay = try environment_theme.SurfaceOverlay.init(&world);

@@ -6,6 +6,7 @@ const presentation_view = @import("presentation_view");
 const presentation_pose = @import("presentation_pose");
 const character_art = @import("character_art");
 const modular_body_demo = @import("modular_body_demo");
+const modular_humanoid = @import("modular_humanoid");
 const handshake_ik_demo = @import("handshake_ik_demo");
 const render_queue = @import("render_queue");
 
@@ -112,7 +113,7 @@ test "side reflection remains single-root while front projection never reflects 
 test "character art definitions cover both views bald buzz cut and long hair" {
     var art = try character_art.Definition.init(std.testing.allocator);
     defer art.deinit();
-    var definition = try modular_body_demo.initDefinition(std.testing.allocator);
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer definition.deinit();
     const male = try character_art.Presentation.init(&art, &definition, .male, 1);
     const female = try character_art.Presentation.init(&art, &definition, .female, 1);

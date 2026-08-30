@@ -6,6 +6,7 @@ const mesh_catalog = @import("mesh_gpu_catalog");
 const sprite = @import("sprite_batch");
 const equipment = @import("equipment");
 const mesh_demo = @import("mesh_attachment_demo");
+const attachment_meshes = @import("attachment_meshes");
 
 test "mesh definition validates finite vertices UVs topology indices capacities and degeneracy" {
     const valid_vertices = [_]mesh.VertexInput{
@@ -103,9 +104,9 @@ test "mesh ownership and partial allocation failure cleanup are explicit" {
 }
 
 test "persistent topology catalog owns one immutable copy and cleans partial initialization" {
-    var fitted = try mesh_demo.initFittedGarmentMesh(std.testing.allocator);
+    var fitted = try attachment_meshes.initFittedGarmentMesh(std.testing.allocator);
     defer fitted.deinit();
-    var sleeve = try mesh_demo.initSleeveMesh(std.testing.allocator);
+    var sleeve = try attachment_meshes.initSleeveMesh(std.testing.allocator);
     defer sleeve.deinit();
     const definitions = [_]mesh.DefinitionView{ fitted.view(), sleeve.view() };
     var catalog = try mesh_catalog.Catalog.init(std.testing.allocator, &definitions);
@@ -145,7 +146,7 @@ test "GPU mesh records match the shader contract and weighted deformation is bou
 }
 
 test "unified queue interleaves semantic sprite and mesh order and batches compatible repeated meshes honestly" {
-    var definition = try mesh_demo.initSleeveMesh(std.testing.allocator);
+    var definition = try attachment_meshes.initSleeveMesh(std.testing.allocator);
     defer definition.deinit();
     var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, 8, 4, 4, 1);
     defer queue.deinit();
@@ -219,7 +220,7 @@ test "topology-expanded equipment owns independent mesh state per binding and ch
 }
 
 test "queue capacities and allocation failure are deterministic" {
-    var definition = try mesh_demo.initSleeveMesh(std.testing.allocator);
+    var definition = try attachment_meshes.initSleeveMesh(std.testing.allocator);
     defer definition.deinit();
     var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, 2, 1, 1, 1);
     defer queue.deinit();

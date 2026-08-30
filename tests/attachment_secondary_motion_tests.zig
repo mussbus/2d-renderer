@@ -6,6 +6,7 @@ const character_controller = @import("character_controller");
 const state_machine = @import("state_machine");
 const queue_module = @import("render_queue");
 const mesh_demo = @import("mesh_attachment_demo");
+const attachment_meshes = @import("attachment_meshes");
 
 const test_definition = secondary.Definition{
     .dynamic_point_count = 3,
@@ -252,8 +253,8 @@ test "equipment and hair instances own lifecycle state independently and preserv
     const conventional_cape = try scene.equipmentSecondaryState(&scene.conventional, "cape_mesh");
     const nonstandard_cape = try scene.equipmentSecondaryState(&scene.nonstandard, "cape_mesh");
     try std.testing.expect(conventional_cape != nonstandard_cape);
-    try std.testing.expect(!(try conventional_cape.displacement(mesh_demo.cape_secondary_motion, 2)).approxEqAbs(
-        try nonstandard_cape.displacement(mesh_demo.cape_secondary_motion, 2),
+    try std.testing.expect(!(try conventional_cape.displacement(attachment_meshes.cape_secondary_motion, 2)).approxEqAbs(
+        try nonstandard_cape.displacement(attachment_meshes.cape_secondary_motion, 2),
         0.000001,
     ));
 
@@ -269,7 +270,7 @@ test "equipment and hair instances own lifecycle state independently and preserv
     try scene.conventional.advanceVisualTick(.{ .horizontal_velocity = 4 });
     const initialized = try scene.equipmentSecondaryState(&scene.conventional, "cape_mesh");
     try std.testing.expect(initialized.initialized);
-    try std.testing.expect((try initialized.displacement(mesh_demo.cape_secondary_motion, 2)).approxEqAbs(math.Vec2.zero, 0));
+    try std.testing.expect((try initialized.displacement(attachment_meshes.cape_secondary_motion, 2)).approxEqAbs(math.Vec2.zero, 0));
 
     const sleeve_component = try scene.equipment_definition.visualComponentId("topology_sleeve_mesh");
     var sleeve_indices: [mesh_demo.expected_conventional_sleeves]usize = undefined;
@@ -286,12 +287,12 @@ test "equipment and hair instances own lifecycle state independently and preserv
     const first_sleeve = &scene.conventional.equipment_loadout.?.resolved_visuals[sleeve_indices[0]].secondary;
     const second_sleeve = &scene.conventional.equipment_loadout.?.resolved_visuals[sleeve_indices[1]].secondary;
     try std.testing.expect(first_sleeve != second_sleeve);
-    try first_sleeve.step(mesh_demo.loose_sleeve_secondary_motion, .{
+    try first_sleeve.step(attachment_meshes.loose_sleeve_secondary_motion, .{
         .anchor_world = math.Vec2.zero,
         .linear_acceleration_world = .{ .x = 40, .y = 0 },
     });
-    try std.testing.expect(!(try first_sleeve.displacement(mesh_demo.loose_sleeve_secondary_motion, 1)).approxEqAbs(
-        try second_sleeve.displacement(mesh_demo.loose_sleeve_secondary_motion, 1),
+    try std.testing.expect(!(try first_sleeve.displacement(attachment_meshes.loose_sleeve_secondary_motion, 1)).approxEqAbs(
+        try second_sleeve.displacement(attachment_meshes.loose_sleeve_secondary_motion, 1),
         0.000001,
     ));
 

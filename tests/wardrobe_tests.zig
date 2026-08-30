@@ -2,7 +2,7 @@ const std = @import("std");
 const input = @import("input");
 const equipment = @import("equipment");
 const humanoid = @import("humanoid");
-const modular_body_demo = @import("modular_body_demo");
+const modular_humanoid = @import("modular_humanoid");
 const wardrobe_catalog = @import("wardrobe_catalog");
 const wardrobe_art = @import("wardrobe_art");
 const wardrobe_presentation = @import("wardrobe_presentation");
@@ -45,7 +45,7 @@ const expected_item_names = [_][]const u8{
 };
 
 test "Prompt 25 wardrobe definitions initialize with complete side and front bindings" {
-    var humanoid_definition = try modular_body_demo.initDefinition(std.testing.allocator);
+    var humanoid_definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer humanoid_definition.deinit();
     var catalog = try wardrobe_catalog.Catalog.init(
         std.testing.allocator,
@@ -70,7 +70,7 @@ test "Prompt 25 wardrobe definitions initialize with complete side and front bin
 }
 
 test "all production IDs resolve and every component has deterministic distinct view art" {
-    var humanoid_definition = try modular_body_demo.initDefinition(std.testing.allocator);
+    var humanoid_definition = try modular_humanoid.initDefinition(std.testing.allocator);
     defer humanoid_definition.deinit();
     var catalog = try wardrobe_catalog.Catalog.init(std.testing.allocator, &humanoid_definition);
     defer catalog.deinit();
