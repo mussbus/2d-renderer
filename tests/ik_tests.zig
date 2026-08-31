@@ -75,7 +75,7 @@ const PairFixture = struct {
 
     fn start(fixture: *PairFixture, start_tick: u64) !interaction_system.InteractionId {
         const participants_value = fixture.participants();
-        return fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants_value, start_tick, .none);
+        return fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants_value, start_tick, .none);
     }
 
     fn runElapsed(fixture: *PairFixture, start_tick: u64, elapsed: u32) !void {
@@ -300,9 +300,10 @@ test "arm application weight zero preserves authored pose full weight reaches an
     try fixture.a.enterAnimationState(.handshake_role_a);
     try fixture.a.sampleInteractionAnimation(.handshake_role_a, 0.60);
     const authored_socket = try fixture.a.socketPosition(.right_hand);
-    const shoulder = (try fixture.a.character.local_and_world_pose.worldForBone(&fixture.definition.skeleton_definition, fixture.a.right_arm_binding.root_bone)).translationPart();
+    const binding = fixture.a.rightArmBinding();
+    const shoulder = (try fixture.a.humanoidView().local_and_world_pose.worldForBone(&fixture.definition.skeleton_definition, binding.root_bone)).translationPart();
     const target = authored_socket.add(.{ .x = 0.01, .y = 0.006 });
-    const root_before = fixture.a.world_position;
+    const root_before = fixture.a.worldPosition();
     const zero = try fixture.a.applyRightHandIk(target, 0);
     try std.testing.expect(zero.post_ik_hand_position.approxEqAbs(authored_socket, 0.000001));
     try fixture.a.clearRightHandIk();
@@ -312,9 +313,9 @@ test "arm application weight zero preserves authored pose full weight reaches an
     try std.testing.expect(full.target_error < integration_tolerance);
     try std.testing.expect(half.target_error < zero.target_error);
     try std.testing.expect(half.target_error > full.target_error);
-    try std.testing.expectApproxEqAbs(fixture.a.right_arm_binding.upper_length, full.solved_upper_length, integration_tolerance);
-    try std.testing.expectApproxEqAbs(fixture.a.right_arm_binding.lower_length, full.solved_lower_length, integration_tolerance);
-    try std.testing.expect(fixture.a.world_position.approxEqAbs(root_before, 0));
+    try std.testing.expectApproxEqAbs(binding.upper_length, full.solved_upper_length, integration_tolerance);
+    try std.testing.expectApproxEqAbs(binding.lower_length, full.solved_lower_length, integration_tolerance);
+    try std.testing.expect(fixture.a.worldPosition().approxEqAbs(root_before, 0));
     try std.testing.expect(shoulder.isFinite());
 }
 
@@ -350,14 +351,15 @@ test "shared midpoint is symmetric and A then B equals B then A" {
     const second_a = try second.a.applyRightHandIk(target_ba, 1);
     try std.testing.expect(first_a.post_ik_hand_position.approxEqAbs(second_a.post_ik_hand_position, integration_tolerance));
     try std.testing.expect(first_b.post_ik_hand_position.approxEqAbs(second_b.post_ik_hand_position, integration_tolerance));
-    try std.testing.expect(first.a.character.local_and_world_pose.local_transforms[first.a.right_arm_binding.root_bone].approxEqAbs(second.a.character.local_and_world_pose.local_transforms[second.a.right_arm_binding.root_bone], integration_tolerance));
-    try std.testing.expect(first.b.character.local_and_world_pose.local_transforms[first.b.right_arm_binding.middle_bone].approxEqAbs(second.b.character.local_and_world_pose.local_transforms[second.b.right_arm_binding.middle_bone], integration_tolerance));
+    try std.testing.expect(first.a.humanoidView().local_and_world_pose.local_transforms[first.a.rightArmBinding().root_bone].approxEqAbs(second.a.humanoidView().local_and_world_pose.local_transforms[second.a.rightArmBinding().root_bone], integration_tolerance));
+    try std.testing.expect(first.b.humanoidView().local_and_world_pose.local_transforms[first.b.rightArmBinding().middle_bone].approxEqAbs(second.b.humanoidView().local_and_world_pose.local_transforms[second.b.rightArmBinding().middle_bone], integration_tolerance));
 }
 
 test "interaction IK weight is authoritative bounded and phase driven" {
     var fixture = try PairFixture.init(handshake.authored_horizontal_separation, false, true);
     defer fixture.deinit();
-    const definition = &fixture.manager.definition;
+    const definition_value = fixture.manager.definitionView();
+    const definition = &definition_value;
     try std.testing.expectApproxEqAbs(@as(f32, 0), interaction_system.weightForElapsed(definition, 0), 0);
     try std.testing.expectApproxEqAbs(@as(f32, 0.5), interaction_system.weightForElapsed(definition, definition.event(.contact).elapsed_tick / 2), 0.000001);
     try std.testing.expectApproxEqAbs(@as(f32, 1), interaction_system.weightForElapsed(definition, definition.event(.contact).elapsed_tick), 0);
@@ -370,7 +372,7 @@ test "nominal and perturbed handshakes converge both hands on one shared target"
     var nominal = try PairFixture.init(handshake.authored_horizontal_separation, false, true);
     defer nominal.deinit();
     const nominal_id = try nominal.start(100);
-    try nominal.runElapsed(100, nominal.manager.definition.event(.contact).elapsed_tick);
+    try nominal.runElapsed(100, nominal.manager.definitionView().event(.contact).elapsed_tick);
     const nominal_contact = nominal.manager.instance(nominal_id).?.contact;
     try std.testing.expect(nominal_contact.ik_enabled);
     try std.testing.expectApproxEqAbs(@as(f32, 0.000464), nominal_contact.pre_separation, 0.00001);
@@ -381,7 +383,7 @@ test "nominal and perturbed handshakes converge both hands on one shared target"
     var perturbed = try PairFixture.init(handshake.maximum_horizontal_separation, false, true);
     defer perturbed.deinit();
     const perturbed_id = try perturbed.start(100);
-    try perturbed.runElapsed(100, perturbed.manager.definition.event(.contact).elapsed_tick);
+    try perturbed.runElapsed(100, perturbed.manager.definitionView().event(.contact).elapsed_tick);
     const contact = perturbed.manager.instance(perturbed_id).?.contact;
     try std.testing.expect(contact.pre_separation > 0.015);
     try std.testing.expect(contact.post_separation < 0.001);
@@ -397,7 +399,7 @@ test "mirrored handshake retains anatomy timing and equivalent IK error" {
     defer mirrored.deinit();
     const regular_id = try regular.start(7);
     const mirrored_id = try mirrored.start(7);
-    const contact_ticks = regular.manager.definition.event(.contact).elapsed_tick;
+    const contact_ticks = regular.manager.definitionView().event(.contact).elapsed_tick;
     try regular.runElapsed(7, contact_ticks);
     try mirrored.runElapsed(7, contact_ticks);
     const a = regular.manager.instance(regular_id).?.contact;
@@ -464,8 +466,8 @@ test "IK enabled and disabled preserve interaction timing and controlled physics
     var enabled = interaction_system.Manager.initWithIk(paired);
     const disabled_participants = [_]*character.CharacterInstance{ &disabled_a, &disabled_b };
     const enabled_participants = [_]*character.CharacterInstance{ &enabled_a, &enabled_b };
-    const disabled_id = try disabled.startPair(disabled_a.id, disabled_b.id, &disabled_participants, 20, .none);
-    const enabled_id = try enabled.startPair(enabled_a.id, enabled_b.id, &enabled_participants, 20, .none);
+    const disabled_id = try disabled.startPair(disabled_a.id(), disabled_b.id(), &disabled_participants, 20, .none);
+    const enabled_id = try enabled.startPair(enabled_a.id(), enabled_b.id(), &enabled_participants, 20, .none);
     var tick: u64 = 21;
     while (tick <= 380) : (tick += 1) {
         try disabled.updateTick(tick, &disabled_participants);
@@ -474,15 +476,15 @@ test "IK enabled and disabled preserve interaction timing and controlled physics
     const disabled_done = disabled.instance(disabled_id).?;
     const enabled_done = enabled.instance(enabled_id).?;
     try std.testing.expectEqualDeep(disabled_done.event_ticks, enabled_done.event_ticks);
-    try std.testing.expect(disabled_a.controller.?.state.position.approxEqAbs(enabled_a.controller.?.state.position, 0));
-    try std.testing.expect(disabled_b.controller.?.state.position.approxEqAbs(enabled_b.controller.?.state.position, 0));
-    try std.testing.expect(disabled_a.controller.?.state.velocity.approxEqAbs(enabled_a.controller.?.state.velocity, 0));
-    try std.testing.expect(disabled_b.controller.?.state.velocity.approxEqAbs(enabled_b.controller.?.state.velocity, 0));
-    try std.testing.expectEqual(disabled_a.controller.?.state.grounded, enabled_a.controller.?.state.grounded);
-    try std.testing.expectEqual(disabled_b.controller.?.state.grounded, enabled_b.controller.?.state.grounded);
-    try std.testing.expectEqual(disabled_a.controller.?.state.supporting_collider, enabled_a.controller.?.state.supporting_collider);
-    try std.testing.expectEqual(disabled_b.controller.?.state.supporting_collider, enabled_b.controller.?.state.supporting_collider);
-    try std.testing.expect(!enabled_a.right_arm_ik.applied and !enabled_b.right_arm_ik.applied);
+    try std.testing.expect(disabled_a.controllerSnapshot().?.state.position.approxEqAbs(enabled_a.controllerSnapshot().?.state.position, 0));
+    try std.testing.expect(disabled_b.controllerSnapshot().?.state.position.approxEqAbs(enabled_b.controllerSnapshot().?.state.position, 0));
+    try std.testing.expect(disabled_a.controllerSnapshot().?.state.velocity.approxEqAbs(enabled_a.controllerSnapshot().?.state.velocity, 0));
+    try std.testing.expect(disabled_b.controllerSnapshot().?.state.velocity.approxEqAbs(enabled_b.controllerSnapshot().?.state.velocity, 0));
+    try std.testing.expectEqual(disabled_a.controllerSnapshot().?.state.grounded, enabled_a.controllerSnapshot().?.state.grounded);
+    try std.testing.expectEqual(disabled_b.controllerSnapshot().?.state.grounded, enabled_b.controllerSnapshot().?.state.grounded);
+    try std.testing.expectEqual(disabled_a.controllerSnapshot().?.state.supporting_collider, enabled_a.controllerSnapshot().?.state.supporting_collider);
+    try std.testing.expectEqual(disabled_b.controllerSnapshot().?.state.supporting_collider, enabled_b.controllerSnapshot().?.state.supporting_collider);
+    try std.testing.expect(enabled_a.rightHandIkMetrics() == null and enabled_b.rightHandIkMetrics() == null);
 }
 
 test "cancellation at approach blend contact and release clears all IK state" {
@@ -493,11 +495,11 @@ test "cancellation at approach blend contact and release clears all IK state" {
         const id = try fixture.start(10);
         try fixture.runElapsed(10, elapsed);
         const participants_value = fixture.participants();
-        try std.testing.expect(try fixture.manager.cancelForCharacter(fixture.a.id, .character_reset, &participants_value));
+        try std.testing.expect(try fixture.manager.cancelForCharacter(fixture.a.id(), .character_reset, &participants_value));
         const cancelled = fixture.manager.instance(id).?;
         try std.testing.expectEqual(interaction.Lifecycle.cancelled, cancelled.lifecycle);
         try std.testing.expect(!cancelled.ik.target_valid and cancelled.ik.weight == 0);
-        try std.testing.expect(!fixture.a.right_arm_ik.applied and !fixture.b.right_arm_ik.applied);
+        try std.testing.expect(fixture.a.rightHandIkMetrics() == null and fixture.b.rightHandIkMetrics() == null);
         try std.testing.expect(!fixture.a.isInteractionLocked() and !fixture.b.isInteractionLocked());
         try fixture.a.advanceVisualTick(.{});
         try fixture.b.advanceVisualTick(.{});
@@ -508,11 +510,11 @@ test "completion scene reset and character reset clear IK without disturbing unr
     var fixture = try PairFixture.init(handshake.authored_horizontal_separation, false, true);
     defer fixture.deinit();
     const id = try fixture.start(0);
-    try fixture.runElapsed(0, fixture.manager.definition.event(.complete).elapsed_tick);
+    try fixture.runElapsed(0, fixture.manager.definitionView().event(.complete).elapsed_tick);
     const completed = fixture.manager.instance(id).?;
     try std.testing.expectEqual(interaction.Lifecycle.completed, completed.lifecycle);
     try std.testing.expect(!completed.ik.target_valid and completed.ik.weight == 0);
-    try std.testing.expect(!fixture.a.right_arm_ik.applied and !fixture.b.right_arm_ik.applied);
+    try std.testing.expect(fixture.a.rightHandIkMetrics() == null and fixture.b.rightHandIkMetrics() == null);
 
     var active = try PairFixture.init(handshake.authored_horizontal_separation, false, true);
     defer active.deinit();
@@ -521,7 +523,7 @@ test "completion scene reset and character reset clear IK without disturbing unr
     const participants_value = active.participants();
     try active.manager.reset(&participants_value);
     try std.testing.expectEqual(@as(usize, 0), active.manager.activeCount());
-    try std.testing.expect(!active.a.right_arm_ik.applied and !active.b.right_arm_ik.applied);
+    try std.testing.expect(active.a.rightHandIkMetrics() == null and active.b.rightHandIkMetrics() == null);
 }
 
 test "active participant reset clears its pair while unrelated reset leaves another pair active" {
@@ -530,9 +532,9 @@ test "active participant reset clears its pair while unrelated reset leaves anot
     const active_id = try active.start(0);
     try active.runElapsed(0, 72);
     const active_participants = active.participants();
-    try active.manager.resetPassiveCharacter(active.a.id, &active_participants);
+    try active.manager.resetPassiveCharacter(active.a.id(), &active_participants);
     try std.testing.expectEqual(interaction.Lifecycle.cancelled, active.manager.instance(active_id).?.lifecycle);
-    try std.testing.expect(!active.a.right_arm_ik.applied and !active.b.right_arm_ik.applied);
+    try std.testing.expect(active.a.rightHandIkMetrics() == null and active.b.rightHandIkMetrics() == null);
     try std.testing.expect(!active.a.isInteractionLocked() and !active.b.isInteractionLocked());
 
     var definition = try humanoid.HumanoidDefinition.init(std.testing.allocator, null);
@@ -547,11 +549,11 @@ test "active participant reset clears its pair while unrelated reset leaves anot
     defer unrelated.deinit();
     var manager = interaction_system.Manager.initWithIk(try handshake.definition(&animations));
     const participants_value = [_]*character.CharacterInstance{ &a, &b, &unrelated };
-    const pair_id = try manager.startPair(a.id, b.id, &participants_value, 0, .none);
+    const pair_id = try manager.startPair(a.id(), b.id(), &participants_value, 0, .none);
     var tick: u64 = 1;
     while (tick <= 72) : (tick += 1) try manager.updateTick(tick, &participants_value);
     const target_before = manager.instance(pair_id).?.ik.shared_target;
-    try manager.resetPassiveCharacter(unrelated.id, &participants_value);
+    try manager.resetPassiveCharacter(unrelated.id(), &participants_value);
     try std.testing.expectEqual(@as(usize, 1), manager.activeCount());
     try std.testing.expect(manager.instance(pair_id).?.ik.target_valid);
     try std.testing.expect(manager.instance(pair_id).?.ik.shared_target.approxEqAbs(target_before, 0));
@@ -572,18 +574,18 @@ test "simultaneous interactions own independent shared targets and cleanup" {
     defer d.deinit();
     var manager = interaction_system.Manager.initWithIk(try handshake.definition(&animations));
     const participants_value = [_]*character.CharacterInstance{ &a, &b, &c, &d };
-    const ab = try manager.startPair(a.id, b.id, &participants_value, 0, .none);
-    const cd = try manager.startPair(c.id, d.id, &participants_value, 0, .none);
+    const ab = try manager.startPair(a.id(), b.id(), &participants_value, 0, .none);
+    const cd = try manager.startPair(c.id(), d.id(), &participants_value, 0, .none);
     var tick: u64 = 1;
     while (tick <= 144) : (tick += 1) try manager.updateTick(tick, &participants_value);
     const ab_target = manager.instance(ab).?.ik.shared_target;
     const cd_target = manager.instance(cd).?.ik.shared_target;
     try std.testing.expect(!ab_target.approxEqAbs(cd_target, 0.1));
-    try std.testing.expect(try manager.cancelForCharacter(a.id, .character_reset, &participants_value));
+    try std.testing.expect(try manager.cancelForCharacter(a.id(), .character_reset, &participants_value));
     try std.testing.expect(!manager.instance(ab).?.ik.target_valid);
     try std.testing.expect(manager.instance(cd).?.ik.target_valid);
     try std.testing.expect(manager.instance(cd).?.ik.shared_target.approxEqAbs(cd_target, integration_tolerance));
-    try std.testing.expect(c.right_arm_ik.applied and d.right_arm_ik.applied);
+    try std.testing.expect(c.rightHandIkMetrics() != null and d.rightHandIkMetrics() != null);
 }
 
 test "completion of one pair cannot clear a later independent pair constraint" {
@@ -601,29 +603,30 @@ test "completion of one pair cannot clear a later independent pair constraint" {
     defer d.deinit();
     var manager = interaction_system.Manager.initWithIk(try handshake.definition(&animations));
     const participants_value = [_]*character.CharacterInstance{ &a, &b, &c, &d };
-    const ab = try manager.startPair(a.id, b.id, &participants_value, 0, .none);
+    const ab = try manager.startPair(a.id(), b.id(), &participants_value, 0, .none);
     var tick: u64 = 1;
     while (tick <= 100) : (tick += 1) try manager.updateTick(tick, &participants_value);
-    const cd = try manager.startPair(c.id, d.id, &participants_value, 100, .none);
+    const cd = try manager.startPair(c.id(), d.id(), &participants_value, 100, .none);
     while (tick <= 360) : (tick += 1) try manager.updateTick(tick, &participants_value);
     try std.testing.expectEqual(interaction.Lifecycle.completed, manager.instance(ab).?.lifecycle);
     try std.testing.expectEqual(interaction.Lifecycle.active, manager.instance(cd).?.lifecycle);
     try std.testing.expect(manager.instance(cd).?.ik.target_valid);
-    try std.testing.expect(c.right_arm_ik.applied and d.right_arm_ik.applied);
+    try std.testing.expect(c.rightHandIkMetrics() != null and d.rightHandIkMetrics() != null);
 }
 
 test "unreachable character target clamps arm without root or physics mutation" {
     var fixture = try PairFixture.init(handshake.authored_horizontal_separation, false, true);
     defer fixture.deinit();
-    const root_before = fixture.a.world_position;
-    const shoulder = (try fixture.a.character.local_and_world_pose.worldForBone(&fixture.definition.skeleton_definition, fixture.a.right_arm_binding.root_bone)).translationPart();
+    const root_before = fixture.a.worldPosition();
+    const binding = fixture.a.rightArmBinding();
+    const shoulder = (try fixture.a.humanoidView().local_and_world_pose.worldForBone(&fixture.definition.skeleton_definition, binding.root_bone)).translationPart();
     const target = shoulder.add(.{ .x = 20, .y = 3 });
     const result = try fixture.a.applyRightHandIk(target, 1);
     try std.testing.expectEqual(arm_ik.Reachability.clamped_far, result.reachability);
-    try std.testing.expectApproxEqAbs(fixture.a.right_arm_binding.upper_length, result.solved_upper_length, integration_tolerance);
-    try std.testing.expectApproxEqAbs(fixture.a.right_arm_binding.lower_length, result.solved_lower_length, integration_tolerance);
-    try std.testing.expectApproxEqAbs(fixture.a.right_arm_binding.upper_length + fixture.a.right_arm_binding.lower_length - two_bone.reach_epsilon, result.post_ik_hand_position.sub(result.shoulder_position).length(), integration_tolerance);
-    try std.testing.expect(fixture.a.world_position.approxEqAbs(root_before, 0));
+    try std.testing.expectApproxEqAbs(binding.upper_length, result.solved_upper_length, integration_tolerance);
+    try std.testing.expectApproxEqAbs(binding.lower_length, result.solved_lower_length, integration_tolerance);
+    try std.testing.expectApproxEqAbs(binding.upper_length + binding.lower_length - two_bone.reach_epsilon, result.post_ik_hand_position.sub(result.shoulder_position).length(), integration_tolerance);
+    try std.testing.expect(fixture.a.worldPosition().approxEqAbs(root_before, 0));
 }
 
 fn initPassive(

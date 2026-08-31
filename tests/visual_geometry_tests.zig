@@ -664,8 +664,8 @@ test "pose and morphology sweep traces production transforms without allocations
     }
     try std.testing.expectEqual(@as(u32, 0), sweep_report.failure_count);
     try std.testing.expectEqual(@as(u64, 0), queue.lifetime_metrics.cpu_allocations_after_stabilization);
-    try std.testing.expectEqual(@as(u64, 0), scene.male.metrics.submission_allocations);
-    try std.testing.expectEqual(@as(u64, 0), scene.female.metrics.submission_allocations);
+    try std.testing.expectEqual(@as(u64, 0), scene.male.hotPathMetrics().submission_allocations);
+    try std.testing.expectEqual(@as(u64, 0), scene.female.hotPathMetrics().submission_allocations);
     std.debug.print(
         "Prompt 27C pose/morphology geometry: {d}/{d} PASS\n",
         .{ sweep_report.count, sweep_report.count },

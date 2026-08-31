@@ -6,6 +6,7 @@ const component_graph = @import("component_graph");
 const humanoid = @import("humanoid");
 const modular_body = @import("modular_body_demo");
 const presentation_pose = @import("presentation_pose");
+const character = @import("character");
 
 const tolerance: f32 = 0.00001;
 
@@ -36,7 +37,7 @@ test "compiled graph exposes typed eye brow hair module and intentional gap proo
     try std.testing.expectEqual(anatomy.TopologyStatus.direct, left_brow.instance.topology_status);
     const left_brow_visuals = try graph.boundVisuals(
         left_brow_id,
-        scene.conventional_male.character.anatomy_runtime.?.selected_presentation_profile,
+        scene.conventional_male.anatomyRuntimeSnapshot().?.selected_presentation_profile,
     );
     try std.testing.expectEqual(@as(usize, 1), left_brow_visuals.len);
     try std.testing.expectEqualStrings(
@@ -56,7 +57,7 @@ test "compiled graph exposes typed eye brow hair module and intentional gap proo
     );
     const hair_visuals = try graph.boundVisuals(
         long_hair_id,
-        scene.conventional_female.character.anatomy_runtime.?.selected_presentation_profile,
+        scene.conventional_female.anatomyRuntimeSnapshot().?.selected_presentation_profile,
     );
     try std.testing.expectEqual(@as(usize, 1), hair_visuals.len);
 
@@ -156,9 +157,10 @@ test "eye deformation moves its eyebrow child and topology remains immutable" {
     const anatomy_definition = scene.definition.anatomy_definition.?.view();
     const appearance_definition = scene.definition.visual_definition.view();
     const compiled = scene.definition.component_graph_definition.?;
-    const runtime = &scene.conventional_male.character.anatomy_runtime.?;
+    const internal = character.testing.state(&scene.conventional_male);
+    const runtime = &internal.character.anatomy_runtime.?;
 
-    try scene.conventional_male.character.evaluateAppearance(&scene.definition);
+    try internal.character.evaluateAppearance(&scene.definition);
     const eye_id = try anatomy_definition.partInstanceId("left_eye");
     const brow_id = try anatomy_definition.partInstanceId("left_eyebrow");
     const brow_socket_id = switch (anatomy_definition.part_instances[brow_id.index()].parent) {
@@ -175,7 +177,7 @@ test "eye deformation moves its eyebrow child and topology remains immutable" {
     try runtime.evaluateHierarchy(
         anatomy_definition,
         appearance_definition,
-        &scene.conventional_male.character.appearance_runtime,
+        &internal.character.appearance_runtime,
     );
     const after = runtime.part_world[brow_id.index()].translationPart();
     try std.testing.expect(!before.approxEqAbs(after, tolerance));
@@ -203,46 +205,47 @@ test "eye deformation moves its eyebrow child and topology remains immutable" {
 test "front side-left and side-right projections retain graph and module sources" {
     var scene = try modular_body.Scene.init(std.testing.allocator);
     defer scene.deinit();
-    try scene.nonstandard.character.evaluateAppearance(&scene.definition);
+    const internal = character.testing.state(&scene.nonstandard);
+    try internal.character.evaluateAppearance(&scene.definition);
     const anatomy_definition = scene.definition.anatomy_definition.?.view();
     const appearance_definition = scene.definition.visual_definition.view();
     const instance = &scene.nonstandard;
     const front = try presentation_pose.FrontProjection.init(
         &scene.definition.skeleton_definition,
-        instance.character.local_and_world_pose,
+        internal.character.local_and_world_pose,
         appearance_definition,
-        instance.character.appearance_runtime,
-        instance.world_position,
+        internal.character.appearance_runtime,
+        instance.worldPosition(),
     );
     const side_right = try presentation_pose.FrontProjection.initSide(
         &scene.definition.skeleton_definition,
-        instance.character.local_and_world_pose,
+        internal.character.local_and_world_pose,
         appearance_definition,
-        instance.character.appearance_runtime,
-        instance.world_position,
+        internal.character.appearance_runtime,
+        instance.worldPosition(),
         false,
     );
     const side_left = try presentation_pose.FrontProjection.initSide(
         &scene.definition.skeleton_definition,
-        instance.character.local_and_world_pose,
+        internal.character.local_and_world_pose,
         appearance_definition,
-        instance.character.appearance_runtime,
-        instance.world_position,
+        internal.character.appearance_runtime,
+        instance.worldPosition(),
         true,
     );
     const extra_visual = try scene.definition.visual_definition.visualId(
         "extra_upper_arm",
     );
     const front_world = try front.visualWorld(
-        instance.character.appearance_runtime,
+        internal.character.appearance_runtime,
         appearance_definition.visuals[extra_visual.index()],
     );
     const right_world = try side_right.visualWorld(
-        instance.character.appearance_runtime,
+        internal.character.appearance_runtime,
         appearance_definition.visuals[extra_visual.index()],
     );
     const left_world = try side_left.visualWorld(
-        instance.character.appearance_runtime,
+        internal.character.appearance_runtime,
         appearance_definition.visuals[extra_visual.index()],
     );
     try std.testing.expect(front_world.isFinite());
@@ -253,7 +256,7 @@ test "front side-left and side-right projections retain graph and module sources
     const front_anatomy = try presentation_pose.FrontAnatomyProjection.init(
         front,
         anatomy_definition,
-        instance.character.anatomy_runtime.?,
+        internal.character.anatomy_runtime.?,
     );
     const detached = try anatomy_definition.partInstanceId("extra_arm_second");
     try std.testing.expect(front_anatomy.part_world[detached.index()].isFinite());

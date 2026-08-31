@@ -193,7 +193,7 @@ pub const Scene = struct {
         if (intent_value.interact_pressed) {
             scene.evidence.interaction_requests += 1;
             const requested = scene.manager.requestFromIntent(
-                scene.player.id,
+                scene.player.id(),
                 intent_value,
                 &participants_value,
                 scene.simulation_tick,
@@ -220,7 +220,7 @@ pub const Scene = struct {
                 try scene.partner.maintainFootPlantingDuringInteraction(&scene.world);
             }
             scene.observeInteraction(active);
-        } else if (scene.manager.last_terminal) |*terminal| {
+        } else if (scene.manager.lastTerminal()) |terminal| {
             if (terminal.id != scene.last_terminal_id) {
                 scene.observeInteraction(terminal);
                 scene.last_terminal_id = terminal.id;
@@ -272,25 +272,27 @@ pub const Scene = struct {
 
     pub fn interactionEligibility(scene: *Scene) interaction_system.Eligibility {
         const participants_value = scene.participants();
-        return scene.manager.evaluateEligibility(scene.player.id, scene.partner.id, &participants_value);
+        return scene.manager.evaluateEligibility(scene.player.id(), scene.partner.id(), &participants_value);
     }
 
     pub fn authoritativeState(scene: *const Scene) AuthoritativeState {
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
+        const procedural = scene.player.proceduralSnapshot();
+        const feet = scene.player.footPlantingSnapshot();
         return .{
             .player_position = controller.position,
             .player_velocity = controller.velocity,
             .player_grounded = controller.grounded,
             .player_support = controller.supporting_collider,
-            .player_facing = scene.player.facing,
+            .player_facing = scene.player.facingDirection(),
             .player_animation = scene.player.animationState(),
             .player_animation_time = scene.player.animationTime(),
             .partner_animation = scene.partner.animationState(),
             .partner_animation_time = scene.partner.animationTime(),
-            .player_landing_offset = scene.player.procedural.landing_spring.offset,
-            .player_secondary_offset = scene.player.procedural.secondary_spring.offset,
-            .left_locked_target = scene.player.foot_plants.left.locked_target,
-            .right_locked_target = scene.player.foot_plants.right.locked_target,
+            .player_landing_offset = procedural.landing_spring.offset,
+            .player_secondary_offset = procedural.secondary_spring.offset,
+            .left_locked_target = feet.left.locked_target,
+            .right_locked_target = feet.right.locked_target,
             .active_interactions = scene.manager.activeCount(),
             .participant_locks = @intFromBool(scene.player.isInteractionLocked()) + @intFromBool(scene.partner.isInteractionLocked()),
             .active_overrides = scene.manager.activeOwnedOverrideCount(),
@@ -334,8 +336,9 @@ pub const Scene = struct {
         scene.debug_commands.beginFrame();
         for (scene.world.colliders) |static_collider| try scene.debug_commands.addAabb(static_collider.bounds, .{ 0.20, 0.80, 1.0, 0.72 });
         for ([_]*const character.CharacterInstance{ &scene.player, &scene.partner }) |instance| {
-            try scene.debug_commands.addMarker(instance.world_position, .{ 1, 0.20, 0.20, 1 });
-            for ([_]*const foot_planting.FootRuntime{ &instance.foot_plants.left, &instance.foot_plants.right }) |foot| {
+            try scene.debug_commands.addMarker(instance.worldPosition(), .{ 1, 0.20, 0.20, 1 });
+            const feet = instance.footPlantingSnapshot();
+            for ([_]*const foot_planting.FootRuntime{ &feet.left, &feet.right }) |foot| {
                 if (foot.last_ground_sample.hit) {
                     const origin = foot.pre_ik_sole.add(.{ .x = 0, .y = foot_planting.ground_query_origin_lift });
                     try scene.debug_commands.addLine(origin, foot.last_ground_sample.hit_position, .{ 0.20, 1, 0.40, 0.80 });
@@ -354,7 +357,7 @@ pub const Scene = struct {
         }
         if (scene.manager.firstActiveInstance()) |active| {
             if (active.ik.target_valid) try scene.debug_commands.addMarker(active.ik.shared_target, .{ 0.10, 1, 1, 1 });
-            try scene.debug_commands.addLine(scene.player.world_position, scene.partner.world_position, .{ 0.65, 0.25, 1, 0.70 });
+            try scene.debug_commands.addLine(scene.player.worldPosition(), scene.partner.worldPosition(), .{ 0.65, 0.25, 1, 0.70 });
         }
     }
 
@@ -487,7 +490,7 @@ fn diagnosticsFrom(snapshot: input.FrameInputSnapshot, substeps: u8, pending_edg
 }
 
 fn visualInput(instance: *const character.CharacterInstance, physics: character_controller.StepResult) character.VisualTickInput {
-    const controller = instance.controller.?;
+    const controller = instance.controllerSnapshot().?;
     return .{
         .horizontal_velocity = controller.state.velocity.x,
         .vertical_velocity = controller.state.velocity.y,
@@ -561,7 +564,7 @@ pub const ScriptedInput = struct {
 
     pub fn nextRaw(script: *ScriptedInput, scene: *Scene) input.RawInputState {
         var raw = input.RawInputState{};
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
         switch (script.phase) {
             .idle => {},
             .move_left => raw.keyboard.a = true,
@@ -592,7 +595,7 @@ pub const ScriptedInput = struct {
     }
 
     pub fn observe(script: *ScriptedInput, scene: *Scene) !void {
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
         script.phase_frame += 1;
         switch (script.phase) {
             .idle => if (script.phase_frame >= 30) {
@@ -693,10 +696,10 @@ pub const ScriptedInput = struct {
                 @tagName(script.phase),
                 script.phase_frame,
                 script.milestones,
-                scene.player.controller.?.state.position.x,
-                scene.player.controller.?.state.position.y,
-                scene.player.controller.?.state.velocity.x,
-                scene.player.controller.?.state.velocity.y,
+                scene.player.controllerSnapshot().?.state.position.x,
+                scene.player.controllerSnapshot().?.state.position.y,
+                scene.player.controllerSnapshot().?.state.velocity.x,
+                scene.player.controllerSnapshot().?.state.velocity.y,
                 script.short_jump_apex,
                 script.held_jump_apex,
             });
@@ -754,7 +757,7 @@ pub const SideScrollerScriptedInput = struct {
     }
 
     pub fn observe(script: *SideScrollerScriptedInput, scene: *const Scene) void {
-        const state = scene.player.controller.?.state;
+        const state = scene.player.controllerSnapshot().?.state;
         script.frame += 1;
         script.maximum_player_x = @max(script.maximum_player_x, state.position.x);
         script.minimum_player_x = @min(script.minimum_player_x, state.position.x);
@@ -770,8 +773,8 @@ pub const SideScrollerScriptedInput = struct {
                 script.frame,
                 script.minimum_player_x,
                 script.maximum_player_x,
-                scene.player.controller.?.state.position.x,
-                scene.player.controller.?.state.velocity.x,
+                scene.player.controllerSnapshot().?.state.position.x,
+                scene.player.controllerSnapshot().?.state.velocity.x,
                 script.idle_frames,
             });
             return error.SideScrollerTravelMissing;

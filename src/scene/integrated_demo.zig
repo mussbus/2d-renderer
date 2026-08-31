@@ -222,7 +222,7 @@ pub const Scene = struct {
         const intent_value = scene.pending_input.consumeTick();
 
         const physics_result = try scene.player.stepController(&scene.world, intent_value);
-        const physics_before_visual = scene.player.controller.?.state;
+        const physics_before_visual = scene.player.controllerSnapshot().?.state;
         if (!scene.player.isInteractionLocked()) try scene.player.selectControllerAnimation(physics_result);
         const player_was_locked = scene.player.isInteractionLocked();
         if (!player_was_locked) {
@@ -244,7 +244,7 @@ pub const Scene = struct {
         const participants_value = scene.participants();
         if (intent_value.interact_pressed) {
             scene.evidence.interaction_requests += 1;
-            const requested = scene.manager.requestFromIntent(scene.player.id, intent_value, &participants_value, scene.simulation_tick) catch {
+            const requested = scene.manager.requestFromIntent(scene.player.id(), intent_value, &participants_value, scene.simulation_tick) catch {
                 scene.evidence.rejected_requests += 1;
                 return error.IntegratedHandshakeRequestRejected;
             };
@@ -262,12 +262,12 @@ pub const Scene = struct {
                 try scene.player.maintainFootPlantingDuringInteraction(&scene.world);
                 try scene.partner.maintainFootPlantingDuringInteraction(&scene.world);
                 scene.evidence.foot_placement_during_handshake = scene.evidence.foot_placement_during_handshake or
-                    scene.player.foot_plants.left.hasLock() or scene.player.foot_plants.right.hasLock() or
-                    scene.partner.foot_plants.left.hasLock() or scene.partner.foot_plants.right.hasLock();
+                    scene.player.footPlantingSnapshot().left.hasLock() or scene.player.footPlantingSnapshot().right.hasLock() or
+                    scene.partner.footPlantingSnapshot().left.hasLock() or scene.partner.footPlantingSnapshot().right.hasLock();
             }
             try scene.observeInteraction(active);
         } else if (scene.phase == .handshake) {
-            const terminal = scene.manager.last_terminal orelse return error.IntegratedHandshakeTerminalMissing;
+            const terminal = scene.manager.lastTerminal() orelse return error.IntegratedHandshakeTerminalMissing;
             scene.last_interaction_events = terminal.event_ticks;
             scene.last_shared_target = terminal.contact.shared_target;
             scene.evidence.completion_events += terminal.event_counts[@intFromEnum(interaction.EventSemantic.complete)];
@@ -281,10 +281,10 @@ pub const Scene = struct {
         scene.phase_tick = std.math.add(u32, scene.phase_tick, 1) catch return error.PhaseTickOverflow;
         scene.evidence.maximum_landing_compression = @max(
             scene.evidence.maximum_landing_compression,
-            @abs(scene.player.procedural.landing_spring.offset),
+            @abs(scene.player.proceduralSnapshot().landing_spring.offset),
         );
-        if (!scene.player.controller.?.state.grounded and
-            (scene.player.foot_plants.left.hasLock() or scene.player.foot_plants.right.hasLock()))
+        if (!scene.player.controllerSnapshot().?.state.grounded and
+            (scene.player.footPlantingSnapshot().left.hasLock() or scene.player.footPlantingSnapshot().right.hasLock()))
         {
             scene.evidence.airborne_false_plants += 1;
         }
@@ -322,13 +322,13 @@ pub const Scene = struct {
                 },
                 3 => raw.keyboard.d = true,
                 else => {
-                    const position = scene.player.controller.?.state.position.x;
+                    const position = scene.player.controllerSnapshot().?.state.position.x;
                     raw.gamepad_move_axis = if (position > -0.05) -0.44 else 0.44;
                 },
             },
             .approach_interaction => switch (scene.approach_stage) {
                 0 => {
-                    const controller = scene.player.controller.?.state;
+                    const controller = scene.player.controllerSnapshot().?.state;
                     const target: f32 = -1.02;
                     const command = std.math.clamp((target - controller.position.x) * 1.8 - controller.velocity.x * 0.45, -0.42, 0.42);
                     raw.gamepad_move_axis = encodeGamepadAxis(command);
@@ -336,7 +336,7 @@ pub const Scene = struct {
                 1 => raw.gamepad_move_axis = encodeGamepadAxis(0.25),
                 else => {
                     const participants_value = scene.participants();
-                    const eligibility = scene.manager.evaluateEligibility(scene.player.id, scene.partner.id, &participants_value);
+                    const eligibility = scene.manager.evaluateEligibility(scene.player.id(), scene.partner.id(), &participants_value);
                     if (eligibility.isEligible()) raw.keyboard.e = true;
                 },
             },
@@ -350,8 +350,8 @@ pub const Scene = struct {
         physics_before_visual: character_controller.State,
         physics_result: character_controller.StepResult,
     ) void {
-        if (scene.player.animator.emittedEvents().len > 0) {
-            const physics_after_visual = scene.player.controller.?.state;
+        if (scene.player.emittedAnimationEventCount() > 0) {
+            const physics_after_visual = scene.player.controllerSnapshot().?.state;
             scene.evidence.foot_contact_changed_physics = scene.evidence.foot_contact_changed_physics or
                 !physics_before_visual.position.approxEqAbs(physics_after_visual.position, 0) or
                 !physics_before_visual.velocity.approxEqAbs(physics_after_visual.velocity, 0) or
@@ -362,7 +362,7 @@ pub const Scene = struct {
         if (physics_result.landed) {
             scene.evidence.landing_count += 1;
             scene.evidence.maximum_landing_impact = @max(scene.evidence.maximum_landing_impact, physics_result.landing_impact_speed);
-            if (scene.player.procedural.last_consumed_landing_tick == physics_result.simulation_tick) {
+            if (scene.player.proceduralSnapshot().last_consumed_landing_tick == physics_result.simulation_tick) {
                 scene.evidence.landing_event_delivery_count += 1;
             }
         }
@@ -373,11 +373,11 @@ pub const Scene = struct {
             .initial_idle => {},
             .walk_floor => {
                 if (scene.player.animationState() == .walk) try scene.mark(.walk_started);
-                if (scene.player.foot_plants.left.metrics.first_plant_tick != null) {
+                if (scene.player.footPlantingSnapshot().left.metrics.first_plant_tick != null) {
                     try scene.mark(.left_foot_planted);
                     try scene.recordDiagnosticMilestone(.walk_first_left_plant);
                 }
-                if (scene.player.foot_plants.right.metrics.first_plant_tick != null) {
+                if (scene.player.footPlantingSnapshot().right.metrics.first_plant_tick != null) {
                     try scene.mark(.right_foot_planted);
                     try scene.recordDiagnosticMilestone(.walk_first_right_plant);
                 }
@@ -393,8 +393,8 @@ pub const Scene = struct {
                 try scene.transition(.airborne);
             },
             .airborne => {
-                if (!scene.player.controller.?.state.grounded and !scene.player.foot_plants.left.hasLock() and
-                    !scene.player.foot_plants.right.hasLock())
+                if (!scene.player.controllerSnapshot().?.state.grounded and !scene.player.footPlantingSnapshot().left.hasLock() and
+                    !scene.player.footPlantingSnapshot().right.hasLock())
                 {
                     try scene.mark(.both_feet_released_airborne);
                 }
@@ -405,16 +405,16 @@ pub const Scene = struct {
                 }
             },
             .landing => {
-                const landing_tick = scene.player.controller.?.state.last_landing_tick orelse 0;
-                const replanted = (scene.player.foot_plants.left.metrics.last_plant_tick orelse 0) > landing_tick or
-                    (scene.player.foot_plants.right.metrics.last_plant_tick orelse 0) > landing_tick;
+                const landing_tick = scene.player.controllerSnapshot().?.state.last_landing_tick orelse 0;
+                const replanted = (scene.player.footPlantingSnapshot().left.metrics.last_plant_tick orelse 0) > landing_tick or
+                    (scene.player.footPlantingSnapshot().right.metrics.last_plant_tick orelse 0) > landing_tick;
                 if (replanted and scene.phase_tick >= 240) {
                     try scene.mark(.post_landing_replant);
                     try scene.transition(.walk_platform);
                 }
             },
             .walk_platform => {
-                const controller = scene.player.controller.?.state;
+                const controller = scene.player.controllerSnapshot().?.state;
                 switch (scene.platform_stage) {
                     0 => if (controller.grounded and controller.position.x >= -1.75) {
                         scene.platform_stage = 1;
@@ -433,8 +433,8 @@ pub const Scene = struct {
                         scene.phase_tick = 0;
                     },
                     else => {
-                        const left_raised = scene.player.foot_plants.left.locked_collider_id == @intFromEnum(collision_world.DemoColliderId.raised_platform_1);
-                        const right_raised = scene.player.foot_plants.right.locked_collider_id == @intFromEnum(collision_world.DemoColliderId.raised_platform_1);
+                        const left_raised = scene.player.footPlantingSnapshot().left.locked_collider_id == @intFromEnum(collision_world.DemoColliderId.raised_platform_1);
+                        const right_raised = scene.player.footPlantingSnapshot().right.locked_collider_id == @intFromEnum(collision_world.DemoColliderId.raised_platform_1);
                         if ((left_raised or right_raised) and scene.phase_tick >= 240) {
                             try scene.mark(.platform_ground_sample);
                             try scene.recordDiagnosticMilestone(.platform_right_plant);
@@ -444,7 +444,7 @@ pub const Scene = struct {
                 }
             },
             .approach_interaction => {
-                const controller = scene.player.controller.?.state;
+                const controller = scene.player.controllerSnapshot().?.state;
                 if (scene.approach_stage == 0 and controller.grounded and
                     controller.supporting_collider == @intFromEnum(collision_world.DemoColliderId.floor) and
                     @abs(controller.position.x - -1.02) <= 0.015)
@@ -511,10 +511,10 @@ pub const Scene = struct {
     fn assertPhaseEntry(scene: *const Scene, phase: Phase) !void {
         switch (phase) {
             .initial_idle => {},
-            .walk_floor => if (!scene.player.controller.?.state.grounded) return error.WalkPhaseEnteredAirborne,
-            .jump => if (!scene.player.controller.?.state.grounded) return error.JumpPhaseEnteredAirborne,
-            .airborne => if (scene.player.controller.?.state.grounded) return error.AirbornePhaseEnteredGrounded,
-            .landing => if (!scene.player.controller.?.state.grounded) return error.LandingPhaseEnteredAirborne,
+            .walk_floor => if (!scene.player.controllerSnapshot().?.state.grounded) return error.WalkPhaseEnteredAirborne,
+            .jump => if (!scene.player.controllerSnapshot().?.state.grounded) return error.JumpPhaseEnteredAirborne,
+            .airborne => if (scene.player.controllerSnapshot().?.state.grounded) return error.AirbornePhaseEnteredGrounded,
+            .landing => if (!scene.player.controllerSnapshot().?.state.grounded) return error.LandingPhaseEnteredAirborne,
             .walk_platform => if (!scene.hasMilestone(.post_landing_replant)) return error.PlatformPhaseBeforeReplant,
             .approach_interaction => if (!scene.hasMilestone(.platform_ground_sample)) return error.ApproachBeforePlatformSample,
             .handshake => if (scene.manager.activeCount() != 1) return error.HandshakePhaseWithoutInteraction,
@@ -525,7 +525,7 @@ pub const Scene = struct {
 
     fn assertPhaseExit(scene: *const Scene, phase: Phase) !void {
         switch (phase) {
-            .initial_idle => if (scene.player.animationState() != .idle or !scene.player.controller.?.state.grounded) return error.InitialIdleExitInvalid,
+            .initial_idle => if (scene.player.animationState() != .idle or !scene.player.controllerSnapshot().?.state.grounded) return error.InitialIdleExitInvalid,
             .walk_floor => if (!scene.hasMilestone(.walk_started) or !scene.hasMilestone(.left_foot_planted) or
                 !scene.hasMilestone(.right_foot_planted) or scene.evidence.airborne_false_plants != 0) return error.WalkExitEvidenceMissing,
             .jump => if (!scene.hasMilestone(.jump_started)) return error.JumpExitEvidenceMissing,
@@ -610,14 +610,16 @@ pub const Scene = struct {
         scene.debug_commands.beginFrame();
         for (scene.world.colliders) |static_collider| try scene.debug_commands.addAabb(static_collider.bounds, .{ 0.20, 0.80, 1.0, 0.72 });
         for ([_]*const character.CharacterInstance{ &scene.player, &scene.partner }) |instance| {
-            try scene.debug_commands.addMarker(instance.world_position, .{ 1, 0.20, 0.20, 1 });
-            const root_index = try instance.definition.skeleton_definition.boneIndex(.root);
-            const visual_root = (try instance.character.local_and_world_pose.worldForBone(
-                &instance.definition.skeleton_definition,
+            try scene.debug_commands.addMarker(instance.worldPosition(), .{ 1, 0.20, 0.20, 1 });
+            const definition = instance.definitionView();
+            const root_index = try definition.skeleton_definition.boneIndex(.root);
+            const visual_root = (try instance.humanoidView().local_and_world_pose.worldForBone(
+                &definition.skeleton_definition,
                 root_index,
             )).translationPart();
             try scene.debug_commands.addMarker(visual_root, .{ 1, 0.85, 0.10, 1 });
-            for ([_]*const foot_planting.FootRuntime{ &instance.foot_plants.left, &instance.foot_plants.right }) |foot| {
+            const feet = instance.footPlantingSnapshot();
+            for ([_]*const foot_planting.FootRuntime{ &feet.left, &feet.right }) |foot| {
                 if (foot.last_ground_sample.hit) {
                     const origin = foot.pre_ik_sole.add(.{ .x = 0, .y = foot_planting.ground_query_origin_lift });
                     try scene.debug_commands.addLine(origin, foot.last_ground_sample.hit_position, .{ 0.20, 1, 0.40, 0.80 });
@@ -636,7 +638,7 @@ pub const Scene = struct {
         }
         if (scene.manager.firstActiveInstance()) |active| {
             if (active.ik.target_valid) try scene.debug_commands.addMarker(active.ik.shared_target, .{ 0.10, 1, 1, 1 });
-            try scene.debug_commands.addLine(scene.player.world_position, scene.partner.world_position, .{ 0.65, 0.25, 1, 0.70 });
+            try scene.debug_commands.addLine(scene.player.worldPosition(), scene.partner.worldPosition(), .{ 0.65, 0.25, 1, 0.70 });
         }
     }
 
@@ -654,10 +656,11 @@ pub const Scene = struct {
     }
 
     pub fn authoritativeState(scene: *const Scene) !AuthoritativeState {
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
         const snapshot = try scene.captureDiagnostics();
-        const left_lifecycle = scene.player.foot_plants.left.metrics.latest_acquired_lifecycle;
-        const right_lifecycle = scene.player.foot_plants.right.metrics.latest_acquired_lifecycle;
+        const feet = scene.player.footPlantingSnapshot();
+        const left_lifecycle = feet.left.metrics.latest_acquired_lifecycle;
+        const right_lifecycle = feet.right.metrics.latest_acquired_lifecycle;
         return .{
             .simulation_tick = scene.simulation_tick,
             .phase = scene.phase,
@@ -676,8 +679,8 @@ pub const Scene = struct {
             .right_candidate_tick = right_lifecycle.candidate_acquisition_tick,
             .right_plant_tick = right_lifecycle.full_plant_tick,
             .right_release_tick = right_lifecycle.release_start_tick,
-            .left_locked_target = scene.player.foot_plants.left.locked_target,
-            .right_locked_target = scene.player.foot_plants.right.locked_target,
+            .left_locked_target = feet.left.locked_target,
+            .right_locked_target = feet.right.locked_target,
             .shared_hand_target = scene.last_shared_target,
             .active_interactions = scene.manager.activeCount(),
             .participant_locks = @as(usize, @intFromBool(scene.player.isInteractionLocked())) +
@@ -694,7 +697,8 @@ pub const Scene = struct {
     pub fn validateComplete(scene: *const Scene) !void {
         for (scene.evidence.milestone_ticks) |tick| {
             if (tick == null) {
-                const controller_state = scene.player.controller.?.state;
+                const controller_state = scene.player.controllerSnapshot().?.state;
+                const feet = scene.player.footPlantingSnapshot();
                 std.log.err("integrated route incomplete phase={s} phase_tick={d} platform_stage={d} approach_stage={d} simulation_tick={d} milestones={any} position=({d:.6},{d:.6}) velocity=({d:.6},{d:.6}) grounded={} support={any} animation={s} plants={s}/{s} locks={}/{}", .{
                     @tagName(scene.phase),
                     scene.phase_tick,
@@ -709,28 +713,28 @@ pub const Scene = struct {
                     controller_state.grounded,
                     controller_state.supporting_collider,
                     @tagName(scene.player.animationState()),
-                    @tagName(scene.player.foot_plants.left.plant_state),
-                    @tagName(scene.player.foot_plants.right.plant_state),
-                    scene.player.foot_plants.left.hasLock(),
-                    scene.player.foot_plants.right.hasLock(),
+                    @tagName(feet.left.plant_state),
+                    @tagName(feet.right.plant_state),
+                    feet.left.hasLock(),
+                    feet.right.hasLock(),
                 });
                 return error.IntegratedMilestoneMissing;
             }
         }
         try scene.validateMilestoneDependencies();
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
         if (scene.phase != .final_idle or !controller.position.isFinite() or !controller.velocity.isFinite() or
             scene.manager.activeCount() != 0 or scene.player.isInteractionLocked() or scene.partner.isInteractionLocked() or
             scene.manager.activeOwnedOverrideCount() != 0 or scene.manager.activeIkConstraintCount() != 0 or
-            scene.player.overrides.activeCount() != 0 or scene.partner.overrides.activeCount() != 0 or
+            scene.player.activeOverrideCount() != 0 or scene.partner.activeOverrideCount() != 0 or
             scene.evidence.airborne_false_plants != 0 or scene.evidence.foot_contact_changed_physics or
             scene.evidence.landing_event_delivery_count != scene.evidence.landing_count or
             !scene.evidence.shared_target_from_pre_ik or !scene.evidence.final_pose_after_ik or
             !scene.evidence.partial_interleaving_observed or !scene.evidence.foot_placement_during_handshake or
             scene.evidence.contact_events != 1 or scene.evidence.release_events != 1 or scene.evidence.successful_handshakes != 1 or
             scene.evidence.maximum_post_ik_contact_error > 0.0002 or
-            @abs(scene.player.procedural.landing_spring.offset) > 0.01 or
-            @abs(scene.player.procedural.secondary_spring.offset) > 0.01)
+            @abs(scene.player.proceduralSnapshot().landing_spring.offset) > 0.01 or
+            @abs(scene.player.proceduralSnapshot().secondary_spring.offset) > 0.01)
         {
             return error.IntegratedFinalStateInvalid;
         }
@@ -810,9 +814,9 @@ pub const Scene = struct {
     pub fn resetCharacter(scene: *Scene, entity_id: character.EntityId) !void {
         const participants_value = scene.participants();
         _ = try scene.manager.cancelForCharacter(entity_id, .character_reset, &participants_value);
-        if (entity_id == scene.player.id) {
+        if (entity_id == scene.player.id()) {
             try scene.player.resetControlled(&scene.world);
-        } else if (entity_id == scene.partner.id) {
+        } else if (entity_id == scene.partner.id()) {
             try scene.partner.reset();
         } else {
             return error.InvalidCharacterResetTarget;
@@ -829,7 +833,7 @@ pub const Scene = struct {
 };
 
 fn visualInput(instance: *const character.CharacterInstance, physics: character_controller.StepResult) character.VisualTickInput {
-    const controller = instance.controller.?;
+    const controller = instance.controllerSnapshot().?;
     return .{
         .horizontal_velocity = controller.state.velocity.x,
         .vertical_velocity = controller.state.velocity.y,

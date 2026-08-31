@@ -4,9 +4,9 @@
 > owner-approved. F4A is owner-approved, and F4 production-architecture
 > hardening is the current track. The composition map below describes the
 > existing demo-driven runtime audited by F4A; it is not the accepted post-F4
-> target architecture. F4B1, F4B2, and F4C1 are owner-approved. F4C2 has
-> extracted renderer/application/evidence ownership and awaits owner review.
-> See the [F4C2 record](../implementation/f4c2_renderer_application_evidence_boundaries.md).
+> target architecture. F4B1, F4B2, F4C1, and F4C2 are owner-approved. F4C3
+> has hardened character and interaction mutation authority and awaits owner
+> review. See the [F4C3 record](../implementation/f4c3_character_interaction_authority.md).
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
@@ -92,7 +92,7 @@ collider-data authority.
 | Historical PPM/PNG evidence output | [`src/evidence/capture_writer.zig`](../../src/evidence/capture_writer.zig) |
 | Legacy `GpuDemo` source compatibility | [`src/graphics/gpu_demo.zig`](../../src/graphics/gpu_demo.zig), alias only |
 | VF-01 frame-level platform input | [`src/platform/input.zig`](../../src/platform/input.zig), [`src/platform/sdl_input.zig`](../../src/platform/sdl_input.zig) |
-| Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig), [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
+| Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig) exposes commands/read-only views over private inline `CharacterState`; [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) owns humanoid pose/appearance runtime |
 | Skeleton, poses, clips, state machine | [`src/animation/skeleton.zig`](../../src/animation/skeleton.zig), [`src/animation/pose.zig`](../../src/animation/pose.zig), [`src/animation/clip.zig`](../../src/animation/clip.zig), [`src/animation/state_machine.zig`](../../src/animation/state_machine.zig) |
 | Anatomy identity/runtime | [`src/scene/anatomy.zig`](../../src/scene/anatomy.zig), production definitions in [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
 | VF-03 compiled component-topology authority | [`src/scene/component_graph.zig`](../../src/scene/component_graph.zig), compiled from immutable appearance/anatomy definitions |
@@ -106,7 +106,7 @@ collider-data authority.
 | Environment theme definitions/art | [`src/scene/environment_theme.zig`](../../src/scene/environment_theme.zig), [`src/scene/environment_art.zig`](../../src/scene/environment_art.zig) |
 | Environment scene and collision-derived surfaces | [`src/scene/environment_demo.zig`](../../src/scene/environment_demo.zig), with retained collider data from [`src/scene/foundation_playground.zig`](../../src/scene/foundation_playground.zig) |
 | Controller and fixed-step root physics | [`src/physics/character_controller.zig`](../../src/physics/character_controller.zig), [`src/physics/fixed_step.zig`](../../src/physics/fixed_step.zig) |
-| Interaction definition and coordination | [`src/interaction/interaction.zig`](../../src/interaction/interaction.zig), [`src/interaction/interaction_system.zig`](../../src/interaction/interaction_system.zig), [`src/interaction/handshake.zig`](../../src/interaction/handshake.zig) |
+| Interaction definition and coordination | [`src/interaction/interaction.zig`](../../src/interaction/interaction.zig), private lifecycle authority behind `Manager` in [`src/interaction/interaction_system.zig`](../../src/interaction/interaction_system.zig), [`src/interaction/handshake.zig`](../../src/interaction/handshake.zig) |
 | IK | [`src/animation/arm_ik.zig`](../../src/animation/arm_ik.zig), [`src/animation/leg_ik.zig`](../../src/animation/leg_ik.zig), [`src/animation/two_bone_ik.zig`](../../src/animation/two_bone_ik.zig) |
 | Deformation and secondary motion | [`src/scene/deformation.zig`](../../src/scene/deformation.zig), [`src/animation/attachment_secondary_motion.zig`](../../src/animation/attachment_secondary_motion.zig), [`src/graphics/deformable_mesh.zig`](../../src/graphics/deformable_mesh.zig) |
 | Visual-geometry metadata, traces, and audits | [`src/scene/visual_geometry.zig`](../../src/scene/visual_geometry.zig), [`src/scene/visual_geometry_audit.zig`](../../src/scene/visual_geometry_audit.zig) |

@@ -102,14 +102,14 @@ test "diagnostic getters are non destructive and do not consume interaction or a
     defer scene.deinit();
     try scene.updateFixedTicks(2300);
     const before = try scene.authoritativeState();
-    const animator_event_count = scene.player.animator.emittedEvents().len;
+    const animator_event_count = scene.player.emittedAnimationEventCount();
     const interaction_before = scene.manager.firstActiveInstance().?.*;
     const first = try scene.captureDiagnostics();
     var second = first;
     for (0..1000) |_| second = try scene.captureDiagnostics();
     const after = try scene.authoritativeState();
     try std.testing.expect(integrated.authoritativeStatesEqual(before, after, 0));
-    try std.testing.expectEqual(animator_event_count, scene.player.animator.emittedEvents().len);
+    try std.testing.expectEqual(animator_event_count, scene.player.emittedAnimationEventCount());
     try std.testing.expectEqualDeep(interaction_before.event_counts, scene.manager.firstActiveInstance().?.event_counts);
     try std.testing.expectEqualDeep(first.interaction_state.event_counts, second.interaction_state.event_counts);
     try std.testing.expectEqual(first.interaction_state.elapsed_ticks, second.interaction_state.elapsed_ticks);
@@ -149,26 +149,26 @@ test "character local reset isolates an unrelated character and releases its int
     var scene = try integrated.Scene.init(std.testing.allocator, .{ .diagnostics_each_tick = false });
     defer scene.deinit();
     try scene.updateFixedTicks(400);
-    while (!scene.partner.foot_plants.left.hasLock() and !scene.partner.foot_plants.right.hasLock() and scene.simulation_tick < 700) {
+    while (!scene.partner.footPlantingSnapshot().left.hasLock() and !scene.partner.footPlantingSnapshot().right.hasLock() and scene.simulation_tick < 700) {
         try scene.updateFixedTicks(1);
     }
     const partner_state = scene.partner.animationState();
     const partner_time = scene.partner.animationTime();
-    const partner_left_target = scene.partner.foot_plants.left.locked_target;
-    const partner_right_target = scene.partner.foot_plants.right.locked_target;
-    const partner_secondary = scene.partner.procedural.secondary_spring;
+    const partner_left_target = scene.partner.footPlantingSnapshot().left.locked_target;
+    const partner_right_target = scene.partner.footPlantingSnapshot().right.locked_target;
+    const partner_secondary = scene.partner.proceduralSnapshot().secondary_spring;
     try std.testing.expect(partner_left_target != null or partner_right_target != null);
-    try scene.resetCharacter(scene.player.id);
+    try scene.resetCharacter(scene.player.id());
     try std.testing.expectEqual(partner_state, scene.partner.animationState());
     try std.testing.expectEqual(partner_time, scene.partner.animationTime());
-    try std.testing.expectEqualDeep(partner_left_target, scene.partner.foot_plants.left.locked_target);
-    try std.testing.expectEqualDeep(partner_right_target, scene.partner.foot_plants.right.locked_target);
-    try std.testing.expectEqualDeep(partner_secondary, scene.partner.procedural.secondary_spring);
+    try std.testing.expectEqualDeep(partner_left_target, scene.partner.footPlantingSnapshot().left.locked_target);
+    try std.testing.expectEqualDeep(partner_right_target, scene.partner.footPlantingSnapshot().right.locked_target);
+    try std.testing.expectEqualDeep(partner_secondary, scene.partner.proceduralSnapshot().secondary_spring);
 
     try scene.resetAll();
     try scene.updateFixedTicks(2300);
     try std.testing.expectEqual(@as(usize, 1), scene.manager.activeCount());
-    try scene.resetCharacter(scene.player.id);
+    try scene.resetCharacter(scene.player.id());
     try std.testing.expectEqual(@as(usize, 0), scene.manager.activeCount());
     try std.testing.expect(!scene.player.isInteractionLocked());
     try std.testing.expect(!scene.partner.isInteractionLocked());

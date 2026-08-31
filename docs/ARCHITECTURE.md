@@ -16,13 +16,15 @@ and its decisions are recorded in
 [`implementation/f4a_production_architecture_audit.md`](implementation/f4a_production_architecture_audit.md).
 The owner-approved F4C1 production-definition ownership migration is recorded in
 [`implementation/f4c1_production_definition_extraction.md`](implementation/f4c1_production_definition_extraction.md).
-The F4C2 renderer/application/evidence boundary extraction awaiting owner
-review is recorded in
+The owner-approved F4C2 renderer/application/evidence boundary extraction is recorded in
 [`implementation/f4c2_renderer_application_evidence_boundaries.md`](implementation/f4c2_renderer_application_evidence_boundaries.md).
+The F4C3 character/interaction runtime-authority hardening awaiting owner
+review is recorded in
+[`implementation/f4c3_character_interaction_authority.md`](implementation/f4c3_character_interaction_authority.md).
 
 F4 is the current production-architecture hardening track; F4 itself is not
-accepted. F4B1, F4B2, and F4C1 are owner-approved; F4C2 is implemented and
-awaits owner review; F4C3 through F4C5, F4D, and F4E have not begun. None of these status updates
+accepted. F4B1, F4B2, F4C1, and F4C2 are owner-approved; F4C3 is implemented
+and awaits owner review; F4C4, F4C5, F4D, and F4E have not begun. None of these status updates
 changes a production runtime route. Every downstream track and production
 migration still requires dedicated authorization. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,

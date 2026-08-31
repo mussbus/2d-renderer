@@ -418,7 +418,7 @@ pub const Snapshot = struct {
                 &snapshot.characters[index],
                 instance,
                 presentation,
-                if (instance.controller != null) .controlled else .passive,
+                if (instance.controllerSnapshot() != null) .controlled else .passive,
                 camera.pixels_per_meter,
             );
         }
@@ -1736,11 +1736,13 @@ fn captureCharacter(
     role: CharacterRole,
     pixels_per_meter: f32,
 ) !void {
-    const definition = &instance.definition.skeleton_definition;
+    const definition_view = instance.definitionView();
+    const definition = &definition_view.skeleton_definition;
     const projection = try presentation.projectionFor(instance);
-    const anatomy_definition = instance.definition.anatomy_definition orelse
+    const anatomy_definition = definition_view.anatomy_definition orelse
         return error.CharacterHasNoAnatomy;
-    const anatomy_runtime = instance.character.anatomy_runtime orelse
+    const humanoid_runtime = instance.humanoidView();
+    const anatomy_runtime = humanoid_runtime.anatomy_runtime orelse
         return error.CharacterHasNoAnatomy;
     const anatomy_projection = try presentation_pose.FrontAnatomyProjection.init(
         projection,
@@ -1748,10 +1750,10 @@ fn captureCharacter(
         anatomy_runtime,
     );
     result.* = .{
-        .id = instance.id.raw(),
+        .id = instance.id().raw(),
         .role = role,
-        .root = instance.world_position,
-        .facing = instance.facing,
+        .root = instance.worldPosition(),
+        .facing = instance.facingDirection(),
         .grounded = instance.interactionGrounded(),
         .animation_state = try Text.init(@tagName(instance.animationState())),
         .animation_time = instance.animationTime(),
@@ -1761,7 +1763,7 @@ fn captureCharacter(
         .interaction_owner = instance.interactionOwnerId(),
         .resolved_visual_count = 0,
     };
-    if (instance.controller) |controller_value| {
+    if (instance.controllerSnapshot()) |controller_value| {
         result.has_controller = true;
         result.controller_position = controller_value.state.position;
         result.velocity = controller_value.state.velocity;
@@ -1790,7 +1792,7 @@ fn captureCharacter(
 
     result.bone_count = definition.bones.len;
     for (definition.bones, 0..) |bone_definition, index| {
-        const canonical_world = try instance.character.local_and_world_pose.worldForBone(
+        const canonical_world = try humanoid_runtime.local_and_world_pose.worldForBone(
             definition,
             @intCast(index),
         );
@@ -1806,7 +1808,7 @@ fn captureCharacter(
             else
                 bone_definition.parent_index,
             .local = Transform.fromLocal(
-                instance.character.local_and_world_pose.local_transforms[index],
+                humanoid_runtime.local_and_world_pose.local_transforms[index],
             ),
             .canonical_world = canonical_transform,
             .projected_world = projected_transform,
@@ -1821,7 +1823,7 @@ fn captureCharacter(
 
     result.socket_count = definition.sockets.len;
     for (definition.sockets, 0..) |socket_definition, index| {
-        const canonical_world = try instance.character.local_and_world_pose.socketWorld(
+        const canonical_world = try humanoid_runtime.local_and_world_pose.socketWorld(
             definition,
             socket_definition.semantic,
         );
@@ -1837,8 +1839,8 @@ fn captureCharacter(
         };
     }
 
-    const appearance_definition = instance.definition.visual_definition;
-    const appearance_runtime = instance.character.appearance_runtime;
+    const appearance_definition = definition_view.visual_definition;
+    const appearance_runtime = humanoid_runtime.appearance_runtime;
     result.attachment_count = appearance_definition.attachment_points.len;
     for (appearance_definition.attachment_points, 0..) |point, index| {
         result.attachments[index] = .{
@@ -1858,7 +1860,7 @@ fn captureCharacter(
         };
     }
 
-    const graph_definition = instance.definition.component_graph_definition orelse
+    const graph_definition = definition_view.component_graph_definition orelse
         return error.CharacterHasNoComponentGraph;
     const graph = try graph_definition.view(
         appearance_definition,

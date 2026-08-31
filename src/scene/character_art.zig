@@ -548,13 +548,13 @@ pub const Presentation = struct {
         registered_feet: *RegisteredFeet,
         foot_coverage: FootCoverage,
     ) !u32 {
-        if (presentation.attachment_count != instance.definition.attachments.len) {
+        if (presentation.attachment_count != instance.definitionView().attachments.len) {
             return error.PresentationDefinitionMismatch;
         }
         registered_feet.begin();
         const view = instance.presentationView();
         const projection = try presentation.projectionFor(instance);
-        var anatomy_projection: ?presentation_pose.FrontAnatomyProjection = if (instance.definition.anatomy_definition) |anatomy_definition| if (instance.character.anatomy_runtime) |anatomy_runtime|
+        var anatomy_projection: ?presentation_pose.FrontAnatomyProjection = if (instance.definitionView().anatomy_definition) |anatomy_definition| if (instance.humanoidView().anatomy_runtime) |anatomy_runtime|
             try presentation_pose.FrontAnatomyProjection.init(
                 projection,
                 anatomy_definition,
@@ -563,16 +563,15 @@ pub const Presentation = struct {
         else
             null else null;
 
-        instance.last_submitted_keys =
-            [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
+        instance.beginSubmissionBookkeeping();
         var submitted: u32 = 0;
         var optional_submissions: [6]OptionalArmSubmission = undefined;
         var optional_submission_count: usize = 0;
-        for (instance.definition.attachments) |attachment| {
+        for (instance.definitionView().attachments) |attachment| {
             const binding = presentation.bindings[attachment.id.index()];
             if (!binding.active) continue;
-            if (!try instance.character.appearance_runtime.isVisible(
-                instance.definition.visual_definition,
+            if (!try instance.humanoidView().appearance_runtime.isVisible(
+                instance.definitionView().visual_definition,
                 attachment.id,
             )) continue;
             if (view == .side and !sideFeatureVisible(binding.slot)) continue;
@@ -594,7 +593,7 @@ pub const Presentation = struct {
                 selected.rest_rotation,
                 binding.slot,
                 view,
-                instance.facing,
+                instance.facingDirection(),
             );
             const morphology_scale = presentation_view.spriteMorphologyScale(
                 sprite_transform.signed_scale,
@@ -621,7 +620,7 @@ pub const Presentation = struct {
             const geometry = geometryForSlot(
                 presentation.style,
                 binding.slot,
-                geometryView(view, instance.facing),
+                geometryView(view, instance.facingDirection()),
             );
             const registered = try productionRegistration(
                 instance,
@@ -753,9 +752,9 @@ pub const Presentation = struct {
                 const region_source = sourceForRegion(selected.visual.region_id) orelse
                     return error.MissingCharacterGeometrySource;
                 try sink.append(.{
-                    .character_id = instance.id.raw(),
+                    .character_id = instance.id().raw(),
                     .style = @tagName(presentation.style),
-                    .view = geometryView(view, instance.facing),
+                    .view = geometryView(view, instance.facingDirection()),
                     .owner = ownerForSlot(binding.slot),
                     .role = geometryRole(binding.slot),
                     .side = geometrySide(binding.slot),
@@ -806,7 +805,7 @@ pub const Presentation = struct {
             }
             if (key) |submitted_key| {
                 if (attachment.canonical_semantic) |raw_semantic| {
-                    instance.last_submitted_keys[raw_semantic] = submitted_key;
+                    try instance.recordSubmittedKey(raw_semantic, submitted_key);
                 }
                 if (graph_binding) |binding_evidence| {
                     if (optional_submission_count == optional_submissions.len) {
@@ -848,52 +847,52 @@ pub const Presentation = struct {
         var result = switch (instance.presentationView()) {
             .front => projection: {
                 var front = try presentation_pose.FrontProjection.init(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
+                    &instance.definitionView().skeleton_definition,
+                    instance.humanoidView().local_and_world_pose,
+                    instance.definitionView().visual_definition,
+                    instance.humanoidView().appearance_runtime,
+                    instance.worldPosition(),
                 );
-                const anatomy_definition = instance.definition.anatomy_definition orelse
+                const anatomy_definition = instance.definitionView().anatomy_definition orelse
                     return error.CharacterHasNoAnatomy;
-                const anatomy_runtime = instance.character.anatomy_runtime orelse
+                const anatomy_runtime = instance.humanoidView().anatomy_runtime orelse
                     return error.CharacterHasNoAnatomy;
                 try front.applyFrontShoulderMorphology(
-                    &instance.definition.skeleton_definition,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
+                    &instance.definitionView().skeleton_definition,
+                    instance.definitionView().visual_definition,
+                    instance.humanoidView().appearance_runtime,
                     anatomy_definition,
                     anatomy_runtime,
-                    instance.world_position.x,
+                    instance.worldPosition().x,
                 );
                 break :projection front;
             },
             .side => if (instance.isInteractionLocked())
                 try presentation_pose.FrontProjection.initSideInteraction(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
-                    instance.facing == .left,
+                    &instance.definitionView().skeleton_definition,
+                    instance.humanoidView().local_and_world_pose,
+                    instance.definitionView().visual_definition,
+                    instance.humanoidView().appearance_runtime,
+                    instance.worldPosition(),
+                    instance.facingDirection() == .left,
                 )
             else
                 try presentation_pose.FrontProjection.initSide(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
-                    instance.facing == .left,
+                    &instance.definitionView().skeleton_definition,
+                    instance.humanoidView().local_and_world_pose,
+                    instance.definitionView().visual_definition,
+                    instance.humanoidView().appearance_runtime,
+                    instance.worldPosition(),
+                    instance.facingDirection() == .left,
                 ),
         };
-        const anatomy_definition = instance.definition.anatomy_definition orelse
+        const anatomy_definition = instance.definitionView().anatomy_definition orelse
             return error.CharacterHasNoAnatomy;
-        const anatomy_runtime = instance.character.anatomy_runtime orelse
+        const anatomy_runtime = instance.humanoidView().anatomy_runtime orelse
             return error.CharacterHasNoAnatomy;
         try result.bindActiveOptionalArmModules(
-            instance.definition.visual_definition,
-            instance.character.appearance_runtime,
+            instance.definitionView().visual_definition,
+            instance.humanoidView().appearance_runtime,
             anatomy_definition,
             anatomy_runtime,
         );
@@ -1162,11 +1161,11 @@ fn optionalArmSegmentRegistration(
         .distal,
     );
     const module = try findModuleByName(
-        instance.definition.visual_definition,
+        instance.definitionView().visual_definition,
         contract.module_name,
     );
     const start = try moduleEndpoint(
-        instance.definition.visual_definition,
+        instance.definitionView().visual_definition,
         projection,
         module,
         contract.start_kind,
@@ -1174,7 +1173,7 @@ fn optionalArmSegmentRegistration(
         .proximal,
     );
     const end = try moduleEndpoint(
-        instance.definition.visual_definition,
+        instance.definitionView().visual_definition,
         projection,
         module,
         contract.end_kind,
@@ -1186,12 +1185,12 @@ fn optionalArmSegmentRegistration(
         @abs(legacy_request.scale[1])
     else
         @abs(legacy_request.scale[0]);
-    const reflect_transverse = view == .side and instance.facing == .left;
+    const reflect_transverse = view == .side and instance.facingDirection() == .left;
     return visual_registration.solveSegment(
         .{
-            .identity = instance.definition.visual_definition.visuals[
+            .identity = instance.definitionView().visual_definition.visuals[
                 try optionalVisualIdForSlot(
-                    instance.definition.visual_definition,
+                    instance.definitionView().visual_definition,
                     slot,
                 )
             ].debug_name.slice(),
@@ -1305,15 +1304,15 @@ fn graphBindingEvidence(
     projection: presentation_pose.FrontProjection,
 ) !?visual_geometry.GraphBindingEvidence {
     const contract = optionalArmContract(slot) orelse return null;
-    const anatomy_definition = instance.definition.anatomy_definition orelse
+    const anatomy_definition = instance.definitionView().anatomy_definition orelse
         return error.CharacterHasNoAnatomy;
-    const graph_definition = instance.definition.component_graph_definition orelse
+    const graph_definition = instance.definitionView().component_graph_definition orelse
         return error.CharacterHasNoComponentGraph;
     const graph = try graph_definition.view(
-        instance.definition.visual_definition,
+        instance.definitionView().visual_definition,
         anatomy_definition,
     );
-    const anatomy_runtime = instance.character.anatomy_runtime orelse
+    const anatomy_runtime = instance.humanoidView().anatomy_runtime orelse
         return error.CharacterHasNoAnatomy;
     const component_id = try anatomy_definition.partInstanceId(
         contract.component_name,
@@ -1321,7 +1320,7 @@ fn graphBindingEvidence(
     const component = try graph.component(component_id);
     const module_id = component.instance.articulation_module orelse
         return error.RequiredRigModuleMissing;
-    const module = instance.definition.visual_definition.rig_modules[
+    const module = instance.definitionView().visual_definition.rig_modules[
         module_id.index()
     ];
     if (!std.mem.eql(u8, module.debug_name.slice(), contract.module_name)) {
@@ -1342,7 +1341,7 @@ fn graphBindingEvidence(
     const resolved_index = graph_visual_index orelse
         return error.OptionalArmVisualNotDeclaredByGraph;
     const start = try moduleEndpoint(
-        instance.definition.visual_definition,
+        instance.definitionView().visual_definition,
         projection,
         module,
         contract.start_kind,
@@ -1350,7 +1349,7 @@ fn graphBindingEvidence(
         .proximal,
     );
     const end = try moduleEndpoint(
-        instance.definition.visual_definition,
+        instance.definitionView().visual_definition,
         projection,
         module,
         contract.end_kind,
@@ -1367,11 +1366,11 @@ fn graphBindingEvidence(
             parent_component.index()
         ].stable_id.slice(),
         .module_id = @intCast(module_id.index()),
-        .module_identity = instance.definition.visual_definition.rig_modules[
+        .module_identity = instance.definitionView().visual_definition.rig_modules[
             module_id.index()
         ].debug_name.slice(),
         .graph_visual_index = resolved_index,
-        .source_identity = instance.definition.visual_definition.visuals[
+        .source_identity = instance.definitionView().visual_definition.visuals[
             attachment.id.index()
         ].debug_name.slice(),
         .start_kind = start.kind,
@@ -1389,14 +1388,14 @@ pub fn validateOptionalArmSubmissions(
     submissions: []const OptionalArmSubmission,
 ) !OptionalArmSubmissionCounts {
     if (submissions.len > 6) return error.OptionalArmSubmissionCapacityExceeded;
-    const anatomy_definition = instance.definition.anatomy_definition orelse
+    const anatomy_definition = instance.definitionView().anatomy_definition orelse
         return error.CharacterHasNoAnatomy;
-    const anatomy_runtime = instance.character.anatomy_runtime orelse
+    const anatomy_runtime = instance.humanoidView().anatomy_runtime orelse
         return error.CharacterHasNoAnatomy;
-    const graph_definition = instance.definition.component_graph_definition orelse
+    const graph_definition = instance.definitionView().component_graph_definition orelse
         return error.CharacterHasNoComponentGraph;
     const graph = try graph_definition.view(
-        instance.definition.visual_definition,
+        instance.definitionView().visual_definition,
         anatomy_definition,
     );
     var result = OptionalArmSubmissionCounts{
@@ -1411,7 +1410,7 @@ pub fn validateOptionalArmSubmissions(
         );
         const required_view = switch (view) {
             .front => anatomy.ViewSupport{ .front = true, .side_left = false, .side_right = false },
-            .side => if (instance.facing == .left)
+            .side => if (instance.facingDirection() == .left)
                 anatomy.ViewSupport{ .front = false, .side_left = true, .side_right = false }
             else
                 anatomy.ViewSupport{ .front = false, .side_left = false, .side_right = true },
@@ -1446,7 +1445,7 @@ pub fn validateOptionalArmSubmissions(
             if (declared_match_count != 1) {
                 return error.OptionalArmVisualNotDeclaredByGraph;
             }
-            const visual = instance.definition.visual_definition.visuals[
+            const visual = instance.definitionView().visual_definition.visuals[
                 submission.visual_id.index()
             ];
             const slot = optionalSlotForName(visual.debug_name.slice()) orelse
@@ -1455,17 +1454,17 @@ pub fn validateOptionalArmSubmissions(
             if (!std.mem.eql(u8, contract.component_name, component_name)) {
                 return error.OptionalArmComponentOwnershipMismatch;
             }
-            const module = instance.definition.visual_definition.rig_modules[
+            const module = instance.definitionView().visual_definition.rig_modules[
                 module_id.index()
             ];
             const expected_start = try moduleEndpointIndex(
-                instance.definition.visual_definition,
+                instance.definitionView().visual_definition,
                 module,
                 contract.start_kind,
                 contract.start_name,
             );
             const expected_end = try moduleEndpointIndex(
-                instance.definition.visual_definition,
+                instance.definitionView().visual_definition,
                 module,
                 contract.end_kind,
                 contract.end_name,
@@ -1674,7 +1673,7 @@ fn segmentRegistration(
     );
     const reflect_transverse =
         (view == .front and mirrorsFrontRegion(slot)) or
-        (view == .side and instance.facing == .left);
+        (view == .side and instance.facingDirection() == .left);
     return visual_registration.solveSegment(
         .{
             .identity = @tagName(slot),
@@ -1738,7 +1737,7 @@ fn footRegistration(
         .point,
     );
     const target = try projectedBoneTarget(instance, projection, semantic, .point);
-    const bone_index = try instance.definition.skeleton_definition.boneIndex(semantic);
+    const bone_index = try instance.definitionView().skeleton_definition.boneIndex(semantic);
     const target_transform = try humanoid.spriteTransform(
         projection.bone_world[bone_index],
     );
@@ -1747,7 +1746,7 @@ fn footRegistration(
         .y = @abs(legacy_request.scale[1]),
     };
     if ((view == .front and mirrorsFrontRegion(slot)) or
-        (view == .side and instance.facing == .left))
+        (view == .side and instance.facingDirection() == .left))
     {
         scale.x = -scale.x;
     }
@@ -1852,9 +1851,9 @@ fn componentPointRegistration(
     legacy_request: sprite.SpriteRequest,
     source_landmark: visual_geometry.LandmarkKind,
 ) !visual_registration.Placement {
-    const anatomy_definition = instance.definition.anatomy_definition orelse
+    const anatomy_definition = instance.definitionView().anatomy_definition orelse
         return error.CharacterHasNoAnatomy;
-    const anatomy_runtime = instance.character.anatomy_runtime orelse
+    const anatomy_runtime = instance.humanoidView().anatomy_runtime orelse
         return error.CharacterHasNoAnatomy;
     const part_id = try anatomy_definition.partInstanceId(
         attachment.debug_name.slice(),
@@ -1884,7 +1883,7 @@ fn componentPointRegistration(
         .x = selected.visual.authored_size[0],
         .y = selected.visual.authored_size[1],
     });
-    if (view == .side and instance.facing == .left and scale.x > 0) {
+    if (view == .side and instance.facingDirection() == .left and scale.x > 0) {
         scale.x = -scale.x;
     }
     return visual_registration.solvePoint(
@@ -1926,7 +1925,7 @@ fn frameRegistration(
             .identity = @tagName(slot),
             .binding_mode = .frame,
             .scale_policy = .frame_axes,
-            .mirroring_policy = if (view == .side and instance.facing == .left)
+            .mirroring_policy = if (view == .side and instance.facingDirection() == .left)
                 .view_reflection
             else
                 .transverse_reflection,
@@ -2047,7 +2046,8 @@ fn targetFrame(
     legacy_request: sprite.SpriteRequest,
     source: RegistrationFrame,
 ) !TargetFrame {
-    const definition = &instance.definition.skeleton_definition;
+    const definition_view = instance.definitionView();
+    const definition = &definition_view.skeleton_definition;
     const left_semantic: skeleton.BoneSemantic = switch (slot) {
         .torso => .left_upper_arm,
         .pelvis => .left_thigh,
@@ -2092,7 +2092,7 @@ fn targetFrame(
         const source_delta = source.axis_x.local.sub(source.origin.local);
         var signed_span = source_delta.x * legacy_request.scale[0];
         if (@abs(signed_span) <= visual_registration.axis_epsilon) {
-            signed_span = if (instance.facing == .left) -0.01 else 0.01;
+            signed_span = if (instance.facingDirection() == .left) -0.01 else 0.01;
         }
         break :a math.Vec2{
             .x = origin_world.x + signed_span,
@@ -2130,7 +2130,7 @@ fn projectedBoneTarget(
     semantic: skeleton.BoneSemantic,
     role: visual_registration.EndpointRole,
 ) !visual_registration.TargetPoint {
-    const index = try instance.definition.skeleton_definition.boneIndex(semantic);
+    const index = try instance.definitionView().skeleton_definition.boneIndex(semantic);
     return visual_registration.targetPoint(
         @tagName(semantic),
         projection.bone_world[index].translationPart(),
@@ -2147,7 +2147,8 @@ fn anatomyRootWorldGeometry(
     slot: Slot,
     projection: presentation_pose.FrontProjection,
 ) !?visual_geometry.WorldGeometry {
-    const definition = &instance.definition.skeleton_definition;
+    const definition_view = instance.definitionView();
+    const definition = &definition_view.skeleton_definition;
     return switch (slot) {
         .torso => visual_geometry.WorldGeometry.init(&.{
             .{
@@ -2270,7 +2271,7 @@ fn boundIdentityForSlot(
     slot: Slot,
     attachment: appearance.VisualAttachment,
 ) u32 {
-    if (instance.definition.anatomy_definition) |definition| {
+    if (instance.definitionView().anatomy_definition) |definition| {
         if (optionalArmContract(slot)) |contract| {
             const part_id = definition.partInstanceId(contract.component_name) catch
                 return @intCast(attachment.id.index());
@@ -2300,7 +2301,7 @@ fn presentationOrder(
         break :layer switch (view) {
             .side => connectorLayer(
                 semantic,
-                sideBodyPartLayer(semantic, instance.facing),
+                sideBodyPartLayer(semantic, instance.facingDirection()),
                 .side,
             ),
             .front => frontPresentationLayer(semantic),
@@ -2309,11 +2310,11 @@ fn presentationOrder(
         29
     else
         attachment.body_part_layer;
-    const resolved = instance.overrides.resolve(@intFromEnum(attachment.id), default_layer);
+    const resolved = instance.resolveAttachmentLayer(@intFromEnum(attachment.id), default_layer);
     return .{
         .scene_layer = character.characters_scene_layer,
         .interaction_layer = resolved.interaction_layer,
-        .actor_layer = instance.actor_layer,
+        .actor_layer = instance.actorLayer(),
         .body_part_layer = resolved.body_part_layer,
     };
 }
@@ -2340,23 +2341,23 @@ fn presentationVisualWorld(
 ) !math.Mat3 {
     if (attachment.canonical_semantic != null) {
         return projection.visualWorld(
-            instance.character.appearance_runtime,
+            instance.humanoidView().appearance_runtime,
             attachment,
         );
     }
     if (optionalArmContract(slot) != null) {
         return projection.visualWorld(
-            instance.character.appearance_runtime,
+            instance.humanoidView().appearance_runtime,
             attachment,
         );
     }
 
     if (anatomy_projection) |projected| {
         if (try directPointComponentIndexForVisual(instance, attachment.id)) |part_index| {
-            if (attachment.id.index() >= instance.character.appearance_runtime.visual_states.len) {
+            if (attachment.id.index() >= instance.humanoidView().appearance_runtime.visual_states.len) {
                 return error.InvalidVisualAttachmentId;
             }
-            const state = instance.character.appearance_runtime.visual_states[attachment.id.index()];
+            const state = instance.humanoidView().appearance_runtime.visual_states[attachment.id.index()];
             var world = projected.part_world[part_index]
                 .mul(try state.local_deformation.localToParent());
             if (attachment.secondary_motion) |motion_definition| {
@@ -2368,15 +2369,15 @@ fn presentationVisualWorld(
         }
     }
 
-    const head = try instance.definition.attachment(.head);
+    const head = try instance.definitionView().attachment(.head);
     const head_world = try projection.visualWorld(
-        instance.character.appearance_runtime,
+        instance.humanoidView().appearance_runtime,
         head.*,
     );
-    if (attachment.id.index() >= instance.character.appearance_runtime.visual_states.len) {
+    if (attachment.id.index() >= instance.humanoidView().appearance_runtime.visual_states.len) {
         return error.InvalidVisualAttachmentId;
     }
-    const state = instance.character.appearance_runtime.visual_states[attachment.id.index()];
+    const state = instance.humanoidView().appearance_runtime.visual_states[attachment.id.index()];
     var world = head_world
         .mul(math.Mat3.translation(featureOffset(slot, view)))
         .mul(try state.local_deformation.localToParent());
@@ -2390,10 +2391,10 @@ fn directPointComponentIndexForVisual(
     instance: *const character.CharacterInstance,
     visual_id: appearance.VisualAttachmentId,
 ) !?usize {
-    const appearance_definition = instance.definition.visual_definition;
-    const anatomy_definition = instance.definition.anatomy_definition orelse return null;
-    const graph_definition = instance.definition.component_graph_definition orelse return null;
-    const anatomy_runtime = instance.character.anatomy_runtime orelse return null;
+    const appearance_definition = instance.definitionView().visual_definition;
+    const anatomy_definition = instance.definitionView().anatomy_definition orelse return null;
+    const graph_definition = instance.definitionView().component_graph_definition orelse return null;
+    const anatomy_runtime = instance.humanoidView().anatomy_runtime orelse return null;
     const graph = try graph_definition.view(appearance_definition, anatomy_definition);
     for (anatomy_definition.part_instances) |part| {
         const component = try graph.component(part.id);

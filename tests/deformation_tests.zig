@@ -106,10 +106,11 @@ test "topology generated clothing follows exact bound instances with isolated ov
 
     const torso_id = try anatomy_definition.partInstanceId("torso");
     const torso_visual_id = try scene.definition.visual_definition.visualId("torso");
-    const anatomy_runtime = &scene.four_arm.character.anatomy_runtime.?;
+    const internal = character.testing.state(&scene.four_arm);
+    const anatomy_runtime = &internal.character.anatomy_runtime.?;
     const appearance_definition = scene.definition.visual_definition.view();
     const full_torso = try anatomy_runtime.resolvedDeformationForPart(anatomy_definition, torso_id, .{});
-    const skin_torso = scene.four_arm.character.appearance_runtime.visual_states[torso_visual_id.index()].local_deformation;
+    const skin_torso = internal.character.appearance_runtime.visual_states[torso_visual_id.index()].local_deformation;
     try std.testing.expect(full_torso.approxEqAbs(skin_torso, tolerance));
 
     const long_sleeve = try scene.equipment_definition.visualComponentId("long_sleeve");
@@ -117,8 +118,9 @@ test "topology generated clothing follows exact bound instances with isolated ov
     var sleeve_parts: [4]anatomy.BodyPartInstanceId = undefined;
     var sleeve_world_before: [4]math.Mat3 = undefined;
     var sleeve_count: usize = 0;
-    for (scene.four_arm.equipment_loadout.?.visuals(), 0..) |visual, index| {
-        const recipe = try scene.four_arm.equipment_loadout.?.definition.recipe(visual.recipe);
+    const loadout = scene.four_arm.equipmentView().?;
+    for (loadout.visuals(), 0..) |visual, index| {
+        const recipe = try loadout.definition.recipe(visual.recipe);
         if (recipe.component != long_sleeve) continue;
         if (sleeve_count >= sleeve_indices.len) return error.UnexpectedSleeveCount;
         const part_id = switch (visual.source) {
@@ -131,7 +133,7 @@ test "topology generated clothing follows exact bound instances with isolated ov
         sleeve_indices[sleeve_count] = index;
         sleeve_parts[sleeve_count] = part_id;
         sleeve_world_before[sleeve_count] = try scene.four_arm.equipmentVisualWorld(index);
-        const component = scene.four_arm.equipment_loadout.?.definition.visual_components[recipe.component.index()];
+        const component = loadout.definition.visual_components[recipe.component.index()];
         const expected = (try anatomy_runtime.partBindingWorld(anatomy_definition, part_id))
             .mul(try recipe.local_to_binding.localToParent())
             .mul(try (try anatomy_runtime.resolvedDeformationForPart(
@@ -215,11 +217,11 @@ test "breathing and morph changes preserve physics controller canonical IK and d
     );
     defer instance.deinit();
 
-    const controller_before = instance.controller.?.state;
-    const root_before = instance.world_position;
-    const collider_extents_before = instance.controller.?.configuration.collider_half_extents;
-    const upper_length_before = instance.right_arm_binding.upper_length;
-    const lower_length_before = instance.right_arm_binding.lower_length;
+    const controller_before = instance.controllerSnapshot().?.state;
+    const root_before = instance.worldPosition();
+    const collider_extents_before = instance.controllerSnapshot().?.configuration.collider_half_extents;
+    const upper_length_before = instance.rightArmBinding().upper_length;
+    const lower_length_before = instance.rightArmBinding().lower_length;
     const hand_socket_before = try instance.socketPosition(.right_hand);
     const anatomy_definition = definition.anatomy_definition.?.view();
     try instance.configureBreathing(try deformation.BreathingConfiguration.init(240, 1));
@@ -231,27 +233,27 @@ test "breathing and morph changes preserve physics controller canonical IK and d
         0,
     );
 
-    const controller_after = instance.controller.?.state;
+    const controller_after = instance.controllerSnapshot().?.state;
     try std.testing.expect(controller_before.position.approxEqAbs(controller_after.position, 0));
     try std.testing.expect(controller_before.velocity.approxEqAbs(controller_after.velocity, 0));
     try std.testing.expectEqual(controller_before.grounded, controller_after.grounded);
     try std.testing.expectEqual(controller_before.supporting_collider, controller_after.supporting_collider);
     try std.testing.expectEqual(controller_before.simulation_tick, controller_after.simulation_tick);
-    try std.testing.expect(root_before.approxEqAbs(instance.world_position, 0));
-    try std.testing.expect(collider_extents_before.approxEqAbs(instance.controller.?.configuration.collider_half_extents, 0));
-    try std.testing.expectApproxEqAbs(upper_length_before, instance.right_arm_binding.upper_length, 0);
-    try std.testing.expectApproxEqAbs(lower_length_before, instance.right_arm_binding.lower_length, 0);
+    try std.testing.expect(root_before.approxEqAbs(instance.worldPosition(), 0));
+    try std.testing.expect(collider_extents_before.approxEqAbs(instance.controllerSnapshot().?.configuration.collider_half_extents, 0));
+    try std.testing.expectApproxEqAbs(upper_length_before, instance.rightArmBinding().upper_length, 0);
+    try std.testing.expectApproxEqAbs(lower_length_before, instance.rightArmBinding().lower_length, 0);
     try std.testing.expect(hand_socket_before.approxEqAbs(try instance.socketPosition(.right_hand), 0));
 
     var equipment_definition = try equipment_catalog.initDefinition(std.testing.allocator, &definition);
     defer equipment_definition.deinit();
     try instance.initializeEquipment(equipment_definition.view());
-    const modifier_before = modifierFingerprint(&instance.equipment_loadout.?);
-    const capability_before = capabilityFingerprint(&instance.equipment_loadout.?);
+    const modifier_before = modifierFingerprint(instance.equipmentView().?);
+    const capability_before = capabilityFingerprint(instance.equipmentView().?);
     try instance.setBreathingPhaseTick(180);
     try instance.setGlobalBuild(20);
-    try std.testing.expectEqual(modifier_before, modifierFingerprint(&instance.equipment_loadout.?));
-    try std.testing.expectEqual(capability_before, capabilityFingerprint(&instance.equipment_loadout.?));
+    try std.testing.expectEqual(modifier_before, modifierFingerprint(instance.equipmentView().?));
+    try std.testing.expectEqual(capability_before, capabilityFingerprint(instance.equipmentView().?));
 }
 
 test "interaction event timing is invariant across breathing configurations" {
@@ -328,8 +330,8 @@ fn runHandshakeWithBreathing(amplitude: f32) !InteractionEvidence {
     try scene.four_arm.setBreathingPhaseTick(137);
     var manager = interaction_system.Manager.init(try handshake.definition(&scene.shared_animations));
     const participants = [_]*character.CharacterInstance{ &scene.two_arm, &scene.four_arm };
-    const id = try manager.startPair(scene.two_arm.id, scene.four_arm.id, &participants, 0, .none);
-    const duration = manager.definition.authoritative_duration_ticks;
+    const id = try manager.startPair(scene.two_arm.id(), scene.four_arm.id(), &participants, 0, .none);
+    const duration = manager.definitionView().authoritative_duration_ticks;
     for (1..@as(u64, duration) + 1) |tick| try manager.updateTick(tick, &participants);
     const terminal = manager.instance(id) orelse return error.MissingTerminalInteraction;
     return .{
@@ -344,7 +346,7 @@ fn findEquipmentVisual(
     component_id: equipment.VisualComponentId,
     part_id: anatomy.BodyPartInstanceId,
 ) !usize {
-    const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+    const loadout = instance.equipmentView() orelse return error.CharacterEquipmentNotInitialized;
     for (loadout.visuals(), 0..) |visual, index| {
         const recipe = try loadout.definition.recipe(visual.recipe);
         if (recipe.component != component_id) continue;

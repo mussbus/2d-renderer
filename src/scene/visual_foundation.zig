@@ -588,11 +588,11 @@ pub const Scene = struct {
         if (snapshot.environment_theme_cycle.pressed) {
             const before = scene.authoritativeInteractionFingerprint();
             const before_theme = scene.integrated.environment.active_theme;
-            const before_root = scene.integrated.production.female.world_position;
+            const before_root = scene.integrated.production.female.worldPosition();
             const before_camera = scene.integrated.camera.center;
             try scene.integrated.cycleThemePreservingState();
             const after = scene.authoritativeInteractionFingerprint();
-            const root_delta = scene.integrated.production.female.world_position
+            const root_delta = scene.integrated.production.female.worldPosition()
                 .sub(before_root).length();
             const camera_delta = scene.integrated.camera.center.sub(before_camera).length();
             const unchanged = before == after;
@@ -620,7 +620,7 @@ pub const Scene = struct {
         for (0..frame.substeps) |_| try scene.updateTick();
         try scene.integrated.camera_follower.update(
             &scene.integrated.camera,
-            scene.integrated.production.female.world_position.x,
+            scene.integrated.production.female.worldPosition().x,
         );
         scene.integrated.evidence.camera_minimum_x = @min(
             scene.integrated.evidence.camera_minimum_x,
@@ -643,10 +643,10 @@ pub const Scene = struct {
 
     fn updateTick(scene: *Scene) !void {
         const production = &scene.integrated.production;
-        const previous_female_root = production.female.world_position;
-        const previous_male_root = production.male.world_position;
+        const previous_female_root = production.female.worldPosition();
+        const previous_male_root = production.male.worldPosition();
         const previous_partner_motion = scene.partner_motion;
-        const previous_velocity = production.female.controller.?.state.velocity;
+        const previous_velocity = production.female.controllerSnapshot().?.state.velocity;
         production.simulation_tick = std.math.add(u64, production.simulation_tick, 1) catch
             return error.SimulationTickOverflow;
         const intent_value = production.pending_input.consumeTick();
@@ -658,7 +658,7 @@ pub const Scene = struct {
         const participants_value = scene.participants();
         if (intent_value.interact_pressed) {
             const requested = scene.manager.requestFromIntent(
-                production.female.id,
+                production.female.id(),
                 intent_value,
                 &participants_value,
                 production.simulation_tick,
@@ -677,18 +677,18 @@ pub const Scene = struct {
                 try production.male.maintainFootPlantingDuringInteraction(&production.world);
             }
             try scene.observeActiveInteraction(active);
-        } else if (scene.manager.last_terminal) |*terminal| {
+        } else if (scene.manager.lastTerminal()) |terminal| {
             if (terminal.id != scene.last_terminal_id) {
                 try scene.observeTerminalInteraction(terminal);
                 scene.last_terminal_id = terminal.id;
                 scene.active_interaction = .invalid;
             }
         }
-        const current_velocity = production.female.controller.?.state.velocity;
-        const controlled_step = production.female.world_position
+        const current_velocity = production.female.controllerSnapshot().?.state.velocity;
+        const controlled_step = production.female.worldPosition()
             .sub(previous_female_root)
             .length();
-        const passive_step = production.male.world_position
+        const passive_step = production.male.worldPosition()
             .sub(previous_male_root)
             .length();
         scene.evidence.maximum_controlled_root_step_m = @max(
@@ -705,7 +705,7 @@ pub const Scene = struct {
         );
         if (!foundation_coherence.controlledRootStepPasses(
             previous_female_root,
-            production.female.world_position,
+            production.female.worldPosition(),
             maximum_speed,
             @floatCast(fixed_step.fixed_dt_seconds),
         )) return error.UnexplainedControlledRootCorrection;
@@ -715,7 +715,7 @@ pub const Scene = struct {
             }
         } else if (!foundation_coherence.controlledRootStepPasses(
             previous_male_root,
-            production.male.world_position,
+            production.male.worldPosition(),
             partner_route_speed_mps,
             @floatCast(fixed_step.fixed_dt_seconds),
         )) {
@@ -903,13 +903,14 @@ pub const Scene = struct {
         );
 
         const female = &scene.integrated.production.female;
-        if (female.controller.?.state.grounded) {
-            const support_id = female.controller.?.state.supporting_collider orelse
+        const controller = female.controllerSnapshot().?.state;
+        if (controller.grounded) {
+            const support_id = controller.supporting_collider orelse
                 return error.GroundedCharacterMissingSupport;
             const support_y = try scene.supportingTop(support_id);
             const bounds = try foundation_coherence.traceCharacterBounds(
                 scene.visual_trace,
-                female.id.raw(),
+                female.id().raw(),
             );
             submitted += try submitCoherenceLine(
                 queue,
@@ -924,7 +925,7 @@ pub const Scene = struct {
             const sides = [_]visual_geometry.Side{ .left, .right };
             for (sides, 0..) |side, side_index| {
                 const record = scene.outermostFootVisual(
-                    female.id.raw(),
+                    female.id().raw(),
                     side,
                 ) orelse return error.MissingGroundContactVisual;
                 const heel = try foundation_coherence.alphaTightLandmarkWorld(
@@ -982,7 +983,7 @@ pub const Scene = struct {
         const female = &scene.integrated.production.female;
         const bounds = try foundation_coherence.traceCharacterBounds(
             scene.visual_trace,
-            female.id.raw(),
+            female.id().raw(),
         );
         const evidence_visual = scene.integrated.environment.catalog
             .theme(scene.integrated.environment.active_theme)
@@ -1112,17 +1113,18 @@ pub const Scene = struct {
         queue: *render_queue.UnifiedRenderQueue,
     ) !void {
         const production = &scene.integrated.production;
-        const female_controller = production.female.controller orelse
+        const female_controller = production.female.controllerSnapshot() orelse
             return error.CharacterHasNoController;
         if (female_controller.state.grounded) {
             const support_id = female_controller.state.supporting_collider orelse
                 return error.GroundedCharacterMissingSupport;
             const support_y = try scene.supportingTop(support_id);
-            const left_locked = production.female.foot_plants.left.hasLock();
-            const right_locked = production.female.foot_plants.right.hasLock();
+            const female_feet = production.female.footPlantingSnapshot();
+            const left_locked = female_feet.left.hasLock();
+            const right_locked = female_feet.right.hasLock();
             const alignment = try foundation_coherence.groundAlignment(
                 scene.visual_trace,
-                production.female.id.raw(),
+                production.female.id().raw(),
                 support_y,
                 if (left_locked or right_locked) left_locked else true,
                 if (left_locked or right_locked) right_locked else true,
@@ -1131,18 +1133,17 @@ pub const Scene = struct {
                 scene.female_ground_alignment_y = alignment.translation_y;
             }
         }
+        const male_feet = production.male.footPlantingSnapshot();
         const male_alignment = try foundation_coherence.groundAlignment(
             scene.visual_trace,
-            production.male.id.raw(),
+            production.male.id().raw(),
             0,
-            if (production.male.foot_plants.left.hasLock() or
-                production.male.foot_plants.right.hasLock())
-                production.male.foot_plants.left.hasLock()
+            if (male_feet.left.hasLock() or male_feet.right.hasLock())
+                male_feet.left.hasLock()
             else
                 true,
-            if (production.male.foot_plants.left.hasLock() or
-                production.male.foot_plants.right.hasLock())
-                production.male.foot_plants.right.hasLock()
+            if (male_feet.left.hasLock() or male_feet.right.hasLock())
+                male_feet.right.hasLock()
             else
                 true,
         );
@@ -1152,13 +1153,13 @@ pub const Scene = struct {
         try foundation_coherence.translateCharacterSubmissions(
             queue,
             scene.visual_trace,
-            production.female.id.raw(),
+            production.female.id().raw(),
             .{ .x = 0, .y = scene.female_ground_alignment_y },
         );
         try foundation_coherence.translateCharacterSubmissions(
             queue,
             scene.visual_trace,
-            production.male.id.raw(),
+            production.male.id().raw(),
             .{ .x = 0, .y = scene.male_ground_alignment_y },
         );
     }
@@ -1167,7 +1168,7 @@ pub const Scene = struct {
         const production = &scene.integrated.production;
         const female = try foundation_coherence.traceCharacterBounds(
             scene.visual_trace,
-            production.female.id.raw(),
+            production.female.id().raw(),
         );
         if (scene.viewport_recenter_pending) {
             const nearest = try foundation_coherence.applyVerticalSafeRegion(
@@ -1196,11 +1197,11 @@ pub const Scene = struct {
         const production = &scene.integrated.production;
         const female = try foundation_coherence.traceCharacterPresenceBounds(
             scene.visual_trace,
-            production.female.id.raw(),
+            production.female.id().raw(),
         );
         const male = try foundation_coherence.traceCharacterPresenceBounds(
             scene.visual_trace,
-            production.male.id.raw(),
+            production.male.id().raw(),
         );
         const ratio = try foundation_coherence.overlapRatio(
             female.world,
@@ -1221,8 +1222,8 @@ pub const Scene = struct {
         const measurement = PresenceMeasurement{
             .render_frame = production.frame_index,
             .simulation_tick = production.simulation_tick,
-            .female_position = production.female.world_position,
-            .male_position = production.male.world_position,
+            .female_position = production.female.worldPosition(),
+            .male_position = production.male.worldPosition(),
             .overlap_ratio = ratio,
             .interaction_context = interaction_active,
             .passes_acceptance = foundation_coherence.overlapPasses(
@@ -1276,7 +1277,7 @@ pub const Scene = struct {
     fn startPartnerMotion(scene: *Scene, target_x: f32) !void {
         if (!std.math.isFinite(target_x)) return error.NonFinitePartnerRouteTarget;
         const male = &scene.integrated.production.male;
-        const difference = target_x - male.world_position.x;
+        const difference = target_x - male.worldPosition().x;
         if (@abs(difference) <= 0.000001) {
             scene.partner_motion = .stopped;
             scene.partner_motion_target_x = target_x;
@@ -1291,15 +1292,15 @@ pub const Scene = struct {
     fn advancePartnerMotion(scene: *Scene) !void {
         if (scene.partner_motion == .stopped) return;
         const male = &scene.integrated.production.male;
-        const difference = scene.partner_motion_target_x - male.world_position.x;
+        const difference = scene.partner_motion_target_x - male.worldPosition().x;
         const maximum_step =
             partner_route_speed_mps * @as(f32, @floatCast(fixed_step.fixed_dt_seconds));
         const step = std.math.clamp(difference, -maximum_step, maximum_step);
         try male.setWorldPosition(.{
-            .x = male.world_position.x + step,
-            .y = male.world_position.y,
+            .x = male.worldPosition().x + step,
+            .y = male.worldPosition().y,
         });
-        if (@abs(scene.partner_motion_target_x - male.world_position.x) <= 0.000001) {
+        if (@abs(scene.partner_motion_target_x - male.worldPosition().x) <= 0.000001) {
             scene.partner_motion = .stopped;
             try male.setFacing(.left);
             try male.enterAnimationState(.idle);
@@ -1307,7 +1308,7 @@ pub const Scene = struct {
     }
 
     fn handshakeTargetX(scene: *const Scene) f32 {
-        return scene.integrated.production.male.world_position.x -
+        return scene.integrated.production.male.worldPosition().x -
             handshake.authored_horizontal_separation;
     }
 
@@ -1331,17 +1332,17 @@ pub const Scene = struct {
         const production = &scene.integrated.production;
         const preset = try production.catalog.preset(production.current_preset);
         try scene.truth_snapshot.setOutfit(
-            production.female.id.raw(),
+            production.female.id().raw(),
             preset.stable_id,
-            if (production.female.equipment_loadout) |loadout|
+            if (production.female.equipmentView()) |loadout|
                 loadout.equippedItems().len
             else
                 0,
         );
         try scene.truth_snapshot.setOutfit(
-            production.male.id.raw(),
+            production.male.id().raw(),
             "foundation_male_lineup",
-            if (production.male.equipment_loadout) |loadout|
+            if (production.male.equipmentView()) |loadout|
                 loadout.equippedItems().len
             else
                 0,
@@ -1356,23 +1357,22 @@ pub const Scene = struct {
         };
         for (characters) |instance| {
             try scene.debug_commands.addMarker(
-                instance.world_position,
+                instance.worldPosition(),
                 .{ 1, 0.20, 0.20, 1 },
             );
             scene.debug_counts.root += 1;
-            const root_index =
-                try instance.definition.skeleton_definition.boneIndex(.root);
-            const visual_root = (try instance.character.local_and_world_pose.worldForBone(
-                &instance.definition.skeleton_definition,
+            const definition = instance.definitionView();
+            const humanoid_view = instance.humanoidView();
+            const root_index = try definition.skeleton_definition.boneIndex(.root);
+            const visual_root = (try humanoid_view.local_and_world_pose.worldForBone(
+                &definition.skeleton_definition,
                 root_index,
             )).translationPart();
             try scene.debug_commands.addMarker(visual_root, .{ 1, 0.85, 0.10, 1 });
             scene.debug_counts.root += 1;
 
-            const feet = .{
-                &instance.foot_plants.left,
-                &instance.foot_plants.right,
-            };
+            const foot_plants = instance.footPlantingSnapshot();
+            const feet = .{ &foot_plants.left, &foot_plants.right };
             inline for (feet) |foot| {
                 if (foot.last_ground_sample.hit) {
                     const origin = foot.pre_ik_sole.add(.{ .x = 0, .y = 0.12 });
@@ -1415,8 +1415,8 @@ pub const Scene = struct {
                 scene.debug_counts.ik += 1;
             }
             try scene.debug_commands.addLine(
-                scene.integrated.production.female.world_position,
-                scene.integrated.production.male.world_position,
+                scene.integrated.production.female.worldPosition(),
+                scene.integrated.production.male.worldPosition(),
                 .{ 0.65, 0.25, 1, 0.70 },
             );
             scene.debug_counts.participant_link += 1;
@@ -1492,9 +1492,10 @@ pub const Scene = struct {
             if (proof_case.view() == .front) .force_front else .force_side;
         const facing = proof_case.facing();
         try scene.integrated.production.male.setFacing(facing);
-        scene.integrated.production.female.controller.?.state.facing =
-            if (facing == .left) .left else .right;
-        try scene.integrated.production.female.setFacing(facing);
+        try scene.integrated.production.female.stageControlledTransform(
+            scene.integrated.production.female.worldPosition(),
+            facing,
+        );
         try scene.integrated.production.male.setPresentationOverride(view_override);
         try scene.integrated.production.female.setPresentationOverride(view_override);
         scene.observePresentation();
@@ -1537,9 +1538,7 @@ pub const Scene = struct {
             if (proof_case.view() == .front) .force_front else .force_side;
         const facing = proof_case.facing();
         try production.male.setFacing(facing);
-        production.female.controller.?.state.facing =
-            if (facing == .left) .left else .right;
-        try production.female.setFacing(facing);
+        try production.female.stageControlledTransform(production.female.worldPosition(), facing);
         try production.male.setPresentationOverride(view_override);
         try production.female.setPresentationOverride(view_override);
         scene.observePresentation();
@@ -1585,8 +1584,8 @@ pub const Scene = struct {
     pub fn interactionEligibility(scene: *Scene) interaction_system.Eligibility {
         const participants_value = scene.participants();
         return scene.manager.evaluateEligibility(
-            scene.integrated.production.female.id,
-            scene.integrated.production.male.id,
+            scene.integrated.production.female.id(),
+            scene.integrated.production.male.id(),
             &participants_value,
         );
     }
@@ -1594,7 +1593,7 @@ pub const Scene = struct {
     pub fn validateComplete(scene: *const Scene, script: *const ScriptedInput) !void {
         const evidence = scene.evidence;
         if (!script.completed()) {
-            const state = scene.integrated.production.female.controller.?.state;
+            const state = scene.integrated.production.female.controllerSnapshot().?.state;
             var mutable_scene: *Scene = @constCast(scene);
             const eligibility = mutable_scene.interactionEligibility();
             std.log.err(
@@ -1606,8 +1605,8 @@ pub const Scene = struct {
                     state.position.y,
                     state.velocity.x,
                     state.velocity.y,
-                    @tagName(scene.integrated.production.female.facing),
-                    @tagName(scene.integrated.production.male.facing),
+                    @tagName(scene.integrated.production.female.facingDirection()),
+                    @tagName(scene.integrated.production.male.facingDirection()),
                     state.grounded,
                     state.supporting_collider,
                     @tagName(eligibility.reason),
@@ -1665,8 +1664,8 @@ pub const Scene = struct {
             if (!record.captured or
                 record.id == .invalid or
                 record.type_id != .handshake or
-                record.initiator != scene.integrated.production.female.id or
-                record.receiver != scene.integrated.production.male.id or
+                record.initiator != scene.integrated.production.female.id() or
+                record.receiver != scene.integrated.production.male.id() or
                 record.requested_initiator_view != .side or
                 record.requested_receiver_view != .side or
                 record.contact_tick <= record.start_tick or
@@ -1711,7 +1710,7 @@ pub const Scene = struct {
                 return error.VisualFoundationInteractionEvidenceIncomplete;
             }
         }
-        const final = scene.integrated.production.female.controller.?.state;
+        const final = scene.integrated.production.female.controllerSnapshot().?.state;
         if (!final.position.approxEqAbs(foundation_world.player_spawn, 0.000001) or
             !final.velocity.approxEqAbs(math.Vec2.zero, 0.000001) or
             !final.grounded or
@@ -1746,21 +1745,22 @@ pub const Scene = struct {
             return error.VisualFoundationInteractionRecordCapacityExceeded;
         }
         const index = scene.evidence.interaction_count;
+        const definition = scene.manager.definitionView();
         scene.evidence.interaction_records[index] = .{
             .id = id,
-            .type_id = scene.manager.definition.type_id,
-            .initiator = scene.integrated.production.female.id,
-            .receiver = scene.integrated.production.male.id,
+            .type_id = definition.type_id,
+            .initiator = scene.integrated.production.female.id(),
+            .receiver = scene.integrated.production.male.id(),
             .outfit = scene.integrated.production.current_preset,
             .theme = scene.integrated.environment.active_theme,
-            .requested_initiator_view = scene.manager.definition.presentation.viewForRole(.initiator),
-            .requested_receiver_view = scene.manager.definition.presentation.viewForRole(.receiver),
+            .requested_initiator_view = definition.presentation.viewForRole(.initiator),
+            .requested_receiver_view = definition.presentation.viewForRole(.receiver),
             .start_tick = scene.integrated.production.simulation_tick,
         };
         scene.interaction_record_index = index;
         scene.active_interaction = id;
-        scene.interaction_root_a = scene.integrated.production.female.world_position;
-        scene.interaction_root_b = scene.integrated.production.male.world_position;
+        scene.interaction_root_a = scene.integrated.production.female.worldPosition();
+        scene.interaction_root_b = scene.integrated.production.male.worldPosition();
         scene.evidence.interaction_count += 1;
     }
 
@@ -1772,11 +1772,11 @@ pub const Scene = struct {
             return error.MissingVisualFoundationInteractionRecord;
         var record = &scene.evidence.interaction_records[index];
         record.roots_invariant = record.roots_invariant and
-            scene.integrated.production.female.world_position.approxEqAbs(
+            scene.integrated.production.female.worldPosition().approxEqAbs(
                 scene.interaction_root_a.?,
                 0.000001,
             ) and
-            scene.integrated.production.male.world_position.approxEqAbs(
+            scene.integrated.production.male.worldPosition().approxEqAbs(
                 scene.interaction_root_b.?,
                 0.000001,
             );
@@ -1853,8 +1853,8 @@ pub const Scene = struct {
 
     fn equipmentOrderingValid(scene: *const Scene) !bool {
         const production = &scene.integrated.production;
-        const loadout = production.female.equipment_loadout orelse return false;
-        const anatomy_definition = production.female.definition.anatomy_definition orelse
+        const loadout = production.female.equipmentView() orelse return false;
+        const anatomy_definition = production.female.definitionView().anatomy_definition orelse
             return false;
         var found_hand_equipment = false;
         for (loadout.visuals(), 0..) |visual, visual_index| {
@@ -1882,7 +1882,7 @@ pub const Scene = struct {
     }
 
     fn validateSecondaryFinite(scene: *Scene) !void {
-        const loadout = scene.integrated.production.female.equipment_loadout orelse
+        const loadout = scene.integrated.production.female.equipmentView() orelse
             return error.CharacterEquipmentNotInitialized;
         for (loadout.visuals()) |visual| {
             const recipe = try loadout.definition.recipe(visual.recipe);
@@ -1902,7 +1902,7 @@ pub const Scene = struct {
         scene: *Scene,
         physics: character_controller.StepResult,
     ) void {
-        const state = scene.integrated.production.female.controller.?.state;
+        const state = scene.integrated.production.female.controllerSnapshot().?.state;
         scene.evidence.landing_observed = scene.evidence.landing_observed or physics.landed;
         if (physics.landed) {
             scene.frame_physics.landed = true;
@@ -1921,18 +1921,18 @@ pub const Scene = struct {
 
     fn observePresentation(scene: *Scene) void {
         const production = &scene.integrated.production;
-        const state = production.female.controller.?.state;
+        const state = production.female.controllerSnapshot().?.state;
         const view = production.female.presentationView();
         scene.evidence.initial_front_idle = scene.evidence.initial_front_idle or
             (state.grounded and @abs(state.velocity.x) < 0.0001 and view == .front);
         scene.evidence.walk_left_side = scene.evidence.walk_left_side or
-            (state.velocity.x < -0.2 and production.female.facing == .left and view == .side);
+            (state.velocity.x < -0.2 and production.female.facingDirection() == .left and view == .side);
         scene.evidence.stop_front_facing_left =
             scene.evidence.stop_front_facing_left or
             (state.grounded and @abs(state.velocity.x) < 0.02 and
-                production.female.facing == .left and view == .front);
+                production.female.facingDirection() == .left and view == .front);
         scene.evidence.walk_right_side = scene.evidence.walk_right_side or
-            (state.velocity.x > 0.2 and production.female.facing == .right and view == .side);
+            (state.velocity.x > 0.2 and production.female.facingDirection() == .right and view == .side);
         scene.evidence.jump_side = scene.evidence.jump_side or
             (!state.grounded and state.velocity.y > 0 and view == .side);
         scene.evidence.fall_side = scene.evidence.fall_side or
@@ -1957,8 +1957,8 @@ pub const Scene = struct {
     fn observeLineup(scene: *Scene) void {
         const production = &scene.integrated.production;
         const anatomy_definition = production.definition.anatomy_definition.?.view();
-        const male_runtime = production.male.character.anatomy_runtime.?;
-        const female_runtime = production.female.character.anatomy_runtime.?;
+        const male_runtime = production.male.humanoidView().anatomy_runtime.?;
+        const female_runtime = production.female.humanoidView().anatomy_runtime.?;
         scene.evidence.male_buzz_cut = scene.evidence.male_buzz_cut or
             male_runtime.selected_hair ==
                 (anatomy_definition.hairDefinitionId("short_rigid") catch
@@ -1973,8 +1973,8 @@ pub const Scene = struct {
                         female_runtime.selected_hair));
         scene.evidence.coherent_male_outfit =
             scene.evidence.coherent_male_outfit or
-            (production.male.equipment_loadout != null and
-                production.male.equipment_loadout.?.equippedItems().len > 0);
+            (production.male.hasEquipment() and
+                production.male.equipmentView().?.equippedItems().len > 0);
     }
 
     fn cycleBody(scene: *Scene) !void {
@@ -2014,10 +2014,13 @@ pub const Scene = struct {
 
     pub fn authoritativeInteractionFingerprint(scene: *const Scene) u64 {
         var hash = std.hash.Wyhash.init(27);
-        hash.update(std.mem.asBytes(&scene.integrated.production.female.world_position));
-        hash.update(std.mem.asBytes(&scene.integrated.production.male.world_position));
+        const female_world = scene.integrated.production.female.worldPosition();
+        const male_world = scene.integrated.production.male.worldPosition();
+        hash.update(std.mem.asBytes(&female_world));
+        hash.update(std.mem.asBytes(&male_world));
         hash.update(std.mem.asBytes(&scene.integrated.production.simulation_tick));
-        hash.update(std.mem.asBytes(&scene.manager.metrics));
+        const manager_metrics = scene.manager.metricsSnapshot();
+        hash.update(std.mem.asBytes(&manager_metrics));
         hash.update(std.mem.asBytes(&scene.active_interaction));
         return hash.final();
     }
@@ -2030,9 +2033,9 @@ pub const Scene = struct {
         const production = &scene.integrated.production;
         const female = &production.female;
         const male = &production.male;
-        const state = female.controller.?.state;
+        const state = female.controllerSnapshot().?.state;
         const anatomy_definition = production.definition.anatomy_definition.?.view();
-        const anatomy_runtime = female.character.anatomy_runtime.?;
+        const anatomy_runtime = female.anatomyRuntimeSnapshot().?;
         const body = anatomy_definition.body_presets[
             anatomy_runtime.selected_body_preset.index()
         ].stable_id.slice();
@@ -2095,21 +2098,22 @@ pub const Scene = struct {
         else
             null;
         const raised_collider: u16 = @intCast(raised_platform_collider);
+        const foot_plants = female.footPlantingSnapshot();
         const left_surface_error_m: ?f32 =
-            if (female.foot_plants.left.last_ground_sample.hit and
-            female.foot_plants.left.last_ground_sample.collider_id == raised_collider)
+            if (foot_plants.left.last_ground_sample.hit and
+            foot_plants.left.last_ground_sample.collider_id == raised_collider)
                 @abs(
-                    female.foot_plants.left.post_ik_sole.y -
-                        female.foot_plants.left.last_ground_sample.ground_height,
+                    foot_plants.left.post_ik_sole.y -
+                        foot_plants.left.last_ground_sample.ground_height,
                 )
             else
                 null;
         const right_surface_error_m: ?f32 =
-            if (female.foot_plants.right.last_ground_sample.hit and
-            female.foot_plants.right.last_ground_sample.collider_id == raised_collider)
+            if (foot_plants.right.last_ground_sample.hit and
+            foot_plants.right.last_ground_sample.collider_id == raised_collider)
                 @abs(
-                    female.foot_plants.right.post_ik_sole.y -
-                        female.foot_plants.right.last_ground_sample.ground_height,
+                    foot_plants.right.post_ik_sole.y -
+                        foot_plants.right.last_ground_sample.ground_height,
                 )
             else
                 null;
@@ -2127,11 +2131,11 @@ pub const Scene = struct {
             .simulation_tick = production.simulation_tick,
             .stage = script.phase,
             .stage_frame = script.phase_frame,
-            .female_entity = female.id.raw(),
-            .male_entity = male.id.raw(),
+            .female_entity = female.id().raw(),
+            .male_entity = male.id().raw(),
             .position = state.position.toArray(),
             .velocity = state.velocity.toArray(),
-            .facing = switch (female.facing) {
+            .facing = switch (female.facingDirection()) {
                 .left => .left,
                 .right => .right,
             },
@@ -2241,14 +2245,16 @@ fn evidenceInteractionPhase(
 }
 
 fn projectedRightHand(instance: *const character.CharacterInstance) !math.Vec2 {
-    const definition = &instance.definition.skeleton_definition;
+    const definition_view = instance.definitionView();
+    const definition = &definition_view.skeleton_definition;
+    const humanoid_view = instance.humanoidView();
     const projection = try presentation_pose.FrontProjection.initSideInteraction(
         definition,
-        instance.character.local_and_world_pose,
-        instance.definition.visual_definition,
-        instance.character.appearance_runtime,
-        instance.world_position,
-        instance.facing == .left,
+        humanoid_view.local_and_world_pose,
+        definition_view.visual_definition,
+        humanoid_view.appearance_runtime,
+        instance.worldPosition(),
+        instance.facingDirection() == .left,
     );
     const socket_index = try definition.socketIndex(skeleton.SocketSemantic.right_hand);
     const socket_definition = try definition.socket(socket_index);
@@ -2289,7 +2295,7 @@ pub const ScriptedInput = struct {
 
     pub fn nextRaw(script: *ScriptedInput, scene: *const Scene) input.RawInputState {
         var raw = input.RawInputState{};
-        const state = scene.integrated.production.female.controller.?.state;
+        const state = scene.integrated.production.female.controllerSnapshot().?.state;
         switch (script.phase) {
             .idle,
             .customization_release,
@@ -2375,7 +2381,7 @@ pub const ScriptedInput = struct {
     pub fn observe(script: *ScriptedInput, scene: *Scene) !void {
         script.abrupt_resize_first_post_frame = false;
         script.phase_frame += 1;
-        const state = scene.integrated.production.female.controller.?.state;
+        const state = scene.integrated.production.female.controllerSnapshot().?.state;
         switch (script.phase) {
             .idle => if (script.phase_frame >= 65) script.transition(.customization_press),
             .customization_press => if (script.phase_frame >= 1)
@@ -2453,7 +2459,7 @@ pub const ScriptedInput = struct {
                 } else if (@abs(state.velocity.x) < 0.02) {
                     const error_value = scene.handshakeTargetX() - state.position.x;
                     if (@abs(error_value) <= handshake.horizontal_tolerance * 0.5 and
-                        scene.integrated.production.female.facing == .left)
+                        scene.integrated.production.female.facingDirection() == .left)
                     {
                         script.approach_nudge_direction = 2;
                     } else if (error_value > handshake.horizontal_tolerance * 0.5) {

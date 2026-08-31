@@ -105,7 +105,7 @@ pub const Scene = struct {
         const torso_armor_slot = try equipment_definition.slotId("torso_armor");
         const left_shoulder_slot = try equipment_definition.slotId("left_shoulder_armor");
         const right_shoulder_slot = try equipment_definition.slotId("right_shoulder_armor");
-        const loadout = &four_arm.equipment_loadout.?;
+        const loadout = four_arm.equipmentView().?;
         if (try loadout.itemInSlot(torso_armor_slot) != full_armor or
             try loadout.itemInSlot(left_shoulder_slot) != full_armor or
             try loadout.itemInSlot(right_shoulder_slot) != full_armor)
@@ -116,8 +116,8 @@ pub const Scene = struct {
         try four_arm.equipItem(right_shoulder);
 
         const sleeve_component = try equipment_definition.visualComponentId("long_sleeve");
-        const two_arm_sleeves = countComponentVisuals(&two_arm.equipment_loadout.?, sleeve_component);
-        const four_arm_sleeves = countComponentVisuals(&four_arm.equipment_loadout.?, sleeve_component);
+        const two_arm_sleeves = countComponentVisuals(two_arm.equipmentView().?, sleeve_component);
+        const four_arm_sleeves = countComponentVisuals(four_arm.equipmentView().?, sleeve_component);
         if (two_arm_sleeves != 2 or four_arm_sleeves != 4) return error.TopologyAwareSleeveEvidenceMissing;
 
         return .{
@@ -178,9 +178,9 @@ pub const Scene = struct {
         }
         const double_jump = try scene.equipment_definition.capabilityId("double_jump");
         const speed = try scene.equipment_definition.attributeId("movement_speed");
-        if (!scene.four_arm.equipment_loadout.?.hasCapability(double_jump)) return error.CapabilityEvidenceMissing;
+        if (!scene.four_arm.equipmentView().?.hasCapability(double_jump)) return error.CapabilityEvidenceMissing;
         var speed_modifier_found = false;
-        for (scene.two_arm.equipment_loadout.?.modifiers()) |modifier| {
+        for (scene.two_arm.equipmentView().?.modifiers()) |modifier| {
             if (modifier.attribute == speed) speed_modifier_found = true;
         }
         if (!speed_modifier_found) return error.AttributeModifierEvidenceMissing;
@@ -200,7 +200,7 @@ fn countComponentVisuals(loadout: *const equipment.Loadout, component_id: equipm
 }
 
 fn loadoutFingerprint(instance: *const character.CharacterInstance) u64 {
-    const loadout = &instance.equipment_loadout.?;
+    const loadout = instance.equipmentView().?;
     var hash: u64 = 14695981039346656037;
     for (loadout.equippedItems()) |item_id| {
         hash = (hash ^ @as(u64, @intFromEnum(item_id))) *% 1099511628211;

@@ -159,9 +159,9 @@ pub const Scene = struct {
         }
         if (snapshot.reset.pressed) scene.environment.reset();
 
-        const was_grounded = scene.production.female.controller.?.state.grounded;
+        const was_grounded = scene.production.female.controllerSnapshot().?.state.grounded;
         try scene.production.updateInteractiveFrameDelta(snapshot, frame_delta);
-        const state = scene.production.female.controller.?.state;
+        const state = scene.production.female.controllerSnapshot().?.state;
         const landed = !was_grounded and state.grounded;
         const landed_on_raised_platform =
             landed and state.supporting_collider != null and state.supporting_collider.? != 1;
@@ -225,11 +225,11 @@ pub const Scene = struct {
 
     pub fn gameplaySnapshot(scene: *const Scene) GameplaySnapshot {
         return .{
-            .female_controller = scene.production.female.controller.?.state,
-            .male_world_position = scene.production.male.world_position,
-            .male_facing = scene.production.male.facing,
-            .female_world_position = scene.production.female.world_position,
-            .female_facing = scene.production.female.facing,
+            .female_controller = scene.production.female.controllerSnapshot().?.state,
+            .male_world_position = scene.production.male.worldPosition(),
+            .male_facing = scene.production.male.facingDirection(),
+            .female_world_position = scene.production.female.worldPosition(),
+            .female_facing = scene.production.female.facingDirection(),
             .male_view = scene.production.male.presentationView(),
             .female_view = scene.production.female.presentationView(),
             .male_view_override = scene.production.male.presentationOverride(),
@@ -345,7 +345,7 @@ fn snapshotsEqualExceptCameraViewport(before: GameplaySnapshot, after: GameplayS
 
 fn loadoutFingerprint(instance: *const character.CharacterInstance) u64 {
     var hash = std.hash.Fnv1a_64.init();
-    if (instance.equipment_loadout) |*loadout| {
+    if (instance.equipmentView()) |loadout| {
         for (loadout.equippedItems()) |item| {
             const raw: u16 = @intFromEnum(item);
             hash.update(std.mem.asBytes(&raw));

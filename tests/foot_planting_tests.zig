@@ -464,7 +464,7 @@ test "unreachable and dual conflicting locks release without stretch non finite 
 }
 
 fn visualInput(instance: *const character.CharacterInstance, physics: character_controller.StepResult) character.VisualTickInput {
-    const controller = instance.controller.?;
+    const controller = instance.controllerSnapshot().?;
     return .{
         .horizontal_velocity = controller.state.velocity.x,
         .vertical_velocity = controller.state.velocity.y,
@@ -521,7 +521,7 @@ test "foot planting preserves controller root velocity collision timing and anim
         null,
     );
     defer disabled.deinit();
-    disabled.foot_plants.setEnabled(false);
+    character.testing.state(&disabled).foot_plants.setEnabled(false);
 
     var next_jump: ?u64 = null;
     var jump_tick: ?u64 = null;
@@ -530,7 +530,8 @@ test "foot planting preserves controller root velocity collision timing and anim
     var false_airborne_locks: u32 = 0;
     var tick: u64 = 0;
     while (tick < 1000) : (tick += 1) {
-        if (next_jump == null and tick > 180 and (enabled.foot_plants.left.plant_state == .planted or enabled.foot_plants.right.plant_state == .planted)) {
+        const enabled_feet = enabled.footPlantingSnapshot();
+        if (next_jump == null and tick > 180 and (enabled_feet.left.plant_state == .planted or enabled_feet.right.plant_state == .planted)) {
             next_jump = tick;
             jump_tick = tick;
         }
@@ -543,16 +544,19 @@ test "foot planting preserves controller root velocity collision timing and anim
         try disabled.advanceVisualTickWithFootPlanting(&world, visualInput(&disabled, disabled_result));
         if (enabled_result.landed) landing_enabled += 1;
         if (disabled_result.landed) landing_disabled += 1;
-        if (!enabled.controller.?.state.grounded and (enabled.foot_plants.left.hasLock() or enabled.foot_plants.right.hasLock())) false_airborne_locks += 1;
+        const enabled_controller = enabled.controllerSnapshot().?.state;
+        const disabled_controller = disabled.controllerSnapshot().?.state;
+        const current_enabled_feet = enabled.footPlantingSnapshot();
+        if (!enabled_controller.grounded and (current_enabled_feet.left.hasLock() or current_enabled_feet.right.hasLock())) false_airborne_locks += 1;
 
-        try std.testing.expect(enabled.controller.?.state.position.approxEqAbs(disabled.controller.?.state.position, 0));
-        try std.testing.expect(enabled.controller.?.state.velocity.approxEqAbs(disabled.controller.?.state.velocity, 0));
-        try std.testing.expectEqual(enabled.controller.?.state.grounded, disabled.controller.?.state.grounded);
-        try std.testing.expectEqual(enabled.controller.?.state.supporting_collider, disabled.controller.?.state.supporting_collider);
+        try std.testing.expect(enabled_controller.position.approxEqAbs(disabled_controller.position, 0));
+        try std.testing.expect(enabled_controller.velocity.approxEqAbs(disabled_controller.velocity, 0));
+        try std.testing.expectEqual(enabled_controller.grounded, disabled_controller.grounded);
+        try std.testing.expectEqual(enabled_controller.supporting_collider, disabled_controller.supporting_collider);
         try std.testing.expectEqual(enabled.animationState(), disabled.animationState());
         try std.testing.expectApproxEqAbs(enabled.animationTime(), disabled.animationTime(), 0);
-        try std.testing.expectEqual(enabled.animator.emittedEvents().len, disabled.animator.emittedEvents().len);
-        for (enabled.animator.emittedEvents(), disabled.animator.emittedEvents()) |left_event, right_event| {
+        try std.testing.expectEqual(enabled.emittedAnimationEvents().len, disabled.emittedAnimationEvents().len);
+        for (enabled.emittedAnimationEvents(), disabled.emittedAnimationEvents()) |left_event, right_event| {
             try std.testing.expectEqual(left_event.record.event_type, right_event.record.event_type);
             try std.testing.expectEqual(left_event.loop_index, right_event.loop_index);
         }
@@ -561,12 +565,13 @@ test "foot planting preserves controller root velocity collision timing and anim
     try std.testing.expectEqual(@as(u32, 1), landing_enabled);
     try std.testing.expectEqual(landing_enabled, landing_disabled);
     try std.testing.expectEqual(@as(u32, 0), false_airborne_locks);
-    try std.testing.expect(enabled.foot_plants.left.metrics.first_contact_tick != null);
-    try std.testing.expect(enabled.foot_plants.right.metrics.first_contact_tick != null);
-    try std.testing.expect(enabled.foot_plants.left.metrics.first_release_tick != null);
-    try std.testing.expect(enabled.foot_plants.right.metrics.first_release_tick != null);
-    try std.testing.expect(enabled.foot_plants.left.metrics.maximum_world_space_slip <= tolerance);
-    try std.testing.expect(enabled.foot_plants.right.metrics.maximum_world_space_slip <= tolerance);
+    const final_feet = enabled.footPlantingSnapshot();
+    try std.testing.expect(final_feet.left.metrics.first_contact_tick != null);
+    try std.testing.expect(final_feet.right.metrics.first_contact_tick != null);
+    try std.testing.expect(final_feet.left.metrics.first_release_tick != null);
+    try std.testing.expect(final_feet.right.metrics.first_release_tick != null);
+    try std.testing.expect(final_feet.left.metrics.maximum_world_space_slip <= tolerance);
+    try std.testing.expect(final_feet.right.metrics.maximum_world_space_slip <= tolerance);
 }
 
 test "controlled reset clears both character local foot locks without affecting another character" {
@@ -581,13 +586,14 @@ test "controlled reset clears both character local foot locks without affecting 
     defer a.deinit();
     var b = try character.CharacterInstance.initControlled(std.testing.allocator, try character.entityIdFromRaw(2), &definition, &animations, &world, .{}, .{ .x = 1, .y = 1.05 }, .left, 1, null);
     defer b.deinit();
-    a.foot_plants.left = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = -1, .y = 0 }, .locked_collider_id = 1 };
-    a.foot_plants.right = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = -0.8, .y = 0 }, .locked_collider_id = 1 };
-    b.foot_plants.left = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = 0.8, .y = 0 }, .locked_collider_id = 1 };
-    const b_target = b.foot_plants.left.locked_target.?;
+    character.testing.state(&a).foot_plants.left = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = -1, .y = 0 }, .locked_collider_id = 1 };
+    character.testing.state(&a).foot_plants.right = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = -0.8, .y = 0 }, .locked_collider_id = 1 };
+    character.testing.state(&b).foot_plants.left = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = 0.8, .y = 0 }, .locked_collider_id = 1 };
+    const b_target = b.footPlantingSnapshot().left.locked_target.?;
     try a.resetControlled(&world);
-    try std.testing.expect(!a.foot_plants.left.hasLock() and !a.foot_plants.right.hasLock());
-    try std.testing.expect(b.foot_plants.left.locked_target.?.approxEqAbs(b_target, 0));
+    const a_feet = a.footPlantingSnapshot();
+    try std.testing.expect(!a_feet.left.hasLock() and !a_feet.right.hasLock());
+    try std.testing.expect(b.footPlantingSnapshot().left.locked_target.?.approxEqAbs(b_target, 0));
 }
 
 const DeterminismEvidence = struct {
@@ -634,20 +640,21 @@ fn runPlantSchedule(groups: []const u8) !DeterminismEvidence {
             tick += 1;
         }
     }
+    const feet = instance.footPlantingSnapshot();
     return .{
-        .left_contact = instance.foot_plants.left.metrics.first_contact_tick,
-        .left_plant = instance.foot_plants.left.metrics.first_plant_tick,
-        .left_release = instance.foot_plants.left.metrics.first_release_tick,
-        .right_contact = instance.foot_plants.right.metrics.first_contact_tick,
-        .right_plant = instance.foot_plants.right.metrics.first_plant_tick,
-        .right_release = instance.foot_plants.right.metrics.first_release_tick,
-        .left_target = instance.foot_plants.left.locked_target,
-        .right_target = instance.foot_plants.right.locked_target,
-        .left_state = instance.foot_plants.left.plant_state,
-        .right_state = instance.foot_plants.right.plant_state,
-        .left_weight = instance.foot_plants.left.plant_weight,
-        .right_weight = instance.foot_plants.right.plant_weight,
-        .maximum_slip = @max(instance.foot_plants.left.metrics.maximum_world_space_slip, instance.foot_plants.right.metrics.maximum_world_space_slip),
+        .left_contact = feet.left.metrics.first_contact_tick,
+        .left_plant = feet.left.metrics.first_plant_tick,
+        .left_release = feet.left.metrics.first_release_tick,
+        .right_contact = feet.right.metrics.first_contact_tick,
+        .right_plant = feet.right.metrics.first_plant_tick,
+        .right_release = feet.right.metrics.first_release_tick,
+        .left_target = feet.left.locked_target,
+        .right_target = feet.right.locked_target,
+        .left_state = feet.left.plant_state,
+        .right_state = feet.right.plant_state,
+        .left_weight = feet.left.plant_weight,
+        .right_weight = feet.right.plant_weight,
+        .maximum_slip = @max(feet.left.metrics.maximum_world_space_slip, feet.right.metrics.maximum_world_space_slip),
     };
 }
 
@@ -677,12 +684,12 @@ test "arm IK and planted leg IK coexist on disjoint chains without moving the fo
     var instance = try character.CharacterInstance.initControlled(std.testing.allocator, try character.entityIdFromRaw(1), &definition, &animations, &world, .{}, .{ .x = 0, .y = 1.05 }, .right, 0, null);
     defer instance.deinit();
     var tick: u64 = 0;
-    while (tick < 300 and instance.foot_plants.left.plant_state != .planted) : (tick += 1) {
+    while (tick < 300 and instance.footPlantingSnapshot().left.plant_state != .planted) : (tick += 1) {
         const physics = try instance.stepController(&world, controllerIntent(tick, null));
         try instance.selectControllerAnimation(physics);
         try instance.advanceVisualTickWithFootPlanting(&world, visualInput(&instance, physics));
     }
-    try std.testing.expectEqual(foot_planting.PlantState.planted, instance.foot_plants.left.plant_state);
+    try std.testing.expectEqual(foot_planting.PlantState.planted, instance.footPlantingSnapshot().left.plant_state);
     const foot_before = try instance.socketPosition(.left_foot);
     const hand_before = try instance.socketPosition(.right_hand);
     const hand_target = hand_before.add(.{ .x = -0.08, .y = 0 });
@@ -690,7 +697,7 @@ test "arm IK and planted leg IK coexist on disjoint chains without moving the fo
     const foot_after = try instance.socketPosition(.left_foot);
     try std.testing.expect(hand_metrics.target_error <= tolerance);
     try std.testing.expect(foot_after.approxEqAbs(foot_before, tolerance));
-    try std.testing.expect(instance.foot_plants.left.locked_target != null);
+    try std.testing.expect(instance.footPlantingSnapshot().left.locked_target != null);
 }
 
 test "handshake lifecycle arm IK and character local foot locks coexist without timeline or ownership coupling" {
@@ -706,16 +713,16 @@ test "handshake lifecycle arm IK and character local foot locks coexist without 
     defer planted_a.deinit();
     var planted_b = try character.CharacterInstance.init(std.testing.allocator, try character.entityIdFromRaw(4), &definition, &animations, .{ .x = 1.86, .y = 1.05 }, .left, 1, null);
     defer planted_b.deinit();
-    planted_a.foot_plants.left = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = -2, .y = 0 }, .locked_collider_id = 1 };
-    planted_b.foot_plants.right = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = 2, .y = 0 }, .locked_collider_id = 1 };
+    character.testing.state(&planted_a).foot_plants.left = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = -2, .y = 0 }, .locked_collider_id = 1 };
+    character.testing.state(&planted_b).foot_plants.right = .{ .plant_state = .planted, .plant_weight = 1, .locked_target = .{ .x = 2, .y = 0 }, .locked_collider_id = 1 };
 
     const definition_value = try handshake.definition(&animations);
     var baseline_manager = interaction_system.Manager.initWithIk(definition_value);
     var planted_manager = interaction_system.Manager.initWithIk(definition_value);
     const baseline_participants = [_]*character.CharacterInstance{ &baseline_a, &baseline_b };
     const planted_participants = [_]*character.CharacterInstance{ &planted_a, &planted_b };
-    const baseline_id = try baseline_manager.startPair(baseline_a.id, baseline_b.id, &baseline_participants, 0, .none);
-    const planted_id = try planted_manager.startPair(planted_a.id, planted_b.id, &planted_participants, 0, .none);
+    const baseline_id = try baseline_manager.startPair(baseline_a.id(), baseline_b.id(), &baseline_participants, 0, .none);
+    const planted_id = try planted_manager.startPair(planted_a.id(), planted_b.id(), &planted_participants, 0, .none);
     var tick: u64 = 1;
     while (tick <= definition_value.event(.complete).elapsed_tick) : (tick += 1) {
         try baseline_manager.updateTick(tick, &baseline_participants);
@@ -728,6 +735,6 @@ test "handshake lifecycle arm IK and character local foot locks coexist without 
     try std.testing.expectEqualDeep(baseline_instance.event_ticks, planted_instance.event_ticks);
     try std.testing.expectEqualDeep(baseline_instance.event_counts, planted_instance.event_counts);
     try std.testing.expectApproxEqAbs(baseline_instance.contact.post_separation, planted_instance.contact.post_separation, tolerance);
-    try std.testing.expect(planted_a.foot_plants.left.hasLock());
-    try std.testing.expect(planted_b.foot_plants.right.hasLock());
+    try std.testing.expect(planted_a.footPlantingSnapshot().left.hasLock());
+    try std.testing.expect(planted_b.footPlantingSnapshot().right.hasLock());
 }

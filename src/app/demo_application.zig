@@ -166,7 +166,7 @@ fn anatomyObservation(
     var shin_rotation: [2]?f32 = .{ null, null };
     var anatomy_records: u16 = 0;
     for (trace.slice()) |record| {
-        if (record.character_id != scene.female.id.raw() or
+        if (record.character_id != scene.female.id().raw() or
             (record.owner != .anatomy and
                 record.owner != .base_presentation))
         {
@@ -188,7 +188,7 @@ fn anatomyObservation(
             else => {},
         }
     }
-    const anatomy_runtime = scene.female.character.anatomy_runtime orelse
+    const anatomy_runtime = scene.female.humanoidView().anatomy_runtime orelse
         return error.AnatomyEvidenceRuntimeMissing;
     return .{
         .render_frame = render_frame,
@@ -196,7 +196,7 @@ fn anatomyObservation(
         .stage = scene.anatomy_evidence_stage,
         .stage_frame = scene.anatomy_stage_frame,
         .view = resolved_view orelse return error.AnatomyEvidenceViewMissing,
-        .facing = if (scene.female.facing == .left) .left else .right,
+        .facing = if (scene.female.facingDirection() == .left) .left else .right,
         .animation = @tagName(scene.female.animationState()),
         .global_build = anatomy_runtime.global_build_normalized * 100,
         .elbow_angle_degrees = try maximumBilateralAngle(
@@ -901,7 +901,7 @@ pub const DemoApplication = struct {
                     if (snapshot.reset.pressed) {
                         try self.renderer.camera().*.setCenter(camera2d.default_center);
                     } else {
-                        try camera_follower.update(self.renderer.camera(), scene.player.world_position.x);
+                        try camera_follower.update(self.renderer.camera(), scene.player.worldPosition().x);
                     }
                     minimum_camera_x = @min(minimum_camera_x, self.renderer.camera().*.center.x);
                     maximum_camera_x = @max(maximum_camera_x, self.renderer.camera().*.center.x);
@@ -947,7 +947,7 @@ pub const DemoApplication = struct {
                     try scene.updateFrame(1.0 / 60.0, snapshot);
                     pose_evaluation_allocations += humanoid_allocator.end_index - allocation_checkpoint;
                     side_scroller_sequence.observe(scene);
-                    try camera_follower.update(self.renderer.camera(), scene.player.world_position.x);
+                    try camera_follower.update(self.renderer.camera(), scene.player.worldPosition().x);
                     minimum_camera_x = @min(minimum_camera_x, self.renderer.camera().*.center.x);
                     maximum_camera_x = @max(maximum_camera_x, self.renderer.camera().*.center.x);
                     self.renderer.spriteBatch().beginFrame();
@@ -1385,7 +1385,7 @@ pub const DemoApplication = struct {
                                 try foundation_coherence.traceCharacterBounds(
                                     foundation_scene.?.visual_trace,
                                     foundation_scene.?.integrated.production
-                                        .female.id.raw(),
+                                        .female.id().raw(),
                                 );
                             const framing =
                                 try foundation_coherence.framingMeasurement(
@@ -1717,14 +1717,15 @@ pub const DemoApplication = struct {
                 mirrored.start_tick,  mirrored.contact_tick,  mirrored.release_tick,  mirrored.complete_tick,
                 perturbed.start_tick, perturbed.contact_tick, perturbed.release_tick, perturbed.complete_tick,
             });
+            const manager_metrics = scene.manager.metricsSnapshot();
             std.log.info("handshake IK steady state: initialized_bytes={d} final_bytes={d} solver_allocations={d} binding_allocations={d} target_allocations={d} pose_allocations={d} hierarchy_allocations={d}", .{
                 humanoid_initialized_bytes,
                 humanoid_allocator.end_index,
-                scene.manager.metrics.ik_solver_allocations,
-                scene.manager.metrics.ik_binding_lookup_allocations,
-                scene.manager.metrics.ik_target_computation_allocations,
-                scene.manager.metrics.ik_pose_application_allocations,
-                scene.manager.metrics.ik_hierarchy_evaluation_allocations,
+                manager_metrics.ik_solver_allocations,
+                manager_metrics.ik_binding_lookup_allocations,
+                manager_metrics.ik_target_computation_allocations,
+                manager_metrics.ik_pose_application_allocations,
+                manager_metrics.ik_hierarchy_evaluation_allocations,
             });
             if (humanoid_instances != handshake_ik_demo.character_count * humanoid.default_visual_count or
                 metrics.visible_sprites != humanoid_instances or metrics.draw_ranges != 1 or metrics.draw_calls != 1 or
@@ -1740,11 +1741,13 @@ pub const DemoApplication = struct {
             const gpu_resource_delta = self.renderer.metrics().gpu_resource_creations - creations_before_run;
             const final_state = try scene.authoritativeState();
             const final_diagnostics = try scene.captureDiagnostics();
-            const player_state = scene.player.controller.?.state;
-            const left_metrics = scene.player.foot_plants.left.metrics;
-            const right_metrics = scene.player.foot_plants.right.metrics;
-            const total_left_acquisitions = left_metrics.plant_acquisitions + scene.partner.foot_plants.left.metrics.plant_acquisitions;
-            const total_right_acquisitions = right_metrics.plant_acquisitions + scene.partner.foot_plants.right.metrics.plant_acquisitions;
+            const player_state = scene.player.controllerSnapshot().?.state;
+            const player_feet = scene.player.footPlantingSnapshot();
+            const partner_feet = scene.partner.footPlantingSnapshot();
+            const left_metrics = player_feet.left.metrics;
+            const right_metrics = player_feet.right.metrics;
+            const total_left_acquisitions = left_metrics.plant_acquisitions + partner_feet.left.metrics.plant_acquisitions;
+            const total_right_acquisitions = right_metrics.plant_acquisitions + partner_feet.right.metrics.plant_acquisitions;
             const maximum_slip = @max(left_metrics.maximum_world_space_slip, right_metrics.maximum_world_space_slip);
             const maximum_penetration = @max(left_metrics.maximum_penetration, right_metrics.maximum_penetration);
             const maximum_hover = @max(left_metrics.maximum_hover, right_metrics.maximum_hover);
@@ -1765,8 +1768,8 @@ pub const DemoApplication = struct {
                 player_state.velocity.y,
                 player_state.grounded,
                 player_state.supporting_collider,
-                scene.partner.world_position.x,
-                scene.partner.world_position.y,
+                scene.partner.worldPosition().x,
+                scene.partner.worldPosition().y,
             });
             std.log.info("Foot planting: left_acquisitions={d} right_acquisitions={d} maximum_slip={d:.8} maximum_penetration={d:.8} maximum_hover={d:.8} airborne_false_plants={d}", .{
                 total_left_acquisitions,
@@ -1858,10 +1861,10 @@ pub const DemoApplication = struct {
                 gpu_resource_delta,
             });
             std.log.info("Procedural final: landing_offset={d:.8} landing_velocity={d:.8} head_offset={d:.8} head_velocity={d:.8}", .{
-                scene.player.procedural.landing_spring.offset,
-                scene.player.procedural.landing_spring.velocity,
-                scene.player.procedural.secondary_spring.offset,
-                scene.player.procedural.secondary_spring.velocity,
+                scene.player.proceduralSnapshot().landing_spring.offset,
+                scene.player.proceduralSnapshot().landing_spring.velocity,
+                scene.player.proceduralSnapshot().secondary_spring.offset,
+                scene.player.proceduralSnapshot().secondary_spring.velocity,
             });
             std.log.info("Final cleanup: active_interactions={d} interaction_owned_overrides={d} active_arm_constraints={d} invalid_airborne_foot_locks={d} partial_interleaving={} foot_placement_during_handshake={}", .{
                 final_state.active_interactions,
@@ -1959,23 +1962,23 @@ pub const DemoApplication = struct {
             const gpu_resource_delta = self.renderer.metrics().gpu_resource_creations - creations_before_run;
             const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
             const anatomy_definition = scene.definition.anatomy_definition.?.view();
-            const male_parts = try scene.conventional_male.character.anatomy_runtime.?.activePartCount(anatomy_definition);
-            const female_parts = try scene.conventional_female.character.anatomy_runtime.?.activePartCount(anatomy_definition);
-            const nonstandard_parts_count = try scene.nonstandard.character.anatomy_runtime.?.activePartCount(anatomy_definition);
+            const male_parts = try scene.conventional_male.anatomyRuntimeSnapshot().?.activePartCount(anatomy_definition);
+            const female_parts = try scene.conventional_female.anatomyRuntimeSnapshot().?.activePartCount(anatomy_definition);
+            const nonstandard_parts_count = try scene.nonstandard.humanoidView().anatomy_runtime.?.activePartCount(anatomy_definition);
             std.log.info("MODULAR BODY EVIDENCE", .{});
             std.log.info("Presets: conventional_male_parts={d} conventional_female_parts={d} nonstandard_parts={d} shared_skeleton={} shared_animation_library={}", .{
                 male_parts,
                 female_parts,
                 nonstandard_parts_count,
-                scene.conventional_male.definition.owner_token == scene.conventional_female.definition.owner_token and
-                    scene.conventional_female.definition.owner_token == scene.nonstandard.definition.owner_token,
-                scene.conventional_male.shared_animations.library_token == scene.conventional_female.shared_animations.library_token and
-                    scene.conventional_female.shared_animations.library_token == scene.nonstandard.shared_animations.library_token,
+                scene.conventional_male.definitionView().owner_token == scene.conventional_female.definitionView().owner_token and
+                    scene.conventional_female.definitionView().owner_token == scene.nonstandard.definitionView().owner_token,
+                scene.conventional_male.animationDefinitionsView().library_token == scene.conventional_female.animationDefinitionsView().library_token and
+                    scene.conventional_female.animationDefinitionsView().library_token == scene.nonstandard.animationDefinitionsView().library_token,
             });
             std.log.info("Nonstandard features: extra_arms=2 articulated_tail=true horns=2 canonical_bones={d} canonical_right_arm_lengths=({d:.3},{d:.3})", .{
                 scene.definition.skeleton_definition.boneCount(),
-                scene.nonstandard.right_arm_binding.upper_length,
-                scene.nonstandard.right_arm_binding.lower_length,
+                scene.nonstandard.rightArmBinding().upper_length,
+                scene.nonstandard.rightArmBinding().lower_length,
             });
             std.log.info("Faces: configurations={d} conventional_male=conventional_face conventional_female=angular_face shared_modular_appearance_path=true", .{
                 anatomy_definition.faces.len,
@@ -2021,9 +2024,9 @@ pub const DemoApplication = struct {
                 scene.evidence.multi_slot_replacement_proved,
                 scene.evidence.unequip_restoration_proved,
             });
-            for (scene.two_arm.equipment_loadout.?.modifiers()) |modifier| {
-                const item = scene.two_arm.equipment_loadout.?.definition.items[modifier.item.index()];
-                const attribute = scene.two_arm.equipment_loadout.?.definition.attributes[modifier.attribute.index()];
+            for (scene.two_arm.equipmentView().?.modifiers()) |modifier| {
+                const item = scene.two_arm.equipmentView().?.definition.items[modifier.item.index()];
+                const attribute = scene.two_arm.equipmentView().?.definition.attributes[modifier.attribute.index()];
                 std.log.info("Two-arm modifier: item={s} attribute={s} operation={s} amount={d:.3}", .{
                     item.stable_id.slice(),
                     attribute.stable_id.slice(),
@@ -2031,9 +2034,9 @@ pub const DemoApplication = struct {
                     modifier.amount,
                 });
             }
-            for (scene.four_arm.equipment_loadout.?.capabilities()) |grant| {
-                const item = scene.four_arm.equipment_loadout.?.definition.items[grant.item.index()];
-                const capability = scene.four_arm.equipment_loadout.?.definition.capabilities[grant.capability.index()];
+            for (scene.four_arm.equipmentView().?.capabilities()) |grant| {
+                const item = scene.four_arm.equipmentView().?.definition.items[grant.item.index()];
+                const capability = scene.four_arm.equipmentView().?.definition.capabilities[grant.capability.index()];
                 std.log.info("Four-arm capability: item={s} capability={s}", .{
                     item.stable_id.slice(),
                     capability.stable_id.slice(),

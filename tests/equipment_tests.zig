@@ -4,6 +4,7 @@ const equipment = @import("equipment");
 const equipment_demo = @import("equipment_demo");
 const modular_humanoid = @import("modular_humanoid");
 const sprite = @import("sprite_batch");
+const character = @import("character");
 
 const tolerance: f32 = 0.000001;
 
@@ -224,7 +225,7 @@ test "transactional loadout layering replacement coverage reset effects and char
     var scene = try equipment_demo.Scene.init(std.testing.allocator);
     defer scene.deinit();
     const definition = scene.equipment_definition.view();
-    const loadout = &scene.two_arm.equipment_loadout.?;
+    const loadout = scene.two_arm.equipmentView().?;
     const outerwear_slot = try definition.slotId("outerwear");
     const shirt_slot = try definition.slotId("shirt");
     const underwear_slot = try definition.slotId("pelvis_underwear");
@@ -256,9 +257,9 @@ test "transactional loadout layering replacement coverage reset effects and char
     try std.testing.expect(!loadout.hasCapability(double_jump));
     try std.testing.expect((try loadout.itemInSlot(shoes_slot)) == null);
 
-    const other_before = fingerprint(&scene.four_arm.equipment_loadout.?);
+    const other_before = fingerprint(scene.four_arm.equipmentView().?);
     try scene.two_arm.equipItem(try definition.itemId("shoes"));
-    try std.testing.expectEqual(other_before, fingerprint(&scene.four_arm.equipment_loadout.?));
+    try std.testing.expectEqual(other_before, fingerprint(scene.four_arm.equipmentView().?));
     try scene.two_arm.reset();
     try std.testing.expect(!loadout.hasCapability(double_jump));
     try std.testing.expectEqual(
@@ -273,9 +274,10 @@ test "definition-sorted visual and effect views do not depend on equip request o
     defer scene.deinit();
     const definition = scene.equipment_definition.view();
     const anatomy_definition = scene.definition.anatomy_definition.?.view();
+    const internal = character.testing.state(&scene.two_arm);
     const context = equipment.AnatomyContext{
         .definition = anatomy_definition,
-        .runtime = &scene.two_arm.character.anatomy_runtime.?,
+        .runtime = &internal.character.anatomy_runtime.?,
     };
     var first = try equipment.Loadout.init(definition, context);
     var second = try equipment.Loadout.init(definition, context);
@@ -312,10 +314,7 @@ test "equipment is allocation-free after initialization and preserves canonical 
     const backpack = try definition.itemId("backpack");
     try scene.two_arm.unequipItem(backpack);
     try scene.two_arm.equipItem(backpack);
-    try scene.two_arm.equipment_loadout.?.rebind(.{
-        .definition = scene.definition.anatomy_definition.?.view(),
-        .runtime = &scene.two_arm.character.anatomy_runtime.?,
-    });
+    try scene.two_arm.rebindEquipment();
     try std.testing.expectEqual(initialized_bytes, fixed.end_index);
     const right_hand_after = try scene.two_arm.socketPosition(.right_hand);
     try std.testing.expectApproxEqAbs(right_hand_before.x, right_hand_after.x, tolerance);

@@ -100,32 +100,37 @@ test "characters share immutable definitions while pose animator and procedural 
     var b = try initInstance(&fixture, 2, .{ .x = 1, .y = 1.05 }, .left, 1);
     defer b.deinit();
 
-    try std.testing.expectEqual(a.definition.owner_token, b.definition.owner_token);
-    try std.testing.expect(a.definition.attachments.ptr == b.definition.attachments.ptr);
-    try std.testing.expect(a.shared_animations.clips.ptr == b.shared_animations.clips.ptr);
-    try std.testing.expectEqual(a.shared_animations.library_token, b.shared_animations.library_token);
-    try std.testing.expect(a.character.local_and_world_pose.local_transforms.ptr != b.character.local_and_world_pose.local_transforms.ptr);
-    try std.testing.expect(a.character.local_and_world_pose.world_transforms.ptr != b.character.local_and_world_pose.world_transforms.ptr);
-    try std.testing.expect(a.animator.source_pose.ptr != b.animator.source_pose.ptr);
-    try std.testing.expect(a.animator.destination_pose.ptr != b.animator.destination_pose.ptr);
-    try std.testing.expect(a.animator.event_storage.ptr != b.animator.event_storage.ptr);
-    try std.testing.expect(&a.procedural != &b.procedural);
+    const a_definition = a.definitionView();
+    const b_definition = b.definitionView();
+    const a_animations = a.animationDefinitionsView();
+    const b_animations = b.animationDefinitionsView();
+    try std.testing.expectEqual(a_definition.owner_token, b_definition.owner_token);
+    try std.testing.expect(a_definition.attachments.ptr == b_definition.attachments.ptr);
+    try std.testing.expect(a_animations.clips.ptr == b_animations.clips.ptr);
+    try std.testing.expectEqual(a_animations.library_token, b_animations.library_token);
+    try std.testing.expect(a.humanoidView().local_and_world_pose.local_transforms.ptr != b.humanoidView().local_and_world_pose.local_transforms.ptr);
+    try std.testing.expect(a.humanoidView().local_and_world_pose.world_transforms.ptr != b.humanoidView().local_and_world_pose.world_transforms.ptr);
+    const a_internal = character.testing.stateConst(&a);
+    const b_internal = character.testing.stateConst(&b);
+    try std.testing.expect(a_internal.animator.source_pose.ptr != b_internal.animator.source_pose.ptr);
+    try std.testing.expect(a_internal.animator.destination_pose.ptr != b_internal.animator.destination_pose.ptr);
+    try std.testing.expect(a_internal.animator.event_storage.ptr != b_internal.animator.event_storage.ptr);
 
     const shared_idle_duration = fixture.animations.library.clips[0].duration;
-    const b_pelvis_before = try b.character.local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .pelvis);
-    var a_pelvis = try a.character.local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .pelvis);
+    const b_pelvis_before = try b.humanoidView().local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .pelvis);
+    var a_pelvis = try a.humanoidView().local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .pelvis);
     a_pelvis.translation.x += 0.25;
-    try a.character.local_and_world_pose.setLocalSemantic(&fixture.definition.skeleton_definition, .pelvis, a_pelvis);
-    try a.setFacing(a.facing);
-    const b_pelvis_after = try b.character.local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .pelvis);
+    try a.setLocalPoseSemantic(.pelvis, a_pelvis);
+    try a.setFacing(a.facingDirection());
+    const b_pelvis_after = try b.humanoidView().local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .pelvis);
     try std.testing.expect(b_pelvis_before.approxEqAbs(b_pelvis_after, tolerance));
 
     try a.enterAnimationState(.walk);
     for (0..90) |_| try a.advanceVisualTick(.{ .horizontal_velocity = 2.4 });
     try std.testing.expect(a.animationTime() != b.animationTime());
     try std.testing.expectEqual(@as(f32, 0), b.animationTime());
-    try std.testing.expect(a.procedural.walk_bounce_amplitude > 0);
-    try std.testing.expectEqual(@as(f32, 0), b.procedural.walk_bounce_amplitude);
+    try std.testing.expect(a.proceduralSnapshot().walk_bounce_amplitude > 0);
+    try std.testing.expectEqual(@as(f32, 0), b.proceduralSnapshot().walk_bounce_amplitude);
     try std.testing.expectEqual(shared_idle_duration, fixture.animations.library.clips[0].duration);
 }
 
@@ -144,7 +149,7 @@ test "four adversarial character states remain isolated when one character reset
     try a.enterAnimationState(.walk);
     for (0..31) |_| try a.advanceVisualTick(.{ .horizontal_velocity = 3.5 });
     _ = try b.applySemanticOverride(.right_forearm, .{ .interaction_layer = 9 });
-    c.foot_plants.left = .{
+    character.testing.state(&c).foot_plants.left = .{
         .plant_state = .planted,
         .plant_weight = 1,
         .locked_target = .{ .x = 0.8, .y = 0 },
@@ -153,20 +158,20 @@ test "four adversarial character states remain isolated when one character reset
     try d.reserveInteraction(77);
 
     const b_before = b;
-    const c_foot_before = c.foot_plants.left;
+    const c_foot_before = c.footPlantingSnapshot().left;
     const d_owner_before = d.interactionOwnerId();
     try a.reset();
     try std.testing.expectEqual(b_before.animationState(), b.animationState());
     try std.testing.expectEqual(b_before.animationTime(), b.animationTime());
-    try std.testing.expectEqual(b_before.facing, b.facing);
-    try std.testing.expectEqual(b_before.actor_layer, b.actor_layer);
-    try std.testing.expectEqual(b_before.overrides.activeCount(), b.overrides.activeCount());
-    try std.testing.expectEqualDeep(c_foot_before, c.foot_plants.left);
+    try std.testing.expectEqual(b_before.facingDirection(), b.facingDirection());
+    try std.testing.expectEqual(b_before.actorLayer(), b.actorLayer());
+    try std.testing.expectEqual(b_before.activeOverrideCount(), b.activeOverrideCount());
+    try std.testing.expectEqualDeep(c_foot_before, c.footPlantingSnapshot().left);
     try std.testing.expectEqual(d_owner_before, d.interactionOwnerId());
     try std.testing.expect(d.isInteractionLocked());
 
     try c.reset();
-    try std.testing.expect(!c.foot_plants.left.hasLock());
+    try std.testing.expect(!c.footPlantingSnapshot().left.hasLock());
     try std.testing.expectEqual(b_before.animationTime(), b.animationTime());
     try std.testing.expectEqual(d_owner_before, d.interactionOwnerId());
     try d.releaseInteraction(77);
@@ -179,11 +184,11 @@ test "destroying one instance leaves the other and shared immutable data valid" 
     var b = try initInstance(&fixture, 2, .{ .x = 1, .y = 1.05 }, .left, 1);
     defer b.deinit();
     const clip_pointer = fixture.animations.library.clips.ptr;
-    const b_pose_pointer = b.character.local_and_world_pose.local_transforms.ptr;
+    const b_pose_pointer = b.humanoidView().local_and_world_pose.local_transforms.ptr;
     a.deinit();
     try b.advanceVisualTick(.{});
-    try std.testing.expectEqual(@as(u64, 1), b.simulation_tick);
-    try std.testing.expect(b.character.local_and_world_pose.local_transforms.ptr == b_pose_pointer);
+    try std.testing.expectEqual(@as(u64, 1), b.simulationTick());
+    try std.testing.expect(b.humanoidView().local_and_world_pose.local_transforms.ptr == b_pose_pointer);
     try std.testing.expect(fixture.animations.library.clips.ptr == clip_pointer);
 }
 
@@ -199,19 +204,19 @@ test "facing overrides and single-character reset do not cross character ownersh
     for (0..37) |_| try b.advanceVisualTick(.{ .horizontal_velocity = -1.5 });
     _ = try b.applySemanticOverride(.left_hand, .{ .interaction_layer = -1 });
     const b_time = b.animationTime();
-    const b_offset = b.procedural.walk_bounce_offset;
-    const b_facing = b.facing;
-    const b_override_count = b.overrides.activeCount();
+    const b_offset = b.proceduralSnapshot().walk_bounce_offset;
+    const b_facing = b.facingDirection();
+    const b_override_count = b.activeOverrideCount();
 
     try a.setFacing(.left);
     _ = try a.applySemanticOverride(.right_hand, .{ .interaction_layer = 1 });
     try a.reset();
     try std.testing.expectEqual(b_time, b.animationTime());
-    try std.testing.expectEqual(b_offset, b.procedural.walk_bounce_offset);
-    try std.testing.expectEqual(b_facing, b.facing);
-    try std.testing.expectEqual(b_override_count, b.overrides.activeCount());
-    try std.testing.expectEqual(humanoid.Facing.right, a.facing);
-    try std.testing.expectEqual(@as(usize, 0), a.overrides.activeCount());
+    try std.testing.expectEqual(b_offset, b.proceduralSnapshot().walk_bounce_offset);
+    try std.testing.expectEqual(b_facing, b.facingDirection());
+    try std.testing.expectEqual(b_override_count, b.activeOverrideCount());
+    try std.testing.expectEqual(humanoid.Facing.right, a.facingDirection());
+    try std.testing.expectEqual(@as(usize, 0), a.activeOverrideCount());
 }
 
 test "controlled character state steps and resets independently per instance" {
@@ -245,7 +250,7 @@ test "controlled character state steps and resets independently per instance" {
         null,
     );
     defer b.deinit();
-    const b_before = b.controller.?.state;
+    const b_before = b.controllerSnapshot().?.state;
     for (0..120) |_| {
         _ = try a.stepController(&world, .{
             .move_axis = 1,
@@ -255,11 +260,11 @@ test "controlled character state steps and resets independently per instance" {
             .interact_pressed = false,
         });
     }
-    try std.testing.expect(!a.controller.?.state.position.approxEqAbs(b.controller.?.state.position, tolerance));
-    try std.testing.expectEqualDeep(b_before, b.controller.?.state);
+    try std.testing.expect(!a.controllerSnapshot().?.state.position.approxEqAbs(b.controllerSnapshot().?.state.position, tolerance));
+    try std.testing.expectEqualDeep(b_before, b.controllerSnapshot().?.state);
     try a.resetControlled(&world);
-    try expectVec(controller_demo.spawn_position, a.controller.?.state.position);
-    try std.testing.expectEqualDeep(b_before, b.controller.?.state);
+    try expectVec(controller_demo.spawn_position, a.controllerSnapshot().?.state.position);
+    try std.testing.expectEqualDeep(b_before, b.controllerSnapshot().?.state);
 }
 
 test "failed second-character allocation leaves the first valid and permits retry" {
@@ -287,7 +292,7 @@ test "failed second-character allocation leaves the first valid and permits retr
             .{ .fail_after = stage },
         ));
         try first.advanceVisualTick(.{});
-        try std.testing.expectEqual(@as(u64, 1), first.simulation_tick);
+        try std.testing.expectEqual(@as(u64, 1), first.simulationTick());
         try std.testing.expectEqual(shared_token, fixture.animations.library.token());
         var retry = try initInstance(&fixture, 2, .{ .x = 1, .y = 1.05 }, .left, 1);
         retry.deinit();
@@ -323,12 +328,12 @@ test "global actor ordering is reversible stable and interleaves equal-layer cha
         previous_is_a = is_a;
     }
     try std.testing.expect(ownership_switches > 2);
-    const original_b_id = b.id;
-    b.id = a.id;
+    const original_b_id = b.id();
+    character.testing.state(&b).id = a.id();
     batch.beginFrame();
     const duplicates = [_]*character.CharacterInstance{ &a, &b };
     try std.testing.expectError(error.DuplicateEntityId, character.submitGlobally(&duplicates, &batch));
-    b.id = original_b_id;
+    character.testing.state(&b).id = original_b_id;
 }
 
 test "cross-character hand and forearm overrides provide partial anatomical interleaving" {
@@ -387,7 +392,7 @@ test "override precedence clearing validation and bounded capacity are explicit"
     );
 
     try std.testing.expectError(error.InvalidAttachmentTarget, a.applyAttachmentOverride(100, .{ .interaction_layer = 1 }));
-    try std.testing.expectError(error.InvalidBodyPartSemantic, a.overrides.applySemanticRaw(&fixture.definition, 255, .{ .interaction_layer = 1 }));
+    try std.testing.expectError(error.InvalidBodyPartSemantic, character.testing.state(&a).overrides.applySemanticRaw(&fixture.definition, 255, .{ .interaction_layer = 1 }));
     try std.testing.expectError(error.EmptyLayerOverride, a.applySemanticOverride(.right_hand, .{}));
     try std.testing.expectError(error.InvalidInteractionLayer, a.applySemanticOverride(.right_hand, .{ .interaction_layer = character.maximum_interaction_layer + 1 }));
     try std.testing.expectError(error.InvalidBodyPartLayer, a.applySemanticOverride(.right_hand, .{ .body_part_layer = -1 }));
@@ -396,7 +401,7 @@ test "override precedence clearing validation and bounded capacity are explicit"
     for (0..character.maximum_layer_overrides) |_| _ = try a.applySemanticOverride(.right_hand, .{ .interaction_layer = 1 });
     try std.testing.expectError(error.LayerOverrideCapacityExceeded, a.applySemanticOverride(.right_forearm, .{ .interaction_layer = 1 }));
     a.clearOverrides();
-    a.overrides.next_handle = std.math.maxInt(u32);
+    character.testing.state(&a).overrides.next_handle = std.math.maxInt(u32);
     _ = try a.applySemanticOverride(.right_hand, .{ .interaction_layer = 1 });
     a.clearOverrides();
     try std.testing.expectError(error.OverrideHandleOverflow, a.applySemanticOverride(.right_hand, .{ .interaction_layer = 1 }));
@@ -409,12 +414,12 @@ test "horizontal reflection preserves anatomical sockets through rotated ancesto
     var instance = try initInstance(&fixture, 1, root, .right, 0);
     defer instance.deinit();
 
-    var torso = try instance.character.local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .torso);
+    var torso = try instance.humanoidView().local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .torso);
     torso.rotation_radians += 0.23;
-    try instance.character.local_and_world_pose.setLocalSemantic(&fixture.definition.skeleton_definition, .torso, torso);
-    var right_arm = try instance.character.local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .right_upper_arm);
+    try instance.setLocalPoseSemantic(.torso, torso);
+    var right_arm = try instance.humanoidView().local_and_world_pose.localForSemantic(&fixture.definition.skeleton_definition, .right_upper_arm);
     right_arm.rotation_radians += 0.47;
-    try instance.character.local_and_world_pose.setLocalSemantic(&fixture.definition.skeleton_definition, .right_upper_arm, right_arm);
+    try instance.setLocalPoseSemantic(.right_upper_arm, right_arm);
     try instance.setFacing(.right);
     const right_hand_right = try instance.socketPosition(.right_hand);
     const left_hand_right = try instance.socketPosition(.left_hand);
@@ -543,20 +548,20 @@ test "single and whole-scene reset restore only requested character state" {
     _ = try a.submitAttachments(&batch);
     _ = try a.submittedKey(.right_hand);
     try a.reset();
-    try std.testing.expectEqual(@as(usize, 0), a.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 0), a.activeOverrideCount());
     try std.testing.expectError(error.AttachmentNotSubmitted, a.submittedKey(.right_hand));
-    try std.testing.expectEqual(@as(usize, 2), b.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 2), b.activeOverrideCount());
     try b.clearOverride(b_first);
-    try std.testing.expectEqual(@as(usize, 1), b.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 1), b.activeOverrideCount());
 
     const instances = [_]*character.CharacterInstance{ &a, &b };
     try character.resetAll(&instances);
-    try std.testing.expectEqual(humanoid.Facing.right, a.facing);
-    try std.testing.expectEqual(humanoid.Facing.left, b.facing);
-    try std.testing.expectEqual(@as(usize, 0), a.overrides.activeCount());
-    try std.testing.expectEqual(@as(usize, 0), b.overrides.activeCount());
-    try std.testing.expectEqual(@as(u16, 0), a.actor_layer);
-    try std.testing.expectEqual(@as(u16, 1), b.actor_layer);
+    try std.testing.expectEqual(humanoid.Facing.right, a.facingDirection());
+    try std.testing.expectEqual(humanoid.Facing.left, b.facingDirection());
+    try std.testing.expectEqual(@as(usize, 0), a.activeOverrideCount());
+    try std.testing.expectEqual(@as(usize, 0), b.activeOverrideCount());
+    try std.testing.expectEqual(@as(u16, 0), a.actorLayer());
+    try std.testing.expectEqual(@as(u16, 1), b.actorLayer());
 }
 
 const ControllerReplayResult = struct {
@@ -639,10 +644,12 @@ test "draw-order mutations leave animation procedural pose and physics state inv
         try reordered.advanceVisualTick(.{ .horizontal_velocity = 2.2 });
     }
     try std.testing.expectApproxEqAbs(baseline.animationTime(), reordered.animationTime(), tolerance);
-    try std.testing.expectApproxEqAbs(baseline.procedural.walk_bounce_offset, reordered.procedural.walk_bounce_offset, tolerance);
-    try std.testing.expectApproxEqAbs(baseline.procedural.landing_spring.offset, reordered.procedural.landing_spring.offset, tolerance);
-    try std.testing.expectApproxEqAbs(baseline.procedural.secondary_spring.offset, reordered.procedural.secondary_spring.offset, tolerance);
-    for (baseline.character.local_and_world_pose.local_transforms, reordered.character.local_and_world_pose.local_transforms) |left, right| {
+    const baseline_procedural = baseline.proceduralSnapshot();
+    const reordered_procedural = reordered.proceduralSnapshot();
+    try std.testing.expectApproxEqAbs(baseline_procedural.walk_bounce_offset, reordered_procedural.walk_bounce_offset, tolerance);
+    try std.testing.expectApproxEqAbs(baseline_procedural.landing_spring.offset, reordered_procedural.landing_spring.offset, tolerance);
+    try std.testing.expectApproxEqAbs(baseline_procedural.secondary_spring.offset, reordered_procedural.secondary_spring.offset, tolerance);
+    for (baseline.humanoidView().local_and_world_pose.local_transforms, reordered.humanoidView().local_and_world_pose.local_transforms) |left, right| {
         try std.testing.expect(left.approxEqAbs(right, tolerance));
     }
 

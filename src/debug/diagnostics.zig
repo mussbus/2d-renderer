@@ -193,19 +193,20 @@ pub fn capture(input_value: CaptureInput) !Snapshot {
         result.characters[index] = captureCharacter(instance);
         accumulateCharacterAllocations(&result.allocations, instance);
     }
-    result.allocations.interaction_update = input_value.manager.metrics.request_allocations +
-        input_value.manager.metrics.eligibility_allocations + input_value.manager.metrics.candidate_selection_allocations +
-        input_value.manager.metrics.active_update_allocations + input_value.manager.metrics.event_processing_allocations +
-        input_value.manager.metrics.completion_allocations;
-    result.allocations.arm_ik += input_value.manager.metrics.ik_solver_allocations +
-        input_value.manager.metrics.ik_binding_lookup_allocations + input_value.manager.metrics.ik_target_computation_allocations +
-        input_value.manager.metrics.ik_pose_application_allocations + input_value.manager.metrics.ik_hierarchy_evaluation_allocations;
+    const manager_metrics = input_value.manager.metricsSnapshot();
+    result.allocations.interaction_update = manager_metrics.request_allocations +
+        manager_metrics.eligibility_allocations + manager_metrics.candidate_selection_allocations +
+        manager_metrics.active_update_allocations + manager_metrics.event_processing_allocations +
+        manager_metrics.completion_allocations;
+    result.allocations.arm_ik += manager_metrics.ik_solver_allocations +
+        manager_metrics.ik_binding_lookup_allocations + manager_metrics.ik_target_computation_allocations +
+        manager_metrics.ik_pose_application_allocations + manager_metrics.ik_hierarchy_evaluation_allocations;
     result.allocations.diagnostics_snapshot_update = input_value.diagnostics_snapshot_allocations;
     result.allocations.debug_command_submission = input_value.debug_command_allocations;
     if (input_value.manager.firstActiveInstance()) |active| {
         result.interaction_state = captureInteraction(active, true);
-    } else if (input_value.manager.last_terminal) |terminal| {
-        result.interaction_state = captureInteraction(&terminal, false);
+    } else if (input_value.manager.lastTerminal()) |terminal| {
+        result.interaction_state = captureInteraction(terminal, false);
     }
     return result;
 }
@@ -258,27 +259,30 @@ pub const MilestoneStore = struct {
 };
 
 fn captureCharacter(instance: *const character.CharacterInstance) CharacterSnapshot {
-    const physics_position = if (instance.controller) |controller| controller.state.position else instance.world_position;
-    const physics_velocity = if (instance.controller) |controller| controller.state.velocity else math.Vec2.zero;
-    const supporting_collider = if (instance.controller) |controller| controller.state.supporting_collider else null;
+    const controller = instance.controllerSnapshot();
+    const procedural = instance.proceduralSnapshot();
+    const feet = instance.footPlantingSnapshot();
+    const physics_position = if (controller) |value| value.state.position else instance.worldPosition();
+    const physics_velocity = if (controller) |value| value.state.velocity else math.Vec2.zero;
+    const supporting_collider = if (controller) |value| value.state.supporting_collider else null;
     return .{
-        .entity_id = instance.id,
+        .entity_id = instance.id(),
         .physics_position = physics_position,
         .physics_velocity = physics_velocity,
-        .facing = instance.facing,
+        .facing = instance.facingDirection(),
         .grounded = instance.interactionGrounded(),
         .supporting_collider = supporting_collider,
         .animation_state = instance.animationState(),
         .animation_normalized_time = instance.animationNormalizedTime(),
         .interaction_locked = instance.isInteractionLocked(),
         .procedural = .{
-            .walk_bounce_offset = instance.procedural.walk_bounce_offset,
-            .landing_spring_displacement = instance.procedural.landing_spring.offset,
-            .landing_spring_velocity = instance.procedural.landing_spring.velocity,
-            .secondary_head_rotation = instance.procedural.secondary_spring.offset,
+            .walk_bounce_offset = procedural.walk_bounce_offset,
+            .landing_spring_displacement = procedural.landing_spring.offset,
+            .landing_spring_velocity = procedural.landing_spring.velocity,
+            .secondary_head_rotation = procedural.secondary_spring.offset,
         },
-        .left_foot = captureFoot(&instance.foot_plants.left),
-        .right_foot = captureFoot(&instance.foot_plants.right),
+        .left_foot = captureFoot(&feet.left),
+        .right_foot = captureFoot(&feet.right),
     };
 }
 
@@ -333,21 +337,25 @@ fn captureInteraction(instance: *const interaction_system.Instance, active: bool
 }
 
 fn accumulateCharacterAllocations(result: *AllocationSnapshot, instance: *const character.CharacterInstance) void {
-    result.animator += instance.metrics.animator_allocations + instance.animator.metrics.clip_sampling_allocations +
-        instance.animator.metrics.pose_blending_allocations + instance.animator.metrics.event_traversal_allocations +
-        instance.animator.metrics.animator_update_allocations + instance.animator.metrics.state_transition_allocations;
-    result.procedural_motion += instance.metrics.procedural_allocations +
-        instance.procedural.metrics.walk_update_allocations + instance.procedural.metrics.landing_event_allocations +
-        instance.procedural.metrics.spring_update_allocations + instance.procedural.metrics.secondary_update_allocations +
-        instance.procedural.metrics.pose_composition_allocations;
-    result.arm_ik += instance.metrics.ik_solver_allocations + instance.metrics.ik_binding_lookup_allocations +
-        instance.metrics.ik_pose_application_allocations + instance.metrics.ik_hierarchy_evaluation_allocations;
-    result.foot_planting += instance.metrics.foot_plant_update_allocations + instance.metrics.leg_binding_allocations +
-        instance.metrics.leg_ik_allocations + instance.metrics.foot_target_allocations;
-    result.ground_query += instance.metrics.ground_query_allocations;
-    result.pose_evaluation += instance.metrics.pose_allocations + instance.foot_plants.metrics.pose_evaluation_allocations;
-    result.layer_resolution += instance.metrics.layer_resolution_allocations + instance.metrics.override_allocations;
-    result.sprite_submission += instance.metrics.submission_allocations;
+    const hot_path = instance.hotPathMetrics();
+    const animator_metrics = instance.animatorMetrics();
+    const procedural = instance.proceduralSnapshot();
+    const feet = instance.footPlantingSnapshot();
+    result.animator += hot_path.animator_allocations + animator_metrics.clip_sampling_allocations +
+        animator_metrics.pose_blending_allocations + animator_metrics.event_traversal_allocations +
+        animator_metrics.animator_update_allocations + animator_metrics.state_transition_allocations;
+    result.procedural_motion += hot_path.procedural_allocations +
+        procedural.metrics.walk_update_allocations + procedural.metrics.landing_event_allocations +
+        procedural.metrics.spring_update_allocations + procedural.metrics.secondary_update_allocations +
+        procedural.metrics.pose_composition_allocations;
+    result.arm_ik += hot_path.ik_solver_allocations + hot_path.ik_binding_lookup_allocations +
+        hot_path.ik_pose_application_allocations + hot_path.ik_hierarchy_evaluation_allocations;
+    result.foot_planting += hot_path.foot_plant_update_allocations + hot_path.leg_binding_allocations +
+        hot_path.leg_ik_allocations + hot_path.foot_target_allocations;
+    result.ground_query += hot_path.ground_query_allocations;
+    result.pose_evaluation += hot_path.pose_allocations + feet.metrics.pose_evaluation_allocations;
+    result.layer_resolution += hot_path.layer_resolution_allocations + hot_path.override_allocations;
+    result.sprite_submission += hot_path.submission_allocations;
 }
 
 fn discardedTicks(seconds: f64) u64 {

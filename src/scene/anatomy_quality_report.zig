@@ -155,8 +155,8 @@ pub fn main(init: std.process.Init) !void {
 
     try tracker.validateComplete();
     if (queue.lifetime_metrics.cpu_allocations_after_stabilization != 0 or
-        scene.male.metrics.submission_allocations != 0 or
-        scene.female.metrics.submission_allocations != 0)
+        scene.male.hotPathMetrics().submission_allocations != 0 or
+        scene.female.hotPathMetrics().submission_allocations != 0)
     {
         return error.AnatomySteadyStateAllocation;
     }

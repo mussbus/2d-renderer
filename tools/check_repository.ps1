@@ -134,6 +134,62 @@ $characterSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src
 $interactionDefinitionSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/interaction/interaction.zig')
 $handshakeDefinitionSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/interaction/handshake.zig')
 $interactionSystemSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/interaction/interaction_system.zig')
+$productionZigFiles = @(
+    Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot 'src') -ErrorAction Stop
+)
+$characterAuthorityPath = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'src/scene/character.zig'))
+$interactionAuthorityPath = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'src/interaction/interaction_system.zig'))
+foreach ($productionFile in $productionZigFiles) {
+    $productionSource = Get-Content -Raw -LiteralPath $productionFile.FullName
+    if ([regex]::IsMatch($productionSource, '\b(character|interaction_system)\.testing\b')) {
+        Write-Error "F4C3 authority violation: production source references a character/interaction white-box test route: $($productionFile.FullName)." -ErrorAction Continue
+        $failed = $true
+    }
+    $productionPath = [IO.Path]::GetFullPath($productionFile.FullName)
+    if ($productionPath -ne $characterAuthorityPath -and
+        $productionPath -ne $interactionAuthorityPath -and
+        [regex]::IsMatch($productionSource, '\.opaque_storage\b')) {
+        Write-Error "F4C3 authority violation: production source reaches opaque façade storage: $($productionFile.FullName)." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$requiredCharacterAuthorityPhrases = @(
+    'const CharacterState = struct',
+    'pub const CharacterInstance = struct',
+    'opaque_storage: [@sizeOf(CharacterState)]u8 align(@alignOf(CharacterState))',
+    'pub const testing = if (@import("builtin").is_test) struct'
+)
+foreach ($phrase in $requiredCharacterAuthorityPhrases) {
+    if (-not $characterSource.Contains($phrase)) {
+        Write-Error "F4C3 character authority integration is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ($characterSource.Contains('pub const CharacterState = struct') -or
+    $characterSource.Contains('pub fn stateMut')) {
+    Write-Error 'F4C3 character implementation state or raw state access escaped the supported façade.' -ErrorAction Continue
+    $failed = $true
+}
+
+$requiredInteractionAuthorityPhrases = @(
+    'const ManagerState = struct',
+    'pub const Manager = struct',
+    'opaque_storage: [@sizeOf(ManagerState)]u8 align(@alignOf(ManagerState))',
+    'pub fn metricsSnapshot',
+    'pub fn lastTerminal'
+)
+foreach ($phrase in $requiredInteractionAuthorityPhrases) {
+    if (-not $interactionSystemSource.Contains($phrase)) {
+        Write-Error "F4C3 interaction authority integration is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ($interactionSystemSource.Contains('pub const ManagerState = struct') -or
+    $interactionSystemSource.Contains('pub fn stateMut')) {
+    Write-Error 'F4C3 interaction implementation state or raw state access escaped the supported façade.' -ErrorAction Continue
+    $failed = $true
+}
 $twoBoneIkSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/two_bone_ik.zig')
 $armIkSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/arm_ik.zig')
 $handshakeIkDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/handshake_ik_demo.zig')
@@ -659,7 +715,7 @@ if ([regex]::IsMatch($multiCharacterSources, '@intFromPtr\s*\(|\.ptr\s*(<|>|<=|>
     $failed = $true
 }
 if (-not $characterSource.Contains('pub fn submitGlobally') -or
-    -not $characterSource.Contains('candidate.id.raw() < ordered[destination - 1].id.raw()') -or
+    -not $characterSource.Contains('candidate.id().raw() < ordered[destination - 1].id().raw()') -or
     -not $characterSource.Contains('batch.submitWithKey')) {
     Write-Error 'All character attachments must enter one entity-ID-stable global submission set before sorting.' -ErrorAction Continue
     $failed = $true
@@ -2733,6 +2789,7 @@ Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test mark
 Write-Host 'F2C authority audit passed: mutable registry/entity storage is absent from the supported root and production code has no direct internal imports.'
 Write-Host 'F4C1 ownership audit passed: reusable definitions and factories are production-owned; scenario imports are confined to the explicit application/composition/report allowlist.'
 Write-Host 'F4C2 boundary audit passed: raw SDL GPU authority is renderer-owned; scenarios remain application-owned; evidence writes only copied capture results.'
+Write-Host 'F4C3 authority audit passed: character and interaction mutable state remains behind opaque supported facades; production code cannot reach opaque storage or use white-box test routes.'
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'

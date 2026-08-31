@@ -143,7 +143,7 @@ test "paired runtime starts samples and completes from one shared tick clock" {
     var fixture = try PairFixture.init();
     defer fixture.deinit();
     const characters = fixture.characters();
-    const id = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &characters, 10, .none);
+    const id = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &characters, 10, .none);
     try std.testing.expectEqual(fixture.a.interactionOwnerId(), id.raw());
     try std.testing.expectEqual(fixture.b.interactionOwnerId(), id.raw());
     var tick: u64 = 11;
@@ -155,8 +155,8 @@ test "paired runtime starts samples and completes from one shared tick clock" {
     try std.testing.expectEqual(@as(u8, 1), completed.event_counts[@intFromEnum(interaction.EventSemantic.complete)]);
     try std.testing.expect(!fixture.a.isInteractionLocked());
     try std.testing.expect(!fixture.b.isInteractionLocked());
-    try std.testing.expectEqual(@as(usize, 0), fixture.a.overrides.activeCount());
-    try std.testing.expectEqual(@as(usize, 0), fixture.b.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 0), fixture.a.activeOverrideCount());
+    try std.testing.expectEqual(@as(usize, 0), fixture.b.activeOverrideCount());
     try std.testing.expectEqual(fixture.a.animationTime(), fixture.b.animationTime());
     try std.testing.expectEqual(state_machine.StateId.idle, fixture.a.animationState());
     try std.testing.expectEqual(state_machine.StateId.idle, fixture.b.animationState());
@@ -219,51 +219,51 @@ test "eligibility enforces identity locks grounding distance vertical bounds sta
     var fixture = try PairFixture.init();
     defer fixture.deinit();
     const participants = fixture.characters();
-    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).isEligible());
-    try std.testing.expectEqual(interaction_system.EligibilityReason.same_entity, fixture.manager.evaluateEligibility(fixture.a.id, fixture.a.id, &participants).reason);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.invalid_initiator, fixture.manager.evaluateEligibility(.invalid, fixture.b.id, &participants).reason);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.invalid_receiver, fixture.manager.evaluateEligibility(fixture.a.id, try character.entityIdFromRaw(99), &participants).reason);
+    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).isEligible());
+    try std.testing.expectEqual(interaction_system.EligibilityReason.same_entity, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.a.id(), &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.invalid_initiator, fixture.manager.evaluateEligibility(.invalid, fixture.b.id(), &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.invalid_receiver, fixture.manager.evaluateEligibility(fixture.a.id(), try character.entityIdFromRaw(99), &participants).reason);
 
     try fixture.a.setWorldPosition(.{ .x = 0, .y = 1.05 });
     try fixture.b.setWorldPosition(.{ .x = handshake.minimum_horizontal_separation, .y = 1.05 });
-    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).isEligible());
+    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).isEligible());
     try fixture.b.setWorldPosition(.{ .x = handshake.minimum_horizontal_separation - 0.0001, .y = 1.05 });
-    try std.testing.expectEqual(interaction_system.EligibilityReason.too_near, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.too_near, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
     try fixture.b.setWorldPosition(.{ .x = handshake.maximum_horizontal_separation, .y = 1.05 });
-    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).isEligible());
+    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).isEligible());
     try fixture.b.setWorldPosition(.{ .x = handshake.maximum_horizontal_separation + 0.0001, .y = 1.05 });
-    try std.testing.expectEqual(interaction_system.EligibilityReason.too_far, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.too_far, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
 
     try fixture.b.setWorldPosition(.{ .x = handshake.authored_horizontal_separation, .y = 1.05 + handshake.maximum_vertical_root_difference });
-    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).isEligible());
+    try std.testing.expect(fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).isEligible());
     try fixture.b.setWorldPosition(.{ .x = handshake.authored_horizontal_separation, .y = 1.05 + handshake.maximum_vertical_root_difference + 0.0001 });
-    try std.testing.expectEqual(interaction_system.EligibilityReason.vertical_misalignment, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.vertical_misalignment, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
 
     try fixture.b.setWorldPosition(.{ .x = handshake.authored_horizontal_separation, .y = 1.05 });
     try fixture.b.setFacing(.right);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.wrong_facing, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.wrong_facing, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
     try fixture.a.setFacing(.left);
     try fixture.b.setFacing(.left);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.wrong_facing, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.wrong_facing, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
     try fixture.a.setFacing(.right);
     try fixture.b.setFacing(.left);
 
     try fixture.a.setPassiveGrounded(false);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.initiator_airborne, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.initiator_airborne, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
     try fixture.a.setPassiveGrounded(true);
     try fixture.b.setPassiveGrounded(false);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.receiver_airborne, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.receiver_airborne, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
     try fixture.b.setPassiveGrounded(true);
     try fixture.a.enterAnimationState(.jump_start);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.initiator_state_rejected, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.initiator_state_rejected, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
     try fixture.a.enterAnimationState(.idle);
 
-    const id = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, .none);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.initiator_already_interacting, fixture.manager.evaluateEligibility(fixture.a.id, fixture.b.id, &participants).reason);
-    var c = try initCharacter(&fixture.definition, &fixture.animations, 3, .{ .x = fixture.b.world_position.x - handshake.authored_horizontal_separation, .y = 1.05 }, .right);
+    const id = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 0, .none);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.initiator_already_interacting, fixture.manager.evaluateEligibility(fixture.a.id(), fixture.b.id(), &participants).reason);
+    var c = try initCharacter(&fixture.definition, &fixture.animations, 3, .{ .x = fixture.b.worldPosition().x - handshake.authored_horizontal_separation, .y = 1.05 }, .right);
     defer c.deinit();
     const with_c = [_]*character.CharacterInstance{ &fixture.a, &fixture.b, &c };
-    try std.testing.expectEqual(interaction_system.EligibilityReason.receiver_already_interacting, fixture.manager.evaluateEligibility(c.id, fixture.b.id, &with_c).reason);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.receiver_already_interacting, fixture.manager.evaluateEligibility(c.id(), fixture.b.id(), &with_c).reason);
     try std.testing.expect(id != .invalid);
 }
 
@@ -276,14 +276,14 @@ test "candidate ranking is alignment first then distance then stable entity id i
     defer c.deinit();
     const ordered = [_]*character.CharacterInstance{ &fixture.a, &fixture.b, &c };
     const reversed = [_]*character.CharacterInstance{ &c, &fixture.b, &fixture.a };
-    try std.testing.expectEqual(c.id, (try fixture.manager.selectCandidate(fixture.a.id, &ordered)).receiver);
-    try std.testing.expectEqual(c.id, (try fixture.manager.selectCandidate(fixture.a.id, &reversed)).receiver);
+    try std.testing.expectEqual(c.id(), (try fixture.manager.selectCandidate(fixture.a.id(), &ordered)).receiver);
+    try std.testing.expectEqual(c.id(), (try fixture.manager.selectCandidate(fixture.a.id(), &reversed)).receiver);
 
-    try fixture.b.setWorldPosition(c.world_position);
-    try std.testing.expectEqual(fixture.b.id, (try fixture.manager.selectCandidate(fixture.a.id, &ordered)).receiver);
-    try std.testing.expectEqual(fixture.b.id, (try fixture.manager.selectCandidate(fixture.a.id, &reversed)).receiver);
+    try fixture.b.setWorldPosition(c.worldPosition());
+    try std.testing.expectEqual(fixture.b.id(), (try fixture.manager.selectCandidate(fixture.a.id(), &ordered)).receiver);
+    try std.testing.expectEqual(fixture.b.id(), (try fixture.manager.selectCandidate(fixture.a.id(), &reversed)).receiver);
     try fixture.b.setFacing(.right);
-    try std.testing.expectEqual(c.id, (try fixture.manager.selectCandidate(fixture.a.id, &ordered)).receiver);
+    try std.testing.expectEqual(c.id(), (try fixture.manager.selectCandidate(fixture.a.id(), &ordered)).receiver);
 }
 
 test "interact edge is buffered across zero steps consumed once and requires a new press" {
@@ -296,8 +296,8 @@ test "interact edge is buffered across zero steps consumed once and requires a n
     try std.testing.expectEqual(@as(usize, 0), fixture.manager.activeCount());
     const first_intent = pending.consumeTick();
     try std.testing.expect(first_intent.interact_pressed);
-    const id = (try fixture.manager.requestFromIntent(fixture.a.id, first_intent, &participants, 0)).?;
-    try std.testing.expect((try fixture.manager.requestFromIntent(fixture.a.id, pending.consumeTick(), &participants, 0)) == null);
+    const id = (try fixture.manager.requestFromIntent(fixture.a.id(), first_intent, &participants, 0)).?;
+    try std.testing.expect((try fixture.manager.requestFromIntent(fixture.a.id(), pending.consumeTick(), &participants, 0)) == null);
     try runToTick(&fixture.manager, &participants, 1, 360);
     try std.testing.expectEqual(interaction.Lifecycle.completed, fixture.manager.instance(id).?.lifecycle);
 
@@ -308,15 +308,15 @@ test "interact edge is buffered across zero steps consumed once and requires a n
     try pending.acceptFrame(try builder.update(.{ .keyboard = .{ .e = true } }));
     const second_intent = pending.consumeTick();
     try std.testing.expect(second_intent.interact_pressed);
-    try std.testing.expect((try fixture.manager.requestFromIntent(fixture.a.id, second_intent, &participants, 361)) != null);
-    try std.testing.expectEqual(@as(u64, 2), fixture.manager.metrics.starts);
+    try std.testing.expect((try fixture.manager.requestFromIntent(fixture.a.id(), second_intent, &participants, 361)) != null);
+    try std.testing.expectEqual(@as(u64, 2), fixture.manager.metricsSnapshot().starts);
 }
 
 test "pause freezes the shared clock single-step advances one tick and reset cancels ownership" {
     var fixture = try PairFixture.init();
     defer fixture.deinit();
     const participants = fixture.characters();
-    const id = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, .none);
+    const id = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 0, .none);
     var clock = try fixed_step.Clock.init(.{});
     clock.setPaused(true);
     const paused_frame = try clock.beginFrame(1.0);
@@ -349,14 +349,14 @@ test "transactional start rolls back every reservation and animator fault stage"
         var fixture = try PairFixture.init();
         defer fixture.deinit();
         const participants = fixture.characters();
-        try std.testing.expectError(error.InjectedInteractionStartFailure, fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, fault));
+        try std.testing.expectError(error.InjectedInteractionStartFailure, fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 0, fault));
         try std.testing.expect(!fixture.a.isInteractionLocked());
         try std.testing.expect(!fixture.b.isInteractionLocked());
         try std.testing.expectEqual(state_machine.StateId.idle, fixture.a.animationState());
         try std.testing.expectEqual(state_machine.StateId.idle, fixture.b.animationState());
         try std.testing.expectEqual(@as(usize, 0), fixture.manager.activeCount());
-        try std.testing.expectEqual(@as(usize, 0), fixture.a.overrides.activeCount());
-        try std.testing.expectEqual(@as(usize, 0), fixture.b.overrides.activeCount());
+        try std.testing.expectEqual(@as(usize, 0), fixture.a.activeOverrideCount());
+        try std.testing.expectEqual(@as(usize, 0), fixture.b.activeOverrideCount());
     }
 }
 
@@ -365,7 +365,7 @@ test "contact layering is partial owned and preserves unrelated overrides throug
     defer fixture.deinit();
     const unrelated = try fixture.b.applySemanticOverride(.torso, .{ .body_part_layer = 90 });
     const participants = fixture.characters();
-    const id = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, .none);
+    const id = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 0, .none);
     try runToTick(&fixture.manager, &participants, 1, 144);
     try std.testing.expectEqual(@as(i32, 3), (try fixture.a.resolvedOrder(.right_hand)).interaction_layer);
     try std.testing.expectEqual(@as(i32, 2), (try fixture.b.resolvedOrder(.right_hand)).interaction_layer);
@@ -374,12 +374,12 @@ test "contact layering is partial owned and preserves unrelated overrides throug
     try std.testing.expectEqual(@as(i32, 0), (try fixture.b.resolvedOrder(.torso)).interaction_layer);
     try std.testing.expectEqual(@as(i32, 90), (try fixture.b.resolvedOrder(.torso)).body_part_layer);
     try runToTick(&fixture.manager, &participants, 145, 288);
-    try std.testing.expectEqual(@as(usize, 0), fixture.a.overrides.activeCount());
-    try std.testing.expectEqual(@as(usize, 1), fixture.b.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 0), fixture.a.activeOverrideCount());
+    try std.testing.expectEqual(@as(usize, 1), fixture.b.activeOverrideCount());
     try std.testing.expectEqual(@as(i32, 90), (try fixture.b.resolvedOrder(.torso)).body_part_layer);
     try runToTick(&fixture.manager, &participants, 289, 360);
     try std.testing.expectEqual(interaction.Lifecycle.completed, fixture.manager.instance(id).?.lifecycle);
-    try std.testing.expectEqual(@as(usize, 1), fixture.b.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 1), fixture.b.activeOverrideCount());
     try fixture.b.clearOverride(unrelated);
 }
 
@@ -387,23 +387,23 @@ test "cancellation before and after contact restores only owned state and is ide
     var before = try PairFixture.init();
     defer before.deinit();
     const before_participants = before.characters();
-    const before_id = try before.manager.startPair(before.a.id, before.b.id, &before_participants, 0, .none);
-    try before.manager.resetPassiveCharacter(before.a.id, &before_participants);
+    const before_id = try before.manager.startPair(before.a.id(), before.b.id(), &before_participants, 0, .none);
+    try before.manager.resetPassiveCharacter(before.a.id(), &before_participants);
     try std.testing.expectEqual(interaction.Lifecycle.cancelled, before.manager.instance(before_id).?.lifecycle);
     try std.testing.expect(!before.a.isInteractionLocked() and !before.b.isInteractionLocked());
     try std.testing.expectEqual(state_machine.StateId.idle, before.a.animationState());
-    try std.testing.expect(!(try before.manager.cancelForCharacter(before.a.id, .character_reset, &before_participants)));
+    try std.testing.expect(!(try before.manager.cancelForCharacter(before.a.id(), .character_reset, &before_participants)));
 
     var after = try PairFixture.init();
     defer after.deinit();
     const unrelated = try after.b.applySemanticOverride(.head, .{ .interaction_layer = -1 });
     const after_participants = after.characters();
-    const after_id = try after.manager.startPair(after.a.id, after.b.id, &after_participants, 0, .none);
+    const after_id = try after.manager.startPair(after.a.id(), after.b.id(), &after_participants, 0, .none);
     try runToTick(&after.manager, &after_participants, 1, 144);
-    try std.testing.expect(try after.manager.cancelForCharacter(after.b.id, .scene_reset, &after_participants));
+    try std.testing.expect(try after.manager.cancelForCharacter(after.b.id(), .scene_reset, &after_participants));
     try std.testing.expectEqual(interaction.Lifecycle.cancelled, after.manager.instance(after_id).?.lifecycle);
-    try std.testing.expectEqual(@as(usize, 0), after.a.overrides.activeCount());
-    try std.testing.expectEqual(@as(usize, 1), after.b.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 0), after.a.activeOverrideCount());
+    try std.testing.expectEqual(@as(usize, 1), after.b.activeOverrideCount());
     try std.testing.expectEqual(@as(u8, 0), after.manager.instance(after_id).?.event_counts[@intFromEnum(interaction.EventSemantic.complete)]);
     try after.b.clearOverride(unrelated);
 }
@@ -414,12 +414,12 @@ test "override capacity failure at contact cancels safely without clearing prior
     var unrelated: [7]character.OverrideHandle = undefined;
     for (&unrelated) |*handle| handle.* = try fixture.a.applySemanticOverride(.torso, .{ .body_part_layer = 80 });
     const participants = fixture.characters();
-    const id = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, .none);
+    const id = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 0, .none);
     try runToTick(&fixture.manager, &participants, 1, 144);
     try std.testing.expectEqual(interaction.Lifecycle.cancelled, fixture.manager.instance(id).?.lifecycle);
     try std.testing.expectEqual(interaction_system.CancellationReason.override_capacity, fixture.manager.instance(id).?.cancellation_reason);
-    try std.testing.expectEqual(@as(usize, 7), fixture.a.overrides.activeCount());
-    try std.testing.expectEqual(@as(usize, 0), fixture.b.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 7), fixture.a.activeOverrideCount());
+    try std.testing.expectEqual(@as(usize, 0), fixture.b.activeOverrideCount());
     try std.testing.expect(!fixture.a.isInteractionLocked() and !fixture.b.isInteractionLocked());
     for (unrelated) |handle| try fixture.a.clearOverride(handle);
 }
@@ -456,10 +456,10 @@ test "four-slot pool reports overflow before locking a fifth pair" {
     }
     var manager = interaction_system.Manager.init(try handshake.definition(&animations));
     for (0..interaction_system.capacity) |pair_index| {
-        _ = try manager.startPair(instances[pair_index * 2].id, instances[pair_index * 2 + 1].id, &participants, 0, .none);
+        _ = try manager.startPair(instances[pair_index * 2].id(), instances[pair_index * 2 + 1].id(), &participants, 0, .none);
     }
     try std.testing.expectEqual(interaction_system.capacity, manager.activeCount());
-    try std.testing.expectError(error.InteractionCapacityExceeded, manager.startPair(instances[8].id, instances[9].id, &participants, 0, .none));
+    try std.testing.expectError(error.InteractionCapacityExceeded, manager.startPair(instances[8].id(), instances[9].id(), &participants, 0, .none));
     try std.testing.expect(!instances[8].isInteractionLocked());
     try std.testing.expect(!instances[9].isInteractionLocked());
 }
@@ -468,11 +468,11 @@ test "interaction IDs issue maximum u32 once and never wrap" {
     var fixture = try PairFixture.init();
     defer fixture.deinit();
     const participants = fixture.characters();
-    fixture.manager.next_id = std.math.maxInt(u32);
-    const maximum = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, .none);
+    interaction_system.testing.setNextId(&fixture.manager, std.math.maxInt(u32));
+    const maximum = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 0, .none);
     try std.testing.expectEqual(std.math.maxInt(u32), maximum.raw());
     try fixture.manager.reset(&participants);
-    try std.testing.expectError(error.InteractionIdOverflow, fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 1, .none));
+    try std.testing.expectError(error.InteractionIdOverflow, fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 1, .none));
     try std.testing.expect(!fixture.a.isInteractionLocked() and !fixture.b.isInteractionLocked());
 }
 
@@ -484,22 +484,22 @@ test "AB ownership blocks C to B while AB and CD remain independent" {
     var d = try initCharacter(&fixture.definition, &fixture.animations, 4, .{ .x = 11.86, .y = 1.05 }, .left);
     defer d.deinit();
     const participants = [_]*character.CharacterInstance{ &fixture.a, &fixture.b, &c, &d };
-    const ab = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 0, .none);
-    try std.testing.expectEqual(interaction_system.EligibilityReason.receiver_already_interacting, fixture.manager.evaluateEligibility(c.id, fixture.b.id, &participants).reason);
+    const ab = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 0, .none);
+    try std.testing.expectEqual(interaction_system.EligibilityReason.receiver_already_interacting, fixture.manager.evaluateEligibility(c.id(), fixture.b.id(), &participants).reason);
     try runToTick(&fixture.manager, &participants, 1, 60);
-    const cd = try fixture.manager.startPair(c.id, d.id, &participants, 60, .none);
+    const cd = try fixture.manager.startPair(c.id(), d.id(), &participants, 60, .none);
     try runToTick(&fixture.manager, &participants, 61, 144);
     try std.testing.expectEqual(interaction.Phase.contact, fixture.manager.instance(ab).?.phase);
     try std.testing.expectEqual(interaction.Phase.approach, fixture.manager.instance(cd).?.phase);
     try runToTick(&fixture.manager, &participants, 145, 204);
     try std.testing.expectEqual(interaction.Phase.contact, fixture.manager.instance(cd).?.phase);
-    try std.testing.expect(fixture.a.overrides.activeCount() > 0 and c.overrides.activeCount() > 0);
+    try std.testing.expect(fixture.a.activeOverrideCount() > 0 and c.activeOverrideCount() > 0);
     try runToTick(&fixture.manager, &participants, 205, 360);
     try std.testing.expectEqual(interaction.Lifecycle.completed, fixture.manager.instance(ab).?.lifecycle);
     try std.testing.expectEqual(interaction.Lifecycle.active, fixture.manager.instance(cd).?.lifecycle);
     try std.testing.expect(!fixture.a.isInteractionLocked() and !fixture.b.isInteractionLocked());
     try std.testing.expect(c.isInteractionLocked() and d.isInteractionLocked());
-    try std.testing.expectEqual(@as(usize, 0), fixture.a.overrides.activeCount());
+    try std.testing.expectEqual(@as(usize, 0), fixture.a.activeOverrideCount());
     try runToTick(&fixture.manager, &participants, 361, 420);
     try std.testing.expectEqual(interaction.Lifecycle.completed, fixture.manager.instance(cd).?.lifecycle);
     try std.testing.expectEqual(@as(u8, 1), fixture.manager.instance(ab).?.event_counts[@intFromEnum(interaction.EventSemantic.complete)]);
@@ -510,7 +510,7 @@ test "mirrored arrangement preserves roles timing anatomy and socket separation"
     var left_to_right = try PairFixture.init();
     defer left_to_right.deinit();
     const first_participants = left_to_right.characters();
-    const first_id = try left_to_right.manager.startPair(left_to_right.a.id, left_to_right.b.id, &first_participants, 20, .none);
+    const first_id = try left_to_right.manager.startPair(left_to_right.a.id(), left_to_right.b.id(), &first_participants, 20, .none);
     try runToTick(&left_to_right.manager, &first_participants, 21, 164);
     const first = left_to_right.manager.instance(first_id).?.*;
 
@@ -521,12 +521,12 @@ test "mirrored arrangement preserves roles timing anatomy and socket separation"
     try right_to_left.a.setFacing(.left);
     try right_to_left.b.setFacing(.right);
     const mirrored_participants = right_to_left.characters();
-    const mirrored_id = try right_to_left.manager.startPair(right_to_left.a.id, right_to_left.b.id, &mirrored_participants, 20, .none);
+    const mirrored_id = try right_to_left.manager.startPair(right_to_left.a.id(), right_to_left.b.id(), &mirrored_participants, 20, .none);
     try runToTick(&right_to_left.manager, &mirrored_participants, 21, 164);
     const mirrored = right_to_left.manager.instance(mirrored_id).?.*;
 
-    try std.testing.expectEqual(left_to_right.a.id, first.participant(.initiator));
-    try std.testing.expectEqual(right_to_left.a.id, mirrored.participant(.initiator));
+    try std.testing.expectEqual(left_to_right.a.id(), first.participant(.initiator));
+    try std.testing.expectEqual(right_to_left.a.id(), mirrored.participant(.initiator));
     try std.testing.expectEqual(first.event_ticks[@intFromEnum(interaction.EventSemantic.contact)], mirrored.event_ticks[@intFromEnum(interaction.EventSemantic.contact)]);
     try std.testing.expectApproxEqAbs(first.contact.separation, mirrored.contact.separation, 0.00001);
     try std.testing.expectApproxEqAbs(first.contact.role_a_socket.x, -mirrored.contact.role_a_socket.x, 0.00001);
@@ -549,7 +549,7 @@ fn executeSchedule(groups: []const u8) !ScheduleEvidence {
     var fixture = try PairFixture.init();
     defer fixture.deinit();
     const participants = fixture.characters();
-    const id = try fixture.manager.startPair(fixture.a.id, fixture.b.id, &participants, 50, .none);
+    const id = try fixture.manager.startPair(fixture.a.id(), fixture.b.id(), &participants, 50, .none);
     var tick: u64 = 50;
     var group_index: usize = 0;
     while (tick < 410) {
@@ -609,7 +609,7 @@ test "interaction sampling and socket measurement leave authoritative controller
     defer active_b.deinit();
     const active_participants = [_]*character.CharacterInstance{ &active_a, &active_b };
     var manager = interaction_system.Manager.init(try handshake.definition(&animations));
-    _ = try manager.startPair(active_a.id, active_b.id, &active_participants, 0, .none);
+    _ = try manager.startPair(active_a.id(), active_b.id(), &active_participants, 0, .none);
     const no_input = input.CharacterIntent{ .move_axis = 0, .jump_pressed = false, .jump_held = false, .jump_released = false, .interact_pressed = false };
     for (1..361) |tick| {
         _ = try control_a.stepController(&world, no_input);
@@ -618,8 +618,8 @@ test "interaction sampling and socket measurement leave authoritative controller
         _ = try active_b.stepController(&world, no_input);
         try manager.updateTick(@intCast(tick), &active_participants);
     }
-    const control_states = [_]character_controller.State{ control_a.controller.?.state, control_b.controller.?.state };
-    const active_states = [_]character_controller.State{ active_a.controller.?.state, active_b.controller.?.state };
+    const control_states = [_]character_controller.State{ control_a.controllerSnapshot().?.state, control_b.controllerSnapshot().?.state };
+    const active_states = [_]character_controller.State{ active_a.controllerSnapshot().?.state, active_b.controllerSnapshot().?.state };
     for (control_states, active_states) |expected, actual| {
         try std.testing.expect(expected.position.approxEqAbs(actual.position, 0.000001));
         try std.testing.expect(expected.velocity.approxEqAbs(actual.velocity, 0.000001));

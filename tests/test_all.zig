@@ -18,6 +18,7 @@ test {
     _ = @import("secondary_motion_tests.zig");
     _ = @import("attachment_secondary_motion_tests.zig");
     _ = @import("multi_character_tests.zig");
+    _ = @import("runtime_authority_tests.zig");
     _ = @import("interaction_tests.zig");
     _ = @import("ik_tests.zig");
     _ = @import("foot_planting_tests.zig");

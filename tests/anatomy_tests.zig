@@ -185,18 +185,18 @@ test "two facial configurations use shared modular data and derive distinct inde
     try std.testing.expect(!conventional_eye.sprite_size.approxEqAbs(angular_eye.sprite_size, tolerance));
     try std.testing.expect(conventional_eye.tint[1] != angular_eye.tint[1]);
 
-    try std.testing.expect(try scene.conventional_male.character.appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
-    try std.testing.expect(!try scene.conventional_male.character.appearance_runtime.isVisible(appearance_definition, angular_eye_id));
-    try std.testing.expect(!try scene.conventional_female.character.appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
-    try std.testing.expect(try scene.conventional_female.character.appearance_runtime.isVisible(appearance_definition, angular_eye_id));
+    try std.testing.expect(try scene.conventional_male.humanoidView().appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
+    try std.testing.expect(!try scene.conventional_male.humanoidView().appearance_runtime.isVisible(appearance_definition, angular_eye_id));
+    try std.testing.expect(!try scene.conventional_female.humanoidView().appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
+    try std.testing.expect(try scene.conventional_female.humanoidView().appearance_runtime.isVisible(appearance_definition, angular_eye_id));
 
     try scene.conventional_male.selectBodyPreset(try anatomy_definition.bodyPresetId("conventional_female"));
-    try std.testing.expect(try scene.conventional_male.character.appearance_runtime.isVisible(appearance_definition, angular_eye_id));
+    try std.testing.expect(try scene.conventional_male.humanoidView().appearance_runtime.isVisible(appearance_definition, angular_eye_id));
     try scene.conventional_male.selectBodyPreset(try anatomy_definition.bodyPresetId("conventional_male"));
-    try std.testing.expect(try scene.conventional_male.character.appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
-    try std.testing.expect(!try scene.conventional_male.character.appearance_runtime.isVisible(appearance_definition, angular_eye_id));
-    try std.testing.expect(!try scene.conventional_female.character.appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
-    try std.testing.expect(try scene.conventional_female.character.appearance_runtime.isVisible(appearance_definition, angular_eye_id));
+    try std.testing.expect(try scene.conventional_male.humanoidView().appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
+    try std.testing.expect(!try scene.conventional_male.humanoidView().appearance_runtime.isVisible(appearance_definition, angular_eye_id));
+    try std.testing.expect(!try scene.conventional_female.humanoidView().appearance_runtime.isVisible(appearance_definition, conventional_eye_id));
+    try std.testing.expect(try scene.conventional_female.humanoidView().appearance_runtime.isVisible(appearance_definition, angular_eye_id));
 }
 
 test "presentation switching changes visuals without changing anatomy topology" {
@@ -248,37 +248,38 @@ test "module articulation morphology and presentation leave canonical controller
     const anatomy_definition = definition.anatomy_definition.?.view();
     try instance.selectBodyPreset(try anatomy_definition.bodyPresetId("nonstandard_humanoid"));
 
-    const controller_before = instance.controller.?.state;
+    const internal = character.testing.state(&instance);
+    const controller_before = internal.controller.?.state;
     const animation_time_before = instance.animationTime();
-    const interaction_owner_before = instance.interaction_owner_id;
-    const upper_length_before = instance.right_arm_binding.upper_length;
-    const lower_length_before = instance.right_arm_binding.lower_length;
+    const interaction_owner_before = internal.interaction_owner_id;
+    const upper_length_before = internal.right_arm_binding.upper_length;
+    const lower_length_before = internal.right_arm_binding.lower_length;
     const canonical_rest_before = (try definition.skeleton_definition.bone(try definition.skeleton_definition.boneIndex(.right_forearm))).rest_local;
 
     try instance.setGlobalBuild(100);
     try instance.setMorphologyChannelOverride(try anatomy_definition.morphologyChannelId("shoulder_width"), 10);
     try instance.selectPresentationProfile(try anatomy_definition.presentationProfileId("adult_detailed"));
-    const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+    const anatomy_runtime = if (internal.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
     const extra_arm = try anatomy_definition.partInstanceId("extra_arm");
     const module_id = try definition.visual_definition.rigModuleId("extra_arm_module");
     const elbow = try definition.visual_definition.moduleJointId(module_id, "elbow");
-    const local_before = try instance.character.appearance_runtime.moduleJointLocal(definition.visual_definition.view(), module_id, elbow);
+    const local_before = try internal.character.appearance_runtime.moduleJointLocal(definition.visual_definition.view(), module_id, elbow);
     var local_after = local_before;
     local_after.rotation_radians += 0.2;
     try anatomy_runtime.setPartModuleJointLocal(
         anatomy_definition,
         definition.visual_definition.view(),
-        &instance.character.appearance_runtime,
+        &internal.character.appearance_runtime,
         extra_arm,
         elbow,
         local_after,
     );
 
-    try std.testing.expectEqualDeep(controller_before, instance.controller.?.state);
+    try std.testing.expectEqualDeep(controller_before, internal.controller.?.state);
     try std.testing.expectEqual(animation_time_before, instance.animationTime());
-    try std.testing.expectEqual(interaction_owner_before, instance.interaction_owner_id);
-    try std.testing.expectEqual(upper_length_before, instance.right_arm_binding.upper_length);
-    try std.testing.expectEqual(lower_length_before, instance.right_arm_binding.lower_length);
+    try std.testing.expectEqual(interaction_owner_before, internal.interaction_owner_id);
+    try std.testing.expectEqual(upper_length_before, internal.right_arm_binding.upper_length);
+    try std.testing.expectEqual(lower_length_before, internal.right_arm_binding.lower_length);
     try std.testing.expect(canonical_rest_before.approxEqAbs(
         (try definition.skeleton_definition.bone(try definition.skeleton_definition.boneIndex(.right_forearm))).rest_local,
         0,
@@ -350,8 +351,9 @@ fn expectActive(
 }
 
 fn topology(instance: *const character.CharacterInstance) !u64 {
-    const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
-    const runtime = instance.character.anatomy_runtime orelse return error.CharacterHasNoAnatomy;
+    const internal = character.testing.stateConst(instance);
+    const definition = internal.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
+    const runtime = internal.character.anatomy_runtime orelse return error.CharacterHasNoAnatomy;
     return runtime.topologyFingerprint(definition);
 }
 

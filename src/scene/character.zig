@@ -12,6 +12,7 @@ const skeleton = @import("skeleton");
 const authored = @import("authored_clips");
 const clip = @import("clip");
 const animator_module = @import("animator");
+const animation_events = @import("events");
 const animation_system = @import("animation_system");
 const state_machine = @import("state_machine");
 const procedural_motion = @import("procedural_motion");
@@ -374,7 +375,8 @@ pub const AnimationDefinitionsView = struct {
     }
 };
 
-pub const CharacterInstance = struct {
+const CharacterState = struct {
+    allocator: std.mem.Allocator,
     id: EntityId,
     definition: HumanoidDefinitionView,
     shared_animations: AnimationDefinitionsView,
@@ -398,6 +400,7 @@ pub const CharacterInstance = struct {
     property_bindings: ?PropertyBindings = null,
     resolved_properties: ?properties.ResolvedSet = null,
     interaction_owner_id: u32 = 0,
+    interaction_animator_checkpoint: ?animator_module.Animator = null,
     presentation: presentation_view.Runtime = .{},
     passive_grounded: bool = true,
     simulation_tick: u64 = 0,
@@ -413,7 +416,7 @@ pub const CharacterInstance = struct {
         facing: humanoid.Facing,
         actor_layer: u16,
         injector: ?fault_injection.Injector,
-    ) !CharacterInstance {
+    ) !CharacterState {
         if (!id.isValid()) return error.InvalidEntityId;
         if (!world_position.isFinite()) return error.InvalidNonFiniteTransform;
         _ = try sprite.validateOrder(.{
@@ -447,7 +450,8 @@ pub const CharacterInstance = struct {
         const left_leg_binding = try leg_ik.Binding.initLeft(&definition.skeleton_definition);
         const right_leg_binding = try leg_ik.Binding.initRight(&definition.skeleton_definition);
 
-        var instance = CharacterInstance{
+        var instance = CharacterState{
+            .allocator = allocator,
             .id = id,
             .definition = HumanoidDefinitionView.init(definition),
             .shared_animations = AnimationDefinitionsView.init(shared_animations),
@@ -488,8 +492,8 @@ pub const CharacterInstance = struct {
         facing: humanoid.Facing,
         actor_layer: u16,
         injector: ?fault_injection.Injector,
-    ) !CharacterInstance {
-        var instance = try CharacterInstance.init(
+    ) !CharacterState {
+        var instance = try CharacterState.init(
             allocator,
             id,
             definition,
@@ -510,23 +514,23 @@ pub const CharacterInstance = struct {
         return instance;
     }
 
-    pub fn deinit(instance: *CharacterInstance) void {
+    fn deinit(instance: *CharacterState) void {
         instance.animator.deinit();
         instance.character.deinit();
         instance.* = undefined;
     }
 
-    pub fn enterAnimationState(instance: *CharacterInstance, state: state_machine.StateId) !void {
+    pub fn enterAnimationState(instance: *CharacterState, state: state_machine.StateId) !void {
         try instance.animator.enterState(&instance.shared_animations.machine, state);
         try instance.syncPresentationView();
     }
 
-    pub fn canEnterAnimationState(instance: CharacterInstance, state: state_machine.StateId) bool {
+    pub fn canEnterAnimationState(instance: CharacterState, state: state_machine.StateId) bool {
         _ = instance.shared_animations.machine.stateIndex(state) catch return false;
         return true;
     }
 
-    pub fn sampleInteractionAnimation(instance: *CharacterInstance, state: state_machine.StateId, shared_time_seconds: f32) !void {
+    pub fn sampleInteractionAnimation(instance: *CharacterState, state: state_machine.StateId, shared_time_seconds: f32) !void {
         const next_tick = std.math.add(u64, instance.simulation_tick, 1) catch return error.SimulationTickOverflow;
         try instance.restoreRightHandIkLocals();
         try instance.restoreFootIkLocals();
@@ -554,14 +558,31 @@ pub const CharacterInstance = struct {
         try instance.advanceAttachmentSecondaryMotion(.{});
     }
 
-    pub fn reserveInteraction(instance: *CharacterInstance, owner_id: u32) !void {
+    pub fn reserveInteraction(instance: *CharacterState, owner_id: u32) !void {
         if (owner_id == 0) return error.InvalidInteractionOwner;
         if (instance.interaction_owner_id != 0) return error.CharacterAlreadyInteracting;
         instance.interaction_owner_id = owner_id;
     }
 
+    fn beginInteractionTransaction(instance: *CharacterState) !void {
+        if (instance.interaction_animator_checkpoint != null) return error.InteractionTransactionAlreadyActive;
+        instance.interaction_animator_checkpoint = instance.animator;
+    }
+
+    fn commitInteractionTransaction(instance: *CharacterState) void {
+        std.debug.assert(instance.interaction_animator_checkpoint != null);
+        instance.interaction_animator_checkpoint = null;
+    }
+
+    fn rollbackInteractionTransaction(instance: *CharacterState, owner_id: u32) !void {
+        const checkpoint = instance.interaction_animator_checkpoint orelse return error.InteractionTransactionNotActive;
+        instance.animator = checkpoint;
+        instance.interaction_animator_checkpoint = null;
+        if (instance.interaction_owner_id == owner_id) try instance.releaseInteraction(owner_id);
+    }
+
     pub fn claimInteractionPresentation(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         owner_id: u32,
         view: presentation_view.View,
     ) !void {
@@ -572,7 +593,7 @@ pub const CharacterInstance = struct {
         try instance.syncPresentationView();
     }
 
-    pub fn releaseInteraction(instance: *CharacterInstance, owner_id: u32) !void {
+    pub fn releaseInteraction(instance: *CharacterState, owner_id: u32) !void {
         if (owner_id == 0) return error.InvalidInteractionOwner;
         if (instance.interaction_owner_id != owner_id) return error.InteractionOwnershipMismatch;
         if (instance.presentation.interaction_owner != 0) {
@@ -582,65 +603,65 @@ pub const CharacterInstance = struct {
         try instance.syncPresentationView();
     }
 
-    pub fn isInteractionLocked(instance: CharacterInstance) bool {
+    pub fn isInteractionLocked(instance: CharacterState) bool {
         return instance.interaction_owner_id != 0;
     }
 
-    pub fn interactionOwnerId(instance: CharacterInstance) u32 {
+    pub fn interactionOwnerId(instance: CharacterState) u32 {
         return instance.interaction_owner_id;
     }
 
-    pub fn presentationView(instance: CharacterInstance) presentation_view.View {
+    pub fn presentationView(instance: CharacterState) presentation_view.View {
         return instance.presentation.current;
     }
 
-    pub fn presentationOverride(instance: CharacterInstance) presentation_view.DebugOverride {
+    pub fn presentationOverride(instance: CharacterState) presentation_view.DebugOverride {
         return instance.presentation.debug_override;
     }
 
     pub fn setPresentationOverride(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         value: presentation_view.DebugOverride,
     ) !void {
         instance.presentation.setDebugOverride(value);
         try instance.syncPresentationView();
     }
 
-    pub fn cyclePresentationOverride(instance: *CharacterInstance) !void {
+    pub fn cyclePresentationOverride(instance: *CharacterState) !void {
         instance.presentation.cycleDebugOverride();
         try instance.syncPresentationView();
     }
 
     pub fn applyPresentationInput(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         snapshot: input.FrameInputSnapshot,
     ) !void {
         if (snapshot.presentation_view_cycle.pressed) try instance.cyclePresentationOverride();
     }
 
-    pub fn interactionGrounded(instance: CharacterInstance) bool {
+    pub fn interactionGrounded(instance: CharacterState) bool {
         if (instance.controller) |controller| return controller.state.grounded;
         return instance.passive_grounded;
     }
 
-    pub fn setPassiveGrounded(instance: *CharacterInstance, grounded: bool) !void {
+    pub fn setPassiveGrounded(instance: *CharacterState, grounded: bool) !void {
         if (instance.controller != null) return error.ControlledCharacterGroundingIsAuthoritative;
         instance.passive_grounded = grounded;
         try instance.syncPresentationView();
     }
 
-    pub fn fallbackAnimationState(instance: CharacterInstance) state_machine.StateId {
+    pub fn fallbackAnimationState(instance: CharacterState) state_machine.StateId {
         if (instance.controller) |controller| {
             if (@abs(controller.state.velocity.x) > 0.0001) return .walk;
         }
         return .idle;
     }
 
-    pub fn animationTime(instance: CharacterInstance) f32 {
+    pub fn animationTime(instance: CharacterState) f32 {
         return instance.animator.currentClipTime();
     }
 
-    pub fn animationNormalizedTime(instance: CharacterInstance) f32 {
+    pub fn animationNormalizedTime(instance: CharacterState) f32 {
         const state_index = instance.shared_animations.machine.stateIndex(instance.animationState()) catch return 0;
         const clip_index = instance.shared_animations.machine.states[state_index].clip_index;
         if (clip_index >= instance.shared_animations.clips.len) return 0;
@@ -649,18 +670,18 @@ pub const CharacterInstance = struct {
         return std.math.clamp(instance.animationTime() / duration, 0, 1);
     }
 
-    pub fn animationState(instance: CharacterInstance) state_machine.StateId {
+    pub fn animationState(instance: CharacterState) state_machine.StateId {
         return instance.animator.currentState(&instance.shared_animations.machine);
     }
 
-    pub fn setFacing(instance: *CharacterInstance, facing: humanoid.Facing) !void {
+    pub fn setFacing(instance: *CharacterState, facing: humanoid.Facing) !void {
         try instance.restoreFootIkLocals();
         if (instance.facing != facing) try instance.clearAttachmentSecondaryMotion();
         instance.facing = facing;
         try instance.evaluateWorldPose();
     }
 
-    pub fn setActorLayer(instance: *CharacterInstance, actor_layer: u16) !void {
+    pub fn setActorLayer(instance: *CharacterState, actor_layer: u16) !void {
         _ = try sprite.validateOrder(.{
             .scene_layer = characters_scene_layer,
             .interaction_layer = neutral_interaction_layer,
@@ -670,29 +691,29 @@ pub const CharacterInstance = struct {
         instance.actor_layer = actor_layer;
     }
 
-    pub fn setWorldPosition(instance: *CharacterInstance, world_position: math.Vec2) !void {
+    pub fn setWorldPosition(instance: *CharacterState, world_position: math.Vec2) !void {
         if (!world_position.isFinite()) return error.InvalidNonFiniteTransform;
         try instance.restoreFootIkLocals();
         instance.world_position = world_position;
         try instance.evaluateWorldPose();
     }
 
-    pub fn applyAttachmentOverride(instance: *CharacterInstance, attachment_id: u16, request: LayerOverrideRequest) !OverrideHandle {
+    pub fn applyAttachmentOverride(instance: *CharacterState, attachment_id: u16, request: LayerOverrideRequest) !OverrideHandle {
         if (attachment_id >= instance.definition.attachments.len) return error.InvalidAttachmentTarget;
         const validated = try validateOverrideRequest(request);
         return instance.applyValidatedOverride(attachment_id, validated);
     }
 
-    pub fn applySemanticOverride(instance: *CharacterInstance, semantic: humanoid.AttachmentSemantic, request: LayerOverrideRequest) !OverrideHandle {
+    pub fn applySemanticOverride(instance: *CharacterState, semantic: humanoid.AttachmentSemantic, request: LayerOverrideRequest) !OverrideHandle {
         return instance.applyAttachmentOverride(@intFromEnum((try instance.definition.attachment(semantic)).id), request);
     }
 
-    pub fn setVisualVisible(instance: *CharacterInstance, visual_id: humanoid.VisualAttachmentId, visible: bool) !void {
+    pub fn setVisualVisible(instance: *CharacterState, visual_id: humanoid.VisualAttachmentId, visible: bool) !void {
         try instance.character.appearance_runtime.setVisible(instance.definition.visual_definition, visual_id, visible);
     }
 
     pub fn setVisualDeformation(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         visual_id: humanoid.VisualAttachmentId,
         deformation_transform: math.Transform2D,
     ) !void {
@@ -701,7 +722,7 @@ pub const CharacterInstance = struct {
     }
 
     pub fn setModuleJointLocal(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         module_id: humanoid.RigModuleId,
         joint_id: humanoid.ModuleJointId,
         local: math.Transform2D,
@@ -715,23 +736,24 @@ pub const CharacterInstance = struct {
         try instance.evaluateAppearance();
     }
 
-    pub fn clearOverride(instance: *CharacterInstance, handle: OverrideHandle) !void {
+    pub fn clearOverride(instance: *CharacterState, handle: OverrideHandle) !void {
         try instance.overrides.clear(handle);
     }
 
-    pub fn clearOverrides(instance: *CharacterInstance) void {
+    pub fn clearOverrides(instance: *CharacterState) void {
         instance.overrides.clearAll();
         instance.interaction_owner_id = 0;
+        instance.interaction_animator_checkpoint = null;
         instance.presentation.interaction_owner = 0;
         instance.passive_grounded = true;
     }
 
-    pub fn advanceVisualTick(instance: *CharacterInstance, tick_input: VisualTickInput) !void {
+    pub fn advanceVisualTick(instance: *CharacterState, tick_input: VisualTickInput) !void {
         try instance.advanceVisualTickInternal(null, tick_input);
     }
 
     pub fn advanceVisualTickWithFootPlanting(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         world: *const collision_world.CollisionWorld,
         tick_input: VisualTickInput,
     ) !void {
@@ -742,7 +764,7 @@ pub const CharacterInstance = struct {
     /// has sampled its shared pose and applied arm IK. This never acquires a new
     /// lock because no semantic contact event is supplied.
     pub fn maintainFootPlantingDuringInteraction(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         world: *const collision_world.CollisionWorld,
     ) !void {
         if (!instance.isInteractionLocked()) return error.CharacterNotInteracting;
@@ -774,7 +796,7 @@ pub const CharacterInstance = struct {
     }
 
     fn advanceVisualTickInternal(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         world: ?*const collision_world.CollisionWorld,
         tick_input: VisualTickInput,
     ) !void {
@@ -831,7 +853,7 @@ pub const CharacterInstance = struct {
     }
 
     fn advanceAttachmentSecondaryMotion(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         tick_input: VisualTickInput,
     ) !void {
         if (!std.math.isFinite(tick_input.horizontal_velocity) or
@@ -885,7 +907,7 @@ pub const CharacterInstance = struct {
         if (appearance_advanced) try instance.evaluateAppearance();
     }
 
-    fn clearAttachmentSecondaryMotion(instance: *CharacterInstance) !void {
+    fn clearAttachmentSecondaryMotion(instance: *CharacterState) !void {
         try instance.character.appearance_runtime.clearSecondaryMotion(
             instance.definition.visual_definition,
         );
@@ -896,7 +918,7 @@ pub const CharacterInstance = struct {
         }
     }
 
-    pub fn selectControllerAnimation(instance: *CharacterInstance, physics: character_controller.StepResult) !void {
+    pub fn selectControllerAnimation(instance: *CharacterState, physics: character_controller.StepResult) !void {
         const controller = if (instance.controller) |*value| value else return error.CharacterHasNoController;
         const machine = &instance.shared_animations.machine;
         if (physics.jump_accepted) {
@@ -929,7 +951,7 @@ pub const CharacterInstance = struct {
     }
 
     pub fn stepController(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         world: *const collision_world.CollisionWorld,
         intent: input.CharacterIntent,
     ) !character_controller.StepResult {
@@ -944,12 +966,12 @@ pub const CharacterInstance = struct {
         return result;
     }
 
-    pub fn reset(instance: *CharacterInstance) !void {
+    pub fn reset(instance: *CharacterState) !void {
         if (instance.controller != null) return error.ControlledCharacterResetRequiresWorld;
         try instance.resetVisualState();
     }
 
-    pub fn resetControlled(instance: *CharacterInstance, world: *const collision_world.CollisionWorld) !void {
+    pub fn resetControlled(instance: *CharacterState, world: *const collision_world.CollisionWorld) !void {
         const controller = if (instance.controller) |*value| value else return error.CharacterHasNoController;
         try controller.reset(world);
         try instance.resetVisualState();
@@ -958,7 +980,7 @@ pub const CharacterInstance = struct {
         try instance.evaluateWorldPose();
     }
 
-    fn resetVisualState(instance: *CharacterInstance) !void {
+    fn resetVisualState(instance: *CharacterState) !void {
         try instance.restoreRightHandIkLocals();
         try instance.restoreFootIkLocals();
         try instance.animator.enterState(&instance.shared_animations.machine, .idle);
@@ -996,12 +1018,12 @@ pub const CharacterInstance = struct {
         try instance.evaluateWorldPose();
     }
 
-    pub fn syncPresentationView(instance: *CharacterInstance) !void {
+    pub fn syncPresentationView(instance: *CharacterState) !void {
         const change = try instance.presentation.sync(instance.presentationAutomaticInput());
         if (change.changed()) try instance.clearAttachmentSecondaryMotion();
     }
 
-    fn presentationAutomaticInput(instance: CharacterInstance) presentation_view.AutomaticInput {
+    fn presentationAutomaticInput(instance: CharacterState) presentation_view.AutomaticInput {
         const state = instance.animationState();
         if (instance.controller) |controller| {
             if (controller.state.dash_ticks_remaining > 0) {
@@ -1047,7 +1069,7 @@ pub const CharacterInstance = struct {
         };
     }
 
-    pub fn selectBodyPreset(instance: *CharacterInstance, preset_id: anatomy.BodyPresetId) !void {
+    pub fn selectBodyPreset(instance: *CharacterState, preset_id: anatomy.BodyPresetId) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try runtime.selectBodyPreset(definition, preset_id);
@@ -1055,14 +1077,14 @@ pub const CharacterInstance = struct {
         if (instance.equipment_loadout) |*loadout| try loadout.rebind(try instance.equipmentContext());
     }
 
-    pub fn selectMorphologyPreset(instance: *CharacterInstance, preset_id: anatomy.MorphologyPresetId) !void {
+    pub fn selectMorphologyPreset(instance: *CharacterState, preset_id: anatomy.MorphologyPresetId) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try runtime.selectMorphologyPreset(definition, preset_id);
         try instance.evaluateAppearance();
     }
 
-    pub fn setGlobalBuild(instance: *CharacterInstance, user_value: f32) !void {
+    pub fn setGlobalBuild(instance: *CharacterState, user_value: f32) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try runtime.setGlobalBuild(definition, user_value);
@@ -1070,7 +1092,7 @@ pub const CharacterInstance = struct {
     }
 
     pub fn setMorphologyChannelOverride(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         channel_id: anatomy.MorphologyChannelId,
         user_value: ?f32,
     ) !void {
@@ -1081,7 +1103,7 @@ pub const CharacterInstance = struct {
     }
 
     pub fn setPartMorphologyOverride(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         part_id: anatomy.BodyPartInstanceId,
         channel_id: anatomy.MorphologyChannelId,
         user_value: ?f32,
@@ -1093,7 +1115,7 @@ pub const CharacterInstance = struct {
     }
 
     pub fn configureBreathing(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         configuration: deformation.BreathingConfiguration,
     ) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
@@ -1102,34 +1124,34 @@ pub const CharacterInstance = struct {
         try instance.evaluateAppearance();
     }
 
-    pub fn setBreathingPhaseTick(instance: *CharacterInstance, phase_tick: u32) !void {
+    pub fn setBreathingPhaseTick(instance: *CharacterState, phase_tick: u32) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try runtime.setBreathingPhaseTick(definition, phase_tick);
         try instance.evaluateAppearance();
     }
 
-    pub fn breathingSample(instance: *const CharacterInstance) !f32 {
+    pub fn breathingSample(instance: *const CharacterState) !f32 {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = instance.character.anatomy_runtime orelse return error.CharacterHasNoAnatomy;
         return runtime.breathingSample(definition);
     }
 
-    pub fn selectPresentationProfile(instance: *CharacterInstance, profile_id: anatomy.PresentationProfileId) !void {
+    pub fn selectPresentationProfile(instance: *CharacterState, profile_id: anatomy.PresentationProfileId) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try runtime.selectPresentationProfile(definition, profile_id);
         try instance.evaluateAppearance();
     }
 
-    pub fn selectHair(instance: *CharacterInstance, hair_id: ?anatomy.HairDefinitionId) !void {
+    pub fn selectHair(instance: *CharacterState, hair_id: ?anatomy.HairDefinitionId) !void {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try runtime.selectHair(definition, hair_id);
         try instance.evaluateAppearance();
     }
 
-    pub fn applyRightHandIk(instance: *CharacterInstance, target_world: math.Vec2, weight: f32) !arm_ik.Metrics {
+    pub fn applyRightHandIk(instance: *CharacterState, target_world: math.Vec2, weight: f32) !arm_ik.Metrics {
         if (instance.right_arm_ik.applied) return error.ArmIkAlreadyAppliedThisTick;
         const world_bend = if (instance.facing == .right)
             instance.right_arm_binding.character_local_bend
@@ -1154,7 +1176,7 @@ pub const CharacterInstance = struct {
         return application.metrics;
     }
 
-    pub fn clearRightHandIk(instance: *CharacterInstance) !void {
+    pub fn clearRightHandIk(instance: *CharacterState) !void {
         if (!instance.right_arm_ik.applied) {
             instance.right_arm_ik = .{};
             return;
@@ -1172,20 +1194,20 @@ pub const CharacterInstance = struct {
         try instance.evaluateAppearance();
     }
 
-    pub fn rightHandIkMetrics(instance: CharacterInstance) ?arm_ik.Metrics {
+    pub fn rightHandIkMetrics(instance: CharacterState) ?arm_ik.Metrics {
         return instance.right_arm_ik.metrics;
     }
 
-    pub fn socketPosition(instance: CharacterInstance, semantic: skeleton.SocketSemantic) !math.Vec2 {
+    pub fn socketPosition(instance: CharacterState, semantic: skeleton.SocketSemantic) !math.Vec2 {
         return instance.character.local_and_world_pose.socketPosition(&instance.definition.skeleton_definition, semantic);
     }
 
-    pub fn resolvedOrder(instance: CharacterInstance, semantic: humanoid.AttachmentSemantic) !sprite.OrderInput {
+    pub fn resolvedOrder(instance: CharacterState, semantic: humanoid.AttachmentSemantic) !sprite.OrderInput {
         const attachment = try instance.definition.attachment(semantic);
         return instance.resolvedOrderForAttachment(attachment);
     }
 
-    pub fn resolvedOrderForAttachment(instance: CharacterInstance, attachment: *const humanoid.RenderAttachment) sprite.OrderInput {
+    pub fn resolvedOrderForAttachment(instance: CharacterState, attachment: *const humanoid.RenderAttachment) sprite.OrderInput {
         const default_body_layer = if (attachment.canonical_semantic) |raw_semantic|
             humanoid.defaultBodyPartLayer(@enumFromInt(raw_semantic), instance.facing)
         else
@@ -1199,11 +1221,11 @@ pub const CharacterInstance = struct {
         };
     }
 
-    pub fn submittedKey(instance: CharacterInstance, semantic: humanoid.AttachmentSemantic) !sprite.DrawOrderKey {
+    pub fn submittedKey(instance: CharacterState, semantic: humanoid.AttachmentSemantic) !sprite.DrawOrderKey {
         return instance.last_submitted_keys[@intFromEnum(semantic)] orelse error.AttachmentNotSubmitted;
     }
 
-    pub fn submitAttachments(instance: *CharacterInstance, batch: *sprite.SpriteBatch) !u32 {
+    pub fn submitAttachments(instance: *CharacterState, batch: *sprite.SpriteBatch) !u32 {
         instance.last_submitted_keys = [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
         var submitted: u32 = 0;
         for (instance.definition.attachments) |attachment| {
@@ -1231,7 +1253,7 @@ pub const CharacterInstance = struct {
         return submitted;
     }
 
-    pub fn initializeEquipment(instance: *CharacterInstance, definition: equipment.DefinitionView) !void {
+    pub fn initializeEquipment(instance: *CharacterState, definition: equipment.DefinitionView) !void {
         if (instance.equipment_loadout != null) return error.CharacterEquipmentAlreadyInitialized;
         const loadout = try equipment.Loadout.init(definition, try instance.equipmentContext());
         const resolved = try resolveLoadoutProperties(&loadout);
@@ -1240,7 +1262,7 @@ pub const CharacterInstance = struct {
         instance.resolved_properties = resolved;
     }
 
-    pub fn equipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+    pub fn equipItem(instance: *CharacterState, item_id: equipment.EquipmentItemId) !void {
         const context = try instance.equipmentContext();
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
         var candidate = loadout.*;
@@ -1250,7 +1272,7 @@ pub const CharacterInstance = struct {
         instance.resolved_properties = resolved;
     }
 
-    pub fn replaceItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+    pub fn replaceItem(instance: *CharacterState, item_id: equipment.EquipmentItemId) !void {
         const context = try instance.equipmentContext();
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
         var candidate = loadout.*;
@@ -1260,7 +1282,7 @@ pub const CharacterInstance = struct {
         instance.resolved_properties = resolved;
     }
 
-    pub fn unequipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+    pub fn unequipItem(instance: *CharacterState, item_id: equipment.EquipmentItemId) !void {
         const context = try instance.equipmentContext();
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
         var candidate = loadout.*;
@@ -1271,7 +1293,7 @@ pub const CharacterInstance = struct {
     }
 
     pub fn selectEquipmentItems(
-        instance: *CharacterInstance,
+        instance: *CharacterState,
         item_ids: []const equipment.EquipmentItemId,
     ) !void {
         const context = try instance.equipmentContext();
@@ -1283,27 +1305,27 @@ pub const CharacterInstance = struct {
         instance.resolved_properties = resolved;
     }
 
-    pub fn attributeValue(instance: CharacterInstance, attribute_id: properties.AttributeId) !f32 {
+    pub fn attributeValue(instance: CharacterState, attribute_id: properties.AttributeId) !f32 {
         const resolved = instance.resolved_properties orelse return error.CharacterPropertiesNotInitialized;
         return resolved.value(attribute_id);
     }
 
-    pub fn hasCapability(instance: CharacterInstance, capability_id: properties.CapabilityId) !bool {
+    pub fn hasCapability(instance: CharacterState, capability_id: properties.CapabilityId) !bool {
         const resolved = instance.resolved_properties orelse return error.CharacterPropertiesNotInitialized;
         _ = try resolved.grantCount(capability_id);
         return resolved.hasCapability(capability_id);
     }
 
-    pub fn capabilityGrantCount(instance: CharacterInstance, capability_id: properties.CapabilityId) !u16 {
+    pub fn capabilityGrantCount(instance: CharacterState, capability_id: properties.CapabilityId) !u16 {
         const resolved = instance.resolved_properties orelse return error.CharacterPropertiesNotInitialized;
         return resolved.grantCount(capability_id);
     }
 
-    pub fn equipmentVisualWorld(instance: *CharacterInstance, visual_index: usize) !math.Mat3 {
+    pub fn equipmentVisualWorld(instance: *CharacterState, visual_index: usize) !math.Mat3 {
         return (try instance.equipmentVisualTransform(visual_index)).world();
     }
 
-    pub fn equipmentVisualTransform(instance: *CharacterInstance, visual_index: usize) !ResolvedEquipmentTransform {
+    pub fn equipmentVisualTransform(instance: *CharacterState, visual_index: usize) !ResolvedEquipmentTransform {
         const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
         const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
@@ -1350,7 +1372,7 @@ pub const CharacterInstance = struct {
         };
     }
 
-    fn submitEquipmentVisuals(instance: *CharacterInstance, batch: *sprite.SpriteBatch) !u32 {
+    fn submitEquipmentVisuals(instance: *CharacterState, batch: *sprite.SpriteBatch) !u32 {
         const loadout = if (instance.equipment_loadout) |*value| value else return 0;
         const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
@@ -1397,7 +1419,7 @@ pub const CharacterInstance = struct {
         return submitted;
     }
 
-    pub fn submitUnified(instance: *CharacterInstance, queue: *render_queue.UnifiedRenderQueue) !u32 {
+    pub fn submitUnified(instance: *CharacterState, queue: *render_queue.UnifiedRenderQueue) !u32 {
         instance.last_submitted_keys = [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
         var submitted: u32 = 0;
         for (instance.definition.attachments) |attachment| {
@@ -1422,7 +1444,7 @@ pub const CharacterInstance = struct {
         return submitted;
     }
 
-    fn submitUnifiedEquipment(instance: *CharacterInstance, queue: *render_queue.UnifiedRenderQueue) !u32 {
+    fn submitUnifiedEquipment(instance: *CharacterState, queue: *render_queue.UnifiedRenderQueue) !u32 {
         const loadout = if (instance.equipment_loadout) |*value| value else return 0;
         const anatomy_definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
@@ -1492,13 +1514,13 @@ pub const CharacterInstance = struct {
         return submitted;
     }
 
-    fn equipmentContext(instance: *CharacterInstance) !equipment.AnatomyContext {
+    fn equipmentContext(instance: *CharacterState) !equipment.AnatomyContext {
         const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
         const runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         return .{ .definition = definition, .runtime = runtime, .owning_character = instance.id.raw() };
     }
 
-    fn controllerGameplayProperties(instance: CharacterInstance) !character_controller.GameplayProperties {
+    fn controllerGameplayProperties(instance: CharacterState) !character_controller.GameplayProperties {
         const controller = instance.controller orelse return error.CharacterHasNoController;
         var movement = character_controller.GameplayProperties.fromConfiguration(controller.configuration);
         if (instance.resolved_properties) |resolved| {
@@ -1513,11 +1535,11 @@ pub const CharacterInstance = struct {
         return movement;
     }
 
-    fn applyValidatedOverride(instance: *CharacterInstance, attachment_id: u16, validated: ValidatedOverrideRequest) !OverrideHandle {
+    fn applyValidatedOverride(instance: *CharacterState, attachment_id: u16, validated: ValidatedOverrideRequest) !OverrideHandle {
         return instance.overrides.applyValidated(attachment_id, validated);
     }
 
-    fn evaluateWorldPose(instance: *CharacterInstance) !void {
+    fn evaluateWorldPose(instance: *CharacterState) !void {
         const visual_scale = math.Vec2{ .x = if (instance.facing == .left) -1 else 1, .y = 1 };
         instance.character.character_to_world = math.Transform2D.init(instance.world_position, 0, visual_scale);
         try instance.character.local_and_world_pose.evaluateWorld(
@@ -1527,7 +1549,7 @@ pub const CharacterInstance = struct {
         try instance.evaluateAppearance();
     }
 
-    fn evaluateAppearance(instance: *CharacterInstance) !void {
+    fn evaluateAppearance(instance: *CharacterState) !void {
         if (instance.character.anatomy_runtime) |*runtime| {
             const anatomy_definition = instance.definition.anatomy_definition orelse return error.AnatomyDefinitionMismatch;
             try runtime.applyAppearanceState(
@@ -1551,7 +1573,7 @@ pub const CharacterInstance = struct {
         }
     }
 
-    fn restoreRightHandIkLocals(instance: *CharacterInstance) !void {
+    fn restoreRightHandIkLocals(instance: *CharacterState) !void {
         if (!instance.right_arm_ik.applied) {
             instance.right_arm_ik = .{};
             return;
@@ -1562,7 +1584,7 @@ pub const CharacterInstance = struct {
         try instance.character.local_and_world_pose.setLocal(instance.right_arm_binding.middle_bone, saved.pre_middle_local);
     }
 
-    fn restoreFootIkLocals(instance: *CharacterInstance) !void {
+    fn restoreFootIkLocals(instance: *CharacterState) !void {
         try foot_planting.restoreApplied(
             &instance.foot_plants,
             &instance.character.local_and_world_pose,
@@ -1573,6 +1595,509 @@ pub const CharacterInstance = struct {
         );
     }
 };
+
+pub const CharacterReadView = struct {
+    id: EntityId,
+    world_position: math.Vec2,
+    facing: humanoid.Facing,
+    actor_layer: u16,
+    simulation_tick: u64,
+    grounded: bool,
+    presentation: presentation_view.View,
+    interaction_owner_id: u32,
+};
+
+/// Supported character authority façade. The opaque inline storage prevents
+/// consumers from naming mutable animator, controller, IK, equipment,
+/// presentation, pose, and render-bookkeeping implementation state while
+/// preserving the pre-F4C3 allocation behavior.
+pub const CharacterInstance = struct {
+    opaque_storage: [@sizeOf(CharacterState)]u8 align(@alignOf(CharacterState)),
+
+    pub fn init(
+        allocator: std.mem.Allocator,
+        entity_id: EntityId,
+        definition: *const humanoid.HumanoidDefinition,
+        shared_animations: *const authored.Definitions,
+        world_position: math.Vec2,
+        facing: humanoid.Facing,
+        actor_layer: u16,
+        injector: ?fault_injection.Injector,
+    ) !CharacterInstance {
+        var instance: CharacterInstance = undefined;
+        instance.stateMut().* = try CharacterState.init(
+            allocator,
+            entity_id,
+            definition,
+            shared_animations,
+            world_position,
+            facing,
+            actor_layer,
+            injector,
+        );
+        return instance;
+    }
+
+    pub fn initControlled(
+        allocator: std.mem.Allocator,
+        entity_id: EntityId,
+        definition: *const humanoid.HumanoidDefinition,
+        shared_animations: *const authored.Definitions,
+        world: *const collision_world.CollisionWorld,
+        configuration: character_controller.Configuration,
+        spawn_position: math.Vec2,
+        facing: humanoid.Facing,
+        actor_layer: u16,
+        injector: ?fault_injection.Injector,
+    ) !CharacterInstance {
+        var instance: CharacterInstance = undefined;
+        instance.stateMut().* = try CharacterState.initControlled(
+            allocator,
+            entity_id,
+            definition,
+            shared_animations,
+            world,
+            configuration,
+            spawn_position,
+            facing,
+            actor_layer,
+            injector,
+        );
+        return instance;
+    }
+
+    pub fn deinit(instance: *CharacterInstance) void {
+        instance.stateMut().deinit();
+        instance.* = undefined;
+    }
+
+    pub fn read(instance: CharacterInstance) CharacterReadView {
+        const state = instance.stateConst();
+        return .{
+            .id = state.id,
+            .world_position = state.world_position,
+            .facing = state.facing,
+            .actor_layer = state.actor_layer,
+            .simulation_tick = state.simulation_tick,
+            .grounded = state.interactionGrounded(),
+            .presentation = state.presentation.current,
+            .interaction_owner_id = state.interaction_owner_id,
+        };
+    }
+
+    pub fn id(instance: CharacterInstance) EntityId {
+        return instance.stateConst().id;
+    }
+
+    pub fn worldPosition(instance: CharacterInstance) math.Vec2 {
+        return instance.stateConst().world_position;
+    }
+
+    pub fn facingDirection(instance: CharacterInstance) humanoid.Facing {
+        return instance.stateConst().facing;
+    }
+
+    pub fn actorLayer(instance: CharacterInstance) u16 {
+        return instance.stateConst().actor_layer;
+    }
+
+    pub fn simulationTick(instance: CharacterInstance) u64 {
+        return instance.stateConst().simulation_tick;
+    }
+
+    pub fn hasEquipment(instance: CharacterInstance) bool {
+        return instance.stateConst().equipment_loadout != null;
+    }
+
+    pub fn definitionView(instance: CharacterInstance) HumanoidDefinitionView {
+        return instance.stateConst().definition;
+    }
+
+    pub fn animationDefinitionsView(instance: CharacterInstance) AnimationDefinitionsView {
+        return instance.stateConst().shared_animations;
+    }
+
+    pub fn rightArmBinding(instance: CharacterInstance) arm_ik.Binding {
+        return instance.stateConst().right_arm_binding;
+    }
+
+    pub fn humanoidView(instance: *const CharacterInstance) *const humanoid.HumanoidCharacter {
+        return &instance.stateConst().character;
+    }
+
+    pub fn equipmentView(instance: *const CharacterInstance) ?*const equipment.Loadout {
+        const state = instance.stateConst();
+        return if (state.equipment_loadout) |*loadout| loadout else null;
+    }
+
+    pub fn controllerSnapshot(instance: CharacterInstance) ?character_controller.CharacterController {
+        return instance.stateConst().controller;
+    }
+
+    pub fn proceduralSnapshot(instance: CharacterInstance) procedural_motion.State {
+        return instance.stateConst().procedural;
+    }
+
+    pub fn footPlantingSnapshot(instance: CharacterInstance) foot_planting.State {
+        return instance.stateConst().foot_plants;
+    }
+
+    pub fn hotPathMetrics(instance: CharacterInstance) HotPathMetrics {
+        return instance.stateConst().metrics;
+    }
+
+    pub fn activeOverrideCount(instance: CharacterInstance) usize {
+        return instance.stateConst().overrides.activeCount();
+    }
+
+    pub fn resolveAttachmentLayer(instance: CharacterInstance, attachment_id: u16, default_layer: u16) ResolvedLayers {
+        return instance.stateConst().overrides.resolve(attachment_id, default_layer);
+    }
+
+    pub fn updateEquipmentMeshState(
+        instance: *CharacterInstance,
+        visual_index: usize,
+        bound_identity: mesh.BoundIdentity,
+        binding_world: math.Mat3,
+        resolved_deformation: math.Transform2D,
+    ) !void {
+        const state = instance.stateMut();
+        const loadout = if (state.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+        if (visual_index >= loadout.resolved_visuals.len) return error.InvalidResolvedEquipmentVisualIndex;
+        try loadout.resolved_visuals[visual_index].mesh_state.update(
+            state.id.raw(),
+            bound_identity,
+            binding_world,
+            resolved_deformation,
+        );
+    }
+
+    pub fn animatorMetrics(instance: CharacterInstance) animator_module.HotPathMetrics {
+        return instance.stateConst().animator.metrics;
+    }
+
+    pub fn emittedAnimationEventCount(instance: CharacterInstance) usize {
+        return instance.stateConst().animator.emittedEvents().len;
+    }
+
+    pub fn emittedAnimationEvents(instance: *const CharacterInstance) []const animation_events.EmittedEvent {
+        return instance.stateConst().animator.emittedEvents();
+    }
+
+    pub fn submittedKeyOptional(instance: CharacterInstance, semantic: humanoid.AttachmentSemantic) ?sprite.DrawOrderKey {
+        return instance.stateConst().last_submitted_keys[@intFromEnum(semantic)];
+    }
+
+    pub fn beginSubmissionBookkeeping(instance: *CharacterInstance) void {
+        instance.stateMut().last_submitted_keys =
+            [_]?sprite.DrawOrderKey{null} ** humanoid.canonical_attachment_semantic_count;
+    }
+
+    pub fn recordSubmittedKey(instance: *CharacterInstance, raw_semantic: usize, key: sprite.DrawOrderKey) !void {
+        if (raw_semantic >= humanoid.canonical_attachment_semantic_count) {
+            return error.InvalidAttachmentSemantic;
+        }
+        instance.stateMut().last_submitted_keys[raw_semantic] = key;
+    }
+
+    pub fn presentationRuntimeSnapshot(instance: CharacterInstance) presentation_view.Runtime {
+        return instance.stateConst().presentation;
+    }
+
+    pub fn resolvedPropertiesSnapshot(instance: CharacterInstance) ?properties.ResolvedSet {
+        return instance.stateConst().resolved_properties;
+    }
+
+    pub fn anatomyRuntimeSnapshot(instance: CharacterInstance) ?anatomy.Runtime {
+        return instance.stateConst().character.anatomy_runtime;
+    }
+
+    pub fn enableController(
+        instance: *CharacterInstance,
+        world: *const collision_world.CollisionWorld,
+        configuration: character_controller.Configuration,
+    ) !void {
+        const state = instance.stateMut();
+        if (state.controller != null) return error.CharacterAlreadyHasController;
+        state.controller = try character_controller.CharacterController.init(
+            configuration,
+            world,
+            state.world_position,
+            if (state.facing == .left) .left else .right,
+        );
+        try state.syncPresentationView();
+    }
+
+    pub fn stageControlledTransform(
+        instance: *CharacterInstance,
+        world_position: math.Vec2,
+        facing: humanoid.Facing,
+    ) !void {
+        if (!world_position.isFinite()) return error.InvalidNonFiniteTransform;
+        const state = instance.stateMut();
+        const controller = if (state.controller) |*value| value else return error.CharacterHasNoController;
+        controller.state.position = world_position;
+        controller.state.previous_position = world_position;
+        controller.state.facing = if (facing == .left) .left else .right;
+        state.world_position = world_position;
+        if (state.facing != facing) try state.clearAttachmentSecondaryMotion();
+        state.facing = facing;
+        try state.evaluateWorldPose();
+        try state.syncPresentationView();
+    }
+
+    pub fn setLocalPoseSemantic(
+        instance: *CharacterInstance,
+        semantic: skeleton.BoneSemantic,
+        local: math.Transform2D,
+    ) !void {
+        const state = instance.stateMut();
+        try state.character.local_and_world_pose.setLocalSemantic(&state.definition.skeleton_definition, semantic, local);
+        try state.evaluateWorldPose();
+    }
+
+    pub fn rebindEquipment(instance: *CharacterInstance) !void {
+        const state = instance.stateMut();
+        const loadout = if (state.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
+        var candidate = loadout.*;
+        try candidate.rebind(try state.equipmentContext());
+        const resolved = try resolveLoadoutProperties(&candidate);
+        loadout.* = candidate;
+        state.resolved_properties = resolved;
+    }
+
+    pub fn beginInteractionTransaction(instance: *CharacterInstance) !void {
+        try instance.stateMut().beginInteractionTransaction();
+    }
+
+    pub fn commitInteractionTransaction(instance: *CharacterInstance) void {
+        instance.stateMut().commitInteractionTransaction();
+    }
+
+    pub fn rollbackInteractionTransaction(instance: *CharacterInstance, owner_id: u32) !void {
+        try instance.stateMut().rollbackInteractionTransaction(owner_id);
+    }
+
+    pub fn enterAnimationState(instance: *CharacterInstance, state: state_machine.StateId) !void {
+        try instance.stateMut().enterAnimationState(state);
+    }
+    pub fn canEnterAnimationState(instance: CharacterInstance, state: state_machine.StateId) bool {
+        return instance.stateConst().canEnterAnimationState(state);
+    }
+    pub fn sampleInteractionAnimation(instance: *CharacterInstance, state: state_machine.StateId, shared_time_seconds: f32) !void {
+        try instance.stateMut().sampleInteractionAnimation(state, shared_time_seconds);
+    }
+    pub fn reserveInteraction(instance: *CharacterInstance, owner_id: u32) !void {
+        try instance.stateMut().reserveInteraction(owner_id);
+    }
+    pub fn claimInteractionPresentation(instance: *CharacterInstance, owner_id: u32, view: presentation_view.View) !void {
+        try instance.stateMut().claimInteractionPresentation(owner_id, view);
+    }
+    pub fn releaseInteraction(instance: *CharacterInstance, owner_id: u32) !void {
+        try instance.stateMut().releaseInteraction(owner_id);
+    }
+    pub fn isInteractionLocked(instance: CharacterInstance) bool {
+        return instance.stateConst().isInteractionLocked();
+    }
+    pub fn interactionOwnerId(instance: CharacterInstance) u32 {
+        return instance.stateConst().interactionOwnerId();
+    }
+    pub fn presentationView(instance: CharacterInstance) presentation_view.View {
+        return instance.stateConst().presentationView();
+    }
+    pub fn presentationOverride(instance: CharacterInstance) presentation_view.DebugOverride {
+        return instance.stateConst().presentationOverride();
+    }
+    pub fn setPresentationOverride(instance: *CharacterInstance, value: presentation_view.DebugOverride) !void {
+        try instance.stateMut().setPresentationOverride(value);
+    }
+    pub fn cyclePresentationOverride(instance: *CharacterInstance) !void {
+        try instance.stateMut().cyclePresentationOverride();
+    }
+    pub fn applyPresentationInput(instance: *CharacterInstance, snapshot: input.FrameInputSnapshot) !void {
+        try instance.stateMut().applyPresentationInput(snapshot);
+    }
+    pub fn interactionGrounded(instance: CharacterInstance) bool {
+        return instance.stateConst().interactionGrounded();
+    }
+    pub fn setPassiveGrounded(instance: *CharacterInstance, grounded: bool) !void {
+        try instance.stateMut().setPassiveGrounded(grounded);
+    }
+    pub fn fallbackAnimationState(instance: CharacterInstance) state_machine.StateId {
+        return instance.stateConst().fallbackAnimationState();
+    }
+    pub fn animationTime(instance: CharacterInstance) f32 {
+        return instance.stateConst().animationTime();
+    }
+    pub fn animationNormalizedTime(instance: CharacterInstance) f32 {
+        return instance.stateConst().animationNormalizedTime();
+    }
+    pub fn animationState(instance: CharacterInstance) state_machine.StateId {
+        return instance.stateConst().animationState();
+    }
+    pub fn setFacing(instance: *CharacterInstance, facing: humanoid.Facing) !void {
+        try instance.stateMut().setFacing(facing);
+    }
+    pub fn setActorLayer(instance: *CharacterInstance, actor_layer: u16) !void {
+        try instance.stateMut().setActorLayer(actor_layer);
+    }
+    pub fn setWorldPosition(instance: *CharacterInstance, world_position: math.Vec2) !void {
+        try instance.stateMut().setWorldPosition(world_position);
+    }
+    pub fn applyAttachmentOverride(instance: *CharacterInstance, attachment_id: u16, request: LayerOverrideRequest) !OverrideHandle {
+        return instance.stateMut().applyAttachmentOverride(attachment_id, request);
+    }
+    pub fn applySemanticOverride(instance: *CharacterInstance, semantic: humanoid.AttachmentSemantic, request: LayerOverrideRequest) !OverrideHandle {
+        return instance.stateMut().applySemanticOverride(semantic, request);
+    }
+    pub fn setVisualVisible(instance: *CharacterInstance, visual_id: humanoid.VisualAttachmentId, visible: bool) !void {
+        try instance.stateMut().setVisualVisible(visual_id, visible);
+    }
+    pub fn setVisualDeformation(instance: *CharacterInstance, visual_id: humanoid.VisualAttachmentId, deformation_transform: math.Transform2D) !void {
+        try instance.stateMut().setVisualDeformation(visual_id, deformation_transform);
+    }
+    pub fn setModuleJointLocal(instance: *CharacterInstance, module_id: humanoid.RigModuleId, joint_id: humanoid.ModuleJointId, local: math.Transform2D) !void {
+        try instance.stateMut().setModuleJointLocal(module_id, joint_id, local);
+    }
+    pub fn clearOverride(instance: *CharacterInstance, handle: OverrideHandle) !void {
+        try instance.stateMut().clearOverride(handle);
+    }
+    pub fn clearOverrides(instance: *CharacterInstance) void {
+        instance.stateMut().clearOverrides();
+    }
+    pub fn advanceVisualTick(instance: *CharacterInstance, tick_input: VisualTickInput) !void {
+        try instance.stateMut().advanceVisualTick(tick_input);
+    }
+    pub fn advanceVisualTickWithFootPlanting(instance: *CharacterInstance, world: *const collision_world.CollisionWorld, tick_input: VisualTickInput) !void {
+        try instance.stateMut().advanceVisualTickWithFootPlanting(world, tick_input);
+    }
+    pub fn maintainFootPlantingDuringInteraction(instance: *CharacterInstance, world: *const collision_world.CollisionWorld) !void {
+        try instance.stateMut().maintainFootPlantingDuringInteraction(world);
+    }
+    pub fn selectControllerAnimation(instance: *CharacterInstance, physics: character_controller.StepResult) !void {
+        try instance.stateMut().selectControllerAnimation(physics);
+    }
+    pub fn stepController(instance: *CharacterInstance, world: *const collision_world.CollisionWorld, intent: input.CharacterIntent) !character_controller.StepResult {
+        return instance.stateMut().stepController(world, intent);
+    }
+    pub fn reset(instance: *CharacterInstance) !void {
+        try instance.stateMut().reset();
+    }
+    pub fn resetControlled(instance: *CharacterInstance, world: *const collision_world.CollisionWorld) !void {
+        try instance.stateMut().resetControlled(world);
+    }
+    pub fn syncPresentationView(instance: *CharacterInstance) !void {
+        try instance.stateMut().syncPresentationView();
+    }
+    pub fn selectBodyPreset(instance: *CharacterInstance, preset_id: anatomy.BodyPresetId) !void {
+        try instance.stateMut().selectBodyPreset(preset_id);
+    }
+    pub fn selectMorphologyPreset(instance: *CharacterInstance, preset_id: anatomy.MorphologyPresetId) !void {
+        try instance.stateMut().selectMorphologyPreset(preset_id);
+    }
+    pub fn setGlobalBuild(instance: *CharacterInstance, user_value: f32) !void {
+        try instance.stateMut().setGlobalBuild(user_value);
+    }
+    pub fn setMorphologyChannelOverride(instance: *CharacterInstance, channel_id: anatomy.MorphologyChannelId, user_value: ?f32) !void {
+        try instance.stateMut().setMorphologyChannelOverride(channel_id, user_value);
+    }
+    pub fn setPartMorphologyOverride(instance: *CharacterInstance, part_id: anatomy.BodyPartInstanceId, channel_id: anatomy.MorphologyChannelId, user_value: ?f32) !void {
+        try instance.stateMut().setPartMorphologyOverride(part_id, channel_id, user_value);
+    }
+    pub fn configureBreathing(instance: *CharacterInstance, configuration: deformation.BreathingConfiguration) !void {
+        try instance.stateMut().configureBreathing(configuration);
+    }
+    pub fn setBreathingPhaseTick(instance: *CharacterInstance, phase_tick: u32) !void {
+        try instance.stateMut().setBreathingPhaseTick(phase_tick);
+    }
+    pub fn breathingSample(instance: *const CharacterInstance) !f32 {
+        return instance.stateConst().breathingSample();
+    }
+    pub fn selectPresentationProfile(instance: *CharacterInstance, profile_id: anatomy.PresentationProfileId) !void {
+        try instance.stateMut().selectPresentationProfile(profile_id);
+    }
+    pub fn selectHair(instance: *CharacterInstance, hair_id: ?anatomy.HairDefinitionId) !void {
+        try instance.stateMut().selectHair(hair_id);
+    }
+    pub fn applyRightHandIk(instance: *CharacterInstance, target_world: math.Vec2, weight: f32) !arm_ik.Metrics {
+        return instance.stateMut().applyRightHandIk(target_world, weight);
+    }
+    pub fn clearRightHandIk(instance: *CharacterInstance) !void {
+        try instance.stateMut().clearRightHandIk();
+    }
+    pub fn rightHandIkMetrics(instance: CharacterInstance) ?arm_ik.Metrics {
+        return instance.stateConst().rightHandIkMetrics();
+    }
+    pub fn socketPosition(instance: CharacterInstance, semantic: skeleton.SocketSemantic) !math.Vec2 {
+        return instance.stateConst().socketPosition(semantic);
+    }
+    pub fn resolvedOrder(instance: CharacterInstance, semantic: humanoid.AttachmentSemantic) !sprite.OrderInput {
+        return instance.stateConst().resolvedOrder(semantic);
+    }
+    pub fn resolvedOrderForAttachment(instance: CharacterInstance, attachment: *const humanoid.RenderAttachment) sprite.OrderInput {
+        return instance.stateConst().resolvedOrderForAttachment(attachment);
+    }
+    pub fn submittedKey(instance: CharacterInstance, semantic: humanoid.AttachmentSemantic) !sprite.DrawOrderKey {
+        return instance.stateConst().submittedKey(semantic);
+    }
+    pub fn submitAttachments(instance: *CharacterInstance, batch: *sprite.SpriteBatch) !u32 {
+        return instance.stateMut().submitAttachments(batch);
+    }
+    pub fn initializeEquipment(instance: *CharacterInstance, definition: equipment.DefinitionView) !void {
+        try instance.stateMut().initializeEquipment(definition);
+    }
+    pub fn equipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+        try instance.stateMut().equipItem(item_id);
+    }
+    pub fn replaceItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+        try instance.stateMut().replaceItem(item_id);
+    }
+    pub fn unequipItem(instance: *CharacterInstance, item_id: equipment.EquipmentItemId) !void {
+        try instance.stateMut().unequipItem(item_id);
+    }
+    pub fn selectEquipmentItems(instance: *CharacterInstance, item_ids: []const equipment.EquipmentItemId) !void {
+        try instance.stateMut().selectEquipmentItems(item_ids);
+    }
+    pub fn attributeValue(instance: CharacterInstance, attribute_id: properties.AttributeId) !f32 {
+        return instance.stateConst().attributeValue(attribute_id);
+    }
+    pub fn hasCapability(instance: CharacterInstance, capability_id: properties.CapabilityId) !bool {
+        return instance.stateConst().hasCapability(capability_id);
+    }
+    pub fn capabilityGrantCount(instance: CharacterInstance, capability_id: properties.CapabilityId) !u16 {
+        return instance.stateConst().capabilityGrantCount(capability_id);
+    }
+    pub fn equipmentVisualWorld(instance: *CharacterInstance, visual_index: usize) !math.Mat3 {
+        return instance.stateMut().equipmentVisualWorld(visual_index);
+    }
+    pub fn equipmentVisualTransform(instance: *CharacterInstance, visual_index: usize) !ResolvedEquipmentTransform {
+        return instance.stateMut().equipmentVisualTransform(visual_index);
+    }
+    pub fn submitUnified(instance: *CharacterInstance, queue: *render_queue.UnifiedRenderQueue) !u32 {
+        return instance.stateMut().submitUnified(queue);
+    }
+
+    fn stateMut(instance: *CharacterInstance) *CharacterState {
+        return @ptrCast(@alignCast(&instance.opaque_storage));
+    }
+
+    fn stateConst(instance: *const CharacterInstance) *const CharacterState {
+        return @ptrCast(@alignCast(&instance.opaque_storage));
+    }
+};
+
+/// Explicit white-box route available only in test builds. Production callers
+/// must use `CharacterInstance` commands and snapshots; repository policy
+/// rejects production references to this test-only declaration.
+pub const testing = if (@import("builtin").is_test) struct {
+    pub fn state(instance: *CharacterInstance) *CharacterState {
+        return instance.stateMut();
+    }
+
+    pub fn stateConst(instance: *const CharacterInstance) *const CharacterState {
+        return instance.stateConst();
+    }
+} else struct {};
 
 const equipment_property_source_kind: u16 = 1;
 
@@ -1604,20 +2129,20 @@ pub fn submitGlobally(instances: []const *CharacterInstance, batch: *sprite.Spri
     if (instances.len > maximum_characters) return error.CharacterCapacityExceeded;
     var ordered: [maximum_characters]*CharacterInstance = undefined;
     for (instances, 0..) |instance, index| {
-        if (!instance.id.isValid()) return error.InvalidEntityId;
+        if (!instance.id().isValid()) return error.InvalidEntityId;
         ordered[index] = instance;
     }
     var index: usize = 1;
     while (index < instances.len) : (index += 1) {
         const candidate = ordered[index];
         var destination = index;
-        while (destination > 0 and candidate.id.raw() < ordered[destination - 1].id.raw()) : (destination -= 1) {
+        while (destination > 0 and candidate.id().raw() < ordered[destination - 1].id().raw()) : (destination -= 1) {
             ordered[destination] = ordered[destination - 1];
         }
         ordered[destination] = candidate;
     }
     for (ordered[0..instances.len], 0..) |instance, ordered_index| {
-        if (ordered_index > 0 and ordered[ordered_index - 1].id == instance.id) return error.DuplicateEntityId;
+        if (ordered_index > 0 and ordered[ordered_index - 1].id() == instance.id()) return error.DuplicateEntityId;
     }
 
     var submitted: u32 = 0;
@@ -1629,20 +2154,20 @@ pub fn submitUnifiedGlobally(instances: []const *CharacterInstance, queue: *rend
     if (instances.len > maximum_characters) return error.CharacterCapacityExceeded;
     var ordered: [maximum_characters]*CharacterInstance = undefined;
     for (instances, 0..) |instance, index| {
-        if (!instance.id.isValid()) return error.InvalidEntityId;
+        if (!instance.id().isValid()) return error.InvalidEntityId;
         ordered[index] = instance;
     }
     var index: usize = 1;
     while (index < instances.len) : (index += 1) {
         const candidate = ordered[index];
         var destination = index;
-        while (destination > 0 and candidate.id.raw() < ordered[destination - 1].id.raw()) : (destination -= 1) {
+        while (destination > 0 and candidate.id().raw() < ordered[destination - 1].id().raw()) : (destination -= 1) {
             ordered[destination] = ordered[destination - 1];
         }
         ordered[destination] = candidate;
     }
     for (ordered[0..instances.len], 0..) |instance, ordered_index| {
-        if (ordered_index > 0 and ordered[ordered_index - 1].id == instance.id) return error.DuplicateEntityId;
+        if (ordered_index > 0 and ordered[ordered_index - 1].id() == instance.id()) return error.DuplicateEntityId;
     }
 
     var submitted: u32 = 0;
@@ -1660,7 +2185,7 @@ const WalkSample = struct {
     allows_planting: bool = false,
 };
 
-fn currentWalkSample(instance: *const CharacterInstance) WalkSample {
+fn currentWalkSample(instance: *const CharacterState) WalkSample {
     const animator = instance.animator;
     const machine = &instance.shared_animations.machine;
     const clips = instance.shared_animations.clips;

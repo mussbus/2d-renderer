@@ -7,6 +7,7 @@ const state_machine = @import("state_machine");
 const queue_module = @import("render_queue");
 const mesh_demo = @import("mesh_attachment_demo");
 const attachment_meshes = @import("attachment_meshes");
+const character = @import("character");
 
 const test_definition = secondary.Definition{
     .dynamic_point_count = 3,
@@ -275,7 +276,8 @@ test "equipment and hair instances own lifecycle state independently and preserv
     const sleeve_component = try scene.equipment_definition.visualComponentId("topology_sleeve_mesh");
     var sleeve_indices: [mesh_demo.expected_conventional_sleeves]usize = undefined;
     var sleeve_count: usize = 0;
-    const loadout = &scene.conventional.equipment_loadout.?;
+    const internal = character.testing.state(&scene.conventional);
+    const loadout = &internal.equipment_loadout.?;
     for (loadout.visuals(), 0..) |visual, index| {
         const recipe = try loadout.definition.recipe(visual.recipe);
         if (recipe.component == sleeve_component) {
@@ -284,8 +286,8 @@ test "equipment and hair instances own lifecycle state independently and preserv
         }
     }
     try std.testing.expectEqual(@as(usize, mesh_demo.expected_conventional_sleeves), sleeve_count);
-    const first_sleeve = &scene.conventional.equipment_loadout.?.resolved_visuals[sleeve_indices[0]].secondary;
-    const second_sleeve = &scene.conventional.equipment_loadout.?.resolved_visuals[sleeve_indices[1]].secondary;
+    const first_sleeve = &internal.equipment_loadout.?.resolved_visuals[sleeve_indices[0]].secondary;
+    const second_sleeve = &internal.equipment_loadout.?.resolved_visuals[sleeve_indices[1]].secondary;
     try std.testing.expect(first_sleeve != second_sleeve);
     try first_sleeve.step(attachment_meshes.loose_sleeve_secondary_motion, .{
         .anchor_world = math.Vec2.zero,
@@ -321,32 +323,32 @@ test "visual secondary motion leaves controller physics and interaction authorit
     defer scene.deinit();
     var world = try collision_world.CollisionWorld.initDemo(std.testing.allocator, null);
     defer world.deinit();
-    scene.conventional.controller = try character_controller.CharacterController.init(
+    character.testing.state(&scene.conventional).controller = try character_controller.CharacterController.init(
         .{},
         &world,
         .{ .x = -4, .y = 1.05 },
         .right,
     );
-    const controller_before = scene.conventional.controller.?.state;
-    const world_position_before = scene.conventional.world_position;
+    const controller_before = scene.conventional.controllerSnapshot().?.state;
+    const world_position_before = scene.conventional.worldPosition();
     try scene.conventional.advanceVisualTick(.{
         .horizontal_velocity = 4,
         .vertical_velocity = -3,
         .physically_grounded = false,
         .landing_event = .{ .simulation_tick = 1, .impact_speed = 6 },
     });
-    try std.testing.expect(std.meta.eql(controller_before, scene.conventional.controller.?.state));
-    try std.testing.expect(world_position_before.approxEqAbs(scene.conventional.world_position, 0));
+    try std.testing.expect(std.meta.eql(controller_before, scene.conventional.controllerSnapshot().?.state));
+    try std.testing.expect(world_position_before.approxEqAbs(scene.conventional.worldPosition(), 0));
 
     try scene.conventional.reserveInteraction(77);
     const interaction_owner_before = scene.conventional.interactionOwnerId();
-    const controller_before_interaction = scene.conventional.controller.?.state;
+    const controller_before_interaction = scene.conventional.controllerSnapshot().?.state;
     try scene.conventional.enterAnimationState(state_machine.StateId.handshake_role_a);
     try scene.conventional.sampleInteractionAnimation(state_machine.StateId.handshake_role_a, 0.2);
     try std.testing.expectEqual(interaction_owner_before, scene.conventional.interactionOwnerId());
     try std.testing.expect(scene.conventional.isInteractionLocked());
-    try std.testing.expect(std.meta.eql(controller_before_interaction, scene.conventional.controller.?.state));
-    try std.testing.expect(world_position_before.approxEqAbs(scene.conventional.world_position, 0));
+    try std.testing.expect(std.meta.eql(controller_before_interaction, scene.conventional.controllerSnapshot().?.state));
+    try std.testing.expect(world_position_before.approxEqAbs(scene.conventional.worldPosition(), 0));
 }
 
 test "scripted modular attachment demonstration completes with stable resources" {

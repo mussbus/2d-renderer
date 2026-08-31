@@ -54,15 +54,15 @@ test "facing is preserved across view changes and reset restores automatic front
     defer scene.deinit();
     const male = &scene.conventional_male;
     try male.setFacing(.left);
-    const root_before = male.world_position;
+    const root_before = male.worldPosition();
     try std.testing.expectEqual(presentation_view.View.front, male.presentationView());
     try male.enterAnimationState(.walk);
     try std.testing.expectEqual(presentation_view.View.side, male.presentationView());
-    try std.testing.expectEqual(humanoid.Facing.left, male.facing);
+    try std.testing.expectEqual(humanoid.Facing.left, male.facingDirection());
     try male.setPresentationOverride(.force_front);
     try std.testing.expectEqual(presentation_view.View.front, male.presentationView());
-    try std.testing.expectEqual(humanoid.Facing.left, male.facing);
-    try std.testing.expect(male.world_position.approxEqAbs(root_before, 0));
+    try std.testing.expectEqual(humanoid.Facing.left, male.facingDirection());
+    try std.testing.expect(male.worldPosition().approxEqAbs(root_before, 0));
     try male.reset();
     try std.testing.expectEqual(presentation_view.DebugOverride.automatic, male.presentationOverride());
     try std.testing.expectEqual(presentation_view.View.front, male.presentationView());
@@ -76,34 +76,38 @@ test "side reflection remains single-root while front projection never reflects 
 
     try male.setPresentationOverride(.force_side);
     try male.setFacing(.right);
-    const right_side = try humanoid.spriteTransform(try male.character.appearance_runtime.visualWorld(
-        male.definition.visual_definition,
+    const definition = male.definitionView();
+    const humanoid_view = male.humanoidView();
+    const right_side = try humanoid.spriteTransform(try humanoid_view.appearance_runtime.visualWorld(
+        definition.visual_definition,
         head.id,
     ));
     try male.setFacing(.left);
-    const left_side = try humanoid.spriteTransform(try male.character.appearance_runtime.visualWorld(
-        male.definition.visual_definition,
+    const left_side = try humanoid.spriteTransform(try male.humanoidView().appearance_runtime.visualWorld(
+        definition.visual_definition,
         head.id,
     ));
     try std.testing.expect(right_side.signed_scale.x > 0);
     try std.testing.expect(left_side.signed_scale.x < 0);
 
     const right_front = try presentation_pose.FrontProjection.init(
-        &male.definition.skeleton_definition,
-        male.character.local_and_world_pose,
-        male.definition.visual_definition,
-        male.character.appearance_runtime,
-        male.world_position,
+        &definition.skeleton_definition,
+        humanoid_view.local_and_world_pose,
+        definition.visual_definition,
+        humanoid_view.appearance_runtime,
+        male.worldPosition(),
     );
     try male.setFacing(.right);
+    const left_definition = male.definitionView();
+    const left_humanoid = male.humanoidView();
     const left_front = try presentation_pose.FrontProjection.init(
-        &male.definition.skeleton_definition,
-        male.character.local_and_world_pose,
-        male.definition.visual_definition,
-        male.character.appearance_runtime,
-        male.world_position,
+        &left_definition.skeleton_definition,
+        left_humanoid.local_and_world_pose,
+        left_definition.visual_definition,
+        left_humanoid.appearance_runtime,
+        male.worldPosition(),
     );
-    const head_index = try male.definition.skeleton_definition.boneIndex(.head);
+    const head_index = try left_definition.skeleton_definition.boneIndex(.head);
     try std.testing.expect(right_front.bone_world[head_index].approxEqAbs(
         left_front.bone_world[head_index],
         0.000001,
@@ -332,19 +336,21 @@ test "Prompt 25D side projection preserves one readable profile root per bilater
     var scene = try modular_body_demo.Scene.init(std.testing.allocator);
     defer scene.deinit();
     const male = &scene.conventional_male;
-    const definition = &male.definition.skeleton_definition;
-    const source = male.character.local_and_world_pose;
+    const character_definition = male.definitionView();
+    const definition = &character_definition.skeleton_definition;
+    const humanoid_view = male.humanoidView();
+    const source = humanoid_view.local_and_world_pose;
     const projection = try presentation_pose.FrontProjection.initSide(
         definition,
         source,
-        male.definition.visual_definition,
-        male.character.appearance_runtime,
-        male.world_position,
+        character_definition.visual_definition,
+        humanoid_view.appearance_runtime,
+        male.worldPosition(),
         false,
     );
     const upper_index = try definition.boneIndex(.right_upper_arm);
     const source_upper = source.world_transforms[upper_index].translationPart();
-    const root_x = male.world_position.x;
+    const root_x = male.worldPosition().x;
     const tolerance: f32 = 0.000001; // Matrix composition is the same f32 path, so six decimals is ample.
     try std.testing.expect(projection.bone_world[upper_index].translationPart().approxEqAbs(
         .{ .x = root_x + presentation_pose.side_profile_arm_root_offset, .y = source_upper.y },
@@ -420,14 +426,14 @@ test "interaction owns side view and cancellation releases both participants to 
     try std.testing.expectEqual(presentation_view.View.side, scene.character_b.presentationView());
     const participants = [_]*character.CharacterInstance{ &scene.character_a, &scene.character_b };
     try std.testing.expect(try scene.manager.cancelForCharacter(
-        scene.character_a.id,
+        scene.character_a.id(),
         .character_reset,
         &participants,
     ));
     try std.testing.expectEqual(presentation_view.View.front, scene.character_a.presentationView());
     try std.testing.expectEqual(presentation_view.View.front, scene.character_b.presentationView());
-    try std.testing.expectEqual(@as(u32, 0), scene.character_a.presentation.interaction_owner);
-    try std.testing.expectEqual(@as(u32, 0), scene.character_b.presentation.interaction_owner);
+    try std.testing.expectEqual(@as(u32, 0), scene.character_a.presentationRuntimeSnapshot().interaction_owner);
+    try std.testing.expectEqual(@as(u32, 0), scene.character_b.presentationRuntimeSnapshot().interaction_owner);
 }
 
 test "view transition clears long-hair spring state without allocation or cross-character mutation" {
@@ -446,8 +452,9 @@ test "view transition clears long-hair spring state without allocation or cross-
         });
     }
     const hair_id = try scene.definition.visual_definition.visualId("long_hair");
-    const before = try female.character.appearance_runtime.visualSecondaryState(
-        female.definition.visual_definition,
+    const definition = female.definitionView();
+    const before = try female.humanoidView().appearance_runtime.visualSecondaryState(
+        definition.visual_definition,
         hair_id,
     );
     try std.testing.expect(before.initialized);
@@ -455,8 +462,8 @@ test "view transition clears long-hair spring state without allocation or cross-
     const male_view_before = male.presentationView();
     const allocation_checkpoint = fixed.end_index;
     try female.setPresentationOverride(.force_front);
-    const after = try female.character.appearance_runtime.visualSecondaryState(
-        female.definition.visual_definition,
+    const after = try female.humanoidView().appearance_runtime.visualSecondaryState(
+        definition.visual_definition,
         hair_id,
     );
     try std.testing.expect(!after.initialized);
@@ -481,10 +488,10 @@ test "Q input cycles presentation only and art submission remains bounded in bot
 
     var builder = input.SnapshotBuilder{};
     const snapshot = try builder.update(.{ .keyboard = .{ .q = true } });
-    const facing_before = scene.conventional_male.facing;
+    const facing_before = scene.conventional_male.facingDirection();
     try scene.conventional_male.applyPresentationInput(snapshot);
     try std.testing.expectEqual(presentation_view.DebugOverride.force_side, scene.conventional_male.presentationOverride());
-    try std.testing.expectEqual(facing_before, scene.conventional_male.facing);
+    try std.testing.expectEqual(facing_before, scene.conventional_male.facingDirection());
 
     queue.beginFrame();
     const side_count = try male_art.submit(&scene.conventional_male, &queue);

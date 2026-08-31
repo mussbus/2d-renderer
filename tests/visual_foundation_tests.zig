@@ -98,21 +98,21 @@ test "registration proof cases configure both production styles before simulatio
             expected_view,
             scene.integrated.production.female.presentationView(),
         );
-        try std.testing.expectEqual(expected_facing, scene.integrated.production.male.facing);
-        try std.testing.expectEqual(expected_facing, scene.integrated.production.female.facing);
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.male.facingDirection());
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.female.facingDirection());
         var snapshot_builder = input.SnapshotBuilder{};
         try scene.updateFrame(0, try snapshot_builder.update(.{}));
-        try std.testing.expectEqual(expected_facing, scene.integrated.production.male.facing);
-        try std.testing.expectEqual(expected_facing, scene.integrated.production.female.facing);
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.male.facingDirection());
+        try std.testing.expectEqual(expected_facing, scene.integrated.production.female.facingDirection());
         const expected_male_items: usize = if (proof_case.bodyOnly()) 0 else 3;
         const expected_female_items: usize = if (proof_case.bodyOnly()) 0 else 5;
         try std.testing.expectEqual(
             expected_male_items,
-            scene.integrated.production.male.equipment_loadout.?.equippedItems().len,
+            scene.integrated.production.male.equipmentView().?.equippedItems().len,
         );
         try std.testing.expectEqual(
             expected_female_items,
-            scene.integrated.production.female.equipment_loadout.?.equippedItems().len,
+            scene.integrated.production.female.equipmentView().?.equippedItems().len,
         );
         try std.testing.expectError(
             error.RegistrationProofCaseMustPrecedeSimulation,
@@ -152,16 +152,15 @@ test "component proof cases select bounded graph content and view before simulat
         );
         try std.testing.expectEqual(
             proof_case.facing(),
-            scene.integrated.production.male.facing,
+            scene.integrated.production.male.facingDirection(),
         );
         try std.testing.expectEqual(
             proof_case.facing(),
-            scene.integrated.production.female.facing,
+            scene.integrated.production.female.facingDirection(),
         );
         const definition = scene.integrated.production.definition
             .anatomy_definition.?.view();
-        const male_runtime = scene.integrated.production.male.character
-            .anatomy_runtime.?;
+        const male_runtime = scene.integrated.production.male.anatomyRuntimeSnapshot().?;
         const expected_body = if (proof_case.usesNonstandardMale())
             "nonstandard_humanoid"
         else
@@ -171,9 +170,9 @@ test "component proof cases select bounded graph content and view before simulat
             male_runtime.selected_body_preset,
         );
         try std.testing.expectEqual(@as(usize, 0), scene.integrated.production
-            .male.equipment_loadout.?.equippedItems().len);
+            .male.equipmentView().?.equippedItems().len);
         try std.testing.expectEqual(@as(usize, 0), scene.integrated.production
-            .female.equipment_loadout.?.equippedItems().len);
+            .female.equipmentView().?.equippedItems().len);
         try std.testing.expectError(
             error.ComponentProofCaseMustPrecedeSimulation,
             blk: {
@@ -204,7 +203,7 @@ test "VF-01 truth snapshot exports typed graph ownership and connection modes" {
     _ = try scene.submit(&queue);
     try std.testing.expect(scene.truth_snapshot_valid);
 
-    const male_id = scene.integrated.production.male.id.raw();
+    const male_id = scene.integrated.production.male.id().raw();
     var male_truth: ?*const visual_truth.Character = null;
     for (scene.truth_snapshot.characters[0..scene.truth_snapshot.character_count]) |*truth| {
         if (truth.id == male_id) male_truth = truth;
@@ -539,7 +538,7 @@ fn validObservation() foundation_evidence.Observation {
 fn maleTruth(
     scene: *const visual_foundation.Scene,
 ) ?*const visual_truth.Character {
-    const male_id = scene.integrated.production.male.id.raw();
+    const male_id = scene.integrated.production.male.id().raw();
     for (scene.truth_snapshot.characters[0..scene.truth_snapshot.character_count]) |*truth| {
         if (truth.id == male_id) return truth;
     }
@@ -553,7 +552,7 @@ fn collectMaleOptionalSubmissions(
     const male = &scene.integrated.production.male;
     var count: usize = 0;
     for (scene.truth_snapshot.visuals[0..scene.truth_snapshot.visual_count]) |visual| {
-        if (visual.character_id != male.id.raw()) continue;
+        if (visual.character_id != male.id().raw()) continue;
         const binding = visual.graph_binding orelse continue;
         if (count == output.len) return error.OptionalArmSubmissionCapacityExceeded;
         output[count] = .{
@@ -1520,8 +1519,8 @@ fn runP27bRoute(split_render_schedule: bool) !P27bRouteSummary {
     return .{
         .fingerprint = scene.authoritativeInteractionFingerprint(),
         .simulation_tick = scene.integrated.production.simulation_tick,
-        .female_root = scene.integrated.production.female.world_position,
-        .male_root = scene.integrated.production.male.world_position,
+        .female_root = scene.integrated.production.female.worldPosition(),
+        .male_root = scene.integrated.production.male.worldPosition(),
         .camera_center = scene.integrated.camera.center,
         .interaction_count = scene.evidence.interaction_count,
     };
@@ -1572,11 +1571,11 @@ test "Prompt 27C-R1 interactive-equivalent overlap remains measured without term
         crossed_reported_condition = crossed_reported_condition or
             measurement.overlap_ratio >= 0.021407;
         crossed_partner = crossed_partner or
-            scene.integrated.production.female.world_position.x >
-                scene.integrated.production.male.world_position.x + 1;
+            scene.integrated.production.female.worldPosition().x >
+                scene.integrated.production.male.worldPosition().x + 1;
         if (!move_right and crossed_partner and
-            scene.integrated.production.female.world_position.x <
-                scene.integrated.production.male.world_position.x - 1)
+            scene.integrated.production.female.worldPosition().x <
+                scene.integrated.production.male.worldPosition().x - 1)
         {
             moved_away = true;
             break;
@@ -1624,14 +1623,15 @@ test "Prompt 27C-R1 presence interaction context follows active ownership and re
         .measure_only,
     );
     defer scene.deinit();
-    const male_position = scene.integrated.production.male.world_position;
+    const male_position = scene.integrated.production.male.worldPosition();
     const female_position = math.Vec2{
         .x = male_position.x - 3.72,
         .y = male_position.y,
     };
-    scene.integrated.production.female.controller.?.state.position =
-        female_position;
-    scene.integrated.production.female.world_position = female_position;
+    try scene.integrated.production.female.stageControlledTransform(
+        female_position,
+        scene.integrated.production.female.facingDirection(),
+    );
 
     var snapshots = input.SnapshotBuilder{};
     const request = try snapshots.update(.{
@@ -1644,10 +1644,10 @@ test "Prompt 27C-R1 presence interaction context follows active ownership and re
     try scene.resetWorld();
     try std.testing.expect(!scene.presenceInteractionContext());
     try std.testing.expectEqual(@as(usize, 0), scene.manager.activeCount());
-    try std.testing.expect(scene.manager.last_terminal != null);
+    try std.testing.expect(scene.manager.lastTerminal() != null);
     try std.testing.expectEqual(
         interaction.Lifecycle.cancelled,
-        scene.manager.last_terminal.?.lifecycle,
+        scene.manager.lastTerminal().?.lifecycle,
     );
 }
 
@@ -1871,9 +1871,9 @@ fn submitAndExpectRegisteredView(
                 }),
                 registration.point_count,
             );
-            if (record.character_id == scene.integrated.production.female.id.raw()) {
+            if (record.character_id == scene.integrated.production.female.id().raw()) {
                 female_counts[index] += 1;
-            } else if (record.character_id == scene.integrated.production.male.id.raw()) {
+            } else if (record.character_id == scene.integrated.production.male.id().raw()) {
                 male_counts[index] += 1;
             } else {
                 return error.UnknownProductionRegistrationCharacter;

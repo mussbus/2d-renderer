@@ -183,7 +183,7 @@ test "playground interaction hold requires a release and new E press and reset c
 
     var frame: u32 = 0;
     while (!scene.interactionEligibility().isEligible() and frame < 600) : (frame += 1) {
-        const state = scene.player.controller.?.state;
+        const state = scene.player.controllerSnapshot().?.state;
         const target = playground.handshake_player_x - 0.01;
         const command = std.math.clamp((target - state.position.x) * 0.5 - state.velocity.x * 0.8, 0, 0.15);
         try scene.updateFrame(1.0 / 60.0, try builder.update(.{ .gamepad_move_axis = encodeGamepadAxis(command) }));

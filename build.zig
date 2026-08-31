@@ -916,6 +916,7 @@ pub fn build(b: *std.Build) void {
     character_module.addImport("skeleton", skeleton_module);
     character_module.addImport("authored_clips", authored_clips_module);
     character_module.addImport("clip", clip_module);
+    character_module.addImport("events", events_module);
     character_module.addImport("animator", animator_module);
     character_module.addImport("animation_system", animation_system_module);
     character_module.addImport("state_machine", state_machine_module);

@@ -226,8 +226,8 @@ pub const Scene = struct {
             .wardrobe = wardrobe,
             .clock = try fixed_step.Clock.init(.{}),
             .initial_breathing_sample = try female.breathingSample(),
-            .male_initial_world = male.world_position,
-            .male_initial_facing = male.facing,
+            .male_initial_world = male.worldPosition(),
+            .male_initial_facing = male.facingDirection(),
         };
     }
 
@@ -298,7 +298,7 @@ pub const Scene = struct {
 
     pub fn enableVisualQualityAcceptance(scene: *Scene) !void {
         if (scene.visual_quality_enabled) return error.VisualQualityAlreadyEnabled;
-        if (scene.frame_index != 0 or scene.male.equipment_loadout != null) {
+        if (scene.frame_index != 0 or scene.male.hasEquipment()) {
             return error.VisualQualityMustBeEnabledBeforeSimulation;
         }
         try scene.male.initializeEquipment(scene.catalog.equipment_definition.view());
@@ -522,7 +522,7 @@ pub const Scene = struct {
             female_foot_coverage,
         );
         const meshes_before = queue.frame_metrics.submitted_meshes;
-        if (scene.male.equipment_loadout != null) {
+        if (scene.male.hasEquipment()) {
             submitted += try scene.wardrobe.submitTraced(
                 &scene.male,
                 queue,
@@ -567,11 +567,11 @@ pub const Scene = struct {
         {
             return error.WardrobeEvidenceIncomplete;
         }
-        if (scene.male.equipment_loadout != null or
-            !scene.male.world_position.approxEqAbs(scene.male_initial_world, 0.000001) or
-            scene.male.facing != scene.male_initial_facing or
-            scene.male.metrics.submission_allocations != 0 or
-            scene.female.metrics.submission_allocations != 0)
+        if (scene.male.hasEquipment() or
+            !scene.male.worldPosition().approxEqAbs(scene.male_initial_world, 0.000001) or
+            scene.male.facingDirection() != scene.male_initial_facing or
+            scene.male.hotPathMetrics().submission_allocations != 0 or
+            scene.female.hotPathMetrics().submission_allocations != 0)
         {
             return error.WardrobeIsolationEvidenceIncomplete;
         }
@@ -580,8 +580,8 @@ pub const Scene = struct {
     pub fn validateVisualQualityComplete(scene: *const Scene) !void {
         if (!scene.visual_quality_enabled or
             scene.frame_index != visual_quality_required_frames or
-            scene.male.equipment_loadout == null or
-            scene.female.equipment_loadout == null)
+            !scene.male.hasEquipment() or
+            !scene.female.hasEquipment())
         {
             return error.VisualQualityRouteIncomplete;
         }
@@ -600,8 +600,8 @@ pub const Scene = struct {
             !evidence.layered_custom_side or
             !evidence.locomotion_observed or
             !evidence.jump_observed or
-            scene.male.metrics.submission_allocations != 0 or
-            scene.female.metrics.submission_allocations != 0)
+            scene.male.hotPathMetrics().submission_allocations != 0 or
+            scene.female.hotPathMetrics().submission_allocations != 0)
         {
             return error.VisualQualityEvidenceIncomplete;
         }
@@ -710,11 +710,11 @@ pub const Scene = struct {
             8, 9 => {
                 scene.visual_quality_evidence.locomotion_observed =
                     scene.visual_quality_evidence.locomotion_observed or
-                    @abs(scene.female.controller.?.state.velocity.x) > 0.1;
+                    @abs(scene.female.controllerSnapshot().?.state.velocity.x) > 0.1;
                 scene.visual_quality_evidence.jump_observed =
                     scene.visual_quality_evidence.jump_observed or
                     physics.jump_accepted or
-                    !scene.female.controller.?.state.grounded;
+                    !scene.female.controllerSnapshot().?.state.grounded;
             },
             else => {},
         }
@@ -751,9 +751,9 @@ pub const Scene = struct {
         if (!scene.female.isInteractionLocked()) {
             try scene.female.selectControllerAnimation(physics);
             try scene.female.advanceVisualTickWithFootPlanting(&scene.world, .{
-                .horizontal_velocity = scene.female.controller.?.state.velocity.x,
-                .vertical_velocity = scene.female.controller.?.state.velocity.y,
-                .physically_grounded = scene.female.controller.?.state.grounded,
+                .horizontal_velocity = scene.female.controllerSnapshot().?.state.velocity.x,
+                .vertical_velocity = scene.female.controllerSnapshot().?.state.velocity.y,
+                .physically_grounded = scene.female.controllerSnapshot().?.state.grounded,
                 .landing_event = if (physics.landed) .{
                     .simulation_tick = physics.simulation_tick,
                     .impact_speed = physics.landing_impact_speed,
@@ -798,16 +798,16 @@ pub const Scene = struct {
         scene.evidence.footwear_observed = scene.evidence.footwear_observed or
             hasEquippedSlot(scene, "footwear");
         scene.evidence.locomotion_observed = scene.evidence.locomotion_observed or
-            @abs(scene.female.controller.?.state.velocity.x) > 0.1;
+            @abs(scene.female.controllerSnapshot().?.state.velocity.x) > 0.1;
         const breathing = scene.female.breathingSample() catch scene.initial_breathing_sample;
         scene.evidence.breathing_observed = scene.evidence.breathing_observed or
             @abs(breathing - scene.initial_breathing_sample) > 0.05;
         scene.evidence.male_unchanged =
-            scene.male.equipment_loadout == null and
-            scene.male.world_position.approxEqAbs(scene.male_initial_world, 0.000001) and
-            scene.male.facing == scene.male_initial_facing;
+            !scene.male.hasEquipment() and
+            scene.male.worldPosition().approxEqAbs(scene.male_initial_world, 0.000001) and
+            scene.male.facingDirection() == scene.male_initial_facing;
 
-        if (scene.female.equipment_loadout) |*loadout| {
+        if (scene.female.equipmentView()) |loadout| {
             for (loadout.visuals()) |visual| {
                 const recipe = loadout.definition.recipe(visual.recipe) catch continue;
                 const component = loadout.definition.visual_components[recipe.component.index()];
@@ -831,14 +831,14 @@ fn allTrue(values: []const bool) bool {
 }
 
 fn hasEquippedSlot(scene: *const Scene, stable_id: []const u8) bool {
-    const loadout = &scene.female.equipment_loadout.?;
+    const loadout = scene.female.equipmentView().?;
     const slot = loadout.definition.slotId(stable_id) catch return false;
     return (loadout.itemInSlot(slot) catch null) != null;
 }
 
 fn femaleLongHairSelected(scene: *const Scene) bool {
-    const anatomy_runtime = scene.female.character.anatomy_runtime orelse return false;
-    const anatomy_definition = scene.female.definition.anatomy_definition orelse return false;
+    const anatomy_runtime = scene.female.humanoidView().anatomy_runtime orelse return false;
+    const anatomy_definition = scene.female.definitionView().anatomy_definition orelse return false;
     const expected = anatomy_definition.hairDefinitionId("long_rigid") catch return false;
     return anatomy_runtime.selected_hair == expected;
 }

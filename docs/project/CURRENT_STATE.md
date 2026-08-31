@@ -1,8 +1,8 @@
 # Current State
 
-Current F4C2 implementation basis: clean, synchronized `master` at
-`ed6982d26eaf3c11a54ed2f371b61271efea8467`, verified on 2026-08-30 before
-the local F4C2 extraction began.
+Current F4C3 implementation basis: clean, synchronized `master` at
+`efa584b3b55017eae78e82df27f88d4164acfb2f`, verified on 2026-08-31 before
+the local F4C3 authority hardening began.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -22,8 +22,8 @@ visual acceptance or revise historical evidence claims.
 | F4B1 | **OWNER-APPROVED** |
 | F4B2 | **OWNER-APPROVED** |
 | F4C1 | **OWNER-APPROVED** |
-| F4C2 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4C3 | **NOT BEGUN** |
+| F4C2 | **OWNER-APPROVED** |
+| F4C3 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
 | F4C4 | **NOT BEGUN** |
 | F4C5 | **NOT BEGUN** |
 | F4D | **NOT BEGUN** |
@@ -32,7 +32,7 @@ visual acceptance or revise historical evidence claims.
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4C2 owner review**.
+Current immediate step: **F4C3 owner review**.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -53,8 +53,13 @@ surviving executable is composed by `src/app/demo_application.zig`; copied
 readback data crosses `frame_capture.CapturedFrame` into the evidence writer.
 The former `GpuDemo` source is now a four-line compatibility alias only. See
 the [F4C2 implementation record](../implementation/f4c2_renderer_application_evidence_boundaries.md).
-F4C3 through F4C5, F4D, and F4E have not begun and require separate
-authorization.
+F4C3 keeps `CharacterInstance` as a coordinator while placing all semantic
+mutable state behind private inline storage and command/read surfaces. The
+interaction manager now similarly owns private slots, lifecycle, IDs and
+metrics, with transactional participant rollback and test-only white-box
+routing. See the
+[F4C3 implementation record](../implementation/f4c3_character_interaction_authority.md).
+F4C4, F4C5, F4D, and F4E have not begun and require separate authorization.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the

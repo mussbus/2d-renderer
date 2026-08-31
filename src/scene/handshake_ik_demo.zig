@@ -121,17 +121,18 @@ pub const Scene = struct {
             scene.simulation_tick = std.math.add(u64, scene.simulation_tick, 1) catch return error.SimulationTickOverflow;
             const intent = scene.pending_input.consumeTick();
             if (intent.interact_pressed) {
-                const selected = try scene.manager.selectCandidate(scene.character_a.id, &participants_value);
-                const eligibility = scene.manager.evaluateEligibility(scene.character_a.id, selected.receiver, &participants_value);
-                const id = (try scene.manager.requestFromIntent(scene.character_a.id, intent, &participants_value, scene.simulation_tick)).?;
+                const selected = try scene.manager.selectCandidate(scene.character_a.id(), &participants_value);
+                const eligibility = scene.manager.evaluateEligibility(scene.character_a.id(), selected.receiver, &participants_value);
+                const id = (try scene.manager.requestFromIntent(scene.character_a.id(), intent, &participants_value, scene.simulation_tick)).?;
                 scene.active_run += 1;
                 const evidence = scene.currentEvidence();
                 evidence.interaction_id = id;
-                evidence.root_a = scene.character_a.world_position;
-                evidence.root_b = scene.character_b.world_position;
+                evidence.root_a = scene.character_a.worldPosition();
+                evidence.root_b = scene.character_b.worldPosition();
                 evidence.root_spacing = eligibility.horizontal_separation;
                 evidence.start_tick = scene.manager.instance(id).?.start_tick;
-                evidence.start_weight = scene.manager.instance(id).?.ikWeight(&scene.manager.definition);
+                const definition = scene.manager.definitionView();
+                evidence.start_weight = scene.manager.instance(id).?.ikWeight(&definition);
                 std.log.info("handshake IK request run={s} tick={d} spacing={d:.6} weight={d:.3} target_policy=pre_ik_midpoint", .{
                     evidence.name,
                     evidence.start_tick,
@@ -167,18 +168,20 @@ pub const Scene = struct {
     }
 
     pub fn validateComplete(scene: Scene) !void {
-        try validateEvidence(scene.nominal, &scene.manager.definition, false);
-        try validateEvidence(scene.mirrored, &scene.manager.definition, false);
-        try validateEvidence(scene.perturbed, &scene.manager.definition, true);
+        const definition = scene.manager.definitionView();
+        try validateEvidence(scene.nominal, &definition, false);
+        try validateEvidence(scene.mirrored, &definition, false);
+        try validateEvidence(scene.perturbed, &definition, true);
         if (@abs(scene.nominal.post_separation - scene.mirrored.post_separation) > 0.0002) {
             return error.MirroredIkSeparationMismatch;
         }
-        if (scene.manager.activeCount() != 0 or scene.manager.metrics.starts != 3 or
-            scene.manager.metrics.completions != 3 or scene.manager.metrics.cancellations != 0)
+        const metrics = scene.manager.metricsSnapshot();
+        if (scene.manager.activeCount() != 0 or metrics.starts != 3 or
+            metrics.completions != 3 or metrics.cancellations != 0)
         {
             return error.HandshakeIkLifecycleEvidenceIncomplete;
         }
-        if (scene.character_a.right_arm_ik.applied or scene.character_b.right_arm_ik.applied or
+        if (scene.character_a.rightHandIkMetrics() != null or scene.character_b.rightHandIkMetrics() != null or
             scene.character_a.isInteractionLocked() or scene.character_b.isInteractionLocked())
         {
             return error.HandshakeIkRuntimeStateNotCleared;
@@ -189,9 +192,10 @@ pub const Scene = struct {
         if (scene.active_run == 0) return;
         const evidence = scene.currentEvidence();
         const instance = scene.manager.instance(evidence.interaction_id) orelse return error.HandshakeIkInstanceMissing;
-        const contact_elapsed = scene.manager.definition.event(.contact).elapsed_tick;
-        const release_elapsed = scene.manager.definition.event(.release).elapsed_tick;
-        const complete_elapsed = scene.manager.definition.event(.complete).elapsed_tick;
+        const definition = scene.manager.definitionView();
+        const contact_elapsed = definition.event(.contact).elapsed_tick;
+        const release_elapsed = definition.event(.release).elapsed_tick;
+        const complete_elapsed = definition.event(.complete).elapsed_tick;
         if (instance.elapsed_ticks == contact_elapsed / 2 and evidence.blend_midpoint_weight == 0) {
             evidence.blend_midpoint_weight = instance.ik.weight;
             std.log.info("handshake IK blend run={s} tick={d} weight={d:.3}", .{ evidence.name, scene.simulation_tick, instance.ik.weight });
@@ -237,7 +241,7 @@ pub const Scene = struct {
         if (instance.event_ticks[@intFromEnum(interaction.EventSemantic.release)] != null and evidence.release_tick == 0) {
             evidence.release_tick = instance.event_ticks[@intFromEnum(interaction.EventSemantic.release)].?;
             evidence.release_weight = instance.ik.weight;
-            evidence.release_override_count = scene.character_a.overrides.activeCount() + scene.character_b.overrides.activeCount();
+            evidence.release_override_count = scene.character_a.activeOverrideCount() + scene.character_b.activeOverrideCount();
             std.log.info("handshake IK release run={s} tick={d} weight={d:.3}", .{ evidence.name, evidence.release_tick, evidence.release_weight });
         }
         if (instance.elapsed_ticks == (release_elapsed + complete_elapsed) / 2 and evidence.post_release_weight == 0) {
@@ -248,8 +252,8 @@ pub const Scene = struct {
             evidence.complete_tick = instance.event_ticks[@intFromEnum(interaction.EventSemantic.complete)].?;
             evidence.after_completion_weight = instance.ik.weight;
             evidence.event_counts = instance.event_counts;
-            evidence.roots_unchanged = scene.character_a.world_position.approxEqAbs(evidence.root_a, 0) and
-                scene.character_b.world_position.approxEqAbs(evidence.root_b, 0);
+            evidence.roots_unchanged = scene.character_a.worldPosition().approxEqAbs(evidence.root_a, 0) and
+                scene.character_b.worldPosition().approxEqAbs(evidence.root_b, 0);
             evidence.captured = true;
             std.log.info("handshake IK complete run={s} tick={d} weight={d:.3} roots_unchanged={} locks={}/{}", .{
                 evidence.name,

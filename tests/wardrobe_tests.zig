@@ -148,24 +148,12 @@ test "Prompt 25A side anatomy submission geometry remains registered at joints" 
         queue.beginFrame();
         _ = try scene.male_art.submit(&scene.male, &queue);
 
-        const thigh_key = scene.male.last_submitted_keys[
-            @intFromEnum(humanoid.AttachmentSemantic.left_thigh)
-        ].?;
-        const shin_key = scene.male.last_submitted_keys[
-            @intFromEnum(humanoid.AttachmentSemantic.left_shin)
-        ].?;
-        const foot_key = scene.male.last_submitted_keys[
-            @intFromEnum(humanoid.AttachmentSemantic.left_foot)
-        ].?;
-        const upper_key = scene.male.last_submitted_keys[
-            @intFromEnum(humanoid.AttachmentSemantic.left_upper_arm)
-        ].?;
-        const forearm_key = scene.male.last_submitted_keys[
-            @intFromEnum(humanoid.AttachmentSemantic.left_forearm)
-        ].?;
-        const hand_key = scene.male.last_submitted_keys[
-            @intFromEnum(humanoid.AttachmentSemantic.left_hand)
-        ].?;
+        const thigh_key = scene.male.submittedKeyOptional(.left_thigh).?;
+        const shin_key = scene.male.submittedKeyOptional(.left_shin).?;
+        const foot_key = scene.male.submittedKeyOptional(.left_foot).?;
+        const upper_key = scene.male.submittedKeyOptional(.left_upper_arm).?;
+        const forearm_key = scene.male.submittedKeyOptional(.left_forearm).?;
+        const hand_key = scene.male.submittedKeyOptional(.left_hand).?;
         const thigh = queue.sprite_submissions[@intCast(thigh_key.submission_index)];
         const shin = queue.sprite_submissions[@intCast(shin_key.submission_index)];
         const foot = queue.sprite_submissions[@intCast(foot_key.submission_index)];
@@ -752,7 +740,7 @@ test "presets are cosmetic conflict-free recipes with reuse and a non-monolithic
             }
         }
         try scene.selectPreset(preset.id);
-        try std.testing.expectEqual(preset.items().len, scene.female.equipment_loadout.?.equippedItems().len);
+        try std.testing.expectEqual(preset.items().len, scene.female.equipmentView().?.equippedItems().len);
     }
 
     const tailored = try scene.catalog.equipment_definition.itemId("crimson_tailored_shorts");
@@ -772,7 +760,7 @@ test "presets are cosmetic conflict-free recipes with reuse and a non-monolithic
         try std.testing.expect(found_in_preset);
     }
     try scene.selectCustom();
-    try std.testing.expectEqual(custom.len, scene.female.equipment_loadout.?.equippedItems().len);
+    try std.testing.expectEqual(custom.len, scene.female.equipmentView().?.equippedItems().len);
 }
 
 test "repeated sleeves follow two and four arm topology while headwear preserves long hair" {
@@ -785,14 +773,14 @@ test "repeated sleeves follow two and four arm topology while headwear preserves
 
     try scene.female.selectEquipmentItems(&.{blouse});
     try std.testing.expectEqual(@as(u16, 2), countComponentVisuals(
-        &scene.female.equipment_loadout.?,
+        scene.female.equipmentView().?,
         sleeve,
     ));
     try scene.female.selectBodyPreset(
         try anatomy_definition.bodyPresetId("nonstandard_humanoid"),
     );
     try std.testing.expectEqual(@as(u16, 4), countComponentVisuals(
-        &scene.female.equipment_loadout.?,
+        scene.female.equipmentView().?,
         sleeve,
     ));
     try scene.female.selectBodyPreset(
@@ -802,9 +790,9 @@ test "repeated sleeves follow two and four arm topology while headwear preserves
     try scene.female.selectEquipmentItems(&.{hat});
     try std.testing.expectEqual(
         expected_hair,
-        scene.female.character.anatomy_runtime.?.selected_hair.?,
+        scene.female.anatomyRuntimeSnapshot().?.selected_hair.?,
     );
-    try std.testing.expectEqual(@as(usize, 1), scene.female.equipment_loadout.?.equippedItems().len);
+    try std.testing.expectEqual(@as(usize, 1), scene.female.equipmentView().?.equippedItems().len);
 }
 
 test "occupancy layering coverage and semantic foot binding remain independent" {
@@ -842,16 +830,16 @@ test "occupancy layering coverage and semantic foot binding remain independent" 
         definition.visual_layers[cardigan_recipes[1].visual_layer.index()].stable_id.slice(),
     );
     try scene.female.selectEquipmentItems(&.{ blouse_id, cardigan_id });
-    try std.testing.expectEqual(@as(usize, 2), scene.female.equipment_loadout.?.equippedItems().len);
+    try std.testing.expectEqual(@as(usize, 2), scene.female.equipmentView().?.equippedItems().len);
 
     const anatomy_definition = scene.definition.anatomy_definition.?.view();
     const left_foot = try anatomy_definition.partInstanceId("left_foot");
     const right_foot = try anatomy_definition.partInstanceId("right_foot");
-    const left_before = try scene.female.character.anatomy_runtime.?.partBindingWorld(
+    const left_before = try scene.female.anatomyRuntimeSnapshot().?.partBindingWorld(
         anatomy_definition,
         left_foot,
     );
-    const right_before = try scene.female.character.anatomy_runtime.?.partBindingWorld(
+    const right_before = try scene.female.anatomyRuntimeSnapshot().?.partBindingWorld(
         anatomy_definition,
         right_foot,
     );
@@ -859,7 +847,7 @@ test "occupancy layering coverage and semantic foot binding remain independent" 
     try scene.female.selectEquipmentItems(&.{shoes});
     var found_left = false;
     var found_right = false;
-    for (scene.female.equipment_loadout.?.visuals()) |visual| {
+    for (scene.female.equipmentView().?.visuals()) |visual| {
         switch (visual.source) {
             .anatomy_part => |part_id| {
                 found_left = found_left or part_id == left_foot;
@@ -870,14 +858,14 @@ test "occupancy layering coverage and semantic foot binding remain independent" 
     }
     try std.testing.expect(found_left and found_right);
     try std.testing.expect(left_before.approxEqAbs(
-        try scene.female.character.anatomy_runtime.?.partBindingWorld(
+        try scene.female.anatomyRuntimeSnapshot().?.partBindingWorld(
             anatomy_definition,
             left_foot,
         ),
         0.000001,
     ));
     try std.testing.expect(right_before.approxEqAbs(
-        try scene.female.character.anatomy_runtime.?.partBindingWorld(
+        try scene.female.anatomyRuntimeSnapshot().?.partBindingWorld(
             anatomy_definition,
             right_foot,
         ),
@@ -891,26 +879,26 @@ test "preset selection is transactional and preserves non-equipment character st
     try scene.female.setPresentationOverride(.force_side);
     try scene.female.setFacing(.right);
 
-    const body_before = scene.female.character.anatomy_runtime.?.selected_body_preset;
-    const hair_before = scene.female.character.anatomy_runtime.?.selected_hair;
-    const world_before = scene.female.world_position;
-    const facing_before = scene.female.facing;
+    const body_before = scene.female.anatomyRuntimeSnapshot().?.selected_body_preset;
+    const hair_before = scene.female.anatomyRuntimeSnapshot().?.selected_hair;
+    const world_before = scene.female.worldPosition();
+    const facing_before = scene.female.facingDirection();
     const view_before = scene.female.presentationView();
     const override_before = scene.female.presentationOverride();
     const animation_before = scene.female.animationState();
-    const controller_before = scene.female.controller.?.state;
+    const controller_before = scene.female.controllerSnapshot().?.state;
 
     try scene.selectPreset(try scene.catalog.presetId("ivory_blouse_red_shorts"));
-    try std.testing.expectEqual(body_before, scene.female.character.anatomy_runtime.?.selected_body_preset);
-    try std.testing.expectEqual(hair_before, scene.female.character.anatomy_runtime.?.selected_hair);
-    try std.testing.expect(world_before.approxEqAbs(scene.female.world_position, 0.000001));
-    try std.testing.expectEqual(facing_before, scene.female.facing);
+    try std.testing.expectEqual(body_before, scene.female.anatomyRuntimeSnapshot().?.selected_body_preset);
+    try std.testing.expectEqual(hair_before, scene.female.anatomyRuntimeSnapshot().?.selected_hair);
+    try std.testing.expect(world_before.approxEqAbs(scene.female.worldPosition(), 0.000001));
+    try std.testing.expectEqual(facing_before, scene.female.facingDirection());
     try std.testing.expectEqual(view_before, scene.female.presentationView());
     try std.testing.expectEqual(override_before, scene.female.presentationOverride());
     try std.testing.expectEqual(animation_before, scene.female.animationState());
-    try expectControllerStateEqual(controller_before, scene.female.controller.?.state);
+    try expectControllerStateEqual(controller_before, scene.female.controllerSnapshot().?.state);
 
-    const fingerprint_before = loadoutFingerprint(&scene.female.equipment_loadout.?);
+    const fingerprint_before = loadoutFingerprint(scene.female.equipmentView().?);
     const tailored = try scene.catalog.equipment_definition.itemId("crimson_tailored_shorts");
     const sport = try scene.catalog.equipment_definition.itemId("scarlet_sport_shorts");
     try std.testing.expectError(
@@ -919,9 +907,9 @@ test "preset selection is transactional and preserves non-equipment character st
     );
     try std.testing.expectEqual(
         fingerprint_before,
-        loadoutFingerprint(&scene.female.equipment_loadout.?),
+        loadoutFingerprint(scene.female.equipmentView().?),
     );
-    try std.testing.expect(scene.male.equipment_loadout == null);
+    try std.testing.expect(!scene.male.hasEquipment());
 }
 
 test "long garment mesh and secondary state clear on replacement and reset returns empty default" {
@@ -947,8 +935,8 @@ test "long garment mesh and secondary state clear on replacement and reset retur
     _ = queue.prepare();
 
     var long_state_observed = false;
-    for (scene.female.equipment_loadout.?.visuals()) |visual| {
-        const component = try componentForVisual(&scene.female.equipment_loadout.?, visual);
+    for (scene.female.equipmentView().?.visuals()) |visual| {
+        const component = try componentForVisual(scene.female.equipmentView().?, visual);
         if (component.presentation_semantic != null and
             @intFromEnum(component.presentation_semantic.?) == 25_032)
         {
@@ -961,18 +949,18 @@ test "long garment mesh and secondary state clear on replacement and reset retur
     try std.testing.expect(long_state_observed);
 
     try scene.selectPreset(try scene.catalog.presetId("scarlet_sport"));
-    for (scene.female.equipment_loadout.?.visuals()) |visual| {
+    for (scene.female.equipmentView().?.visuals()) |visual| {
         try std.testing.expect(!visual.secondary.initialized);
         try std.testing.expectEqual(@as(u64, 0), visual.mesh_state.update_serial);
     }
     try scene.female.resetControlled(&scene.world);
     try std.testing.expectEqual(
         @as(usize, 0),
-        scene.female.equipment_loadout.?.equippedItems().len,
+        scene.female.equipmentView().?.equippedItems().len,
     );
     try std.testing.expectEqual(
         @as(usize, 0),
-        scene.female.equipment_loadout.?.visuals().len,
+        scene.female.equipmentView().?.visuals().len,
     );
 }
 
@@ -1008,7 +996,7 @@ test "front and side preset cycling and submission allocate nothing after initia
                 prepared.sprites.len + prepared.meshes.len,
             );
             try std.testing.expect(
-                submitted > scene.female.equipment_loadout.?.visuals().len,
+                submitted > scene.female.equipmentView().?.visuals().len,
             );
             try std.testing.expect(prepared.ranges.len > 0);
         }
@@ -1122,8 +1110,8 @@ fn expectFrontJointRegistration(
     // extension to 0.1612 m; 0.17 m leaves 0.0088 m for float composition.
     const joint_tolerance: f32 = 0.17;
     for (pairs) |pair| {
-        const parent_key = instance.last_submitted_keys[@intFromEnum(pair.parent)].?;
-        const child_key = instance.last_submitted_keys[@intFromEnum(pair.child)].?;
+        const parent_key = instance.submittedKeyOptional(pair.parent).?;
+        const child_key = instance.submittedKeyOptional(pair.child).?;
         const parent = queue.sprite_submissions[@intCast(parent_key.submission_index)];
         const child = queue.sprite_submissions[@intCast(child_key.submission_index)];
         const distance = pointDistance(
@@ -1172,7 +1160,7 @@ fn expectFemaleFootVisibility(
     var anatomy_feet: usize = 0;
     var shoes: usize = 0;
     for (trace.slice()) |record| {
-        if (record.character_id != scene.female.id.raw()) continue;
+        if (record.character_id != scene.female.id().raw()) continue;
         if (record.owner == .anatomy and record.role == .foot) {
             anatomy_feet += 1;
             try std.testing.expectEqual(expected, record.submission_visibility);
@@ -1198,7 +1186,7 @@ fn expectFemaleFootVisibility(
     try std.testing.expectEqual(@as(usize, 2), anatomy_feet);
     try std.testing.expectEqual(expected_shoes, shoes);
     for ([_]humanoid.AttachmentSemantic{ .left_foot, .right_foot }) |semantic_value| {
-        const key = scene.female.last_submitted_keys[@intFromEnum(semantic_value)];
+        const key = scene.female.submittedKeyOptional(semantic_value);
         try std.testing.expectEqual(expected == .rendered, key != null);
     }
 }

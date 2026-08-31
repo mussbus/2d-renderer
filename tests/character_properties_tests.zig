@@ -254,10 +254,10 @@ test "equipment lifecycle resolves modifiers grants replacement reset and appear
     try std.testing.expect(!try scene.two_arm.hasCapability(double_jump));
     try std.testing.expect(!try scene.two_arm.hasCapability(dash));
 
-    const attributes_before_appearance_change = scene.two_arm.resolved_properties.?;
+    const attributes_before_appearance_change = scene.two_arm.resolvedPropertiesSnapshot().?;
     const anatomy_definition = scene.definition.anatomy_definition.?.view();
     try scene.two_arm.selectBodyPreset(try anatomy_definition.bodyPresetId("conventional_female"));
-    try std.testing.expectEqual(attributes_before_appearance_change, scene.two_arm.resolved_properties.?);
+    try std.testing.expectEqual(attributes_before_appearance_change, scene.two_arm.resolvedPropertiesSnapshot().?);
     try std.testing.expectEqual(@as(f32, 4.5), try scene.four_arm.attributeValue(movement_speed));
 }
 
@@ -288,20 +288,20 @@ test "resolved equipment properties drive movement jump double jump and dash thr
     try controlled.initializeEquipment(equipment_definition.view());
 
     for (0..120) |_| _ = try controlled.stepController(&world, intent(1, false, false));
-    try std.testing.expectApproxEqAbs(@as(f32, 4.5), controlled.controller.?.state.velocity.x, tolerance);
+    try std.testing.expectApproxEqAbs(@as(f32, 4.5), controlled.controllerSnapshot().?.state.velocity.x, tolerance);
     try controlled.resetControlled(&world);
     try controlled.replaceItem(try equipment_definition.itemId("speed_boots"));
     for (0..120) |_| _ = try controlled.stepController(&world, intent(1, false, false));
-    try std.testing.expectApproxEqAbs(@as(f32, 5.175), controlled.controller.?.state.velocity.x, tolerance);
+    try std.testing.expectApproxEqAbs(@as(f32, 5.175), controlled.controllerSnapshot().?.state.velocity.x, tolerance);
 
     try controlled.resetControlled(&world);
     const default_jump = try controlled.stepController(&world, intent(0, true, false));
     try std.testing.expect(default_jump.jump_accepted and default_jump.jump_source == .grounded);
-    const default_jump_velocity = controlled.controller.?.state.velocity.y;
+    const default_jump_velocity = controlled.controllerSnapshot().?.state.velocity.y;
     try controlled.resetControlled(&world);
     try controlled.replaceItem(try equipment_definition.itemId("spring_boots"));
     _ = try controlled.stepController(&world, intent(0, true, false));
-    try std.testing.expect(controlled.controller.?.state.velocity.y > default_jump_velocity + 1.7);
+    try std.testing.expect(controlled.controllerSnapshot().?.state.velocity.y > default_jump_velocity + 1.7);
 
     try controlled.resetControlled(&world);
     _ = try controlled.stepController(&world, intent(0, true, false));
@@ -314,15 +314,15 @@ test "resolved equipment properties drive movement jump double jump and dash thr
     _ = try controlled.stepController(&world, intent(0, true, false));
     const allowed_air_jump = try controlled.stepController(&world, intent(0, true, false));
     try std.testing.expect(allowed_air_jump.jump_accepted and allowed_air_jump.jump_source == .air);
-    try std.testing.expectEqual(@as(u8, 1), controlled.controller.?.state.air_jumps_used);
+    try std.testing.expectEqual(@as(u8, 1), controlled.controllerSnapshot().?.state.air_jumps_used);
     const third_jump = try controlled.stepController(&world, intent(0, true, false));
     try std.testing.expect(!third_jump.jump_accepted);
     for (0..600) |_| {
         _ = try controlled.stepController(&world, emptyIntent());
-        if (controlled.controller.?.state.grounded) break;
+        if (controlled.controllerSnapshot().?.state.grounded) break;
     }
-    try std.testing.expect(controlled.controller.?.state.grounded);
-    try std.testing.expectEqual(@as(u8, 0), controlled.controller.?.state.air_jumps_used);
+    try std.testing.expect(controlled.controllerSnapshot().?.state.grounded);
+    try std.testing.expectEqual(@as(u8, 0), controlled.controllerSnapshot().?.state.air_jumps_used);
     _ = try controlled.stepController(&world, intent(0, true, false));
     try std.testing.expect((try controlled.stepController(&world, intent(0, true, false))).jump_source == .air);
 
@@ -341,13 +341,13 @@ test "resolved equipment properties drive movement jump double jump and dash thr
     try controlled.equipItem(amulet);
     const allowed_dash = try controlled.stepController(&world, intent(-1, false, true));
     try std.testing.expect(allowed_dash.dash_started and !allowed_dash.dash_denied);
-    try std.testing.expectEqual(character_controller.Facing.left, controlled.controller.?.state.facing);
-    try std.testing.expect(controlled.controller.?.state.velocity.x < -11.9);
-    const active_ticks_before_removal = controlled.controller.?.state.dash_ticks_remaining;
+    try std.testing.expectEqual(character_controller.Facing.left, controlled.controllerSnapshot().?.state.facing);
+    try std.testing.expect(controlled.controllerSnapshot().?.state.velocity.x < -11.9);
+    const active_ticks_before_removal = controlled.controllerSnapshot().?.state.dash_ticks_remaining;
     try controlled.unequipItem(amulet);
     _ = try controlled.stepController(&world, emptyIntent());
-    try std.testing.expect(controlled.controller.?.state.dash_ticks_remaining < active_ticks_before_removal);
-    try std.testing.expect(controlled.controller.?.state.dash_ticks_remaining > 0);
+    try std.testing.expect(controlled.controllerSnapshot().?.state.dash_ticks_remaining < active_ticks_before_removal);
+    try std.testing.expect(controlled.controllerSnapshot().?.state.dash_ticks_remaining > 0);
 }
 
 test "dash collides with walls and default resolved controller path is regression-equivalent" {

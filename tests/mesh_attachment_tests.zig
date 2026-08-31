@@ -305,15 +305,15 @@ fn meshRequest(
 }
 
 fn expectDistinctSleeveState(instance: *const @import("character").CharacterInstance) !void {
-    const loadout = &instance.equipment_loadout.?;
+    const loadout = instance.equipmentView().?;
     const component_id = try loadout.definition.visualComponentId("topology_sleeve_mesh");
     var identities: [mesh_demo.expected_nonstandard_sleeves]u32 = undefined;
     var count: usize = 0;
     for (loadout.visuals()) |visual| {
         const recipe = try loadout.definition.recipe(visual.recipe);
         if (recipe.component != component_id) continue;
-        try std.testing.expectEqual(instance.id.raw(), visual.owning_character);
-        try std.testing.expectEqual(instance.id.raw(), visual.mesh_state.owning_character);
+        try std.testing.expectEqual(instance.id().raw(), visual.owning_character);
+        try std.testing.expectEqual(instance.id().raw(), visual.mesh_state.owning_character);
         for (identities[0..count]) |existing| {
             try std.testing.expect(existing != visual.mesh_state.bound_identity.encoded());
         }

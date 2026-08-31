@@ -168,7 +168,7 @@ pub const Candidate = struct {
     eligibility: Eligibility,
 };
 
-pub const Manager = struct {
+const ManagerState = struct {
     definition: interaction.Definition,
     slots: [capacity]Slot = [_]Slot{.{}} ** capacity,
     next_id: u32 = 1,
@@ -177,15 +177,15 @@ pub const Manager = struct {
     last_terminal: ?Instance = null,
     ik_enabled: bool = false,
 
-    pub fn init(definition: interaction.Definition) Manager {
+    pub fn init(definition: interaction.Definition) ManagerState {
         return .{ .definition = definition };
     }
 
-    pub fn initWithIk(definition: interaction.Definition) Manager {
+    pub fn initWithIk(definition: interaction.Definition) ManagerState {
         return .{ .definition = definition, .ik_enabled = true };
     }
 
-    pub fn activeCount(manager: Manager) usize {
+    pub fn activeCount(manager: ManagerState) usize {
         var count: usize = 0;
         for (manager.slots) |slot| {
             if (slot.occupied) count += 1;
@@ -193,14 +193,14 @@ pub const Manager = struct {
         return count;
     }
 
-    pub fn firstActiveInstance(manager: *const Manager) ?*const Instance {
+    pub fn firstActiveInstance(manager: *const ManagerState) ?*const Instance {
         for (&manager.slots) |*slot| {
             if (slot.occupied) return &slot.instance;
         }
         return null;
     }
 
-    pub fn activeOwnedOverrideCount(manager: *const Manager) usize {
+    pub fn activeOwnedOverrideCount(manager: *const ManagerState) usize {
         var count: usize = 0;
         for (manager.slots) |slot| {
             if (slot.occupied) count += slot.instance.owned_override_count;
@@ -208,7 +208,7 @@ pub const Manager = struct {
         return count;
     }
 
-    pub fn activeIkConstraintCount(manager: *const Manager) usize {
+    pub fn activeIkConstraintCount(manager: *const ManagerState) usize {
         var count: usize = 0;
         for (manager.slots) |slot| {
             if (slot.occupied and slot.instance.ik.enabled) count += 1;
@@ -216,11 +216,11 @@ pub const Manager = struct {
         return count;
     }
 
-    pub fn maximumIssuedId(manager: *const Manager) u32 {
+    pub fn maximumIssuedId(manager: *const ManagerState) u32 {
         return if (manager.next_id == 1) 0 else manager.next_id - 1;
     }
 
-    pub fn instance(manager: *const Manager, id: InteractionId) ?*const Instance {
+    pub fn instance(manager: *const ManagerState, id: InteractionId) ?*const Instance {
         if (id == .invalid) return null;
         for (&manager.slots) |*slot| {
             if (slot.instance.id == id) return &slot.instance;
@@ -232,7 +232,7 @@ pub const Manager = struct {
     }
 
     pub fn evaluateEligibility(
-        manager: *const Manager,
+        manager: *const ManagerState,
         initiator_id: character.EntityId,
         receiver_id: character.EntityId,
         characters: []const *character.CharacterInstance,
@@ -249,7 +249,7 @@ pub const Manager = struct {
         if (!manager.definition.allowsStartState(initiator.animationState())) return .{ .reason = .initiator_state_rejected };
         if (!manager.definition.allowsStartState(receiver.animationState())) return .{ .reason = .receiver_state_rejected };
 
-        const delta = receiver.world_position.sub(initiator.world_position);
+        const delta = receiver.worldPosition().sub(initiator.worldPosition());
         const horizontal = @abs(delta.x);
         const vertical = @abs(delta.y);
         const distance = @sqrt(delta.x * delta.x + delta.y * delta.y);
@@ -269,23 +269,23 @@ pub const Manager = struct {
     }
 
     pub fn selectCandidate(
-        manager: *const Manager,
+        manager: *const ManagerState,
         initiator_id: character.EntityId,
         characters: []const *character.CharacterInstance,
     ) !Candidate {
         var best: ?Candidate = null;
         for (characters) |candidate| {
-            if (candidate.id == initiator_id) continue;
-            const eligibility = manager.evaluateEligibility(initiator_id, candidate.id, characters);
+            if (candidate.id() == initiator_id) continue;
+            const eligibility = manager.evaluateEligibility(initiator_id, candidate.id(), characters);
             if (!eligibility.isEligible()) continue;
-            const next = Candidate{ .receiver = candidate.id, .eligibility = eligibility };
+            const next = Candidate{ .receiver = candidate.id(), .eligibility = eligibility };
             if (best == null or candidateRanksBefore(next, best.?)) best = next;
         }
         return best orelse error.NoEligibleInteractionCandidate;
     }
 
     pub fn requestFromIntent(
-        manager: *Manager,
+        manager: *ManagerState,
         initiator_id: character.EntityId,
         intent: input.CharacterIntent,
         characters: []const *character.CharacterInstance,
@@ -299,7 +299,7 @@ pub const Manager = struct {
     }
 
     pub fn startPair(
-        manager: *Manager,
+        manager: *ManagerState,
         initiator_id: character.EntityId,
         receiver_id: character.EntityId,
         characters: []const *character.CharacterInstance,
@@ -319,25 +319,17 @@ pub const Manager = struct {
             return error.InteractionAnimationUnavailable;
         }
 
-        const animator_a_before = participant_a.animator;
-        const animator_b_before = participant_b.animator;
-        var a_reserved = false;
-        var b_reserved = false;
-        errdefer {
-            participant_a.animator = animator_a_before;
-            participant_b.animator = animator_b_before;
-            if (b_reserved) participant_b.releaseInteraction(id.raw()) catch {};
-            if (a_reserved) participant_a.releaseInteraction(id.raw()) catch {};
-        }
+        try participant_a.beginInteractionTransaction();
+        errdefer participant_a.rollbackInteractionTransaction(id.raw()) catch {};
+        try participant_b.beginInteractionTransaction();
+        errdefer participant_b.rollbackInteractionTransaction(id.raw()) catch {};
 
         try participant_a.reserveInteraction(id.raw());
-        a_reserved = true;
         if (manager.definition.presentation.viewForRole(.initiator)) |view| {
             try participant_a.claimInteractionPresentation(id.raw(), view);
         }
         if (fault == .after_reserve_a) return error.InjectedInteractionStartFailure;
         try participant_b.reserveInteraction(id.raw());
-        b_reserved = true;
         if (manager.definition.presentation.viewForRole(.receiver)) |view| {
             try participant_b.claimInteractionPresentation(id.raw(), view);
         }
@@ -357,6 +349,8 @@ pub const Manager = struct {
             .start_tick = current_tick,
         };
         try transitionLifecycle(&prepared, .active);
+        participant_a.commitInteractionTransaction();
+        participant_b.commitInteractionTransaction();
         manager.slots[slot_index] = .{
             .occupied = true,
             .instance = prepared,
@@ -371,7 +365,7 @@ pub const Manager = struct {
     }
 
     pub fn updateTick(
-        manager: *Manager,
+        manager: *ManagerState,
         current_tick: u64,
         characters: []const *character.CharacterInstance,
     ) !void {
@@ -383,7 +377,7 @@ pub const Manager = struct {
     }
 
     pub fn cancelForCharacter(
-        manager: *Manager,
+        manager: *ManagerState,
         entity_id: character.EntityId,
         reason: CancellationReason,
         characters: []const *character.CharacterInstance,
@@ -398,14 +392,14 @@ pub const Manager = struct {
         return false;
     }
 
-    pub fn reset(manager: *Manager, characters: []const *character.CharacterInstance) !void {
+    pub fn reset(manager: *ManagerState, characters: []const *character.CharacterInstance) !void {
         for (&manager.slots) |*slot| {
             if (slot.occupied) try manager.cancelSlot(slot, .scene_reset, characters);
         }
     }
 
     pub fn resetPassiveCharacter(
-        manager: *Manager,
+        manager: *ManagerState,
         entity_id: character.EntityId,
         characters: []const *character.CharacterInstance,
     ) !void {
@@ -415,7 +409,7 @@ pub const Manager = struct {
     }
 
     fn updateSlot(
-        manager: *Manager,
+        manager: *ManagerState,
         slot_index: usize,
         current_tick: u64,
         characters: []const *character.CharacterInstance,
@@ -486,7 +480,7 @@ pub const Manager = struct {
     }
 
     fn beginContact(
-        manager: *Manager,
+        manager: *ManagerState,
         slot: *Slot,
         participant_a: *character.CharacterInstance,
         participant_b: *character.CharacterInstance,
@@ -538,7 +532,7 @@ pub const Manager = struct {
     }
 
     fn applyOcclusionProfile(
-        manager: *Manager,
+        manager: *ManagerState,
         instance_value: *Instance,
         participant_a: *character.CharacterInstance,
         participant_b: *character.CharacterInstance,
@@ -560,7 +554,7 @@ pub const Manager = struct {
     }
 
     fn applySharedHandIk(
-        manager: *Manager,
+        manager: *ManagerState,
         instance_value: *Instance,
         participant_a: *character.CharacterInstance,
         participant_b: *character.CharacterInstance,
@@ -590,7 +584,7 @@ pub const Manager = struct {
     }
 
     fn addOverride(
-        manager: *Manager,
+        manager: *ManagerState,
         instance_value: *Instance,
         participant: *character.CharacterInstance,
         semantic: humanoid.AttachmentSemantic,
@@ -599,12 +593,12 @@ pub const Manager = struct {
         _ = manager;
         if (instance_value.owned_override_count == instance_value.owned_overrides.len) return error.InteractionOverrideCapacityExceeded;
         const handle = try participant.applySemanticOverride(semantic, request);
-        instance_value.owned_overrides[instance_value.owned_override_count] = .{ .participant = participant.id, .handle = handle };
+        instance_value.owned_overrides[instance_value.owned_override_count] = .{ .participant = participant.id(), .handle = handle };
         instance_value.owned_override_count += 1;
     }
 
     fn clearOwnedOverrides(
-        manager: *Manager,
+        manager: *ManagerState,
         instance_value: *Instance,
         characters: []const *character.CharacterInstance,
     ) !void {
@@ -622,7 +616,7 @@ pub const Manager = struct {
     }
 
     fn completeSlot(
-        manager: *Manager,
+        manager: *ManagerState,
         slot: *Slot,
         participant_a: *character.CharacterInstance,
         participant_b: *character.CharacterInstance,
@@ -641,7 +635,7 @@ pub const Manager = struct {
     }
 
     fn cancelSlot(
-        manager: *Manager,
+        manager: *ManagerState,
         slot: *Slot,
         reason: CancellationReason,
         characters: []const *character.CharacterInstance,
@@ -670,7 +664,7 @@ pub const Manager = struct {
     }
 
     fn clearIkConstraint(
-        manager: *Manager,
+        manager: *ManagerState,
         instance_value: *Instance,
         participant_a: *character.CharacterInstance,
         participant_b: *character.CharacterInstance,
@@ -681,13 +675,157 @@ pub const Manager = struct {
         instance_value.ik = .{};
     }
 
-    fn availableSlot(manager: *const Manager) ?usize {
+    fn availableSlot(manager: *const ManagerState) ?usize {
         for (manager.slots, 0..) |slot, index| {
             if (!slot.occupied) return index;
         }
         return null;
     }
 };
+
+/// Supported interaction lifecycle authority. Mutable slots, identifiers,
+/// diagnostics, terminal state, and IK configuration remain in opaque inline
+/// storage so callers can issue lifecycle commands and read snapshots without
+/// acquiring a second mutation authority or changing allocation behavior.
+pub const Manager = struct {
+    opaque_storage: [@sizeOf(ManagerState)]u8 align(@alignOf(ManagerState)),
+
+    pub fn init(definition: interaction.Definition) Manager {
+        var manager: Manager = undefined;
+        manager.stateMut().* = ManagerState.init(definition);
+        return manager;
+    }
+
+    pub fn initWithIk(definition: interaction.Definition) Manager {
+        var manager: Manager = undefined;
+        manager.stateMut().* = ManagerState.initWithIk(definition);
+        return manager;
+    }
+
+    pub fn definitionView(manager: *const Manager) interaction.Definition {
+        return manager.stateConst().definition;
+    }
+
+    pub fn metricsSnapshot(manager: *const Manager) Metrics {
+        return manager.stateConst().metrics;
+    }
+
+    pub fn lastTerminal(manager: *const Manager) ?*const Instance {
+        const state = manager.stateConst();
+        return if (state.last_terminal) |*terminal| terminal else null;
+    }
+
+    pub fn activeCount(manager: *const Manager) usize {
+        return manager.stateConst().activeCount();
+    }
+
+    pub fn firstActiveInstance(manager: *const Manager) ?*const Instance {
+        return manager.stateConst().firstActiveInstance();
+    }
+
+    pub fn activeOwnedOverrideCount(manager: *const Manager) usize {
+        return manager.stateConst().activeOwnedOverrideCount();
+    }
+
+    pub fn activeIkConstraintCount(manager: *const Manager) usize {
+        return manager.stateConst().activeIkConstraintCount();
+    }
+
+    pub fn maximumIssuedId(manager: *const Manager) u32 {
+        return manager.stateConst().maximumIssuedId();
+    }
+
+    pub fn instance(manager: *const Manager, id: InteractionId) ?*const Instance {
+        return manager.stateConst().instance(id);
+    }
+
+    pub fn evaluateEligibility(
+        manager: *const Manager,
+        initiator_id: character.EntityId,
+        receiver_id: character.EntityId,
+        characters: []const *character.CharacterInstance,
+    ) Eligibility {
+        return manager.stateConst().evaluateEligibility(initiator_id, receiver_id, characters);
+    }
+
+    pub fn selectCandidate(
+        manager: *const Manager,
+        initiator_id: character.EntityId,
+        characters: []const *character.CharacterInstance,
+    ) !Candidate {
+        return manager.stateConst().selectCandidate(initiator_id, characters);
+    }
+
+    pub fn requestFromIntent(
+        manager: *Manager,
+        initiator_id: character.EntityId,
+        intent: input.CharacterIntent,
+        characters: []const *character.CharacterInstance,
+        current_tick: u64,
+    ) !?InteractionId {
+        return manager.stateMut().requestFromIntent(initiator_id, intent, characters, current_tick);
+    }
+
+    pub fn startPair(
+        manager: *Manager,
+        initiator_id: character.EntityId,
+        receiver_id: character.EntityId,
+        characters: []const *character.CharacterInstance,
+        current_tick: u64,
+        fault: StartFault,
+    ) !InteractionId {
+        return manager.stateMut().startPair(initiator_id, receiver_id, characters, current_tick, fault);
+    }
+
+    pub fn updateTick(
+        manager: *Manager,
+        current_tick: u64,
+        characters: []const *character.CharacterInstance,
+    ) !void {
+        try manager.stateMut().updateTick(current_tick, characters);
+    }
+
+    pub fn cancelForCharacter(
+        manager: *Manager,
+        entity_id: character.EntityId,
+        reason: CancellationReason,
+        characters: []const *character.CharacterInstance,
+    ) !bool {
+        return manager.stateMut().cancelForCharacter(entity_id, reason, characters);
+    }
+
+    pub fn reset(manager: *Manager, characters: []const *character.CharacterInstance) !void {
+        try manager.stateMut().reset(characters);
+    }
+
+    pub fn resetPassiveCharacter(
+        manager: *Manager,
+        entity_id: character.EntityId,
+        characters: []const *character.CharacterInstance,
+    ) !void {
+        try manager.stateMut().resetPassiveCharacter(entity_id, characters);
+    }
+
+    fn stateMut(manager: *Manager) *ManagerState {
+        return @ptrCast(@alignCast(&manager.opaque_storage));
+    }
+
+    fn stateConst(manager: *const Manager) *const ManagerState {
+        return @ptrCast(@alignCast(&manager.opaque_storage));
+    }
+};
+
+/// Explicit white-box route available only in test builds. Production modules
+/// cannot use it because the declaration is empty when `builtin.is_test` is
+/// false; repository policy additionally rejects production references.
+pub const testing = if (@import("builtin").is_test) struct {
+    pub fn setNextId(manager: *Manager, next_id: u32) void {
+        std.debug.assert(next_id != 0);
+        const state = manager.stateMut();
+        state.next_id = next_id;
+        state.ids_exhausted = false;
+    }
+} else struct {};
 
 pub fn sharedTarget(role_a_pre_ik_hand: math.Vec2, role_b_pre_ik_hand: math.Vec2) math.Vec2 {
     return role_a_pre_ik_hand.add(role_b_pre_ik_hand).scale(0.5);
@@ -708,14 +846,14 @@ pub fn weightForElapsed(definition: *const interaction.Definition, elapsed_ticks
 
 fn findCharacter(characters: []const *character.CharacterInstance, id: character.EntityId) ?*character.CharacterInstance {
     for (characters) |candidate| {
-        if (candidate.id == id) return candidate;
+        if (candidate.id() == id) return candidate;
     }
     return null;
 }
 
 fn faceToFace(a: character.CharacterInstance, b: character.CharacterInstance) bool {
-    if (a.world_position.x < b.world_position.x) return a.facing == .right and b.facing == .left;
-    if (b.world_position.x < a.world_position.x) return b.facing == .right and a.facing == .left;
+    if (a.worldPosition().x < b.worldPosition().x) return a.facingDirection() == .right and b.facingDirection() == .left;
+    if (b.worldPosition().x < a.worldPosition().x) return b.facingDirection() == .right and a.facingDirection() == .left;
     return false;
 }
 

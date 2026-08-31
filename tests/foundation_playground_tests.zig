@@ -39,12 +39,12 @@ test "synthetic viewport changes preserve gameplay loadout capabilities and pend
     try scene.updateFrame(0, snapshot);
     const before = scene.gameplayState();
     const pending_before = scene.pending_input.pendingEdgeCount();
-    const controller_before = scene.player.controller.?.state;
+    const controller_before = scene.player.controllerSnapshot().?.state;
     const character_half_extents_before =
-        scene.player.controller.?.configuration.collider_half_extents;
+        scene.player.controllerSnapshot().?.configuration.collider_half_extents;
     const animation_state_before = scene.player.animationState();
     const animation_time_before = scene.player.animationTime();
-    const character_transform_before = scene.player.character.character_to_world;
+    const character_transform_before = scene.player.humanoidView().character_to_world;
     const camera_center_before = scene.camera.center;
     try scene.applyViewport(1024, 576);
     try scene.applyViewport(1440, 900);
@@ -55,14 +55,14 @@ test "synthetic viewport changes preserve gameplay loadout capabilities and pend
     try std.testing.expectEqual(@as(u32, 900), scene.camera.viewport_height);
     try std.testing.expectApproxEqAbs(@as(f32, 153.75), scene.camera.pixels_per_meter, 0.00001);
     try std.testing.expectEqual(camera_center_before, scene.camera.center);
-    try std.testing.expectEqualDeep(controller_before, scene.player.controller.?.state);
+    try std.testing.expectEqualDeep(controller_before, scene.player.controllerSnapshot().?.state);
     try std.testing.expectEqual(
         character_half_extents_before,
-        scene.player.controller.?.configuration.collider_half_extents,
+        scene.player.controllerSnapshot().?.configuration.collider_half_extents,
     );
     try std.testing.expectEqual(animation_state_before, scene.player.animationState());
     try std.testing.expectEqual(animation_time_before, scene.player.animationTime());
-    try std.testing.expectEqual(character_transform_before, scene.player.character.character_to_world);
+    try std.testing.expectEqual(character_transform_before, scene.player.humanoidView().character_to_world);
     try std.testing.expectEqual(@as(u32, 2), scene.evidence.resize_events);
 }
 

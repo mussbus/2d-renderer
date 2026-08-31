@@ -167,8 +167,8 @@ pub const Scene = struct {
         }
         const anatomy_definition = scene.definition.anatomy_definition.?.view();
         if (anatomy_definition.faces.len < 2) return error.DistinctFaceDefinitionsMissing;
-        const male_runtime = scene.conventional_male.character.anatomy_runtime.?;
-        const female_runtime = scene.conventional_female.character.anatomy_runtime.?;
+        const male_runtime = scene.conventional_male.anatomyRuntimeSnapshot().?;
+        const female_runtime = scene.conventional_female.anatomyRuntimeSnapshot().?;
         for ([_][]const u8{ "left_eye", "right_eye", "left_eyebrow", "right_eyebrow", "nose", "mouth", "left_ear", "right_ear" }) |name| {
             const part_id = try anatomy_definition.partInstanceId(name);
             if (!try male_runtime.isPartActive(anatomy_definition, part_id) or
@@ -196,10 +196,10 @@ pub const Scene = struct {
         const appearance_definition = scene.definition.visual_definition.view();
         const conventional_eye_id = try scene.definition.visual_definition.visualId("left_eye");
         const angular_eye_id = try scene.definition.visual_definition.visualId("angular_left_eye");
-        if (!try scene.conventional_male.character.appearance_runtime.isVisible(appearance_definition, conventional_eye_id) or
-            try scene.conventional_male.character.appearance_runtime.isVisible(appearance_definition, angular_eye_id) or
-            try scene.conventional_female.character.appearance_runtime.isVisible(appearance_definition, conventional_eye_id) or
-            !try scene.conventional_female.character.appearance_runtime.isVisible(appearance_definition, angular_eye_id))
+        if (!try scene.conventional_male.humanoidView().appearance_runtime.isVisible(appearance_definition, conventional_eye_id) or
+            try scene.conventional_male.humanoidView().appearance_runtime.isVisible(appearance_definition, angular_eye_id) or
+            try scene.conventional_female.humanoidView().appearance_runtime.isVisible(appearance_definition, conventional_eye_id) or
+            !try scene.conventional_female.humanoidView().appearance_runtime.isVisible(appearance_definition, angular_eye_id))
         {
             return error.DistinctFaceVisualSelectionIncorrect;
         }
@@ -210,7 +210,7 @@ pub const Scene = struct {
         {
             return error.DistinctFaceVisualDataMissing;
         }
-        const unusual_runtime = scene.nonstandard.character.anatomy_runtime.?;
+        const unusual_runtime = scene.nonstandard.anatomyRuntimeSnapshot().?;
         for ([_][]const u8{ "extra_arm", "extra_arm_second", "tail", "left_horn", "right_horn" }) |name| {
             if (!try unusual_runtime.isPartActive(anatomy_definition, try anatomy_definition.partInstanceId(name))) {
                 return error.NonstandardAnatomyMissing;
@@ -234,7 +234,7 @@ pub fn runFaultInjectionChecks(allocator: std.mem.Allocator) !void {
 }
 
 fn topologyFingerprint(instance: *const character.CharacterInstance) !u64 {
-    const definition = instance.definition.anatomy_definition orelse return error.CharacterHasNoAnatomy;
-    const runtime = instance.character.anatomy_runtime orelse return error.CharacterHasNoAnatomy;
+    const definition = instance.definitionView().anatomy_definition orelse return error.CharacterHasNoAnatomy;
+    const runtime = instance.humanoidView().anatomy_runtime orelse return error.CharacterHasNoAnatomy;
     return runtime.topologyFingerprint(definition);
 }

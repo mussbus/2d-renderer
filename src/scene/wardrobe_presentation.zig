@@ -146,11 +146,11 @@ pub const Presentation = struct {
         instance: *const character.CharacterInstance,
     ) !character_art.FootCoverage {
         _ = presentation;
-        const loadout = if (instance.equipment_loadout) |*value|
+        const loadout = if (instance.equipmentView()) |value|
             value
         else
             return .{};
-        const anatomy_definition = instance.definition.anatomy_definition orelse
+        const anatomy_definition = instance.definitionView().anatomy_definition orelse
             return error.CharacterHasNoAnatomy;
         var result = character_art.FootCoverage{};
         for (loadout.visuals()) |visual| {
@@ -190,16 +190,18 @@ pub const Presentation = struct {
         registered_feet: character_art.RegisteredFeet,
         trace: ?*visual_geometry.Trace,
     ) !u32 {
-        const loadout = if (instance.equipment_loadout) |*value| value else return error.CharacterEquipmentNotInitialized;
-        const anatomy_definition = instance.definition.anatomy_definition orelse
+        const loadout = instance.equipmentView() orelse return error.CharacterEquipmentNotInitialized;
+        const character_definition = instance.definitionView();
+        const humanoid_runtime = instance.humanoidView();
+        const anatomy_definition = character_definition.anatomy_definition orelse
             return error.CharacterHasNoAnatomy;
-        const anatomy_runtime = if (instance.character.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
+        const anatomy_runtime = if (humanoid_runtime.anatomy_runtime) |*value| value else return error.CharacterHasNoAnatomy;
         try loadout.validateCompatibility(.{
             .definition = anatomy_definition,
             .runtime = anatomy_runtime,
-            .owning_character = instance.id.raw(),
+            .owning_character = instance.id().raw(),
         });
-        if (loadout.definition.appearance_token != instance.definition.visual_definition.owner_token) {
+        if (loadout.definition.appearance_token != character_definition.visual_definition.owner_token) {
             return error.EquipmentAppearanceDefinitionMismatch;
         }
 
@@ -207,39 +209,39 @@ pub const Presentation = struct {
         const projection = switch (view) {
             .front => projection: {
                 var front = try presentation_pose.FrontProjection.init(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
+                    &character_definition.skeleton_definition,
+                    humanoid_runtime.local_and_world_pose,
+                    character_definition.visual_definition,
+                    humanoid_runtime.appearance_runtime,
+                    instance.worldPosition(),
                 );
                 try front.applyFrontShoulderMorphology(
-                    &instance.definition.skeleton_definition,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
+                    &character_definition.skeleton_definition,
+                    character_definition.visual_definition,
+                    humanoid_runtime.appearance_runtime,
                     anatomy_definition,
                     anatomy_runtime.*,
-                    instance.world_position.x,
+                    instance.worldPosition().x,
                 );
                 break :projection front;
             },
             .side => if (instance.isInteractionLocked())
                 try presentation_pose.FrontProjection.initSideInteraction(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
-                    instance.facing == .left,
+                    &character_definition.skeleton_definition,
+                    humanoid_runtime.local_and_world_pose,
+                    character_definition.visual_definition,
+                    humanoid_runtime.appearance_runtime,
+                    instance.worldPosition(),
+                    instance.facingDirection() == .left,
                 )
             else
                 try presentation_pose.FrontProjection.initSide(
-                    &instance.definition.skeleton_definition,
-                    instance.character.local_and_world_pose,
-                    instance.definition.visual_definition,
-                    instance.character.appearance_runtime,
-                    instance.world_position,
-                    instance.facing == .left,
+                    &character_definition.skeleton_definition,
+                    humanoid_runtime.local_and_world_pose,
+                    character_definition.visual_definition,
+                    humanoid_runtime.appearance_runtime,
+                    instance.worldPosition(),
+                    instance.facingDirection() == .left,
                 ),
         };
         const projected_anatomy = try presentation_pose.FrontAnatomyProjection.init(
@@ -315,8 +317,8 @@ pub const Presentation = struct {
                         composed_deformation.scale.y *= spec.fit.male_side_scale_y;
                     }
                 }
-                try loadout.resolved_visuals[visual_index].mesh_state.update(
-                    instance.id.raw(),
+                try instance.updateEquipmentMeshState(
+                    visual_index,
                     resolved.bound_identity,
                     mesh_binding_world,
                     composed_deformation,
@@ -326,7 +328,7 @@ pub const Presentation = struct {
                     .definition = definition,
                     .binding_world = mesh_binding_world,
                     .resolved_deformation = composed_deformation,
-                    .owning_character = instance.id.raw(),
+                    .owning_character = instance.id().raw(),
                     .bound_identity = resolved.bound_identity,
                     .order = order,
                 });
@@ -367,9 +369,9 @@ pub const Presentation = struct {
                         .order = order,
                     };
                     try sink.append(.{
-                        .character_id = instance.id.raw(),
+                        .character_id = instance.id().raw(),
                         .style = bodyStyle(instance),
-                        .view = geometryView(view, instance.facing),
+                        .view = geometryView(view, instance.facingDirection()),
                         .owner = ownerForRole(role),
                         .role = role,
                         .side = semanticSide(visual, anatomy_definition),
@@ -388,7 +390,7 @@ pub const Presentation = struct {
                         .geometry = visual_geometry.attachmentGeometry(
                             spec.stable_id,
                             role,
-                            geometryView(view, instance.facing),
+                            geometryView(view, instance.facingDirection()),
                         ),
                         .fit = spec.fit,
                         .world_geometry = visual_geometry.WorldGeometry.init(&.{
@@ -414,7 +416,7 @@ pub const Presentation = struct {
                 const rest_rotation = restRotation(
                     binding.anchor,
                     view,
-                    instance.facing,
+                    instance.facingDirection(),
                 );
                 var world_size = presentation_view.spriteMorphologyScale(
                     sprite_transform.signed_scale,
@@ -495,7 +497,7 @@ pub const Presentation = struct {
                 const geometry = visual_geometry.attachmentGeometry(
                     spec.stable_id,
                     role,
-                    geometryView(view, instance.facing),
+                    geometryView(view, instance.facingDirection()),
                 );
                 const registered = if (binding.anchor == .foot)
                     try registeredShoePlacement(
@@ -518,9 +520,9 @@ pub const Presentation = struct {
                     const source = sourceForWardrobeRegion(selected.region_id) orelse
                         return error.MissingWardrobeGeometrySource;
                     try sink.append(.{
-                        .character_id = instance.id.raw(),
+                        .character_id = instance.id().raw(),
                         .style = bodyStyle(instance),
-                        .view = geometryView(view, instance.facing),
+                        .view = geometryView(view, instance.facingDirection()),
                         .owner = ownerForRole(role),
                         .role = role,
                         .side = resolved_side,
@@ -562,7 +564,7 @@ pub const Presentation = struct {
         instance: *const character.CharacterInstance,
         visual_index: usize,
     ) !sprite.OrderInput {
-        const loadout = if (instance.equipment_loadout) |*value|
+        const loadout = if (instance.equipmentView()) |value|
             value
         else
             return error.CharacterEquipmentNotInitialized;
@@ -577,7 +579,7 @@ pub const Presentation = struct {
         const component = loadout.definition.visual_components[recipe.component.index()];
         const binding = presentation.bindings[component.id.index()];
         if (!binding.active) return error.MissingWardrobePresentationBinding;
-        const anatomy_definition = instance.definition.anatomy_definition orelse
+        const anatomy_definition = instance.definitionView().anatomy_definition orelse
             return error.CharacterHasNoAnatomy;
         const layer = loadout.definition.visual_layers[recipe.visual_layer.index()];
         return .{
@@ -588,7 +590,7 @@ pub const Presentation = struct {
                 binding.anchor,
                 anatomy_definition,
             ),
-            .actor_layer = instance.actor_layer,
+            .actor_layer = instance.actorLayer(),
             .body_part_layer = layer.render_layer,
         };
     }
@@ -654,8 +656,8 @@ fn ownerForRole(role: visual_geometry.Role) visual_geometry.Owner {
 }
 
 fn bodyStyle(instance: *const character.CharacterInstance) []const u8 {
-    const anatomy_definition = instance.definition.anatomy_definition orelse return "unknown";
-    const anatomy_runtime = instance.character.anatomy_runtime orelse return "unknown";
+    const anatomy_definition = instance.definitionView().anatomy_definition orelse return "unknown";
+    const anatomy_runtime = instance.humanoidView().anatomy_runtime orelse return "unknown";
     const preset = anatomy_definition.body_presets[anatomy_runtime.selected_body_preset.index()];
     if (std.mem.indexOf(u8, preset.stable_id.slice(), "female") != null) return "female";
     if (std.mem.indexOf(u8, preset.stable_id.slice(), "male") != null) return "male";
@@ -791,9 +793,9 @@ fn projectedEquipmentTransform(
     front: presentation_pose.FrontProjection,
     front_anatomy: presentation_pose.FrontAnatomyProjection,
 ) !character.ResolvedEquipmentTransform {
-    const loadout = &instance.equipment_loadout.?;
-    const anatomy_definition = instance.definition.anatomy_definition.?;
-    const anatomy_runtime = &instance.character.anatomy_runtime.?;
+    const loadout = instance.equipmentView().?;
+    const anatomy_definition = instance.definitionView().anatomy_definition.?;
+    const anatomy_runtime = &instance.humanoidView().anatomy_runtime.?;
     if (visual_index >= loadout.visuals().len) return error.InvalidResolvedEquipmentVisualIndex;
     const visual = loadout.visuals()[visual_index];
     const recipe = try loadout.definition.recipe(visual.recipe);

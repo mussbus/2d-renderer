@@ -119,8 +119,8 @@ pub const Scene = struct {
         try nonstandard.equipItem(cape_item);
 
         const sleeve_component = try equipment_definition.visualComponentId("topology_sleeve_mesh");
-        const conventional_sleeves = countComponentVisuals(&conventional.equipment_loadout.?, sleeve_component);
-        const nonstandard_sleeves = countComponentVisuals(&nonstandard.equipment_loadout.?, sleeve_component);
+        const conventional_sleeves = countComponentVisuals(conventional.equipmentView().?, sleeve_component);
+        const nonstandard_sleeves = countComponentVisuals(nonstandard.equipmentView().?, sleeve_component);
         if (conventional_sleeves != expected_conventional_sleeves or nonstandard_sleeves != expected_nonstandard_sleeves) {
             return error.TopologyAwareMeshExpansionEvidenceMissing;
         }
@@ -166,7 +166,7 @@ pub const Scene = struct {
         const cape_item = try scene.equipment_definition.itemId("upper_back_cape");
         if (frame == 40) {
             const cape_index = try scene.findEquipmentVisualIndex(&scene.conventional, "cape_mesh");
-            if (!scene.conventional.equipment_loadout.?.resolved_visuals[cape_index].secondary.initialized) {
+            if (!scene.conventional.equipmentView().?.resolved_visuals[cape_index].secondary.initialized) {
                 return error.CapeMotionWasNotInitializedBeforeUnequip;
             }
             try scene.conventional.unequipItem(cape_item);
@@ -179,7 +179,7 @@ pub const Scene = struct {
                 break :missing false;
             };
             scene.evidence.cape_runtime_removed =
-                !scene.conventional.equipment_loadout.?.resolved_visuals[cape_index].secondary.initialized and
+                !scene.conventional.equipmentView().?.resolved_visuals[cape_index].secondary.initialized and
                 cape_missing;
         } else if (frame == 80) {
             try scene.conventional.equipItem(cape_item);
@@ -245,8 +245,8 @@ pub const Scene = struct {
     fn observeRuntimeState(scene: *Scene) !void {
         const fitted_component = try scene.equipment_definition.visualComponentId("fitted_torso_mesh");
         const sleeve_component = try scene.equipment_definition.visualComponentId("topology_sleeve_mesh");
-        const conventional_loadout = &scene.conventional.equipment_loadout.?;
-        const nonstandard_loadout = &scene.nonstandard.equipment_loadout.?;
+        const conventional_loadout = scene.conventional.equipmentView().?;
+        const nonstandard_loadout = scene.nonstandard.equipmentView().?;
 
         var first_conventional_sleeve: ?*const equipment.ResolvedVisualInstance = null;
         var second_conventional_sleeve: ?*const equipment.ResolvedVisualInstance = null;
@@ -273,8 +273,8 @@ pub const Scene = struct {
         const other_character = first_nonstandard_sleeve orelse return error.MissingNonstandardSleeveState;
         const fitted = conventional_fitted orelse return error.MissingFittedMeshState;
         scene.evidence.independent_repeated_state =
-            first.mesh_state.owning_character == scene.conventional.id.raw() and
-            second.mesh_state.owning_character == scene.conventional.id.raw() and
+            first.mesh_state.owning_character == scene.conventional.id().raw() and
+            second.mesh_state.owning_character == scene.conventional.id().raw() and
             first.mesh_state.bound_identity.encoded() != second.mesh_state.bound_identity.encoded() and
             first.mesh_state.update_serial > 0 and second.mesh_state.update_serial > 0;
         scene.evidence.repeated_secondary_state_independent =
@@ -282,7 +282,7 @@ pub const Scene = struct {
             &first.secondary != &second.secondary and
             first.mesh_state.bound_identity.encoded() != second.mesh_state.bound_identity.encoded();
         scene.evidence.independent_character_state =
-            other_character.mesh_state.owning_character == scene.nonstandard.id.raw() and
+            other_character.mesh_state.owning_character == scene.nonstandard.id().raw() and
             other_character.mesh_state.owning_character != first.mesh_state.owning_character;
         scene.evidence.mirrored_facing =
             first.mesh_state.binding_world.values[0] * other_character.mesh_state.binding_world.values[0] < 0;
@@ -301,7 +301,7 @@ pub const Scene = struct {
         scene.evidence.deformation_changed =
             scene.evidence.breathing_deformation_changed and scene.evidence.build_deformation_changed;
 
-        const conventional_tick = scene.conventional.simulation_tick;
+        const conventional_tick = scene.conventional.simulationTick();
         if (scene.findEquipmentSecondaryState(&scene.conventional, "cape_mesh")) |cape_state| {
             const displacement_value = try cape_state.displacement(attachment_meshes.cape_secondary_motion, 2);
             const target_x = cape_state.points[2].horizontal.target_offset;
@@ -335,11 +335,11 @@ pub const Scene = struct {
         const appearance_definition = scene.definition.visual_definition.view();
         const long_hair_id = try scene.definition.visual_definition.visualId("long_hair");
         const ponytail_id = try scene.definition.visual_definition.visualId("ponytail_hair");
-        const long_hair_state = try scene.conventional.character.appearance_runtime.visualSecondaryState(
+        const long_hair_state = try scene.conventional.humanoidView().appearance_runtime.visualSecondaryState(
             appearance_definition,
             long_hair_id,
         );
-        const ponytail_state = try scene.nonstandard.character.appearance_runtime.visualSecondaryState(
+        const ponytail_state = try scene.nonstandard.humanoidView().appearance_runtime.visualSecondaryState(
             appearance_definition,
             ponytail_id,
         );
@@ -353,7 +353,7 @@ pub const Scene = struct {
 
     fn currentFittedScaleX(scene: *const Scene) !f32 {
         const fitted_component = try scene.equipment_definition.visualComponentId("fitted_torso_mesh");
-        const loadout = &scene.conventional.equipment_loadout.?;
+        const loadout = scene.conventional.equipmentView().?;
         for (loadout.visuals()) |visual| {
             const recipe = try loadout.definition.recipe(visual.recipe);
             if (recipe.component == fitted_component) return visual.mesh_state.resolved_deformation.scale.x;
@@ -367,7 +367,7 @@ pub const Scene = struct {
         component_name: []const u8,
     ) !usize {
         const component_id = try scene.equipment_definition.visualComponentId(component_name);
-        const loadout = &instance.equipment_loadout.?;
+        const loadout = instance.equipmentView().?;
         for (loadout.visuals(), 0..) |visual, index| {
             const recipe = try loadout.definition.recipe(visual.recipe);
             if (recipe.component == component_id) return index;
@@ -381,7 +381,7 @@ pub const Scene = struct {
         component_name: []const u8,
     ) !*const attachment_secondary_motion.RuntimeState {
         const index = try scene.findEquipmentVisualIndex(instance, component_name);
-        return &instance.equipment_loadout.?.resolved_visuals[index].secondary;
+        return &instance.equipmentView().?.resolved_visuals[index].secondary;
     }
 
     pub fn equipmentSecondaryState(

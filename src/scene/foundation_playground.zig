@@ -339,7 +339,7 @@ pub const Scene = struct {
         const scaled_delta = if (scene.time_mode == .quarter_speed) frame_delta * 0.25 else frame_delta;
         const frame = try scene.clock.beginFrame(scaled_delta);
         for (0..frame.substeps) |_| try scene.updateTick();
-        try scene.camera_follower.update(&scene.camera, scene.player.world_position.x);
+        try scene.camera_follower.update(&scene.camera, scene.player.worldPosition().x);
         scene.evidence.camera_min_x = @min(scene.evidence.camera_min_x, scene.camera.center.x);
         scene.evidence.camera_max_x = @max(scene.evidence.camera_max_x, scene.camera.center.x);
         const camera_displacement = scene.evidence.camera_max_x - scene.evidence.camera_min_x;
@@ -358,24 +358,24 @@ pub const Scene = struct {
             if (physics_result.jump_source == .air) {
                 scene.evidence.double_jump_observed = true;
             } else if (scene.loadout_index == 0 and scene.evidence.baseline_jump_velocity == 0) {
-                scene.evidence.baseline_jump_velocity = scene.player.controller.?.state.velocity.y;
+                scene.evidence.baseline_jump_velocity = scene.player.controllerSnapshot().?.state.velocity.y;
             } else if (scene.loadout_index == 1 and scene.evidence.modified_jump_velocity == 0) {
-                scene.evidence.modified_jump_velocity = scene.player.controller.?.state.velocity.y;
+                scene.evidence.modified_jump_velocity = scene.player.controllerSnapshot().?.state.velocity.y;
             }
         }
         if (physics_result.dash_started) {
             scene.evidence.dash_observed = true;
-            scene.dash_start_x = scene.player.world_position.x;
+            scene.dash_start_x = scene.player.worldPosition().x;
         }
         if (scene.dash_start_x) |start_x| {
-            scene.evidence.dash_distance = @max(scene.evidence.dash_distance, @abs(scene.player.world_position.x - start_x));
+            scene.evidence.dash_distance = @max(scene.evidence.dash_distance, @abs(scene.player.worldPosition().x - start_x));
             if (physics_result.dash_ended) scene.dash_start_x = null;
         }
         scene.evidence.landing_observed = scene.evidence.landing_observed or physics_result.landed;
-        if (scene.player.controller.?.state.grounded and scene.loadout_index == 0 and !scene.evidence.dash_observed) {
+        if (scene.player.controllerSnapshot().?.state.grounded and scene.loadout_index == 0 and !scene.evidence.dash_observed) {
             scene.evidence.maximum_observed_ground_speed = @max(
                 scene.evidence.maximum_observed_ground_speed,
-                @abs(scene.player.controller.?.state.velocity.x),
+                @abs(scene.player.controllerSnapshot().?.state.velocity.x),
             );
         }
 
@@ -396,7 +396,7 @@ pub const Scene = struct {
         if (intent_value.interact_pressed) {
             scene.evidence.interaction_requests += 1;
             const requested = scene.manager.requestFromIntent(
-                scene.player.id,
+                scene.player.id(),
                 intent_value,
                 &participants_value,
                 scene.simulation_tick,
@@ -409,8 +409,8 @@ pub const Scene = struct {
                 scene.observed_interaction = id;
                 scene.observed_event_counts = [_]u8{0} ** interaction.event_count;
                 scene.evidence.successful_interactions += 1;
-                scene.handshake_player_root = scene.player.world_position;
-                scene.handshake_partner_root = scene.partner.world_position;
+                scene.handshake_player_root = scene.player.worldPosition();
+                scene.handshake_partner_root = scene.partner.worldPosition();
             }
         }
 
@@ -423,10 +423,10 @@ pub const Scene = struct {
             scene.observeInteraction(active);
             if (scene.handshake_player_root) |player_root| {
                 scene.evidence.handshake_root_invariance = scene.evidence.handshake_root_invariance and
-                    scene.player.world_position.approxEqAbs(player_root, 0.000001) and
-                    scene.partner.world_position.approxEqAbs(scene.handshake_partner_root.?, 0.000001);
+                    scene.player.worldPosition().approxEqAbs(player_root, 0.000001) and
+                    scene.partner.worldPosition().approxEqAbs(scene.handshake_partner_root.?, 0.000001);
             }
-        } else if (scene.manager.last_terminal) |*terminal| {
+        } else if (scene.manager.lastTerminal()) |terminal| {
             if (terminal.id != scene.last_terminal_id) {
                 scene.observeInteraction(terminal);
                 scene.last_terminal_id = terminal.id;
@@ -466,7 +466,7 @@ pub const Scene = struct {
         scene.loadout_index = 0;
         scene.time_mode = .normal;
         scene.active_interaction = .invalid;
-        if (scene.manager.last_terminal) |terminal| {
+        if (scene.manager.lastTerminal()) |terminal| {
             scene.observed_interaction = terminal.id;
             scene.observed_event_counts = terminal.event_counts;
             scene.last_terminal_id = terminal.id;
@@ -488,19 +488,19 @@ pub const Scene = struct {
 
     pub fn interactionEligibility(scene: *Scene) interaction_system.Eligibility {
         const participants_value = scene.participants();
-        return scene.manager.evaluateEligibility(scene.player.id, scene.partner.id, &participants_value);
+        return scene.manager.evaluateEligibility(scene.player.id(), scene.partner.id(), &participants_value);
     }
 
     pub fn gameplayState(scene: *const Scene) GameplayState {
-        const controller = scene.player.controller.?.state;
-        const runtime = scene.player.character.anatomy_runtime.?;
-        const loadout = scene.player.equipment_loadout.?;
+        const controller = scene.player.controllerSnapshot().?.state;
+        const runtime = scene.player.anatomyRuntimeSnapshot().?;
+        const loadout = scene.player.equipmentView().?;
         return .{
             .position = controller.position,
             .velocity = controller.velocity,
             .grounded = controller.grounded,
             .support = controller.supporting_collider,
-            .facing = scene.player.facing,
+            .facing = scene.player.facingDirection(),
             .air_jumps_used = controller.air_jumps_used,
             .dash_ticks_remaining = controller.dash_ticks_remaining,
             .dash_cooldown_ticks_remaining = controller.dash_cooldown_ticks_remaining,
@@ -564,10 +564,10 @@ pub const Scene = struct {
                 @tagName(script.phase),
                 script.phase_frame,
                 script.milestones,
-                scene.player.controller.?.state.position.x,
-                scene.player.controller.?.state.position.y,
-                scene.player.controller.?.state.velocity.x,
-                scene.player.controller.?.state.velocity.y,
+                scene.player.controllerSnapshot().?.state.position.x,
+                scene.player.controllerSnapshot().?.state.position.y,
+                scene.player.controllerSnapshot().?.state.velocity.x,
+                scene.player.controllerSnapshot().?.state.velocity.y,
             });
             return error.FoundationScriptMilestoneMissing;
         }
@@ -611,7 +611,7 @@ pub const Scene = struct {
             return error.FoundationEvidenceIncomplete;
         }
         const final = scene.gameplayState();
-        const resolved = scene.player.resolved_properties.?;
+        const resolved = scene.player.resolvedPropertiesSnapshot().?;
         try resolved.validate();
         if (!final.position.approxEqAbs(player_spawn, 0.000001) or
             !final.velocity.approxEqAbs(math.Vec2.zero, 0.000001) or
@@ -730,7 +730,7 @@ pub const Scene = struct {
         const sample = try scene.player.breathingSample();
         scene.evidence.breathing_minimum = @min(scene.evidence.breathing_minimum, sample);
         scene.evidence.breathing_maximum = @max(scene.evidence.breathing_maximum, sample);
-        const loadout = &scene.player.equipment_loadout.?;
+        const loadout = scene.player.equipmentView() orelse return error.CharacterEquipmentNotInitialized;
         scene.evidence.maximum_resolved_visuals = @max(scene.evidence.maximum_resolved_visuals, loadout.resolved_visual_count);
         const cape_component = try scene.equipment_definition.visualComponentId("cape_mesh");
         for (loadout.visuals()) |visual| {
@@ -766,7 +766,8 @@ pub const Scene = struct {
     fn countComponentVisuals(scene: *const Scene, instance: *const character.CharacterInstance, name: []const u8) !u16 {
         const component_id = try scene.equipment_definition.visualComponentId(name);
         var count: u16 = 0;
-        for (instance.equipment_loadout.?.visuals()) |visual| {
+        const loadout = instance.equipmentView() orelse return error.CharacterEquipmentNotInitialized;
+        for (loadout.visuals()) |visual| {
             const recipe = try scene.equipment_definition.view().recipe(visual.recipe);
             if (recipe.component == component_id) count += 1;
         }
@@ -787,22 +788,25 @@ pub const Scene = struct {
     }
 
     fn addCharacterDebug(scene: *Scene, instance: *const character.CharacterInstance) !void {
-        try scene.debug_commands.addMarker(instance.world_position, .{ 1, 0.20, 0.20, 1 });
-        const skeleton_definition = &instance.definition.skeleton_definition;
+        try scene.debug_commands.addMarker(instance.worldPosition(), .{ 1, 0.20, 0.20, 1 });
+        const definition = instance.definitionView();
+        const humanoid_view = instance.humanoidView();
+        const skeleton_definition = &definition.skeleton_definition;
         for (skeleton_definition.bones, 0..) |bone, index| {
-            const position = instance.character.local_and_world_pose.world_transforms[index].transformPoint(math.Vec2.zero);
+            const position = humanoid_view.local_and_world_pose.world_transforms[index].transformPoint(math.Vec2.zero);
             try scene.debug_commands.addMarker(position, .{ 1, 0.72, 0.16, 0.9 });
             if (bone.parent_index != std.math.maxInt(u16)) {
-                const parent = instance.character.local_and_world_pose.world_transforms[bone.parent_index].transformPoint(math.Vec2.zero);
+                const parent = humanoid_view.local_and_world_pose.world_transforms[bone.parent_index].transformPoint(math.Vec2.zero);
                 try scene.debug_commands.addLine(parent, position, .{ 1, 0.56, 0.12, 0.86 });
             }
         }
         for (skeleton_definition.sockets) |socket_definition| {
-            const world = instance.character.local_and_world_pose.world_transforms[socket_definition.parent_bone]
+            const world = humanoid_view.local_and_world_pose.world_transforms[socket_definition.parent_bone]
                 .mul((socket_definition.local_to_bone.localToParent() catch return error.InvalidDebugSocketTransform));
             try scene.debug_commands.addMarker(world.transformPoint(math.Vec2.zero), .{ 0.20, 1, 0.85, 1 });
         }
-        for ([_]*const foot_planting.FootRuntime{ &instance.foot_plants.left, &instance.foot_plants.right }) |foot| {
+        const foot_plants = instance.footPlantingSnapshot();
+        for ([_]*const foot_planting.FootRuntime{ &foot_plants.left, &foot_plants.right }) |foot| {
             if (foot.locked_target) |target| try scene.debug_commands.addMarker(target, .{ 1, 0.20, 1, 1 });
         }
     }
@@ -882,7 +886,7 @@ pub const ScriptedInput = struct {
 
     pub fn nextRaw(script: *ScriptedInput, scene: *const Scene) input.RawInputState {
         var raw = input.RawInputState{};
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
         switch (script.phase) {
             .idle,
             .decelerate_left,
@@ -929,7 +933,7 @@ pub const ScriptedInput = struct {
     }
 
     pub fn observe(script: *ScriptedInput, scene: *Scene) !void {
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
         script.phase_frame += 1;
         script.minimum_x = @min(script.minimum_x, controller.position.x);
         script.maximum_x = @max(script.maximum_x, controller.position.x);
@@ -1145,7 +1149,7 @@ fn submitCaveQuad(
 }
 
 fn visualInput(instance: *const character.CharacterInstance, physics: character_controller.StepResult) character.VisualTickInput {
-    const controller = instance.controller.?;
+    const controller = instance.controllerSnapshot().?;
     return .{
         .horizontal_velocity = controller.state.velocity.x,
         .vertical_velocity = controller.state.velocity.y,
@@ -1158,7 +1162,7 @@ fn visualInput(instance: *const character.CharacterInstance, physics: character_
 }
 
 fn loadoutFingerprint(instance: *const character.CharacterInstance) u64 {
-    const loadout = instance.equipment_loadout orelse return 0;
+    const loadout = instance.equipmentView() orelse return 0;
     var hash = std.hash.Wyhash.init(0);
     for (loadout.equippedItems()) |item| hash.update(std.mem.asBytes(&item));
     for (loadout.visuals()) |visual| {
@@ -1174,7 +1178,7 @@ fn loadoutFingerprint(instance: *const character.CharacterInstance) u64 {
 }
 
 fn propertyFingerprint(instance: *const character.CharacterInstance) u64 {
-    const resolved = instance.resolved_properties orelse return 0;
+    const resolved = instance.resolvedPropertiesSnapshot() orelse return 0;
     var hash = std.hash.Wyhash.init(0);
     hash.update(std.mem.asBytes(&resolved.attribute_count));
     hash.update(std.mem.sliceAsBytes(resolved.attribute_values[0..resolved.attribute_count]));
@@ -1186,7 +1190,7 @@ fn propertyFingerprint(instance: *const character.CharacterInstance) u64 {
 }
 
 fn appearanceFingerprint(instance: *const character.CharacterInstance) u64 {
-    const runtime = instance.character.anatomy_runtime orelse return 0;
+    const runtime = instance.anatomyRuntimeSnapshot() orelse return 0;
     var hash = std.hash.Wyhash.init(0);
     hash.update(std.mem.asBytes(&runtime.selected_body_preset));
     hash.update(std.mem.asBytes(&runtime.selected_morphology_preset));
@@ -1203,7 +1207,7 @@ fn appearanceFingerprint(instance: *const character.CharacterInstance) u64 {
 }
 
 fn allMeshStatesCleared(instance: *const character.CharacterInstance) bool {
-    const loadout = instance.equipment_loadout orelse return false;
+    const loadout = instance.equipmentView() orelse return false;
     for (loadout.visuals()) |visual| {
         if (visual.mesh_state.owning_character != 0 or visual.mesh_state.update_serial != 0) return false;
     }
@@ -1211,7 +1215,7 @@ fn allMeshStatesCleared(instance: *const character.CharacterInstance) bool {
 }
 
 fn allSecondaryStatesCleared(instance: *const character.CharacterInstance) bool {
-    const loadout = instance.equipment_loadout orelse return false;
+    const loadout = instance.equipmentView() orelse return false;
     for (loadout.visuals()) |visual| {
         if (visual.secondary.initialized or visual.secondary.fixed_ticks != 0) return false;
     }
@@ -1219,17 +1223,17 @@ fn allSecondaryStatesCleared(instance: *const character.CharacterInstance) bool 
 }
 
 fn replaceIfNeeded(instance: *character.CharacterInstance, item_id: equipment.EquipmentItemId) !void {
-    const loadout = instance.equipment_loadout orelse return error.CharacterEquipmentNotInitialized;
+    const loadout = instance.equipmentView() orelse return error.CharacterEquipmentNotInitialized;
     if (!loadout.isEquipped(item_id)) try instance.replaceItem(item_id);
 }
 
 fn restoreIndependentArmor(instance: *character.CharacterInstance, definition: equipment.DefinitionView) !void {
     const full_plate = try definition.itemId("full_plate_armor");
-    if (instance.equipment_loadout.?.isEquipped(full_plate)) try instance.unequipItem(full_plate);
+    if ((instance.equipmentView() orelse return error.CharacterEquipmentNotInitialized).isEquipped(full_plate)) try instance.unequipItem(full_plate);
     const left = try definition.itemId("left_shoulder_armor");
     const right = try definition.itemId("right_gauntlet");
-    if (!instance.equipment_loadout.?.isEquipped(left)) try instance.equipItem(left);
-    if (!instance.equipment_loadout.?.isEquipped(right)) try instance.equipItem(right);
+    if (!(instance.equipmentView() orelse return error.CharacterEquipmentNotInitialized).isEquipped(left)) try instance.equipItem(left);
+    if (!(instance.equipmentView() orelse return error.CharacterEquipmentNotInitialized).isEquipped(right)) try instance.equipItem(right);
 }
 
 fn encodeGamepadAxis(desired_axis: f32) f32 {

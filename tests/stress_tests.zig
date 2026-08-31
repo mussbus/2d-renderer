@@ -46,24 +46,24 @@ test "one thousand complete handshakes clean every lock override and IK constrai
         .interact_pressed = true,
     };
     for (0..1000) |cycle| {
-        const id = (try manager.requestFromIntent(role_a.id, interact_intent, &participants, current_tick)).?;
+        const id = (try manager.requestFromIntent(role_a.id(), interact_intent, &participants, current_tick)).?;
         try std.testing.expectEqual(@as(u32, @intCast(cycle + 1)), id.raw());
-        for (0..manager.definition.authoritative_duration_ticks) |_| {
+        for (0..manager.definitionView().authoritative_duration_ticks) |_| {
             current_tick += 1;
             try manager.updateTick(current_tick, &participants);
         }
         try std.testing.expectEqual(@as(usize, 0), manager.activeCount());
         try std.testing.expect(!role_a.isInteractionLocked());
         try std.testing.expect(!role_b.isInteractionLocked());
-        try std.testing.expectEqual(@as(usize, 0), role_a.overrides.activeCount());
-        try std.testing.expectEqual(@as(usize, 0), role_b.overrides.activeCount());
-        try std.testing.expect(!role_a.right_arm_ik.applied);
-        try std.testing.expect(!role_b.right_arm_ik.applied);
-        try std.testing.expect(!manager.last_terminal.?.ik.enabled);
-        for (manager.last_terminal.?.event_counts) |count| try std.testing.expectEqual(@as(u8, 1), count);
+        try std.testing.expectEqual(@as(usize, 0), role_a.activeOverrideCount());
+        try std.testing.expectEqual(@as(usize, 0), role_b.activeOverrideCount());
+        try std.testing.expect(role_a.rightHandIkMetrics() == null);
+        try std.testing.expect(role_b.rightHandIkMetrics() == null);
+        try std.testing.expect(!manager.lastTerminal().?.ik.enabled);
+        for (manager.lastTerminal().?.event_counts) |count| try std.testing.expectEqual(@as(u8, 1), count);
     }
-    try std.testing.expectEqual(@as(u64, 1000), manager.metrics.starts);
-    try std.testing.expectEqual(@as(u64, 1000), manager.metrics.completions);
+    try std.testing.expectEqual(@as(u64, 1000), manager.metricsSnapshot().starts);
+    try std.testing.expectEqual(@as(u64, 1000), manager.metricsSnapshot().completions);
     try std.testing.expectEqual(@as(u32, 1000), manager.maximumIssuedId());
     try std.testing.expectEqual(@as(usize, 0), manager.activeOwnedOverrideCount());
     try std.testing.expectEqual(@as(usize, 0), manager.activeIkConstraintCount());
@@ -85,45 +85,48 @@ test "one hundred thousand integrated ticks remain finite bounded and repeatedly
     while (fixed_ticks < 100_000) {
         try scene.updateFixedTicks(1);
         fixed_ticks += 1;
-        const controller = scene.player.controller.?.state;
+        const controller = scene.player.controllerSnapshot().?.state;
         try std.testing.expect(controller.position.isFinite());
         try std.testing.expect(controller.velocity.isFinite());
-        try std.testing.expect(std.math.isFinite(scene.player.procedural.landing_spring.offset));
-        try std.testing.expect(std.math.isFinite(scene.player.procedural.secondary_spring.offset));
-        try std.testing.expect(scene.player.foot_plants.left.pre_ik_sole.isFinite());
-        try std.testing.expect(scene.player.foot_plants.left.post_ik_sole.isFinite());
-        try std.testing.expect(scene.player.foot_plants.right.pre_ik_sole.isFinite());
-        try std.testing.expect(scene.player.foot_plants.right.post_ik_sole.isFinite());
+        const procedural = scene.player.proceduralSnapshot();
+        const planting = scene.player.footPlantingSnapshot();
+        try std.testing.expect(std.math.isFinite(procedural.landing_spring.offset));
+        try std.testing.expect(std.math.isFinite(procedural.secondary_spring.offset));
+        try std.testing.expect(planting.left.pre_ik_sole.isFinite());
+        try std.testing.expect(planting.left.post_ik_sole.isFinite());
+        try std.testing.expect(planting.right.pre_ik_sole.isFinite());
+        try std.testing.expect(planting.right.post_ik_sole.isFinite());
         if (!controller.grounded) {
-            try std.testing.expect(!scene.player.foot_plants.left.hasLock());
-            try std.testing.expect(!scene.player.foot_plants.right.hasLock());
+            try std.testing.expect(!planting.left.hasLock());
+            try std.testing.expect(!planting.right.hasLock());
         }
         if (scene.hasMilestone(.final_stable_state) and scene.phase_tick > integrated.final_stability_ticks) {
             completed_cycles += 1;
-            total_acquisitions += scene.player.foot_plants.left.metrics.plant_acquisitions + scene.player.foot_plants.right.metrics.plant_acquisitions;
-            total_releases += scene.player.foot_plants.left.metrics.full_releases + scene.player.foot_plants.right.metrics.full_releases;
+            total_acquisitions += planting.left.metrics.plant_acquisitions + planting.right.metrics.plant_acquisitions;
+            total_releases += planting.left.metrics.full_releases + planting.right.metrics.full_releases;
             maximum_slip = @max(maximum_slip, @max(
-                scene.player.foot_plants.left.metrics.maximum_world_space_slip,
-                scene.player.foot_plants.right.metrics.maximum_world_space_slip,
+                planting.left.metrics.maximum_world_space_slip,
+                planting.right.metrics.maximum_world_space_slip,
             ));
             maximum_penetration = @max(maximum_penetration, @max(
-                scene.player.foot_plants.left.metrics.maximum_penetration,
-                scene.player.foot_plants.right.metrics.maximum_penetration,
+                planting.left.metrics.maximum_penetration,
+                planting.right.metrics.maximum_penetration,
             ));
             maximum_hover = @max(maximum_hover, @max(
-                scene.player.foot_plants.left.metrics.maximum_hover,
-                scene.player.foot_plants.right.metrics.maximum_hover,
+                planting.left.metrics.maximum_hover,
+                planting.right.metrics.maximum_hover,
             ));
             try std.testing.expectEqual(@as(usize, 0), scene.manager.activeCount());
             try std.testing.expectEqual(@as(usize, 0), scene.manager.activeOwnedOverrideCount());
             try scene.restartCyclePreservingCounters();
         }
     }
-    total_acquisitions += scene.player.foot_plants.left.metrics.plant_acquisitions + scene.player.foot_plants.right.metrics.plant_acquisitions;
-    total_releases += scene.player.foot_plants.left.metrics.full_releases + scene.player.foot_plants.right.metrics.full_releases;
+    const final_planting = scene.player.footPlantingSnapshot();
+    total_acquisitions += final_planting.left.metrics.plant_acquisitions + final_planting.right.metrics.plant_acquisitions;
+    total_releases += final_planting.left.metrics.full_releases + final_planting.right.metrics.full_releases;
     try std.testing.expect(completed_cycles >= 30);
-    try std.testing.expect(scene.manager.metrics.starts >= 30);
-    try std.testing.expect(scene.manager.metrics.completions >= 30);
+    try std.testing.expect(scene.manager.metricsSnapshot().starts >= 30);
+    try std.testing.expect(scene.manager.metricsSnapshot().completions >= 30);
     try std.testing.expect(total_acquisitions >= 200);
     try std.testing.expect(total_releases >= 160);
     try std.testing.expect(maximum_slip <= 0.0002);

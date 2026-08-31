@@ -140,7 +140,7 @@ pub fn main(init: std.process.Init) !void {
 
         const female_bounds = try coherence.traceCharacterBounds(
             scene.visual_trace,
-            scene.integrated.production.female.id.raw(),
+            scene.integrated.production.female.id().raw(),
         );
         const framing = try coherence.framingMeasurement(
             female_bounds.world,
@@ -149,11 +149,11 @@ pub fn main(init: std.process.Init) !void {
         const interaction_active = scene.presenceInteractionContext();
         const female_presence = try coherence.traceCharacterPresenceBounds(
             scene.visual_trace,
-            scene.integrated.production.female.id.raw(),
+            scene.integrated.production.female.id().raw(),
         );
         const male_presence = try coherence.traceCharacterPresenceBounds(
             scene.visual_trace,
-            scene.integrated.production.male.id.raw(),
+            scene.integrated.production.male.id().raw(),
         );
         const overlap_ratio = try coherence.overlapRatio(
             female_presence.world,
@@ -163,7 +163,7 @@ pub fn main(init: std.process.Init) !void {
             "route_frame",
             "female",
             @tagName(scene.integrated.production.female.presentationView()),
-            @tagName(scene.integrated.production.female.facing),
+            @tagName(scene.integrated.production.female.facingDirection()),
             @tagName(script.phase),
             "",
             "",
@@ -185,7 +185,7 @@ pub fn main(init: std.process.Init) !void {
             "route_frame",
             "female",
             @tagName(scene.integrated.production.female.presentationView()),
-            @tagName(scene.integrated.production.female.facing),
+            @tagName(scene.integrated.production.female.facingDirection()),
             @tagName(script.phase),
             "",
             "",
@@ -207,7 +207,7 @@ pub fn main(init: std.process.Init) !void {
             "route_frame",
             "lineup",
             @tagName(scene.integrated.production.female.presentationView()),
-            @tagName(scene.integrated.production.female.facing),
+            @tagName(scene.integrated.production.female.facingDirection()),
             @tagName(script.phase),
             "",
             "",
@@ -256,7 +256,7 @@ pub fn main(init: std.process.Init) !void {
                 "route_frame",
                 "camera",
                 @tagName(scene.integrated.production.female.presentationView()),
-                @tagName(scene.integrated.production.female.facing),
+                @tagName(scene.integrated.production.female.facingDirection()),
                 @tagName(script.phase),
                 "",
                 "",
@@ -468,14 +468,15 @@ fn evaluateCaptureGround(
         observation.view == .front and
         @abs(observation.velocity[0]) <= foundation_evidence.idle_velocity_threshold_mps;
     const female = &scene.integrated.production.female;
+    const foot_plants = female.footPlantingSnapshot();
     const FootEntry = struct {
         name: []const u8,
         side: visual_geometry.Side,
-        foot: @TypeOf(&female.foot_plants.left),
+        foot: @TypeOf(&foot_plants.left),
     };
     const feet = [_]FootEntry{
-        .{ .name = "left", .side = .left, .foot = &female.foot_plants.left },
-        .{ .name = "right", .side = .right, .foot = &female.foot_plants.right },
+        .{ .name = "left", .side = .left, .foot = &foot_plants.left },
+        .{ .name = "right", .side = .right, .foot = &foot_plants.right },
     };
     for (feet) |entry| {
         const side_name = entry.name;
@@ -487,11 +488,11 @@ fn evaluateCaptureGround(
         {
             continue;
         }
-        const record = findOutermostFootVisual(scene.visual_trace, female.id.raw(), side) orelse
+        const record = findOutermostFootVisual(scene.visual_trace, female.id().raw(), side) orelse
             return error.MissingGroundContactVisual;
         const anatomy_record = findAnatomyFoot(
             scene.visual_trace,
-            female.id.raw(),
+            female.id().raw(),
             side,
         ) orelse return error.MissingGroundContactAnatomy;
         const page = try images.find(record.request.texture_page);
