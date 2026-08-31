@@ -1,8 +1,8 @@
 # Current State
 
-Current F4C5 implementation basis: clean, synchronized `master` at
-`a7785c11cca0e23eda8074a79c25be13e3a25114`, verified on 2026-08-31 before
-the local F4C5 build, test, and repository-policy modularization began.
+Current F4D implementation basis: clean, synchronized `master` at
+`c648697aeaf75d03823aa7e9f874898464a79679`, verified on 2026-08-31 before
+the local F4D independent-engine composition proof began.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -25,14 +25,14 @@ visual acceptance or revise historical evidence claims.
 | F4C2 | **OWNER-APPROVED** |
 | F4C3 | **OWNER-APPROVED** |
 | F4C4 | **OWNER-APPROVED** |
-| F4C5 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4D | **NOT BEGUN** |
+| F4C5 | **OWNER-APPROVED** |
+| F4D | **IMPLEMENTED / AWAITING OWNER REVIEW** |
 | F4E | **NOT BEGUN** |
 | F4 overall | In progress; **not accepted** |
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4C5 owner review**.
+Current immediate step: **F4D owner review**.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -75,7 +75,14 @@ fast engine contract. Full deterministic CPU integration, current content
 qualification, GPU smoke, manual visual review, and historical reproduction
 are explicit separate gates. See the
 [F4C5 implementation record](../implementation/f4c5_build_test_policy_modularization.md).
-F4D and F4E have not begun and require separate authorization.
+F4D proves a second application can create and observe a generic F entity,
+derive production render data, execute the real SDL3/D3D12/DXIL renderer,
+inspect generic readback, and shut down with balanced resources without
+importing `DemoApplication`, `GpuDemo`, scenario modules, or evidence
+orchestration. Independent CPU tests also cover F-to-character binding and
+production interaction lifecycle. See the
+[F4D implementation record](../implementation/f4d_independent_engine_composition.md).
+F4E has not begun and requires separate authorization.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the
@@ -101,6 +108,7 @@ Status vocabulary:
 | Height-relative production camera | automated complete, owner resize review pending | The 640×480 composition remains 82 px/m and fixes the vertical world span at 480/82 m. Positive drawable heights derive scale as 82×height/480 from actual SDL drawable/swapchain pixels; width changes horizontal visibility only. Zero drawables preserve the last valid camera. |
 | Fixed-step simulation, animation, physics, and controller | complete | One authoritative 240 Hz deterministic simulation; renderer interpolation does not own simulation. |
 | F-backed representative scene route | implemented, owner review pending | `integrated` owns two persistent RuntimeScene entities through a bounded character adapter; F lifecycle/enabled/transform and snapshot semantics are live in production composition. Other routes remain explicitly transitional or specialized. |
+| Independent engine client | implemented, F4D owner review pending | `engine_smoke` owns one generic RuntimeScene entity, consumes the supported renderer/queue/capture surfaces directly, and has no demo or evidence dependency. |
 | Input and character intent | complete | SDL/platform owns physical keys, buttons, axes, focus and window close only; application mapping owns semantic actions and pending edges; physics owns `CharacterIntent`. |
 | Interactions, handshake, and IK | complete | Interaction coordination owns fixed-root handshakes; visual IK does not replace root physics. Prompt 27 makes view and occlusion policy definition data. |
 | Semantic anatomy and morphology | complete | One authoritative skeleton, typed anatomy instances, body presets, and bounded morphology channels. |

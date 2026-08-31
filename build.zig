@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const modules_build = @import("build/modules.zig");
+const apps_build = @import("build/apps.zig");
 const tests_engine_build = @import("build/tests_engine.zig");
 const tests_content_build = @import("build/tests_content.zig");
 const evidence_build = @import("build/evidence.zig");
@@ -116,22 +117,6 @@ pub fn build(b: *std.Build) void {
     shaders_step.dependOn(&fragment_shader.step.step);
     shaders_step.dependOn(&mesh_vertex_shader.step.step);
 
-    const app_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-        .link_libc = true,
-    });
-    app_module.addIncludePath(b.path(sdl_include));
-    app_module.addLibraryPath(b.path(sdl_library_dir));
-    app_module.linkSystemLibrary("SDL3", .{ .preferred_link_mode = .dynamic, .search_strategy = .paths_first });
-
-    const app = b.addExecutable(.{
-        .name = "skeletal_gpu_demo",
-        .root_module = app_module,
-    });
-    b.installArtifact(app);
-
     const install_sdl = b.addInstallFileWithDir(b.path(sdl_runtime), .bin, "SDL3.dll");
     const install_vertex_shader = b.addInstallFileWithDir(vertex_shader.output, .bin, "shaders/sprite_vs.dxil");
     const install_fragment_shader = b.addInstallFileWithDir(fragment_shader.output, .bin, "shaders/sprite_ps.dxil");
@@ -161,27 +146,14 @@ pub fn build(b: *std.Build) void {
     b.getInstallStep().dependOn(&install_violet_environment_atlas.step);
     b.getInstallStep().dependOn(&install_debug_environment_atlas.step);
 
-    const installed_executable = b.getInstallPath(.bin, app.out_filename);
-    const run_command = b.addSystemCommand(&.{installed_executable});
-    run_command.setName("run installed skeletal_gpu_demo");
-    run_command.step.dependOn(b.getInstallStep());
-    if (b.args) |args| run_command.addArgs(args);
-    const run_step = b.step("run", "Run the installed sprite-batch, character, interaction, playground, foundation, or side-scroller demonstration");
-    run_step.dependOn(&run_command.step);
-
-    const gpu_smoke_command = b.addSystemCommand(&.{ installed_executable, "--gpu-smoke" });
-    gpu_smoke_command.setName("run D3D12/DXIL draw and readback smoke test");
-    gpu_smoke_command.step.dependOn(b.getInstallStep());
-    const gpu_smoke_step = b.step("gpu-smoke", "Require and verify D3D12/DXIL rendering with GPU readback");
-    gpu_smoke_step.dependOn(&gpu_smoke_command.step);
-
     const modules = modules_build.register(.{
         .b = b,
         .target = target,
         .optimize = optimize,
         .sdl_include = sdl_include,
-        .app_module = app_module,
+        .sdl_library_dir = sdl_library_dir,
     });
+    const apps = apps_build.register(.{ .b = b, .modules = &modules });
     const engine_tests = tests_engine_build.register(.{
         .b = b,
         .target = target,
@@ -204,7 +176,7 @@ pub fn build(b: *std.Build) void {
     });
     gates_build.register(.{
         .b = b,
-        .app = app,
+        .apps = apps,
         .engine = engine_tests,
         .content = content_tests,
         .evidence = evidence,

@@ -174,20 +174,22 @@ foreach ($file in $productionFiles) {
 # F4C5 explicit registration ownership and aggregate separation.
 $rootBuild = Read-RepositoryFile 'build.zig'
 $modulesBuild = Read-RepositoryFile 'build/modules.zig'
+$appsBuild = Read-RepositoryFile 'build/apps.zig'
 $engineBuild = Read-RepositoryFile 'build/tests_engine.zig'
 $contentBuild = Read-RepositoryFile 'build/tests_content.zig'
 $evidenceBuild = Read-RepositoryFile 'build/evidence.zig'
 $gatesBuild = Read-RepositoryFile 'build/gates.zig'
-foreach ($import in @('build/modules.zig', 'build/tests_engine.zig', 'build/tests_content.zig', 'build/evidence.zig', 'build/gates.zig')) {
+foreach ($import in @('build/modules.zig', 'build/apps.zig', 'build/tests_engine.zig', 'build/tests_content.zig', 'build/evidence.zig', 'build/gates.zig')) {
     if (-not $rootBuild.Contains('@import("' + $import + '")')) {
         Add-Failure "F4C5 build ownership violation: root composition is missing '$import'."
     }
 }
 if ([regex]::IsMatch($rootBuild, '\.addTest\s*\(') -or
+    [regex]::IsMatch($rootBuild, '\.addExecutable\s*\(') -or
     [regex]::IsMatch($rootBuild, 'tests[/\\][^"]+\.zig')) {
-    Add-Failure 'F4C5 build ownership violation: root build directly registers a concrete test root.'
+    Add-Failure 'F4C5 build ownership violation: root build directly registers a concrete application or test root.'
 }
-$allBuildHelpers = $modulesBuild + $engineBuild + $contentBuild + $evidenceBuild + $gatesBuild
+$allBuildHelpers = $modulesBuild + $appsBuild + $engineBuild + $contentBuild + $evidenceBuild + $gatesBuild
 if ([regex]::IsMatch($allBuildHelpers, 'Get-ChildItem|walk\s*\(|openDir\s*\([^\)]*iterate')) {
     Add-Failure 'F4C5 build ownership violation: build registration uses directory auto-discovery.'
 }
@@ -195,7 +197,7 @@ foreach ($step in @('"check"', '"test-full"', '"test-content"', '"verify"')) {
     if (-not $gatesBuild.Contains($step)) { Add-Failure "F4C5 aggregate gate is missing $step." }
 }
 foreach ($step in @('"gpu-smoke"', '"visual-acceptance"', '"evidence-history"')) {
-    if (-not ($rootBuild + $evidenceBuild).Contains($step)) { Add-Failure "F4C5 specialized gate is missing $step." }
+    if (-not ($rootBuild + $appsBuild + $evidenceBuild).Contains($step)) { Add-Failure "F4C5 specialized gate is missing $step." }
 }
 if (-not $gatesBuild.Contains('tools/check_documentation.ps1') -or
     -not $gatesBuild.Contains('tools/check_repository.ps1') -or
@@ -208,8 +210,73 @@ if ($gatesBuild.Contains('.history') -or
     Add-Failure 'F4C5 gate violation: routine check depends on content or historical evidence.'
 }
 
+# F4D independent application composition and transitive dependency boundary.
+$engineSmoke = Read-RepositoryFile 'src/app/engine_smoke.zig'
+$engineSmokeClient = Read-RepositoryFile 'src/app/engine_smoke_client.zig'
+$engineCompositionTests = Read-RepositoryFile 'tests/engine_composition_tests.zig'
+$independentSource = $engineSmoke + [Environment]::NewLine + $engineSmokeClient
+$independentForbidden = $scenarioModules + @(
+    'demo_application', 'gpu_demo', 'foundation_evidence', 'foundation_coherence',
+    'acceptance_hud', 'visual_truth', 'anatomy_evidence', 'capture_writer'
+)
+foreach ($forbidden in $independentForbidden) {
+    if ([regex]::IsMatch($independentSource, '@import\s*\(\s*"' + [regex]::Escape($forbidden) + '"\s*\)')) {
+        Add-Failure "F4D independence violation: independent application imports '$forbidden'."
+    }
+}
+if ([regex]::IsMatch($independentSource, '@import\s*\(\s*"[^"]*_demo"\s*\)')) {
+    Add-Failure 'F4D independence violation: independent application imports a demo scenario module.'
+}
+foreach ($phrase in @(
+    'const client_module = @import("engine_smoke_client")',
+    'const renderer_module = @import("sdl_gpu_renderer")',
+    'scene_core.runtime_scene.RuntimeScene',
+    'pub fn renderRequest',
+    'renderer.captureUnified',
+    'renderer.deinitWithMetrics'
+)) {
+    if (-not $independentSource.Contains($phrase)) {
+        Add-Failure "F4D composition proof is missing '$phrase'."
+    }
+}
+if (-not $appsBuild.Contains('.name = "skeletal_gpu_demo"') -or
+    -not $appsBuild.Contains('.name = "engine_smoke"') -or
+    -not $appsBuild.Contains('"run-engine-smoke"') -or
+    -not $engineBuild.Contains('"test-engine-composition"') -or
+    -not $gatesBuild.Contains('run_engine_composition')) {
+    Add-Failure 'F4D build registration is missing the independent app or fast CPU composition proof.'
+}
+$independentModuleRegistrations = @(
+    [regex]::Matches(
+        $modulesBuild,
+        'engine_smoke_(entry|client)_module\.addImport\(\s*"(?<module>[^"]+)"'
+    )
+)
+foreach ($match in $independentModuleRegistrations) {
+    $module = $match.Groups['module'].Value
+    if ($module -in $independentForbidden -or $module -match '_demo$') {
+        Add-Failure "F4D build dependency violation: independent module graph injects '$module'."
+    }
+}
+foreach ($directory in @('src/scene_core', 'src/physics', 'src/animation', 'src/interaction')) {
+    foreach ($file in @(Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot $directory))) {
+        $source = Get-Content -Raw -LiteralPath $file.FullName
+        if ([regex]::IsMatch($source, '@import\s*\(\s*"(demo_application|gpu_demo|[^"]*_demo)"\s*\)')) {
+            Add-Failure "F4D lower-layer dependency violation: '$($file.FullName)' imports application/demo authority."
+        }
+    }
+}
+foreach ($forbidden in @('demo_application', 'gpu_demo') + $scenarioModules) {
+    if ([regex]::IsMatch($renderer, '@import\s*\(\s*"' + [regex]::Escape($forbidden) + '"\s*\)')) {
+        Add-Failure "F4D renderer independence violation: renderer imports '$forbidden'."
+    }
+}
+if ([regex]::IsMatch($engineCompositionTests, '@import\s*\(\s*"(demo_application|gpu_demo|[^"]*_demo)"\s*\)')) {
+    Add-Failure 'F4D CPU proof imports demo/application scenario authority.'
+}
+
 if ($failed) {
     exit 1
 }
-Write-Host 'Current architecture policy passed: F2C and F4C1-F4C5 authority/dependency boundaries are intact.'
+Write-Host 'Current architecture policy passed: F2C and F4C1-F4D authority/dependency boundaries are intact.'
 exit 0

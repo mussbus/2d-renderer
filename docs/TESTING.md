@@ -1,6 +1,6 @@
 # Testing Strategy
 
-## F4C5 verification workflow
+## F4C5/F4D verification workflow
 
 This section is the current repository-wide command contract. Historical
 milestone counts, aggregate membership statements, and commands later in this
@@ -16,11 +16,13 @@ pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
 & '.\.deps\zig-0.16.0\zig.exe' build test-content -j1
 & '.\.deps\zig-0.16.0\zig.exe' build verify -j1
 & '.\.deps\zig-0.16.0\zig.exe' build gpu-smoke -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-engine-composition -j1
+& '.\.deps\zig-0.16.0\zig.exe' build run-engine-smoke -j1
 ```
 
 | Gate | Primary command | Contents | Explicit exclusions / required use |
 | --- | --- | --- | --- |
-| Fast engine contract/static | `zig build check -j1` | Production application compilation, formatting, current architecture and hygiene policy, documentation validation, and fast engine/F/scene/input/renderer-boundary CPU contracts | No physical GPU, canonical/content qualification, manual review, or historical evidence generation. Run for ordinary engine work and every review request. |
+| Fast engine contract/static | `zig build check -j1` | Demo and independent application compilation, formatting, current architecture and hygiene policy, documentation validation, and fast engine/F/scene/input/renderer-boundary CPU contracts including the independent composition test | No physical GPU, canonical/content qualification, manual review, or historical evidence generation. Run for ordinary engine work and every review request. |
 | Full deterministic CPU integration | `zig build test-full -j1` | `check`, broader deterministic integration, production-route suites, environment/wardrobe/foundation composition, and the existing long-duration stress tests | No physical GPU, manual review, or canonical/historical evidence generation. Run for substantial engine or cross-system changes. |
 | Current canonical/content qualification | `zig build test-content -j1` | Canonical model/human/geometry, current authored art/visual/anatomy qualification, current content audits, approved goldens, exporter compilation, and the retained full content-policy audit | Required for canonical/content-authority changes; not required for unrelated engine iteration. |
 | Physical GPU validation | `zig build gpu-smoke -j1` | Real D3D12/DXIL device, shader, draw, readback, fault, and cleanup proof | Requires suitable Windows GPU access and remains separate from CPU-only gates. |
@@ -43,16 +45,19 @@ not weakened or deleted.
 | Renderer/backend/shaders | `check`, `test-full`, `gpu-smoke` | `test-renderer-boundary` and other affected focused CPU targets |
 | Documentation only | `check` | `tools/check_documentation.ps1` may be run directly for rapid feedback |
 | Historical evidence tooling | `check`, `evidence-history-check` | Run only the affected mutating historical route when regeneration is intended |
+| Application composition or public engine-client surface | `check`, `test-full` | `test-engine-composition`; add `run-engine-smoke` when renderer/platform composition changes |
 
 ### Build/test registration ownership
 
-Production module creation belongs in `build/modules.zig`. Fast engine and
+Production module creation belongs in `build/modules.zig`; application
+executable/run registration belongs in `build/apps.zig`. Fast engine and
 full-CPU test roots belong in `build/tests_engine.zig`; canonical/content
 tests belong in `build/tests_content.zig`; report executables and historical
 reproduction belong in `build/evidence.zig`; top-level aggregate semantics
 belong in `build/gates.zig`. Root `build.zig` composes these domains and owns
-target/platform, pinned dependencies, shaders, the application, installed
-runtime assets, GPU smoke, and the major dependency DAG. Registration is
+target/platform, pinned dependencies, shaders, installed runtime assets, and
+the major dependency DAG. `build/apps.zig` owns both application artifacts,
+their run routes, and GPU smoke. Registration is
 explicit; directory scanning is prohibited.
 
 A future SEM or OBJ module/test normally changes its production/domain source
@@ -62,6 +67,22 @@ application/tool helper registration. Root changes only when introducing a
 new major domain or top-level aggregate, and ordinary additions do not require
 new checks in `tools/check_repository.ps1` or new prose here unless policy or
 gate semantics actually change.
+
+### Independent engine composition proof
+
+`zig build engine-smoke -j1` builds the permanent small second application.
+`zig build run-engine-smoke -j1` runs its physical proof through the installed
+SDL3/D3D12/DXIL layout. It creates and promotes one F entity, observes and
+mutates it through supported RuntimeScene APIs, converts the read view to a
+production sprite request, renders six frames, performs generic pixel
+readback, checks steady-state resource/allocation behavior, and verifies
+balanced renderer shutdown.
+
+`zig build test-engine-composition -j1` is CPU-only and part of `check`. Its
+three tests prove generic RuntimeScene/render-data composition, two-character
+F binding and transform/enabled synchronization, and a complete production
+handshake lifecycle without importing a demo scenario. The physical target is
+deliberately separate from `check`.
 
 
 ## Historical M01.5 verification workflow

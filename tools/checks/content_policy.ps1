@@ -2780,7 +2780,7 @@ $requiredF4C2BuildPhrases = @(
     'src/evidence/capture_writer.zig',
     'src/app/demo_application.zig',
     'test-renderer-boundary',
-    'app_module.addImport("demo_application", demo_application_module)'
+    'demo_entry_module.addImport("demo_application", demo_application_module)'
 )
 foreach ($phrase in $requiredF4C2BuildPhrases) {
     if (-not $buildSource.Contains($phrase)) {

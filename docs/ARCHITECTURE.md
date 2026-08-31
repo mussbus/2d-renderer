@@ -24,13 +24,16 @@ recorded in
 The owner-approved F4C4 scene-core adoption and input-boundary implementation
 is recorded in
 [`implementation/f4c4_scene_core_adoption_and_input_boundaries.md`](implementation/f4c4_scene_core_adoption_and_input_boundaries.md).
-The F4C5 build, test, and repository-policy modularization awaiting owner
-review is recorded in
+The owner-approved F4C5 build, test, and repository-policy modularization is
+recorded in
 [`implementation/f4c5_build_test_policy_modularization.md`](implementation/f4c5_build_test_policy_modularization.md).
+The F4D independent-engine composition candidate awaiting owner review is
+recorded in
+[`implementation/f4d_independent_engine_composition.md`](implementation/f4d_independent_engine_composition.md).
 
 F4 is the current production-architecture hardening track; F4 itself is not
 accepted. F4B1, F4B2, F4C1, F4C2, F4C3, and F4C4 are owner-approved. F4C5 is
-implemented and awaits owner review; F4D and F4E have not begun. Every
+owner-approved; F4D is implemented and awaits owner review; F4E has not begun. Every
 downstream track and further production migration still requires dedicated
 authorization. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,

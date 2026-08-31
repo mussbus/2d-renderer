@@ -5,9 +5,9 @@
 > hardening is the current track. The composition map below describes the
 > existing demo-driven runtime audited by F4A; it is not the accepted post-F4
 > target architecture. F4B1, F4B2, F4C1, F4C2, F4C3, and F4C4 are
-> owner-approved. F4C5 has modularized build, test, content, evidence, and
-> repository-policy ownership and awaits owner review. See the
-> [F4C5 record](../implementation/f4c5_build_test_policy_modularization.md).
+> owner-approved. F4C5 is owner-approved. F4D adds a second independent
+> RuntimeScene + production-renderer application and awaits owner review. See
+> the [F4D record](../implementation/f4d_independent_engine_composition.md).
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
@@ -94,8 +94,9 @@ collider-data authority.
 | VF-01 truth snapshot, overlay categories, schema, bundle finalization, and PNG writer | [`src/debug/visual_truth.zig`](../../src/debug/visual_truth.zig) |
 | VF-01 F1/F4 scene orchestration | [`src/scene/visual_foundation.zig`](../../src/scene/visual_foundation.zig) |
 | Application mode routing, scenario lifetime, and capture scheduling | [`src/app/demo_application.zig`](../../src/app/demo_application.zig) |
+| Independent engine composition proof | [`src/app/engine_smoke.zig`](../../src/app/engine_smoke.zig) with client-owned RuntimeScene composition in [`src/app/engine_smoke_client.zig`](../../src/app/engine_smoke_client.zig); no demo/evidence dependency |
 | Generic persistent/runtime scene identity, lifetime, enabled state and transform | Supported [`src/scene_core/root.zig`](../../src/scene_core/root.zig) surface; `RuntimeScene` implementation remains private behind that root |
-| F-to-character specialized binding | [`src/scene/character_entity_binding.zig`](../../src/scene/character_entity_binding.zig), private fixed-capacity mapping; consumed by the representative [`src/scene/integrated_demo.zig`](../../src/scene/integrated_demo.zig) route |
+| F-to-character specialized binding | [`src/scene/character_entity_binding.zig`](../../src/scene/character_entity_binding.zig), private fixed-capacity mapping; consumed by the representative [`src/scene/integrated_demo.zig`](../../src/scene/integrated_demo.zig) route and independent CPU composition tests |
 | SDL window/device/resource lifetime, queue execution, upload, and generic D3D12 readback | [`src/graphics/sdl_gpu_renderer.zig`](../../src/graphics/sdl_gpu_renderer.zig) |
 | Copied frame result contract | [`src/graphics/frame_capture.zig`](../../src/graphics/frame_capture.zig) |
 | Historical PPM/PNG evidence output | [`src/evidence/capture_writer.zig`](../../src/evidence/capture_writer.zig) |

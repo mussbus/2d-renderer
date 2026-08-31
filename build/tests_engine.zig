@@ -9,6 +9,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
+    run_engine_composition: *std.Build.Step.Run,
     run_deterministic: *std.Build.Step.Run,
     run_renderer_boundary: *std.Build.Step.Run,
     run_foundation_primitives: *std.Build.Step.Run,
@@ -25,6 +26,17 @@ pub fn register(options: Options) Registration {
     const target = options.target;
     const optimize = options.optimize;
     const modules = options.modules;
+
+    const engine_composition_tests = b.addTest(.{
+        .name = "engine-composition-tests",
+        .root_module = modules.engine_composition_test_module,
+    });
+    const run_engine_composition_tests = b.addRunArtifact(engine_composition_tests);
+    const engine_composition_test_step = b.step(
+        "test-engine-composition",
+        "Run independent RuntimeScene, character-binding, interaction, and render-data composition proofs",
+    );
+    engine_composition_test_step.dependOn(&run_engine_composition_tests.step);
 
     const camera_tests = b.addTest(.{
         .name = "camera-tests",
@@ -161,6 +173,7 @@ pub fn register(options: Options) Registration {
     integration_test_step.dependOn(&run_integration_tests.step);
 
     return .{
+        .run_engine_composition = run_engine_composition_tests,
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,
         .run_foundation_primitives = run_foundation_primitive_tests,

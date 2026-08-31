@@ -5,10 +5,14 @@ pub const Options = struct {
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     sdl_include: []const u8,
-    app_module: *std.Build.Module,
+    sdl_library_dir: []const u8,
 };
 
 pub const Catalog = struct {
+    demo_entry_module: *std.Build.Module,
+    engine_smoke_entry_module: *std.Build.Module,
+    engine_smoke_client_module: *std.Build.Module,
+    engine_composition_test_module: *std.Build.Module,
     foundation_module: *std.Build.Module,
     scene_core_module: *std.Build.Module,
     canonical_model_core_test_module: *std.Build.Module,
@@ -95,7 +99,7 @@ pub fn register(options: Options) Catalog {
     const target = options.target;
     const optimize = options.optimize;
     const sdl_include = options.sdl_include;
-    const app_module = options.app_module;
+    const sdl_library_dir = options.sdl_library_dir;
 
     const foundation_module = b.createModule(.{
         .root_source_file = b.path("src/foundation/root.zig"),
@@ -945,6 +949,28 @@ pub fn register(options: Options) Catalog {
     sdl_gpu_renderer_module.addImport("image_decode", image_decode_module);
     sdl_gpu_renderer_module.addImport("diagnostics", diagnostics_module);
     sdl_gpu_renderer_module.addImport("frame_capture", frame_capture_module);
+    const engine_smoke_client_module = b.createModule(.{
+        .root_source_file = b.path("src/app/engine_smoke_client.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    engine_smoke_client_module.addImport("foundation", foundation_module);
+    engine_smoke_client_module.addImport("scene_core", scene_core_module);
+    engine_smoke_client_module.addImport("sprite_batch", sprite_batch_module);
+    const engine_smoke_entry_module = b.createModule(.{
+        .root_source_file = b.path("src/app/engine_smoke.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    engine_smoke_entry_module.addIncludePath(b.path(sdl_include));
+    engine_smoke_entry_module.addLibraryPath(b.path(sdl_library_dir));
+    engine_smoke_entry_module.linkSystemLibrary("SDL3", .{
+        .preferred_link_mode = .dynamic,
+        .search_strategy = .paths_first,
+    });
+    engine_smoke_entry_module.addImport("engine_smoke_client", engine_smoke_client_module);
+    engine_smoke_entry_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
     const integrated_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/integrated_demo.zig"),
         .target = target,
@@ -1265,9 +1291,37 @@ pub fn register(options: Options) Catalog {
     demo_application_module.addImport("anatomy_evidence", anatomy_evidence_module);
     demo_application_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
     demo_application_module.addImport("capture_writer", capture_writer_module);
-    app_module.addImport("demo_application", demo_application_module);
-    app_module.addImport("fault_injection", fault_injection_module);
-    app_module.addImport("visual_foundation", visual_foundation_module);
+    const demo_entry_module = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    demo_entry_module.addIncludePath(b.path(sdl_include));
+    demo_entry_module.addLibraryPath(b.path(sdl_library_dir));
+    demo_entry_module.linkSystemLibrary("SDL3", .{
+        .preferred_link_mode = .dynamic,
+        .search_strategy = .paths_first,
+    });
+    demo_entry_module.addImport("demo_application", demo_application_module);
+    demo_entry_module.addImport("fault_injection", fault_injection_module);
+    demo_entry_module.addImport("visual_foundation", visual_foundation_module);
+    const engine_composition_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/engine_composition_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    engine_composition_test_module.addImport("foundation", foundation_module);
+    engine_composition_test_module.addImport("scene_core", scene_core_module);
+    engine_composition_test_module.addImport("engine_smoke_client", engine_smoke_client_module);
+    engine_composition_test_module.addImport("math", math_module);
+    engine_composition_test_module.addImport("humanoid", humanoid_module);
+    engine_composition_test_module.addImport("authored_clips", authored_clips_module);
+    engine_composition_test_module.addImport("character", character_module);
+    engine_composition_test_module.addImport("character_entity_binding", character_entity_binding_module);
+    engine_composition_test_module.addImport("handshake", handshake_module);
+    engine_composition_test_module.addImport("interaction", interaction_module);
+    engine_composition_test_module.addImport("interaction_system", interaction_system_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("deformable_mesh", deformable_mesh_module);
@@ -1365,6 +1419,10 @@ pub fn register(options: Options) Catalog {
     camera_test_module.addImport("character_controller", character_controller_module);
 
     return .{
+        .demo_entry_module = demo_entry_module,
+        .engine_smoke_entry_module = engine_smoke_entry_module,
+        .engine_smoke_client_module = engine_smoke_client_module,
+        .engine_composition_test_module = engine_composition_test_module,
         .foundation_module = foundation_module,
         .scene_core_module = scene_core_module,
         .canonical_model_core_test_module = canonical_model_core_test_module,

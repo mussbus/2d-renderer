@@ -1,11 +1,12 @@
 const std = @import("std");
+const apps_build = @import("apps.zig");
 const tests_engine = @import("tests_engine.zig");
 const tests_content = @import("tests_content.zig");
 const evidence_build = @import("evidence.zig");
 
 pub const Options = struct {
     b: *std.Build,
-    app: *std.Build.Step.Compile,
+    apps: apps_build.Registration,
     engine: tests_engine.Registration,
     content: tests_content.Registration,
     evidence: evidence_build.Registration,
@@ -19,6 +20,7 @@ pub fn register(options: Options) void {
         "Run the fast engine-contract CPU suite without SDL or a GPU",
     );
     test_step.dependOn(&options.engine.run_deterministic.step);
+    test_step.dependOn(&options.engine.run_engine_composition.step);
     test_step.dependOn(&options.engine.run_renderer_boundary.step);
     test_step.dependOn(&options.content.run_image_decode.step);
     test_step.dependOn(&options.engine.run_foundation_primitives.step);
@@ -52,7 +54,8 @@ pub fn register(options: Options) void {
         "check",
         "Run the routine app compile, fast engine contracts, formatting, architecture policy, and documentation audit",
     );
-    check_step.dependOn(&options.app.step);
+    check_step.dependOn(&options.apps.demo.step);
+    check_step.dependOn(&options.apps.engine_smoke.step);
     check_step.dependOn(&format.step);
     check_step.dependOn(test_step);
     check_step.dependOn(&repository_audit.step);

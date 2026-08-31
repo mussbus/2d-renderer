@@ -129,10 +129,19 @@ pub const Renderer = struct {
     }
 
     pub fn deinit(self: *Renderer) void {
+        _ = self.deinitWithMetrics();
+    }
+
+    /// Performs the existing complete shutdown path and returns only copied
+    /// diagnostics after every tracked resource has been released. The opaque
+    /// renderer state remains inaccessible to clients.
+    pub fn deinitWithMetrics(self: *Renderer) ResourceMetrics {
         const allocator = self.state.allocator;
         self.state.deinit();
+        const final_metrics = self.state.resource_metrics;
         allocator.destroy(self.state);
         self.* = undefined;
+        return final_metrics;
     }
 
     pub fn runRuntimeFaultChecks(self: *Renderer) !void {
