@@ -4,10 +4,10 @@
 > owner-approved. F4A is owner-approved, and F4 production-architecture
 > hardening is the current track. The composition map below describes the
 > existing demo-driven runtime audited by F4A; it is not the accepted post-F4
-> target architecture. F4B1, F4B2, F4C1, F4C2, and F4C3 are owner-approved.
-> F4C4 has established one representative F-backed route plus physical/action
-> input separation and awaits owner review. See the
-> [F4C4 record](../implementation/f4c4_scene_core_adoption_and_input_boundaries.md).
+> target architecture. F4B1, F4B2, F4C1, F4C2, F4C3, and F4C4 are
+> owner-approved. F4C5 has modularized build, test, content, evidence, and
+> repository-policy ownership and awaits owner review. See the
+> [F4C5 record](../implementation/f4c5_build_test_policy_modularization.md).
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production

@@ -56,13 +56,13 @@ test "Prompt 3 keeps authoring authoritative and evidence updates explicit" {
     try std.testing.expect(std.mem.indexOf(u8, exporter, "writeFile(init.io, authoring_path") == null);
     try std.testing.expect(std.mem.indexOf(u8, exporter, "human_base.source") == null);
 
-    const build_source = try readFixture("build.zig");
-    defer std.testing.allocator.free(build_source);
-    try std.testing.expect(std.mem.indexOf(u8, build_source, "human_base_export_step.dependOn(&run_human_base_export.step)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, build_source, "test_step.dependOn(&run_human_base_export.step)") == null);
-    try std.testing.expect(std.mem.indexOf(u8, build_source, "full_test_step.dependOn(&run_human_base_export.step)") == null);
-    try std.testing.expect(std.mem.indexOf(u8, build_source, "check_step.dependOn(&run_human_base_export.step)") == null);
-    try std.testing.expect(std.mem.indexOf(u8, build_source, "verify_step.dependOn(&run_human_base_export.step)") == null);
+    const evidence_build_source = try readFixture("build/evidence.zig");
+    defer std.testing.allocator.free(evidence_build_source);
+    try std.testing.expect(std.mem.indexOf(u8, evidence_build_source, "human_base_export_step.dependOn(&run_human_base_export.step)") != null);
+
+    const gate_build_source = try readFixture("build/gates.zig");
+    defer std.testing.allocator.free(gate_build_source);
+    try std.testing.expect(std.mem.indexOf(u8, gate_build_source, "run_human_base_export.step") == null);
 
     const invalid = try readFixture(invalid_directory ++ "/01_missing_skeleton_root.json");
     defer std.testing.allocator.free(invalid);

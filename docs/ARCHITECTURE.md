@@ -21,13 +21,16 @@ The owner-approved F4C2 renderer/application/evidence boundary extraction is rec
 The owner-approved F4C3 character/interaction runtime-authority hardening is
 recorded in
 [`implementation/f4c3_character_interaction_authority.md`](implementation/f4c3_character_interaction_authority.md).
-The F4C4 scene-core adoption and input-boundary implementation awaiting owner
-review is recorded in
+The owner-approved F4C4 scene-core adoption and input-boundary implementation
+is recorded in
 [`implementation/f4c4_scene_core_adoption_and_input_boundaries.md`](implementation/f4c4_scene_core_adoption_and_input_boundaries.md).
+The F4C5 build, test, and repository-policy modularization awaiting owner
+review is recorded in
+[`implementation/f4c5_build_test_policy_modularization.md`](implementation/f4c5_build_test_policy_modularization.md).
 
 F4 is the current production-architecture hardening track; F4 itself is not
-accepted. F4B1, F4B2, F4C1, F4C2, and F4C3 are owner-approved. F4C4 is
-implemented and awaits owner review; F4C5, F4D, and F4E have not begun. Every
+accepted. F4B1, F4B2, F4C1, F4C2, F4C3, and F4C4 are owner-approved. F4C5 is
+implemented and awaits owner review; F4D and F4E have not begun. Every
 downstream track and further production migration still requires dedicated
 authorization. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,

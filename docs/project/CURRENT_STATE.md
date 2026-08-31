@@ -1,8 +1,8 @@
 # Current State
 
-Current F4C4 implementation basis: clean, synchronized `master` at
-`f8ee7e7165c9a331e80aea95bab8db9cef858217`, verified on 2026-08-31 before
-the local F4C4 scene-core adoption and input-boundary work began.
+Current F4C5 implementation basis: clean, synchronized `master` at
+`a7785c11cca0e23eda8074a79c25be13e3a25114`, verified on 2026-08-31 before
+the local F4C5 build, test, and repository-policy modularization began.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -24,15 +24,15 @@ visual acceptance or revise historical evidence claims.
 | F4C1 | **OWNER-APPROVED** |
 | F4C2 | **OWNER-APPROVED** |
 | F4C3 | **OWNER-APPROVED** |
-| F4C4 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4C5 | **NOT BEGUN** |
+| F4C4 | **OWNER-APPROVED** |
+| F4C5 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
 | F4D | **NOT BEGUN** |
 | F4E | **NOT BEGUN** |
 | F4 overall | In progress; **not accepted** |
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4C4 owner review**.
+Current immediate step: **F4C5 owner review**.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -68,7 +68,14 @@ Legacy character IDs remain runtime-only specialized lookup/order keys.
 Platform input now exposes only physical state, application/demo actions live
 in `src/app/demo_actions.zig`, and physics owns `CharacterIntent`. See the
 [F4C4 implementation record](../implementation/f4c4_scene_core_adoption_and_input_boundaries.md).
-F4C5, F4D, and F4E have not begun and require separate authorization.
+F4C5 separates explicit production-module, fast-engine-test, content-test,
+evidence/report, and aggregate-gate build ownership. Routine `check` now owns
+current architecture/hygiene, documentation, application compilation, and the
+fast engine contract. Full deterministic CPU integration, current content
+qualification, GPU smoke, manual visual review, and historical reproduction
+are explicit separate gates. See the
+[F4C5 implementation record](../implementation/f4c5_build_test_policy_modularization.md).
+F4D and F4E have not begun and require separate authorization.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the

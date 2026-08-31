@@ -1,11 +1,74 @@
 # Testing Strategy
 
-## M01.5 verification workflow
+## F4C5 verification workflow
 
 This section is the current repository-wide command contract. Historical
-milestone counts and commands later in this document remain evidence for the
-state that existed when those milestones were accepted; they do not override
-this workflow.
+milestone counts, aggregate membership statements, and commands later in this
+document remain evidence for the state that existed when those milestones
+were accepted; they do not override this workflow.
+
+Routine CPU verification remains windowless and GPU-independent. Use the
+pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build check -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-full -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-content -j1
+& '.\.deps\zig-0.16.0\zig.exe' build verify -j1
+& '.\.deps\zig-0.16.0\zig.exe' build gpu-smoke -j1
+```
+
+| Gate | Primary command | Contents | Explicit exclusions / required use |
+| --- | --- | --- | --- |
+| Fast engine contract/static | `zig build check -j1` | Production application compilation, formatting, current architecture and hygiene policy, documentation validation, and fast engine/F/scene/input/renderer-boundary CPU contracts | No physical GPU, canonical/content qualification, manual review, or historical evidence generation. Run for ordinary engine work and every review request. |
+| Full deterministic CPU integration | `zig build test-full -j1` | `check`, broader deterministic integration, production-route suites, environment/wardrobe/foundation composition, and the existing long-duration stress tests | No physical GPU, manual review, or canonical/historical evidence generation. Run for substantial engine or cross-system changes. |
+| Current canonical/content qualification | `zig build test-content -j1` | Canonical model/human/geometry, current authored art/visual/anatomy qualification, current content audits, approved goldens, exporter compilation, and the retained full content-policy audit | Required for canonical/content-authority changes; not required for unrelated engine iteration. |
+| Physical GPU validation | `zig build gpu-smoke -j1` | Real D3D12/DXIL device, shader, draw, readback, fault, and cleanup proof | Requires suitable Windows GPU access and remains separate from CPU-only gates. |
+| Manual/visual acceptance | `zig build visual-acceptance -j1` | Builds the application and current report executables used by the documented capture/review routes | Does not claim human approval and is never an automatic dependency of `check`. |
+| Historical evidence reproduction | `zig build evidence-history -j1` | Explicit, potentially mutating historical exporters, Blender bridge checks, and Prompt-era review packages | On demand only. Use `zig build evidence-history-check -j1` for a non-mutating registration check. |
+| CPU verification aggregate | `zig build verify -j1` | `check` + `test-full` + `test-content`, with shared nodes executed once | No physical GPU, manual acceptance, or historical reproduction. |
+
+`zig build test -j1` remains a compatibility and focused-development alias for
+the fast CPU contract suite used by `check`. `zig build test-stress -j1`
+remains callable and is now also included by `test-full`; the stress tests were
+not weakened or deleted.
+
+### Change-based gate guidance
+
+| Change | Required aggregate gates | Add focused routes |
+| --- | --- | --- |
+| Foundation or `scene_core` | `check`, `test-full` | `test-foundation-primitives`, `test-scene-core-authored`, or `test-scene-core-runtime` as applicable; the internal registry root remains in the fast aggregate |
+| Animation, physics, interaction, or character runtime | `check`, `test-full` | The relevant domain target; include `test-stress` when lifecycle or long-duration behavior changes |
+| Canonical human/model/geometry or current art/content | `check`, `test-content` | The relevant canonical/content target; add `visual-acceptance` when owner visual review is required |
+| Renderer/backend/shaders | `check`, `test-full`, `gpu-smoke` | `test-renderer-boundary` and other affected focused CPU targets |
+| Documentation only | `check` | `tools/check_documentation.ps1` may be run directly for rapid feedback |
+| Historical evidence tooling | `check`, `evidence-history-check` | Run only the affected mutating historical route when regeneration is intended |
+
+### Build/test registration ownership
+
+Production module creation belongs in `build/modules.zig`. Fast engine and
+full-CPU test roots belong in `build/tests_engine.zig`; canonical/content
+tests belong in `build/tests_content.zig`; report executables and historical
+reproduction belong in `build/evidence.zig`; top-level aggregate semantics
+belong in `build/gates.zig`. Root `build.zig` composes these domains and owns
+target/platform, pinned dependencies, shaders, the application, installed
+runtime assets, GPU smoke, and the major dependency DAG. Registration is
+explicit; directory scanning is prohibited.
+
+A future SEM or OBJ module/test normally changes its production/domain source
+and the matching module/test helper. A new LVL tool belongs with the relevant
+tool/content helper. A new editor executable should receive an explicit
+application/tool helper registration. Root changes only when introducing a
+new major domain or top-level aggregate, and ordinary additions do not require
+new checks in `tools/check_repository.ps1` or new prose here unless policy or
+gate semantics actually change.
+
+
+## Historical M01.5 verification workflow
+
+This section preserves the pre-F4C5 aggregate contract and milestone-time
+counts. It is retained as implementation history and does not override the
+F4C5 workflow above.
 
 All routine CPU verification remains windowless and GPU-independent. Use the
 pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
