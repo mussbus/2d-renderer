@@ -14,13 +14,15 @@ The independent F3 finding and subsequent accepted disposition are recorded in
 F1 through F3 are accepted. The owner-approved, read-only F4A repository audit
 and its decisions are recorded in
 [`implementation/f4a_production_architecture_audit.md`](implementation/f4a_production_architecture_audit.md).
-The F4C1 production-definition ownership migration awaiting owner review is
-recorded in
+The owner-approved F4C1 production-definition ownership migration is recorded in
 [`implementation/f4c1_production_definition_extraction.md`](implementation/f4c1_production_definition_extraction.md).
+The F4C2 renderer/application/evidence boundary extraction awaiting owner
+review is recorded in
+[`implementation/f4c2_renderer_application_evidence_boundaries.md`](implementation/f4c2_renderer_application_evidence_boundaries.md).
 
 F4 is the current production-architecture hardening track; F4 itself is not
-accepted. F4B1 and F4B2 are owner-approved, F4C1 awaits owner review, and F4C2
-through F4C5, F4D, and F4E have not begun. None of these status updates
+accepted. F4B1, F4B2, and F4C1 are owner-approved; F4C2 is implemented and
+awaits owner review; F4C3 through F4C5, F4D, and F4E have not begun. None of these status updates
 changes a production runtime route. Every downstream track and production
 migration still requires dedicated authorization. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,
@@ -191,10 +193,12 @@ interaction, animation, appearance selection, loadout fingerprint, capability
 state, character transform, and pending-edge count before and after synthetic
 resizes. The SDL event path re-queries `SDL_GetWindowSizeInPixels`; the render
 path also consumes the width and height returned with the acquired swapchain
-texture. Those drawable dimensions update `GpuDemo`'s single stored viewport
+texture. Those drawable dimensions update the renderer's single resolved viewport
 authority. Production foundation/environment scenes synchronize from that
 authority before later per-frame camera publication, and acquired dimensions
-are reapplied before GPU encoding. A zero or minimized drawable marks
+are reapplied before GPU encoding. `DemoApplication` owns camera policy and
+scenario publication; the production renderer stores only the resolved camera
+consumed for submission. A zero or minimized drawable marks
 presentation unavailable and preserves the last valid camera; no scale or
 projection is calculated until a later positive drawable size arrives.
 Neither route reinitializes characters or GPU resources.
@@ -282,7 +286,25 @@ Debug bones, colliders, sockets, and targets use a bounded primitive buffer and 
 
 ## Resource lifetime and allocation model
 
-Initialization proceeds from platform to resizable window, GPU device, claimed window, swapchain format, shaders, fixed-readback and swapchain-compatible pipelines, sampler, textures, static geometry buffers, transfer buffers, and per-frame instance resources. A mixed scene additionally creates one validated CPU topology catalog, one persistent mesh vertex/index buffer pair, a mesh vertex shader and target-compatible pipelines, and bounded mesh instance/upload buffers in each existing frame slot. Every owner has an explicit `deinit` path. Partial initialization uses `errdefer`, scoped owners, or the enclosing `GpuDemo` cleanup to destroy already-acquired resources in reverse order.
+Initialization proceeds from the renderer's distinct SDL platform/window state
+to GPU device, claimed window, swapchain format, shaders, fixed-readback and
+swapchain-compatible pipelines, sampler, textures, static geometry buffers,
+transfer buffers, and per-frame instance resources. A mixed scene additionally
+creates one validated CPU topology catalog, one persistent mesh vertex/index
+buffer pair, a mesh vertex shader and target-compatible pipelines, and bounded
+mesh instance/upload buffers in each existing frame slot. `Renderer` owns one
+private `State`; `Renderer.deinit` destroys every acquired resource and then
+the state allocation. Partial initialization uses `errdefer` and the state
+cleanup path to destroy already-acquired resources in reverse order.
+
+`DemoApplication` owns scenario choice, scenario lifetime, input routing,
+per-frame coordination, and evidence scheduling. It sends prepared
+`SpriteBatch` or `UnifiedRenderQueue` values through the renderer API; it never
+owns an SDL GPU handle. Generic GPU readback returns an owned, compact RGBA8
+`CapturedFrame` copied from the backend transfer buffer. The evidence writer
+receives only that copied value, writes historical PPM/PNG files, and cannot
+mutate renderer or scene state. `gpu_demo.zig` is a compatibility alias and no
+longer implements application, backend, rendering, or evidence behavior.
 
 SDL GPU resource destruction maps to the matching API: buffers, transfer buffers, textures, samplers, shaders, pipelines, fences, the claimed window, and the GPU device are each released by their documented function. Command buffers are either submitted or cancelled on every path. Destruction waits for GPU idle when in-flight access makes that necessary.
 
@@ -320,7 +342,7 @@ The following require a real SDL GPU device and therefore are excluded from ordi
 
 Real art remains presentation data. The immutable art pack maps stable typed semantic/view IDs to stable atlas-region IDs, then derives page indices and normalized UVs during initialization. Gameplay, character, anatomy, equipment, controller, collision, interaction, and animation definitions do not store atlas coordinates. See `docs/ART_PIPELINE.md` for the complete ownership and validation contract.
 
-Windows Imaging Component decodes required installed PNG files to owned RGBA8 CPU slices during initialization only. `GpuDemo` transactionally creates bounded texture/sampler pages, uploads each once, waits its upload fence, releases decoded pixels, and retains GPU resources until renderer destruction. The common texture-page table is consumed by both rigid-sprite and deformable-mesh ranges. The GPU responsibility remains vertex transformation, RGBA sampling, alpha blending, and indexed-instanced drawing; the CPU remains responsible for semantic resolution, ordering, and every gameplay system.
+Windows Imaging Component decodes required installed PNG files to owned RGBA8 CPU slices during initialization only. `Renderer` transactionally creates bounded texture/sampler pages, uploads each once, waits its upload fence, releases decoded pixels, and retains GPU resources until renderer destruction. `DemoApplication` selects which definitions to load. The common texture-page table is consumed by both rigid-sprite and deformable-mesh ranges. The GPU responsibility remains vertex transformation, RGBA sampling, alpha blending, and indexed-instanced drawing; the CPU remains responsible for semantic resolution, ordering, and every gameplay system.
 
 A future 3D authoring tool is strictly offline. It may render or stylize views and emit PNG pages plus stable region/view/pivot metadata, but the runtime boundary does not change and atlas layout never becomes authoritative identity.
 

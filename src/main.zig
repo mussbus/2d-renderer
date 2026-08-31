@@ -1,11 +1,11 @@
 const std = @import("std");
-const gpu = @import("graphics/gpu_demo.zig");
+const demo_application = @import("demo_application");
 const fault_injection = @import("fault_injection");
 
 const Options = struct {
     gpu_smoke: bool = false,
     maximum_frames: ?u32 = null,
-    demo: gpu.DemoMode = .sprites,
+    demo: demo_application.DemoMode = .sprites,
     scripted_input: bool = false,
     debug_visualization: bool = false,
     interactive: bool = false,
@@ -19,14 +19,14 @@ pub fn main(init: std.process.Init) !void {
     const options = try parseOptions(arguments);
     if (options.gpu_smoke) {
         try runInitializationFaultChecks(init.io);
-        var demo = try gpu.GpuDemo.init(std.heap.page_allocator, init.io, true, null);
+        var demo = try demo_application.DemoApplication.init(std.heap.page_allocator, init.io, true, null);
         defer demo.deinit();
         try demo.runRuntimeFaultChecks();
         try demo.runSmoke();
         return;
     }
 
-    var demo = try gpu.GpuDemo.init(std.heap.page_allocator, init.io, false, null);
+    var demo = try demo_application.DemoApplication.init(std.heap.page_allocator, init.io, false, null);
     defer demo.deinit();
     try demo.runVisible(
         options.maximum_frames,
@@ -46,7 +46,7 @@ test "application entry point remains type checked" {
 
 fn runInitializationFaultChecks(io: std.Io) !void {
     for (fault_injection.initialization_stages) |stage| {
-        var attempt = gpu.GpuDemo.init(std.heap.page_allocator, io, true, .{ .fail_after = stage }) catch |err| {
+        var attempt = demo_application.DemoApplication.init(std.heap.page_allocator, io, true, .{ .fail_after = stage }) catch |err| {
             if (err != error.InjectedInitializationFailure) {
                 std.log.err("fault-injection cleanup check for {s} failed before reaching its injection point: {s}", .{ @tagName(stage), @errorName(err) });
                 return err;

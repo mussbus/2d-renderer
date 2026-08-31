@@ -1110,6 +1110,34 @@ pub fn build(b: *std.Build) void {
     visual_truth_module.addImport("debug_draw", debug_draw_module);
     visual_truth_module.addImport("visual_geometry", visual_geometry_module);
     visual_truth_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
+    const frame_capture_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/frame_capture.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const capture_writer_module = b.createModule(.{
+        .root_source_file = b.path("src/evidence/capture_writer.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    capture_writer_module.addImport("frame_capture", frame_capture_module);
+    capture_writer_module.addImport("visual_truth", visual_truth_module);
+    const sdl_gpu_renderer_module = b.createModule(.{
+        .root_source_file = b.path("src/graphics/sdl_gpu_renderer.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    sdl_gpu_renderer_module.addImport("sdl", sdl_module);
+    sdl_gpu_renderer_module.addImport("fault_injection", fault_injection_module);
+    sdl_gpu_renderer_module.addImport("sprite_batch", sprite_batch_module);
+    sdl_gpu_renderer_module.addImport("deformable_mesh", deformable_mesh_module);
+    sdl_gpu_renderer_module.addImport("render_queue", render_queue_module);
+    sdl_gpu_renderer_module.addImport("mesh_gpu_catalog", mesh_gpu_catalog_module);
+    sdl_gpu_renderer_module.addImport("camera2d", camera2d_module);
+    sdl_gpu_renderer_module.addImport("art_pack", art_pack_module);
+    sdl_gpu_renderer_module.addImport("image_decode", image_decode_module);
+    sdl_gpu_renderer_module.addImport("diagnostics", diagnostics_module);
+    sdl_gpu_renderer_module.addImport("frame_capture", frame_capture_module);
     const integrated_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/integrated_demo.zig"),
         .target = target,
@@ -1360,66 +1388,76 @@ pub fn build(b: *std.Build) void {
     controller_demo_module.addImport("procedural_motion", procedural_motion_module);
     controller_demo_module.addImport("sprite_batch", sprite_batch_module);
     controller_demo_module.addImport("fault_injection", fault_injection_module);
-    app_module.addImport("humanoid", humanoid_module);
-    app_module.addImport("appearance", appearance_module);
-    app_module.addImport("anatomy", anatomy_module);
-    app_module.addImport("equipment", equipment_module);
-    app_module.addImport("character_properties", character_properties_module);
-    app_module.addImport("deformation", deformation_module);
-    app_module.addImport("math", math_module);
-    app_module.addImport("camera2d", camera2d_module);
-    app_module.addImport("animation_system", animation_system_module);
-    app_module.addImport("sprite_batch", sprite_batch_module);
-    app_module.addImport("deformable_mesh", deformable_mesh_module);
-    app_module.addImport("render_queue", render_queue_module);
-    app_module.addImport("mesh_gpu_catalog", mesh_gpu_catalog_module);
+    const demo_application_module = b.createModule(.{
+        .root_source_file = b.path("src/app/demo_application.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    demo_application_module.addImport("humanoid", humanoid_module);
+    demo_application_module.addImport("appearance", appearance_module);
+    demo_application_module.addImport("anatomy", anatomy_module);
+    demo_application_module.addImport("equipment", equipment_module);
+    demo_application_module.addImport("character_properties", character_properties_module);
+    demo_application_module.addImport("deformation", deformation_module);
+    demo_application_module.addImport("math", math_module);
+    demo_application_module.addImport("camera2d", camera2d_module);
+    demo_application_module.addImport("animation_system", animation_system_module);
+    demo_application_module.addImport("sprite_batch", sprite_batch_module);
+    demo_application_module.addImport("deformable_mesh", deformable_mesh_module);
+    demo_application_module.addImport("render_queue", render_queue_module);
+    demo_application_module.addImport("mesh_gpu_catalog", mesh_gpu_catalog_module);
+    demo_application_module.addImport("fault_injection", fault_injection_module);
+    demo_application_module.addImport("input", input_module);
+    demo_application_module.addImport("sdl", sdl_module);
+    demo_application_module.addImport("sdl_input", sdl_input_module);
+    demo_application_module.addImport("fixed_step", fixed_step_module);
+    demo_application_module.addImport("spring", spring_module);
+    demo_application_module.addImport("collider", collider_module);
+    demo_application_module.addImport("collision_world", collision_world_module);
+    demo_application_module.addImport("character_controller", character_controller_module);
+    demo_application_module.addImport("controller_demo", controller_demo_module);
+    demo_application_module.addImport("procedural_motion", procedural_motion_module);
+    demo_application_module.addImport("character", character_module);
+    demo_application_module.addImport("interaction", interaction_module);
+    demo_application_module.addImport("handshake", handshake_module);
+    demo_application_module.addImport("interaction_system", interaction_system_module);
+    demo_application_module.addImport("handshake_ik_demo", handshake_ik_demo_module);
+    demo_application_module.addImport("diagnostics", diagnostics_module);
+    demo_application_module.addImport("debug_draw", debug_draw_module);
+    demo_application_module.addImport("integrated_demo", integrated_demo_module);
+    demo_application_module.addImport("playground_demo", playground_demo_module);
+    demo_application_module.addImport("modular_body_demo", modular_body_demo_module);
+    demo_application_module.addImport("equipment_demo", equipment_demo_module);
+    demo_application_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
+    demo_application_module.addImport("foundation_playground", foundation_playground_module);
+    demo_application_module.addImport("art_pack", art_pack_module);
+    demo_application_module.addImport("image_decode", image_decode_module);
+    demo_application_module.addImport("art_asset_demo", art_asset_demo_module);
+    demo_application_module.addImport("presentation_view", presentation_view_module);
+    demo_application_module.addImport("presentation_pose", presentation_pose_module);
+    demo_application_module.addImport("character_art", character_art_module);
+    demo_application_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
+    demo_application_module.addImport("wardrobe_art", wardrobe_art_module);
+    demo_application_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
+    demo_application_module.addImport("wardrobe_demo", wardrobe_demo_module);
+    demo_application_module.addImport("environment_art", environment_art_module);
+    demo_application_module.addImport("environment_theme", environment_theme_module);
+    demo_application_module.addImport("environment_demo", environment_demo_module);
+    demo_application_module.addImport("foundation_evidence", foundation_evidence_module);
+    demo_application_module.addImport("foundation_coherence", foundation_coherence_module);
+    demo_application_module.addImport("acceptance_hud", acceptance_hud_module);
+    demo_application_module.addImport("visual_foundation", visual_foundation_module);
+    demo_application_module.addImport("visual_geometry", visual_geometry_module);
+    demo_application_module.addImport("visual_registration", visual_registration_module);
+    demo_application_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
+    demo_application_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
+    demo_application_module.addImport("visual_truth", visual_truth_module);
+    demo_application_module.addImport("anatomy_evidence", anatomy_evidence_module);
+    demo_application_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
+    demo_application_module.addImport("capture_writer", capture_writer_module);
+    app_module.addImport("demo_application", demo_application_module);
     app_module.addImport("fault_injection", fault_injection_module);
-    app_module.addImport("input", input_module);
-    app_module.addImport("sdl", sdl_module);
-    app_module.addImport("sdl_input", sdl_input_module);
-    app_module.addImport("fixed_step", fixed_step_module);
-    app_module.addImport("spring", spring_module);
-    app_module.addImport("collider", collider_module);
-    app_module.addImport("collision_world", collision_world_module);
-    app_module.addImport("character_controller", character_controller_module);
-    app_module.addImport("controller_demo", controller_demo_module);
-    app_module.addImport("procedural_motion", procedural_motion_module);
-    app_module.addImport("character", character_module);
-    app_module.addImport("interaction", interaction_module);
-    app_module.addImport("handshake", handshake_module);
-    app_module.addImport("interaction_system", interaction_system_module);
-    app_module.addImport("handshake_ik_demo", handshake_ik_demo_module);
-    app_module.addImport("diagnostics", diagnostics_module);
-    app_module.addImport("debug_draw", debug_draw_module);
-    app_module.addImport("integrated_demo", integrated_demo_module);
-    app_module.addImport("playground_demo", playground_demo_module);
-    app_module.addImport("modular_body_demo", modular_body_demo_module);
-    app_module.addImport("equipment_demo", equipment_demo_module);
-    app_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module);
-    app_module.addImport("foundation_playground", foundation_playground_module);
-    app_module.addImport("art_pack", art_pack_module);
-    app_module.addImport("image_decode", image_decode_module);
-    app_module.addImport("art_asset_demo", art_asset_demo_module);
-    app_module.addImport("presentation_view", presentation_view_module);
-    app_module.addImport("presentation_pose", presentation_pose_module);
-    app_module.addImport("character_art", character_art_module);
-    app_module.addImport("wardrobe_catalog", wardrobe_catalog_module);
-    app_module.addImport("wardrobe_art", wardrobe_art_module);
-    app_module.addImport("wardrobe_presentation", wardrobe_presentation_module);
-    app_module.addImport("wardrobe_demo", wardrobe_demo_module);
-    app_module.addImport("environment_art", environment_art_module);
-    app_module.addImport("environment_theme", environment_theme_module);
-    app_module.addImport("environment_demo", environment_demo_module);
-    app_module.addImport("foundation_evidence", foundation_evidence_module);
-    app_module.addImport("foundation_coherence", foundation_coherence_module);
-    app_module.addImport("acceptance_hud", acceptance_hud_module);
     app_module.addImport("visual_foundation", visual_foundation_module);
-    app_module.addImport("visual_geometry", visual_geometry_module);
-    app_module.addImport("visual_registration", visual_registration_module);
-    app_module.addImport("visual_geometry_audit", visual_geometry_audit_module);
-    app_module.addImport("visual_geometry_overlay", visual_geometry_overlay_module);
-    app_module.addImport("visual_truth", visual_truth_module);
-    app_module.addImport("anatomy_evidence", anatomy_evidence_module);
     test_module.addImport("fault_injection", fault_injection_module);
     test_module.addImport("sprite_batch", sprite_batch_module);
     test_module.addImport("deformable_mesh", deformable_mesh_module);
@@ -1522,6 +1560,22 @@ pub fn build(b: *std.Build) void {
         "Run focused height-relative viewport, camera transform, and simulation-invariance tests",
     );
     camera_test_step.dependOn(&run_camera_tests.step);
+    const renderer_boundary_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/renderer_boundary_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    renderer_boundary_test_module.addImport("frame_capture", frame_capture_module);
+    const renderer_boundary_tests = b.addTest(.{
+        .name = "renderer-boundary-tests",
+        .root_module = renderer_boundary_test_module,
+    });
+    const run_renderer_boundary_tests = b.addRunArtifact(renderer_boundary_tests);
+    const renderer_boundary_test_step = b.step(
+        "test-renderer-boundary",
+        "Run focused copied-frame ownership and capture-contract tests",
+    );
+    renderer_boundary_test_step.dependOn(&run_renderer_boundary_tests.step);
     const art_test_module = b.createModule(.{
         .root_source_file = b.path("tests/art_pipeline_tests.zig"),
         .target = target,
@@ -2202,6 +2256,7 @@ pub fn build(b: *std.Build) void {
         "Run the fast CPU development suite without SDL or a GPU",
     );
     test_step.dependOn(&run_tests.step);
+    test_step.dependOn(&run_renderer_boundary_tests.step);
     test_step.dependOn(&run_image_decode_tests.step);
     test_step.dependOn(&run_visual_registration_tests.step);
     test_step.dependOn(&run_canonical_model_core_tests.step);

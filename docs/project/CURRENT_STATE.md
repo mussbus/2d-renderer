@@ -1,8 +1,8 @@
 # Current State
 
-Current F4C1 implementation basis: clean, synchronized `master` at
-`4fcdf67b298323935fe99e18df95023c41a20740`, recorded on 2026-08-29 after
-owner approval and publication of F4B2.
+Current F4C2 implementation basis: clean, synchronized `master` at
+`ed6982d26eaf3c11a54ed2f371b61271efea8467`, verified on 2026-08-30 before
+the local F4C2 extraction began.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -21,8 +21,8 @@ visual acceptance or revise historical evidence claims.
 | F4A | **OWNER-APPROVED** whole-repository production-architecture audit |
 | F4B1 | **OWNER-APPROVED** |
 | F4B2 | **OWNER-APPROVED** |
-| F4C1 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4C2 | **NOT BEGUN** |
+| F4C1 | **OWNER-APPROVED** |
+| F4C2 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
 | F4C3 | **NOT BEGUN** |
 | F4C4 | **NOT BEGUN** |
 | F4C5 | **NOT BEGUN** |
@@ -32,7 +32,7 @@ visual acceptance or revise historical evidence claims.
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4C1 owner review**.
+Current immediate step: **F4C2 owner review**.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -47,7 +47,13 @@ borrowed production authority from a demo were removed. Three deliberate
 cross-demo scenario-composition edges and sixteen application/report routing
 edges remain explicitly classified. See the
 [F4C1 implementation record](../implementation/f4c1_production_definition_extraction.md).
-F4C2 through F4C5, F4D, and F4E have not begun and require separate
+F4C2 moves reusable SDL3/D3D12 device, resource, upload, queue execution, and
+generic readback ownership into `src/graphics/sdl_gpu_renderer.zig`. The
+surviving executable is composed by `src/app/demo_application.zig`; copied
+readback data crosses `frame_capture.CapturedFrame` into the evidence writer.
+The former `GpuDemo` source is now a four-line compatibility alias only. See
+the [F4C2 implementation record](../implementation/f4c2_renderer_application_evidence_boundaries.md).
+F4C3 through F4C5, F4D, and F4E have not begun and require separate
 authorization.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4

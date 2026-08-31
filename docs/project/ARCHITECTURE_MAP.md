@@ -1,12 +1,12 @@
 # Architecture Map
 
-> **Current authority note (2026-08-29):** F1, F2A, F2B, F2C and F3 are
+> **Current authority note (2026-08-30):** F1, F2A, F2B, F2C and F3 are
 > owner-approved. F4A is owner-approved, and F4 production-architecture
 > hardening is the current track. The composition map below describes the
 > existing demo-driven runtime audited by F4A; it is not the accepted post-F4
-> target architecture. F4B1 and F4B2 are owner-approved; F4C1 has extracted
-> reusable production definitions and awaits owner review. See the
-> [F4C1 record](../implementation/f4c1_production_definition_extraction.md).
+> target architecture. F4B1, F4B2, and F4C1 are owner-approved. F4C2 has
+> extracted renderer/application/evidence ownership and awaits owner review.
+> See the [F4C2 record](../implementation/f4c2_renderer_application_evidence_boundaries.md).
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
@@ -86,7 +86,11 @@ collider-data authority.
 | Prompt 27C deterministic art reauthoring and audit | [`tools/reauthor_p27c_anatomy.ps1`](../../tools/reauthor_p27c_anatomy.ps1), [`tools/audit_p27c_art.ps1`](../../tools/audit_p27c_art.ps1) |
 | VF-01 truth snapshot, overlay categories, schema, bundle finalization, and PNG writer | [`src/debug/visual_truth.zig`](../../src/debug/visual_truth.zig) |
 | VF-01 F1/F4 scene orchestration | [`src/scene/visual_foundation.zig`](../../src/scene/visual_foundation.zig) |
-| VF-01 production D3D12 clean/debug readback | [`src/graphics/gpu_demo.zig`](../../src/graphics/gpu_demo.zig) |
+| Application mode routing, scenario lifetime, and capture scheduling | [`src/app/demo_application.zig`](../../src/app/demo_application.zig) |
+| SDL window/device/resource lifetime, queue execution, upload, and generic D3D12 readback | [`src/graphics/sdl_gpu_renderer.zig`](../../src/graphics/sdl_gpu_renderer.zig) |
+| Copied frame result contract | [`src/graphics/frame_capture.zig`](../../src/graphics/frame_capture.zig) |
+| Historical PPM/PNG evidence output | [`src/evidence/capture_writer.zig`](../../src/evidence/capture_writer.zig) |
+| Legacy `GpuDemo` source compatibility | [`src/graphics/gpu_demo.zig`](../../src/graphics/gpu_demo.zig), alias only |
 | VF-01 frame-level platform input | [`src/platform/input.zig`](../../src/platform/input.zig), [`src/platform/sdl_input.zig`](../../src/platform/sdl_input.zig) |
 | Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig), [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |
 | Skeleton, poses, clips, state machine | [`src/animation/skeleton.zig`](../../src/animation/skeleton.zig), [`src/animation/pose.zig`](../../src/animation/pose.zig), [`src/animation/clip.zig`](../../src/animation/clip.zig), [`src/animation/state_machine.zig`](../../src/animation/state_machine.zig) |
@@ -107,7 +111,7 @@ collider-data authority.
 | Deformation and secondary motion | [`src/scene/deformation.zig`](../../src/scene/deformation.zig), [`src/animation/attachment_secondary_motion.zig`](../../src/animation/attachment_secondary_motion.zig), [`src/graphics/deformable_mesh.zig`](../../src/graphics/deformable_mesh.zig) |
 | Visual-geometry metadata, traces, and audits | [`src/scene/visual_geometry.zig`](../../src/scene/visual_geometry.zig), [`src/scene/visual_geometry_audit.zig`](../../src/scene/visual_geometry_audit.zig) |
 | Unified ordering | [`src/graphics/render_queue.zig`](../../src/graphics/render_queue.zig) and `sprite.OrderInput` in [`src/graphics/sprite_batch.zig`](../../src/graphics/sprite_batch.zig) |
-| GPU device, resources, batching, renderer | [`src/platform/sdl.zig`](../../src/platform/sdl.zig), [`src/graphics/gpu_demo.zig`](../../src/graphics/gpu_demo.zig), [`src/graphics/sprite_batch.zig`](../../src/graphics/sprite_batch.zig), [`src/graphics/mesh_gpu_catalog.zig`](../../src/graphics/mesh_gpu_catalog.zig) |
+| GPU device, resources, batching, renderer | [`src/platform/sdl.zig`](../../src/platform/sdl.zig), [`src/graphics/sdl_gpu_renderer.zig`](../../src/graphics/sdl_gpu_renderer.zig), [`src/graphics/sprite_batch.zig`](../../src/graphics/sprite_batch.zig), [`src/graphics/mesh_gpu_catalog.zig`](../../src/graphics/mesh_gpu_catalog.zig) |
 
 ## Authoritative boundaries
 

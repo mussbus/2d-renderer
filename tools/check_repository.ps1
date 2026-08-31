@@ -102,7 +102,14 @@ if ($failed) {
     exit 1
 }
 
-$gpuSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/gpu_demo.zig')
+$gpuCompatibilitySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/gpu_demo.zig')
+$demoApplicationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/app/demo_application.zig')
+$rendererSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/sdl_gpu_renderer.zig')
+$frameCaptureSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/frame_capture.zig')
+$captureWriterSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/evidence/capture_writer.zig')
+# Historical GPU audits inspect the application orchestration and reusable
+# backend together. F4C2-specific checks below protect their new direction.
+$gpuSource = $demoApplicationSource + [Environment]::NewLine + $rendererSource
 $batchSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/sprite_batch.zig')
 $skeletonSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/skeleton.zig')
 $poseSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/pose.zig')
@@ -1287,7 +1294,7 @@ foreach ($phrase in @(
 
 foreach ($phrase in @(
     'character_module.addImport("equipment", equipment_module)',
-    'app_module.addImport("equipment_demo", equipment_demo_module)',
+    'demo_application_module.addImport("equipment_demo", equipment_demo_module)',
     'test_module.addImport("equipment_demo", equipment_demo_module)'
 )) {
     if (-not $buildSource.Contains($phrase)) {
@@ -1498,9 +1505,9 @@ foreach ($phrase in @(
 }
 foreach ($phrase in @(
     'deformable_mesh_vs.dxil',
-    'app_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module)',
+    'demo_application_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module)',
     'test_module.addImport("mesh_attachment_demo", mesh_attachment_demo_module)',
-    'app_module.addImport("render_queue", render_queue_module)',
+    'demo_application_module.addImport("render_queue", render_queue_module)',
     'test_module.addImport("mesh_gpu_catalog", mesh_gpu_catalog_module)'
 )) {
     if (-not $buildSource.Contains($phrase)) {
@@ -1599,7 +1606,7 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'app_module.addImport("character_properties", character_properties_module)',
+    'demo_application_module.addImport("character_properties", character_properties_module)',
     'test_module.addImport("character_properties", character_properties_module)'
 )) {
     if (-not $buildSource.Contains($phrase)) {
@@ -1642,7 +1649,7 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'app_module.addImport("foundation_playground", foundation_playground_module)',
+    'demo_application_module.addImport("foundation_playground", foundation_playground_module)',
     'test_module.addImport("foundation_playground", foundation_playground_module)',
     'b.step("test-foundation"'
 )) {
@@ -1716,9 +1723,9 @@ foreach ($phrase in @(
     'p23_mechanical_atlas.png',
     'p23_energy_atlas.png',
     'addInstallFileWithDir',
-    'app_module.addImport("art_pack", art_pack_module)',
-    'app_module.addImport("image_decode", image_decode_module)',
-    'app_module.addImport("art_asset_demo", art_asset_demo_module)',
+    'demo_application_module.addImport("art_pack", art_pack_module)',
+    'demo_application_module.addImport("image_decode", image_decode_module)',
+    'demo_application_module.addImport("art_asset_demo", art_asset_demo_module)',
     'b.step("test-art"'
 )) {
     if (-not $buildSource.Contains($phrase)) {
@@ -1885,8 +1892,8 @@ foreach ($phrase in @(
     'p27c_male_base_anatomy_atlas.png',
     'p27c_female_base_anatomy_atlas.png',
     'p27c_anatomy_components_atlas.png',
-    'app_module.addImport("presentation_view", presentation_view_module)',
-    'app_module.addImport("character_art", character_art_module)',
+    'demo_application_module.addImport("presentation_view", presentation_view_module)',
+    'demo_application_module.addImport("character_art", character_art_module)',
     '"test-presentation",'
 )) {
     if (-not $buildSource.Contains($phrase)) {
@@ -2040,7 +2047,7 @@ foreach ($phrase in @(
     'p25_wardrobe_upper_atlas.png',
     'p25_wardrobe_layers_atlas.png',
     'p25_wardrobe_lower_atlas.png',
-    'app_module.addImport("wardrobe_demo", wardrobe_demo_module)',
+    'demo_application_module.addImport("wardrobe_demo", wardrobe_demo_module)',
     'test_module.addImport("wardrobe_demo", wardrobe_demo_module)',
     '"test-wardrobe",'
 )) {
@@ -2531,9 +2538,8 @@ foreach ($phrase in @(
     }
 }
 
-# F4C1 keeps scenario imports only at named application, composition, and
-# acceptance-report roots. This explicit allowlist is intentionally narrow and
-# is expected to shrink when F4C2 consolidates the application layer.
+# Scenario imports remain confined to the application/composition and named
+# acceptance-report roots. The renderer and capture contract are not allowlisted.
 $scenarioModuleNames = @(
     'controller_demo',
     'handshake_ik_demo',
@@ -2550,7 +2556,7 @@ $scenarioModuleNames = @(
 )
 $allowedScenarioImports = @{
     'src/main.zig' = @('visual_foundation')
-    'src/graphics/gpu_demo.zig' = $scenarioModuleNames
+    'src/app/demo_application.zig' = $scenarioModuleNames
     'src/scene/anatomy_quality_report.zig' = @('wardrobe_demo')
     'src/scene/environment_demo.zig' = @('wardrobe_demo')
     'src/scene/foundation_coherence_report.zig' = @('visual_foundation')
@@ -2618,6 +2624,105 @@ if ([regex]::IsMatch($combinedTestSource, $legacyFixtureProviderPattern)) {
     $failed = $true
 }
 
+# F4C2 renderer/application/evidence dependency boundary. The only evidence
+# writer exception is visual_truth, retained solely for its established PNG
+# encoder; it receives CapturedFrame copied bytes and no renderer authority.
+$rendererForbiddenImports = @(
+    $scenarioModuleNames + @(
+        'foundation_evidence',
+        'foundation_coherence',
+        'acceptance_hud',
+        'visual_truth',
+        'anatomy_evidence',
+        'capture_writer',
+        'demo_application'
+    )
+)
+foreach ($forbiddenImport in $rendererForbiddenImports) {
+    $pattern = '@import\s*\(\s*"' + [regex]::Escape($forbiddenImport) + '"\s*\)'
+    if ([regex]::IsMatch($rendererSource, $pattern)) {
+        Write-Error "F4C2 dependency violation: production SDL GPU renderer imports '$forbiddenImport'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$rendererForbiddenContent = @(
+    'DemoMode',
+    'zig-out/p25',
+    'zig-out/p26',
+    'zig-out/p27',
+    'capture_manifest.json',
+    'manual_visual_acceptance',
+    'writeFoundationEvidence',
+    'writeAnatomyEvidence'
+)
+foreach ($forbiddenContent in $rendererForbiddenContent) {
+    if ($rendererSource.Contains($forbiddenContent)) {
+        Write-Error "F4C2 ownership violation: production SDL GPU renderer contains scenario/evidence content '$forbiddenContent'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+if (-not $rendererSource.Contains('pub const Renderer = struct') -or
+    -not $rendererSource.Contains('state: *State') -or
+    -not $rendererSource.Contains('const State = struct') -or
+    $rendererSource.Contains('pub const State = struct')) {
+    Write-Error 'F4C2 renderer implementation state must remain behind the narrow Renderer handle.' -ErrorAction Continue
+    $failed = $true
+}
+
+if (-not $rendererSource.Contains('pub fn captureUnified') -or
+    -not $rendererSource.Contains('frame_capture.CapturedFrame') -or
+    [regex]::IsMatch($rendererSource, 'createFile|createDirPath|writeRgbaPng|writeStreamingAll')) {
+    Write-Error 'F4C2 generic renderer capture must return copied CapturedFrame data without owning evidence paths or file output.' -ErrorAction Continue
+    $failed = $true
+}
+
+if ([regex]::IsMatch($demoApplicationSource, 'SDL_(Create|Destroy|Release|Acquire|Submit|Map|Unmap|Download|Upload)[A-Za-z0-9_]*GPU|SDL_GPU(Device|Texture|Buffer|Shader|Sampler|Fence|GraphicsPipeline|TransferBuffer)') -or
+    [regex]::IsMatch($captureWriterSource, 'SDL_GPU|@import\s*\(\s*"sdl_gpu_renderer"') -or
+    [regex]::IsMatch($frameCaptureSource, 'SDL_GPU|@import\s*\(\s*"sdl"')) {
+    Write-Error 'F4C2 authority violation: application/evidence/capture-contract code owns or imports raw GPU backend implementation state.' -ErrorAction Continue
+    $failed = $true
+}
+
+$requiredF4C2ApplicationPhrases = @(
+    'const sdl_gpu_renderer = @import("sdl_gpu_renderer")',
+    'const capture_writer = @import("capture_writer")',
+    'pub const DemoApplication = struct',
+    '.renderer = try sdl_gpu_renderer.Renderer.init',
+    'var capture = try self.renderer.captureUnified(prepared)',
+    'capture_writer.writePpm',
+    'capture_writer.writePng'
+)
+foreach ($phrase in $requiredF4C2ApplicationPhrases) {
+    if (-not $demoApplicationSource.Contains($phrase)) {
+        Write-Error "F4C2 application/capture integration is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+if (-not $gpuCompatibilitySource.Contains('pub const GpuDemo = demo_application.DemoApplication') -or
+    $gpuCompatibilitySource.Contains('SDL_GPU') -or
+    $gpuCompatibilitySource.Contains('pub fn runVisible')) {
+    Write-Error 'F4C2 GpuDemo compatibility source must remain a thin alias over DemoApplication.' -ErrorAction Continue
+    $failed = $true
+}
+
+$requiredF4C2BuildPhrases = @(
+    'src/graphics/sdl_gpu_renderer.zig',
+    'src/graphics/frame_capture.zig',
+    'src/evidence/capture_writer.zig',
+    'src/app/demo_application.zig',
+    'test-renderer-boundary',
+    'app_module.addImport("demo_application", demo_application_module)'
+)
+foreach ($phrase in $requiredF4C2BuildPhrases) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "F4C2 build integration is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
 if ($failed) {
     exit 1
 }
@@ -2627,6 +2732,7 @@ Write-Host 'Forbidden SDL high-level renderer and alternate-renderer symbols are
 Write-Host ('No unfinished markers, un' + 'reachable paths, or skipped-test markers were found in audited implementation files.')
 Write-Host 'F2C authority audit passed: mutable registry/entity storage is absent from the supported root and production code has no direct internal imports.'
 Write-Host 'F4C1 ownership audit passed: reusable definitions and factories are production-owned; scenario imports are confined to the explicit application/composition/report allowlist.'
+Write-Host 'F4C2 boundary audit passed: raw SDL GPU authority is renderer-owned; scenarios remain application-owned; evidence writes only copied capture results.'
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'
