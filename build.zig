@@ -504,11 +504,23 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    const input_module = b.createModule(.{
+    const physical_input_module = b.createModule(.{
         .root_source_file = b.path("src/platform/input.zig"),
         .target = target,
         .optimize = optimize,
     });
+    const character_intent_module = b.createModule(.{
+        .root_source_file = b.path("src/physics/character_intent.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const input_module = b.createModule(.{
+        .root_source_file = b.path("src/app/demo_actions.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    input_module.addImport("physical_input", physical_input_module);
+    input_module.addImport("character_intent", character_intent_module);
     const sdl_module = b.createModule(.{
         .root_source_file = b.path("src/platform/sdl.zig"),
         .target = target,
@@ -523,7 +535,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     sdl_input_module.addIncludePath(b.path(sdl_include));
-    sdl_input_module.addImport("input", input_module);
+    sdl_input_module.addImport("physical_input", physical_input_module);
     sdl_input_module.addImport("sdl", sdl_module);
     const fixed_step_module = b.createModule(.{
         .root_source_file = b.path("src/physics/fixed_step.zig"),
@@ -650,7 +662,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     character_controller_module.addImport("math", math_module);
-    character_controller_module.addImport("input", input_module);
+    character_controller_module.addImport("character_intent", character_intent_module);
     character_controller_module.addImport("collider", collider_module);
     character_controller_module.addImport("collision_world", collision_world_module);
     character_controller_module.addImport("fixed_step", fixed_step_module);
@@ -925,7 +937,7 @@ pub fn build(b: *std.Build) void {
     character_module.addImport("leg_ik", leg_ik_module);
     character_module.addImport("foot_planting", foot_planting_module);
     character_module.addImport("fixed_step", fixed_step_module);
-    character_module.addImport("input", input_module);
+    character_module.addImport("character_intent", character_intent_module);
     character_module.addImport("presentation_view", presentation_view_module);
     character_module.addImport("collision_world", collision_world_module);
     character_module.addImport("character_controller", character_controller_module);
@@ -933,6 +945,15 @@ pub fn build(b: *std.Build) void {
     character_module.addImport("deformable_mesh", deformable_mesh_module);
     character_module.addImport("render_queue", render_queue_module);
     character_module.addImport("fault_injection", fault_injection_module);
+    const character_entity_binding_module = b.createModule(.{
+        .root_source_file = b.path("src/scene/character_entity_binding.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    character_entity_binding_module.addImport("foundation", foundation_module);
+    character_entity_binding_module.addImport("scene_core", scene_core_module);
+    character_entity_binding_module.addImport("math", math_module);
+    character_entity_binding_module.addImport("character", character_module);
     const interaction_module = b.createModule(.{
         .root_source_file = b.path("src/interaction/interaction.zig"),
         .target = target,
@@ -960,7 +981,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     interaction_system_module.addImport("math", math_module);
-    interaction_system_module.addImport("input", input_module);
+    interaction_system_module.addImport("character_intent", character_intent_module);
     interaction_system_module.addImport("fixed_step", fixed_step_module);
     interaction_system_module.addImport("humanoid", humanoid_module);
     interaction_system_module.addImport("skeleton", skeleton_module);
@@ -1154,6 +1175,9 @@ pub fn build(b: *std.Build) void {
     integrated_demo_module.addImport("authored_clips", authored_clips_module);
     integrated_demo_module.addImport("state_machine", state_machine_module);
     integrated_demo_module.addImport("character", character_module);
+    integrated_demo_module.addImport("foundation", foundation_module);
+    integrated_demo_module.addImport("scene_core", scene_core_module);
+    integrated_demo_module.addImport("character_entity_binding", character_entity_binding_module);
     integrated_demo_module.addImport("interaction", interaction_module);
     integrated_demo_module.addImport("interaction_system", interaction_system_module);
     integrated_demo_module.addImport("handshake", handshake_module);
@@ -1497,6 +1521,9 @@ pub fn build(b: *std.Build) void {
     test_module.addImport("controller_demo", controller_demo_module);
     test_module.addImport("procedural_motion", procedural_motion_module);
     test_module.addImport("character", character_module);
+    test_module.addImport("foundation", foundation_module);
+    test_module.addImport("scene_core", scene_core_module);
+    test_module.addImport("character_entity_binding", character_entity_binding_module);
     test_module.addImport("interaction", interaction_module);
     test_module.addImport("handshake", handshake_module);
     test_module.addImport("interaction_system", interaction_system_module);
@@ -2115,6 +2142,29 @@ pub fn build(b: *std.Build) void {
     );
     foundation_primitive_test_step.dependOn(&run_foundation_primitive_tests.step);
 
+    const f4c4_adoption_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/f4c4_adoption_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    f4c4_adoption_test_module.addImport("foundation", foundation_module);
+    f4c4_adoption_test_module.addImport("scene_core", scene_core_module);
+    f4c4_adoption_test_module.addImport("physical_input", physical_input_module);
+    f4c4_adoption_test_module.addImport("input", input_module);
+    f4c4_adoption_test_module.addImport("character", character_module);
+    f4c4_adoption_test_module.addImport("character_entity_binding", character_entity_binding_module);
+    f4c4_adoption_test_module.addImport("integrated_demo", integrated_demo_module);
+    const f4c4_adoption_tests = b.addTest(.{
+        .name = "f4c4-adoption-tests",
+        .root_module = f4c4_adoption_test_module,
+    });
+    const run_f4c4_adoption_tests = b.addRunArtifact(f4c4_adoption_tests);
+    const f4c4_adoption_test_step = b.step(
+        "test-f4c4-adoption",
+        "Run F4C4 scene-core binding and application-action boundary tests",
+    );
+    f4c4_adoption_test_step.dependOn(&run_f4c4_adoption_tests.step);
+
     const scene_core_authored_tests = b.addTest(.{
         .name = "scene-core-authored-tests",
         .root_module = scene_core_authored_test_module,
@@ -2271,6 +2321,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_canonical_human_base_tests.step);
     test_step.dependOn(&run_canonical_geometry_tests.step);
     test_step.dependOn(&run_foundation_primitive_tests.step);
+    test_step.dependOn(&run_f4c4_adoption_tests.step);
     test_step.dependOn(&run_scene_core_authored_tests.step);
     test_step.dependOn(&run_scene_core_runtime_tests.step);
     test_step.dependOn(&run_scene_core_registry_tests.step);

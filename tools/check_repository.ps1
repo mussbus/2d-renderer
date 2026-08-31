@@ -123,6 +123,10 @@ $authoredClipSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '
 $animationSystemSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/animation/animation_system.zig')
 $inputSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/platform/input.zig')
 $sdlInputSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/platform/sdl_input.zig')
+$demoActionsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/app/demo_actions.zig')
+$characterIntentSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/character_intent.zig')
+$characterEntityBindingSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_entity_binding.zig')
+$f4c4AdoptionTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/f4c4_adoption_tests.zig')
 $fixedStepSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/fixed_step.zig')
 $colliderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/collider.zig')
 $collisionWorldSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/collision_world.zig')
@@ -612,16 +616,16 @@ if ([regex]::Matches($controllerSources, 'pub const CollisionWorld\s*=\s*struct'
     Write-Error 'Exactly one authoritative CollisionWorld representation is required.' -ErrorAction Continue
     $failed = $true
 }
-if (-not $inputSource.Contains('pub const CharacterIntent = extern struct') -or
-    -not $inputSource.Contains('jump_pressed_pending') -or
-    -not $inputSource.Contains('pub fn consumeTick')) {
+if (-not $characterIntentSource.Contains('pub const CharacterIntent = extern struct') -or
+    -not $demoActionsSource.Contains('jump_pressed_pending') -or
+    -not $demoActionsSource.Contains('pub fn consumeTick')) {
     Write-Error 'Renderer-independent CharacterIntent and explicit pending-edge consumption are required.' -ErrorAction Continue
     $failed = $true
 }
 
 $controllerHotSections = @(
-    Get-FunctionSection $inputSource '    pub fn acceptFrame' '    pub fn consumeTick'
-    Get-FunctionSection $inputSource '    pub fn consumeTick' '    pub fn reset'
+    Get-FunctionSection $demoActionsSource '    pub fn acceptFrame' '    pub fn consumeTick'
+    Get-FunctionSection $demoActionsSource '    pub fn consumeTick' '    pub fn reset'
     Get-FunctionSection $fixedStepSource '    pub fn beginFrame' '    pub fn reset'
     Get-FunctionSection $controllerSource '    pub fn step(' '    pub fn interpolatedPosition'
     Get-FunctionSection $controllerDemoSource '    pub fn simulateTick' '    pub fn renderPosition'
@@ -971,7 +975,7 @@ foreach ($phrase in $requiredVerificationTiers) {
     }
 }
 
-$inputOwnershipSources = $sdlInputSource + [Environment]::NewLine + $inputSource
+$inputOwnershipSources = $sdlInputSource + [Environment]::NewLine + $inputSource + [Environment]::NewLine + $demoActionsSource
 if ([regex]::IsMatch($inputOwnershipSources, 'character_controller|stepController|controller\.state|world_position\s*=|setWorldPosition|enterAnimationState|startPair')) {
     Write-Error 'Production input mapping may not import or mutate controller, character-root, animation, or interaction authority.' -ErrorAction Continue
     $failed = $true
@@ -989,21 +993,21 @@ if (-not $sdlInputSource.Contains('SDL_GetKeyboardState') -or
     $failed = $true
 }
 if ([regex]::IsMatch($sdlInputSource, 'SDL_EVENT_KEY_DOWN|\.key\.repeat|SDL_StartTextInput') -or
-    -not $inputSource.Contains('fn button(previous: bool, current: bool) ButtonSnapshot')) {
+    -not $demoActionsSource.Contains('fn button(previous: bool, current: bool) ButtonSnapshot')) {
     Write-Error 'Gameplay edges must use polled physical-state transitions and may not use key-repeat or text-input events.' -ErrorAction Continue
     $failed = $true
 }
 if (-not $sdlInputSource.Contains('SDL_EVENT_WINDOW_FOCUS_LOST') -or
     -not $sdlInputSource.Contains('SDL_EVENT_WINDOW_FOCUS_GAINED') -or
-    -not $inputSource.Contains('blocked_until_release') -or
-    -not $inputSource.Contains('if (snapshot.focus_lost)')) {
+    -not $demoActionsSource.Contains('blocked_until_release') -or
+    -not $demoActionsSource.Contains('if (snapshot.focus_lost)')) {
     Write-Error 'Focus loss must clear pending keyboard state and suppress held keys until physical release after focus regain.' -ErrorAction Continue
     $failed = $true
 }
-if (-not $inputSource.Contains('jump_pressed_pending') -or
-    -not $inputSource.Contains('jump_released_pending') -or
-    -not $inputSource.Contains('interact_pressed_pending') -or
-    -not $inputSource.Contains('pub fn pendingEdgeCount')) {
+if (-not $demoActionsSource.Contains('jump_pressed_pending') -or
+    -not $demoActionsSource.Contains('jump_released_pending') -or
+    -not $demoActionsSource.Contains('interact_pressed_pending') -or
+    -not $demoActionsSource.Contains('pub fn pendingEdgeCount')) {
     Write-Error 'Pending press and release edges plus bounded diagnostics are required across zero-substep frames.' -ErrorAction Continue
     $failed = $true
 }
@@ -1023,7 +1027,7 @@ if (-not $playgroundSource.Contains('requestFromIntent') -or
     Write-Error 'Playground E handling must request through CharacterIntent and may not start the handshake directly.' -ErrorAction Continue
     $failed = $true
 }
-if ([regex]::IsMatch($playgroundSource + [Environment]::NewLine + $inputSource, 'CreateGPU|ReleaseGPU|DrawGPU|SDL_GPU|\.alloc\s*\(|\.create\s*\(|ArrayList|HashMap|StringHashMap')) {
+if ([regex]::IsMatch($playgroundSource + [Environment]::NewLine + $inputSource + [Environment]::NewLine + $demoActionsSource, 'CreateGPU|ReleaseGPU|DrawGPU|SDL_GPU|\.alloc\s*\(|\.create\s*\(|ArrayList|HashMap|StringHashMap')) {
     Write-Error 'Input mapping and playground steady-state orchestration may not allocate collections or own GPU resources.' -ErrorAction Continue
     $failed = $true
 }
@@ -1642,7 +1646,7 @@ foreach ($phrase in @(
     'SDL_SCANCODE_LSHIFT',
     'SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER'
 )) {
-    if (-not ($inputSource + $sdlInputSource).Contains($phrase)) {
+    if (-not ($demoActionsSource + $characterIntentSource + $sdlInputSource).Contains($phrase)) {
         Write-Error "Prompt 21 platform-neutral dash input contract is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
@@ -1958,7 +1962,7 @@ foreach ($phrase in @(
     }
 }
 if (-not $sdlInputSource.Contains('SDL_SCANCODE_Q') -or
-    -not $inputSource.Contains('presentation_view_cycle')) {
+    -not $demoActionsSource.Contains('presentation_view_cycle')) {
     Write-Error 'Prompt 24 unused Q control must map to the platform-neutral presentation-view command.' -ErrorAction Continue
     $failed = $true
 }
@@ -2114,8 +2118,8 @@ foreach ($phrase in @(
 }
 if (-not $sdlInputSource.Contains('SDL_SCANCODE_O') -or
     -not $sdlInputSource.Contains('SDL_SCANCODE_P') -or
-    -not $inputSource.Contains('outfit_cycle') -or
-    -not $inputSource.Contains('pause_toggle')) {
+    -not $demoActionsSource.Contains('outfit_cycle') -or
+    -not $demoActionsSource.Contains('pause_toggle')) {
     Write-Error 'Prompt 25 O/P controls must map through the platform-neutral focus-safe input snapshot.' -ErrorAction Continue
     $failed = $true
 }
@@ -2779,6 +2783,132 @@ foreach ($phrase in $requiredF4C2BuildPhrases) {
     }
 }
 
+# F4C4 F/scene-core adoption and physical/application/domain input boundaries.
+$platformForbiddenActionContent = @(
+    'FrameInputSnapshot',
+    'SnapshotBuilder',
+    'PendingInput',
+    'CharacterIntent',
+    'manual_debug_capture',
+    'body_preset_cycle',
+    'build_cycle',
+    'hair_cycle',
+    'loadout_cycle',
+    'outfit_cycle',
+    'pause_toggle',
+    'presentation_view_cycle',
+    'environment_theme_cycle'
+)
+foreach ($forbiddenAction in $platformForbiddenActionContent) {
+    if ($inputSource.Contains($forbiddenAction) -or $sdlInputSource.Contains($forbiddenAction)) {
+        Write-Error "F4C4 platform-action violation: physical input contains application/domain semantic '$forbiddenAction'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($inputSource + [Environment]::NewLine + $sdlInputSource, '@import\s*\(\s*"(character|wardrobe|environment|foundation_evidence|character_intent|demo_actions)"\s*\)')) {
+    Write-Error 'F4C4 platform-action violation: a physical platform module imports application or domain ownership.' -ErrorAction Continue
+    $failed = $true
+}
+$requiredActionMappingPhrases = @(
+    'const physical = @import("physical_input")',
+    'const character_intent = @import("character_intent")',
+    'pub const FrameInputSnapshot = struct',
+    'pub const SnapshotBuilder = struct',
+    'manual_debug_capture',
+    'body_preset_cycle',
+    'build_cycle',
+    'hair_cycle',
+    'loadout_cycle',
+    'outfit_cycle',
+    'presentation_view_cycle',
+    'environment_theme_cycle'
+)
+foreach ($phrase in $requiredActionMappingPhrases) {
+    if (-not $demoActionsSource.Contains($phrase)) {
+        Write-Error "F4C4 application action mapping is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$requiredBindingPhrases = @(
+    'const foundation = @import("foundation")',
+    'const scene_core = @import("scene_core")',
+    'pub const CharacterEntityBindings = struct',
+    'opaque_context: *const anyopaque',
+    'scene_core.runtime_scene.RuntimeScene',
+    'foundation.identity.EntityId',
+    'foundation.identity.EntityHandle',
+    'PublicationParticipant',
+    'pub fn createPersistent',
+    'pub fn destroyEntity',
+    'pub fn acquireSnapshot'
+)
+foreach ($phrase in $requiredBindingPhrases) {
+    if (-not $characterEntityBindingSource.Contains($phrase)) {
+        Write-Error "F4C4 character/F binding is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($characterEntityBindingSource, '@import\s*\(\s*"[^\"]*scene_core[/\\](registry|runtime_entity)\.zig"') -or
+    $characterEntityBindingSource.Contains('pub const Storage') -or
+    $characterEntityBindingSource.Contains('pub const Binding')) {
+    Write-Error 'F4C4 binding must consume only the supported scene_core root and keep mapping storage private.' -ErrorAction Continue
+    $failed = $true
+}
+foreach ($phrase in @(
+    'entity_bindings: character_entity_binding.CharacterEntityBindings',
+    'player_entity: foundation.identity.EntityHandle',
+    'partner_entity: foundation.identity.EntityHandle',
+    'prepareFBackedSimulation',
+    'publishFBackedTransforms',
+    'fEntityObservation',
+    'requireLiveFParticipants'
+)) {
+    if (-not $integratedDemoSource.Contains($phrase)) {
+        Write-Error "F4C4 integrated F-backed route is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+foreach ($phrase in @(
+    'test-f4c4-adoption',
+    'src/app/demo_actions.zig',
+    'src/physics/character_intent.zig',
+    'src/scene/character_entity_binding.zig',
+    'integrated_demo_module.addImport("character_entity_binding", character_entity_binding_module)'
+)) {
+    if (-not $buildSource.Contains($phrase)) {
+        Write-Error "F4C4 build integration is missing '$phrase'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+
+$allowedEntityIdDeclarations = @(
+    'src/foundation/identity.zig',
+    'src/scene/character.zig'
+)
+foreach ($productionFile in $productionZigFiles) {
+    $relativePath = [IO.Path]::GetRelativePath($repositoryRoot, $productionFile.FullName).Replace('\', '/')
+    $source = Get-Content -Raw -LiteralPath $productionFile.FullName
+    if ([regex]::IsMatch($source, '(?m)^\s*(pub\s+)?const\s+EntityId\s*=') -and $relativePath -notin $allowedEntityIdDeclarations) {
+        Write-Error "F4C4 identity violation: '$relativePath' declares a competing generic EntityId." -ErrorAction Continue
+        $failed = $true
+    }
+    if ($source.Contains('character.EntityId') -and
+        -not ($relativePath.StartsWith('src/scene/') -or
+            $relativePath.StartsWith('src/interaction/') -or
+            $relativePath.StartsWith('src/debug/') -or
+            $relativePath.StartsWith('src/app/'))) {
+        Write-Error "F4C4 identity violation: legacy character.EntityId escaped specialized compatibility scope in '$relativePath'." -ErrorAction Continue
+        $failed = $true
+    }
+}
+if ([regex]::IsMatch($sceneCoreRootSource + [Environment]::NewLine + $runtimeSceneSource, '@import\s*\(\s*"character"') -or
+    -not $f4c4AdoptionTestsSource.Contains('bounded binding contains legacy identity') -or
+    -not $f4c4AdoptionTestsSource.Contains('integrated route uses F transform lifecycle snapshot')) {
+    Write-Error 'F4C4 identity direction or focused binding/lifecycle coverage is incomplete.' -ErrorAction Continue
+    $failed = $true
+}
+
 if ($failed) {
     exit 1
 }
@@ -2790,6 +2920,7 @@ Write-Host 'F2C authority audit passed: mutable registry/entity storage is absen
 Write-Host 'F4C1 ownership audit passed: reusable definitions and factories are production-owned; scenario imports are confined to the explicit application/composition/report allowlist.'
 Write-Host 'F4C2 boundary audit passed: raw SDL GPU authority is renderer-owned; scenarios remain application-owned; evidence writes only copied capture results.'
 Write-Host 'F4C3 authority audit passed: character and interaction mutable state remains behind opaque supported facades; production code cannot reach opaque storage or use white-box test routes.'
+Write-Host 'F4C4 authority audit passed: integrated characters are F-owned runtime entities through one bounded adapter; legacy IDs remain specialized; platform input is physical-only and application actions map to domain commands.'
 Write-Host 'Every GPU acquisition family has a matching release operation.'
 Write-Host 'Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.'
 Write-Host 'GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.'

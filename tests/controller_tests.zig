@@ -55,11 +55,11 @@ test "input snapshots merge keyboard and gamepad and expose deterministic edges"
     var builder = input.SnapshotBuilder{};
     var snapshot = try builder.update(.{ .keyboard = .{ .a = true } });
     try std.testing.expectEqual(@as(f32, -1), snapshot.move_axis);
-    snapshot = try builder.update(.{ .keyboard = .{ .a = true, .d = true }, .gamepad_move_axis = 0.60 });
+    snapshot = try builder.update(.{ .keyboard = .{ .a = true, .d = true }, .gamepad_left_x = 0.60 });
     try std.testing.expectApproxEqAbs(@as(f32, 0.50), snapshot.move_axis, tolerance);
-    snapshot = try builder.update(.{ .keyboard = .{ .d = true }, .gamepad_move_axis = -1 });
+    snapshot = try builder.update(.{ .keyboard = .{ .d = true }, .gamepad_left_x = -1 });
     try std.testing.expectEqual(@as(f32, 1), snapshot.move_axis);
-    snapshot = try builder.update(.{ .gamepad_move_axis = input.gamepad_dead_zone });
+    snapshot = try builder.update(.{ .gamepad_left_x = input.gamepad_dead_zone });
     try std.testing.expectEqual(@as(f32, 0), snapshot.move_axis);
 
     snapshot = try builder.update(.{ .keyboard = .{ .space = true, .left_shift = true, .e = true } });
@@ -73,7 +73,7 @@ test "input snapshots merge keyboard and gamepad and expose deterministic edges"
     snapshot = try builder.update(.{});
     try std.testing.expect(!snapshot.jump.pressed and !snapshot.jump.held and snapshot.jump.released);
     builder.reset();
-    snapshot = try builder.update(.{ .gamepad_dash = true });
+    snapshot = try builder.update(.{ .gamepad_button_right_shoulder = true });
     try std.testing.expect(snapshot.dash.pressed and snapshot.dash.held);
     builder.reset();
     snapshot = try builder.update(.{ .keyboard = .{ .c = true, .v = true, .h = true, .l = true } });
@@ -86,7 +86,7 @@ test "input snapshots merge keyboard and gamepad and expose deterministic edges"
     try std.testing.expect(snapshot.build_cycle.released);
     try std.testing.expect(snapshot.hair_cycle.released);
     try std.testing.expect(snapshot.loadout_cycle.released);
-    try std.testing.expectError(error.NonFiniteGamepadAxis, builder.update(.{ .gamepad_move_axis = std.math.nan(f32) }));
+    try std.testing.expectError(error.NonFiniteGamepadAxis, builder.update(.{ .gamepad_left_x = std.math.nan(f32) }));
 }
 
 test "pending input preserves zero-tick edges and consumes each edge once" {

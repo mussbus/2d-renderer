@@ -1,12 +1,13 @@
 # Architecture Map
 
-> **Current authority note (2026-08-30):** F1, F2A, F2B, F2C and F3 are
+> **Current authority note (2026-08-31):** F1, F2A, F2B, F2C and F3 are
 > owner-approved. F4A is owner-approved, and F4 production-architecture
 > hardening is the current track. The composition map below describes the
 > existing demo-driven runtime audited by F4A; it is not the accepted post-F4
-> target architecture. F4B1, F4B2, F4C1, and F4C2 are owner-approved. F4C3
-> has hardened character and interaction mutation authority and awaits owner
-> review. See the [F4C3 record](../implementation/f4c3_character_interaction_authority.md).
+> target architecture. F4B1, F4B2, F4C1, F4C2, and F4C3 are owner-approved.
+> F4C4 has established one representative F-backed route plus physical/action
+> input separation and awaits owner review. See the
+> [F4C4 record](../implementation/f4c4_scene_core_adoption_and_input_boundaries.md).
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
@@ -21,7 +22,13 @@ Character / Anatomy Definition
 + Character and Wardrobe Art Packs
         |
         v
-Character Runtime
+F RuntimeScene identity / lifecycle / transform
+        |
+        v
+Bounded Character Entity Binding
+        |
+        v
+Specialized Character Runtime
         |
         v
 Controller / Animation / Interaction
@@ -87,11 +94,15 @@ collider-data authority.
 | VF-01 truth snapshot, overlay categories, schema, bundle finalization, and PNG writer | [`src/debug/visual_truth.zig`](../../src/debug/visual_truth.zig) |
 | VF-01 F1/F4 scene orchestration | [`src/scene/visual_foundation.zig`](../../src/scene/visual_foundation.zig) |
 | Application mode routing, scenario lifetime, and capture scheduling | [`src/app/demo_application.zig`](../../src/app/demo_application.zig) |
+| Generic persistent/runtime scene identity, lifetime, enabled state and transform | Supported [`src/scene_core/root.zig`](../../src/scene_core/root.zig) surface; `RuntimeScene` implementation remains private behind that root |
+| F-to-character specialized binding | [`src/scene/character_entity_binding.zig`](../../src/scene/character_entity_binding.zig), private fixed-capacity mapping; consumed by the representative [`src/scene/integrated_demo.zig`](../../src/scene/integrated_demo.zig) route |
 | SDL window/device/resource lifetime, queue execution, upload, and generic D3D12 readback | [`src/graphics/sdl_gpu_renderer.zig`](../../src/graphics/sdl_gpu_renderer.zig) |
 | Copied frame result contract | [`src/graphics/frame_capture.zig`](../../src/graphics/frame_capture.zig) |
 | Historical PPM/PNG evidence output | [`src/evidence/capture_writer.zig`](../../src/evidence/capture_writer.zig) |
 | Legacy `GpuDemo` source compatibility | [`src/graphics/gpu_demo.zig`](../../src/graphics/gpu_demo.zig), alias only |
-| VF-01 frame-level platform input | [`src/platform/input.zig`](../../src/platform/input.zig), [`src/platform/sdl_input.zig`](../../src/platform/sdl_input.zig) |
+| Physical platform input | [`src/platform/input.zig`](../../src/platform/input.zig), [`src/platform/sdl_input.zig`](../../src/platform/sdl_input.zig) |
+| Application/demo action mapping | [`src/app/demo_actions.zig`](../../src/app/demo_actions.zig) |
+| Character movement/interaction intent value | [`src/physics/character_intent.zig`](../../src/physics/character_intent.zig) |
 | Character definition/runtime | [`src/scene/character.zig`](../../src/scene/character.zig) exposes commands/read-only views over private inline `CharacterState`; [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) owns humanoid pose/appearance runtime |
 | Skeleton, poses, clips, state machine | [`src/animation/skeleton.zig`](../../src/animation/skeleton.zig), [`src/animation/pose.zig`](../../src/animation/pose.zig), [`src/animation/clip.zig`](../../src/animation/clip.zig), [`src/animation/state_machine.zig`](../../src/animation/state_machine.zig) |
 | Anatomy identity/runtime | [`src/scene/anatomy.zig`](../../src/scene/anatomy.zig), production definitions in [`src/scene/humanoid.zig`](../../src/scene/humanoid.zig) |

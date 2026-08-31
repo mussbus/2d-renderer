@@ -1,6 +1,6 @@
 const std = @import("std");
 const math = @import("math");
-const input = @import("input");
+const character_intent = @import("character_intent");
 const fixed_step = @import("fixed_step");
 const humanoid = @import("humanoid");
 const skeleton = @import("skeleton");
@@ -287,7 +287,7 @@ const ManagerState = struct {
     pub fn requestFromIntent(
         manager: *ManagerState,
         initiator_id: character.EntityId,
-        intent: input.CharacterIntent,
+        intent: character_intent.CharacterIntent,
         characters: []const *character.CharacterInstance,
         current_tick: u64,
     ) !?InteractionId {
@@ -759,7 +759,7 @@ pub const Manager = struct {
     pub fn requestFromIntent(
         manager: *Manager,
         initiator_id: character.EntityId,
-        intent: input.CharacterIntent,
+        intent: character_intent.CharacterIntent,
         characters: []const *character.CharacterInstance,
         current_tick: u64,
     ) !?InteractionId {

@@ -18,15 +18,18 @@ The owner-approved F4C1 production-definition ownership migration is recorded in
 [`implementation/f4c1_production_definition_extraction.md`](implementation/f4c1_production_definition_extraction.md).
 The owner-approved F4C2 renderer/application/evidence boundary extraction is recorded in
 [`implementation/f4c2_renderer_application_evidence_boundaries.md`](implementation/f4c2_renderer_application_evidence_boundaries.md).
-The F4C3 character/interaction runtime-authority hardening awaiting owner
-review is recorded in
+The owner-approved F4C3 character/interaction runtime-authority hardening is
+recorded in
 [`implementation/f4c3_character_interaction_authority.md`](implementation/f4c3_character_interaction_authority.md).
+The F4C4 scene-core adoption and input-boundary implementation awaiting owner
+review is recorded in
+[`implementation/f4c4_scene_core_adoption_and_input_boundaries.md`](implementation/f4c4_scene_core_adoption_and_input_boundaries.md).
 
 F4 is the current production-architecture hardening track; F4 itself is not
-accepted. F4B1, F4B2, F4C1, and F4C2 are owner-approved; F4C3 is implemented
-and awaits owner review; F4C4, F4C5, F4D, and F4E have not begun. None of these status updates
-changes a production runtime route. Every downstream track and production
-migration still requires dedicated authorization. Accepted F identity,
+accepted. F4B1, F4B2, F4C1, F4C2, and F4C3 are owner-approved. F4C4 is
+implemented and awaits owner review; F4C5, F4D, and F4E have not begun. Every
+downstream track and further production migration still requires dedicated
+authorization. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,
 publication, hierarchy and lifecycle contracts remain closed unless a future
 owner-approved amendment explicitly reopens them.
@@ -68,6 +71,41 @@ Function names bind operand direction: `Transform2D.localToParent`, `composePare
 Angles wrap to `[-pi, pi)`. Interpolation is component-wise: translation and nonuniform scale are linear, while rotation follows the signed shortest arc. Matrix coefficients are never interpolated. Zero and negative finite scale are supported math values. The current humanoid uses positive bone scale; future facing mirroring must deliberately use negative X scale in the character/pose transform without changing multiplication order or independently relocating attachments.
 
 The root transform combines only physics root position and facing. Animation and secondary visual offsets remain in the pose hierarchy; they never rewrite the physics root. CPU/GPU layout tests will validate any matrix or packed-instance representation passed to HLSL. HLSL uses `mul(matrix, column_vector)` for the same convention.
+
+## F scene authority and specialized character binding
+
+F `EntityId` is the persistent/world identity authority, and F
+`EntityHandle` is the generic live runtime identity. The accepted
+`scene_core.runtime_scene.RuntimeScene` owns generic membership, lifetime,
+enabled state, hierarchy, transform publication, immutable read views and
+snapshots. The existing `character.EntityId` remains a nonserialized,
+character-local lookup and deterministic ordering key; it is not a world ID.
+
+`src/scene/character_entity_binding.zig` is the one bounded adapter between
+those authorities. It owns a supported RuntimeScene and a private fixed table
+of at most eight explicit F-entity-to-character-runtime-ID associations. The
+adapter imports only the supported `scene_core` root, exposes no mapping or F
+storage, rejects duplicate identities and handles, and removes destroyed F
+entities from the mapping through RuntimeScene publication
+prepare/commit/rollback. Character pointers are not stored, so moving a
+scenario value cannot dangle an attachment. A caller resolves a live F handle
+against the specialized characters its composition owns.
+
+The `integrated` route is the representative F-backed production path. Its
+two specialized character runtimes are attached to persistent F root entities
+after transitional character construction. F effective-enabled state gates
+simulation, interaction eligibility, character/debug submission and lifecycle
+teardown. Before a simulation frame or explicit fixed-tick batch, the adapter
+pulls the last committed F X/Y root into the controller/character command
+surface. The controller owns the in-step physics result. After the frame or
+batch, one changed root is published back through RuntimeScene; unchanged
+roots do not publish. F roots must be unparented, zero-origin, zero-Z,
+identity-rotation and unit-scale within the shared affine tolerance.
+Facing, animation pose, IK, equipment, anatomy and presentation offsets remain
+specialized and never enter RuntimeEntity. Generic reads use an F snapshot;
+character-specific reads use the character façade. Other surviving routes are
+explicitly transitional or specialized acceptance/content routes and are not
+silently claimed as F-backed.
 
 ## Camera, viewport, and parallax ownership
 
@@ -123,7 +161,29 @@ Simulation order within one tick is fixed:
 
 ## Input and character intent
 
-SDL keyboard and gamepad code owns device discovery, hot-plugging, dead zones, and raw button state. It produces one renderer-independent frame snapshot whose buttons distinguish pressed, held, and released state. A pending-edge layer retains jump press/release, dash press, and interaction press through zero-tick rendered frames, consumes each edge on the first following simulation tick, and preserves held state for every applicable tick. It then produces `CharacterIntent` containing normalized horizontal movement and jump/dash/interaction semantics; reset and debug/time controls remain frame controls. Character, animation, physics, and interaction systems never query SDL directly. Tests construct snapshots and intents without platform input. `docs/CONTROLS.md` binds the exact key, gamepad, merge, and dead-zone policies.
+`src/platform/input.zig` owns only physical keyboard/gamepad/focus/window
+state and device-neutral numeric/set helpers. Gamepad fields name the physical
+left-X axis and South, West and right-shoulder buttons. SDL discovery,
+hot-plugging, polling and close paths remain in `src/platform/sdl_input.zig`,
+which returns a raw physical state and knows no demo, character, wardrobe,
+presentation, environment or evidence action.
+
+`src/app/demo_actions.zig` is the current application mapping boundary. It
+owns the unchanged key bindings, focus-safe blocked-until-release behavior,
+pressed/held/released edges, demo/content action names and fixed-tick pending
+edge delivery. Scripted routes construct the same raw physical value and use
+the same mapper. Application actions call the supported F4C3 domain command
+surfaces; an evidence trigger is interpreted by the application/evidence
+scheduler, not by platform code. This is a focused demo action mapper, not the
+future GAME input system.
+
+`src/physics/character_intent.zig` owns the narrow renderer- and
+platform-independent `CharacterIntent` consumed by controller/interaction
+logic. It contains normalized movement and jump/dash/interaction semantics.
+Character, animation, physics and interaction systems never query SDL or
+import the application mapper. Tests can construct raw states, application
+snapshots and domain intents without SDL. `docs/CONTROLS.md` binds the exact
+key, gamepad, merge and dead-zone policies.
 
 ## Skeleton and pose ownership
 

@@ -565,7 +565,8 @@ Pure tests cover small data transformations and invariants:
 - Angle wrapping, shortest-arc interpolation, and render interpolation.
 - Skeleton hierarchy validation, local-to-world traversal, and socket transforms.
 - Clip boundary sampling, looping, pose blending, and half-open event intervals.
-- Input dead-zone and raw-state to `CharacterIntent` conversion using platform-neutral inputs.
+- Physical-input dead-zone, application-action mapping, and `CharacterIntent`
+  conversion using renderer-independent inputs.
 - Collider overlap/sweep primitives and spring integration.
 - Analytical two-bone reachability, segment invariants, degenerate distances, bend direction, mirroring, continuity, and repeated-solve determinism.
 - Stable draw-key ordering and handshake limb-front overrides.

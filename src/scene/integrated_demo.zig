@@ -1,4 +1,6 @@
 const std = @import("std");
+const foundation = @import("foundation");
+const scene_core = @import("scene_core");
 const math = @import("math");
 const input = @import("input");
 const fixed_step = @import("fixed_step");
@@ -8,6 +10,7 @@ const character_controller = @import("character_controller");
 const humanoid = @import("humanoid");
 const authored = @import("authored_clips");
 const character = @import("character");
+const character_entity_binding = @import("character_entity_binding");
 const interaction = @import("interaction");
 const interaction_system = @import("interaction_system");
 const handshake = @import("handshake");
@@ -121,12 +124,24 @@ pub const AuthoritativeState = struct {
     resources: diagnostics.ResourceSnapshot,
 };
 
+pub const FEntityObservation = struct {
+    entity_id: foundation.identity.EntityId,
+    handle: foundation.identity.EntityHandle,
+    effective_enabled: bool,
+    local_position: math.Vec2,
+    world_position: math.Vec2,
+    publication_generation: u64,
+};
+
 pub const Scene = struct {
     definition: humanoid.HumanoidDefinition,
     animations: authored.Definitions,
     world: collision_world.CollisionWorld,
     player: character.CharacterInstance,
     partner: character.CharacterInstance,
+    entity_bindings: character_entity_binding.CharacterEntityBindings,
+    player_entity: foundation.identity.EntityHandle,
+    partner_entity: foundation.identity.EntityHandle,
     manager: interaction_system.Manager,
     clock: fixed_step.Clock,
     snapshot_builder: input.SnapshotBuilder = .{},
@@ -150,6 +165,14 @@ pub const Scene = struct {
     debug_commands: debug_draw.CommandBuffer = .{},
 
     pub fn init(allocator: std.mem.Allocator, configuration: Configuration) !Scene {
+        return initWithRuntimeAllocator(allocator, allocator, configuration);
+    }
+
+    pub fn initWithRuntimeAllocator(
+        allocator: std.mem.Allocator,
+        runtime_allocator: std.mem.Allocator,
+        configuration: Configuration,
+    ) !Scene {
         var definition = try humanoid.HumanoidDefinition.init(allocator, null);
         errdefer definition.deinit();
         var animations = try authored.Definitions.init(allocator, &definition.skeleton_definition, null);
@@ -180,12 +203,30 @@ pub const Scene = struct {
             null,
         );
         errdefer partner.deinit();
+        var entity_bindings = try character_entity_binding.CharacterEntityBindings.initWithRuntimeAllocator(
+            allocator,
+            runtime_allocator,
+        );
+        errdefer entity_bindings.deinit();
+        const player_entity = try entity_bindings.createPersistent(
+            try foundation.identity.EntityId.parseCanonical("0195d5b8-1000-7000-8000-000000000001"),
+            player.id(),
+            player.worldPosition(),
+        );
+        const partner_entity = try entity_bindings.createPersistent(
+            try foundation.identity.EntityId.parseCanonical("0195d5b8-1000-7000-8000-000000000002"),
+            partner.id(),
+            partner.worldPosition(),
+        );
         var result = Scene{
             .definition = definition,
             .animations = animations,
             .world = world,
             .player = player,
             .partner = partner,
+            .entity_bindings = entity_bindings,
+            .player_entity = player_entity,
+            .partner_entity = partner_entity,
             .manager = interaction_system.Manager.initWithIk(try handshake.definition(&animations)),
             .clock = try fixed_step.Clock.init(.{}),
             .configuration = configuration,
@@ -195,6 +236,7 @@ pub const Scene = struct {
     }
 
     pub fn deinit(scene: *Scene) void {
+        scene.entity_bindings.deinit();
         scene.partner.deinit();
         scene.player.deinit();
         scene.world.deinit();
@@ -204,14 +246,21 @@ pub const Scene = struct {
     }
 
     pub fn updateFrame(scene: *Scene, frame_delta: f64) !void {
+        if (!try scene.prepareFBackedSimulation()) {
+            scene.render_frame = std.math.add(u64, scene.render_frame, 1) catch return error.RenderFrameOverflow;
+            return;
+        }
         const frame = try scene.clock.beginFrame(frame_delta);
         scene.evidence.maximum_substeps = @max(scene.evidence.maximum_substeps, frame.substeps);
         for (0..frame.substeps) |_| try scene.updateTick();
+        try scene.publishFBackedTransforms();
         scene.render_frame = std.math.add(u64, scene.render_frame, 1) catch return error.RenderFrameOverflow;
     }
 
     pub fn updateFixedTicks(scene: *Scene, count: u32) !void {
+        if (!try scene.prepareFBackedSimulation()) return;
         for (0..count) |_| try scene.updateTick();
+        try scene.publishFBackedTransforms();
     }
 
     fn updateTick(scene: *Scene) !void {
@@ -243,6 +292,7 @@ pub const Scene = struct {
         scene.observeAnimationAndPhysics(physics_before_visual, physics_result);
         const participants_value = scene.participants();
         if (intent_value.interact_pressed) {
+            try scene.requireLiveFParticipants();
             scene.evidence.interaction_requests += 1;
             const requested = scene.manager.requestFromIntent(scene.player.id(), intent_value, &participants_value, scene.simulation_tick) catch {
                 scene.evidence.rejected_requests += 1;
@@ -302,13 +352,13 @@ pub const Scene = struct {
             },
             .walk_floor => {
                 const interval = (scene.phase_tick / 360) % 2;
-                raw.gamepad_move_axis = if (interval == 0) 0.56 else -0.56;
+                raw.gamepad_left_x = if (interval == 0) 0.56 else -0.56;
             },
             .jump => raw.keyboard.space = scene.phase_tick < 32,
             .airborne => {},
             .landing => {
                 const interval = (scene.phase_tick / 240) % 2;
-                raw.gamepad_move_axis = if (interval == 0) 0.48 else -0.48;
+                raw.gamepad_left_x = if (interval == 0) 0.48 else -0.48;
             },
             .walk_platform => switch (scene.platform_stage) {
                 0 => raw.keyboard.d = true,
@@ -323,7 +373,7 @@ pub const Scene = struct {
                 3 => raw.keyboard.d = true,
                 else => {
                     const position = scene.player.controllerSnapshot().?.state.position.x;
-                    raw.gamepad_move_axis = if (position > -0.05) -0.44 else 0.44;
+                    raw.gamepad_left_x = if (position > -0.05) -0.44 else 0.44;
                 },
             },
             .approach_interaction => switch (scene.approach_stage) {
@@ -331,10 +381,11 @@ pub const Scene = struct {
                     const controller = scene.player.controllerSnapshot().?.state;
                     const target: f32 = -1.02;
                     const command = std.math.clamp((target - controller.position.x) * 1.8 - controller.velocity.x * 0.45, -0.42, 0.42);
-                    raw.gamepad_move_axis = encodeGamepadAxis(command);
+                    raw.gamepad_left_x = encodeGamepadAxis(command);
                 },
-                1 => raw.gamepad_move_axis = encodeGamepadAxis(0.25),
+                1 => raw.gamepad_left_x = encodeGamepadAxis(0.25),
                 else => {
+                    try scene.requireLiveFParticipants();
                     const participants_value = scene.participants();
                     const eligibility = scene.manager.evaluateEligibility(scene.player.id(), scene.partner.id(), &participants_value);
                     if (eligibility.isEligible()) raw.keyboard.e = true;
@@ -556,6 +607,78 @@ pub const Scene = struct {
         try scene.milestones.record(milestone, snapshot);
     }
 
+    fn prepareFBackedSimulation(scene: *Scene) !bool {
+        const player_enabled = try scene.entity_bindings.isEnabled(scene.player_entity);
+        const partner_enabled = try scene.entity_bindings.isEnabled(scene.partner_entity);
+        if (player_enabled) try scene.entity_bindings.applySceneTransform(&scene.player);
+        if (partner_enabled) try scene.entity_bindings.applySceneTransform(&scene.partner);
+        return player_enabled and partner_enabled;
+    }
+
+    fn publishFBackedTransforms(scene: *Scene) !void {
+        if (try scene.entity_bindings.isEnabled(scene.player_entity)) {
+            _ = try scene.entity_bindings.publishCharacterTransform(&scene.player);
+        }
+        if (try scene.entity_bindings.isEnabled(scene.partner_entity)) {
+            _ = try scene.entity_bindings.publishCharacterTransform(&scene.partner);
+        }
+    }
+
+    fn requireLiveFParticipants(scene: *Scene) !void {
+        if (!try scene.entity_bindings.isEnabled(scene.player_entity) or
+            !try scene.entity_bindings.isEnabled(scene.partner_entity))
+        {
+            return error.IntegratedCharacterEntityDisabled;
+        }
+        const participants_value = scene.participants();
+        const resolved_player = try scene.entity_bindings.resolveCharacter(scene.player_entity, &participants_value);
+        const resolved_partner = try scene.entity_bindings.resolveCharacter(scene.partner_entity, &participants_value);
+        if (resolved_player != &scene.player or resolved_partner != &scene.partner) {
+            return error.IntegratedCharacterBindingMismatch;
+        }
+    }
+
+    pub fn setEntityEnabled(
+        scene: *Scene,
+        handle: foundation.identity.EntityHandle,
+        enabled: bool,
+    ) !void {
+        const character_id = try scene.entity_bindings.characterForEntity(handle);
+        if (!enabled) {
+            const participants_value = scene.participants();
+            _ = try scene.manager.cancelForCharacter(character_id, .character_reset, &participants_value);
+        }
+        try scene.entity_bindings.setEnabled(handle, enabled);
+    }
+
+    pub fn destroyEntity(scene: *Scene, handle: foundation.identity.EntityHandle) !void {
+        const character_id = try scene.entity_bindings.characterForEntity(handle);
+        const participants_value = scene.participants();
+        _ = try scene.manager.cancelForCharacter(character_id, .character_reset, &participants_value);
+        try scene.entity_bindings.destroyEntity(handle);
+    }
+
+    pub fn fEntityObservation(
+        scene: *Scene,
+        handle: foundation.identity.EntityHandle,
+    ) !FEntityObservation {
+        var snapshot = try scene.entity_bindings.acquireSnapshot(.{
+            .tick = scene.simulation_tick,
+            .fixed_delta_seconds = @floatCast(fixed_step.fixed_dt_seconds),
+            .interpolation_alpha = @floatCast(scene.clock.last_frame.interpolation_alpha),
+        });
+        defer snapshot.deinit();
+        const view = try snapshot.view().get(handle);
+        return .{
+            .entity_id = view.persistent_id orelse return error.IntegratedPersistentEntityIdMissing,
+            .handle = view.handle,
+            .effective_enabled = view.effective_enabled,
+            .local_position = .{ .x = view.local_transform.translation.x, .y = view.local_transform.translation.y },
+            .world_position = .{ .x = view.world_transform.affine.translation.x, .y = view.world_transform.affine.translation.y },
+            .publication_generation = snapshot.publication_generation,
+        };
+    }
+
     pub fn captureDiagnostics(scene: *const Scene) !diagnostics.Snapshot {
         const participants_value = scene.participantsConst();
         return diagnostics.capture(.{
@@ -575,8 +698,17 @@ pub const Scene = struct {
     }
 
     pub fn submit(scene: *Scene, batch: *sprite.SpriteBatch) !u32 {
-        const participants_value = scene.participants();
-        var ordinary = try character.submitGlobally(&participants_value, batch);
+        var active_characters: [character_count]*character.CharacterInstance = undefined;
+        var active_count: usize = 0;
+        if (scene.entity_bindings.isEnabled(scene.player_entity) catch false) {
+            active_characters[active_count] = &scene.player;
+            active_count += 1;
+        }
+        if (scene.entity_bindings.isEnabled(scene.partner_entity) catch false) {
+            active_characters[active_count] = &scene.partner;
+            active_count += 1;
+        }
+        var ordinary = try character.submitGlobally(active_characters[0..active_count], batch);
         for (scene.world.colliders) |static_collider| {
             const center = static_collider.bounds.center();
             const size = static_collider.bounds.size();
@@ -609,7 +741,16 @@ pub const Scene = struct {
     fn buildDebugCommands(scene: *Scene) !void {
         scene.debug_commands.beginFrame();
         for (scene.world.colliders) |static_collider| try scene.debug_commands.addAabb(static_collider.bounds, .{ 0.20, 0.80, 1.0, 0.72 });
-        for ([_]*const character.CharacterInstance{ &scene.player, &scene.partner }) |instance| {
+        const DebugParticipant = struct {
+            handle: foundation.identity.EntityHandle,
+            instance: *const character.CharacterInstance,
+        };
+        for ([_]DebugParticipant{
+            .{ .handle = scene.player_entity, .instance = &scene.player },
+            .{ .handle = scene.partner_entity, .instance = &scene.partner },
+        }) |participant| {
+            if (!(scene.entity_bindings.isEnabled(participant.handle) catch false)) continue;
+            const instance = participant.instance;
             try scene.debug_commands.addMarker(instance.worldPosition(), .{ 1, 0.20, 0.20, 1 });
             const definition = instance.definitionView();
             const root_index = try definition.skeleton_definition.boneIndex(.root);
@@ -643,6 +784,8 @@ pub const Scene = struct {
     }
 
     fn observeSubmittedOrdering(scene: *Scene) void {
+        if (!(scene.entity_bindings.isEnabled(scene.player_entity) catch false) or
+            !(scene.entity_bindings.isEnabled(scene.partner_entity) catch false)) return;
         if (!scene.hasMilestone(.handshake_contact) or scene.hasMilestone(.handshake_release)) return;
         const a_hand = scene.player.submittedKey(.right_hand) catch return;
         const b_hand = scene.partner.submittedKey(.right_hand) catch return;
@@ -694,7 +837,7 @@ pub const Scene = struct {
         };
     }
 
-    pub fn validateComplete(scene: *const Scene) !void {
+    pub fn validateComplete(scene: *Scene) !void {
         for (scene.evidence.milestone_ticks) |tick| {
             if (tick == null) {
                 const controller_state = scene.player.controllerSnapshot().?.state;
@@ -740,6 +883,21 @@ pub const Scene = struct {
         }
         const snapshot = try scene.captureDiagnostics();
         if (snapshot.allocations.total() != 0 or scene.debug_commands.overflow_count != 0) return error.IntegratedSteadyStateGateFailed;
+        const player_f = try scene.fEntityObservation(scene.player_entity);
+        const partner_f = try scene.fEntityObservation(scene.partner_entity);
+        if (scene.entity_bindings.bindingCount() != character_count or
+            !player_f.handle.eql(scene.player_entity) or
+            !partner_f.handle.eql(scene.partner_entity) or
+            !player_f.entity_id.eql(try scene.entity_bindings.persistentIdForCharacter(scene.player.id())) or
+            !partner_f.entity_id.eql(try scene.entity_bindings.persistentIdForCharacter(scene.partner.id())) or
+            !player_f.effective_enabled or !partner_f.effective_enabled or
+            !player_f.local_position.approxEqAbs(scene.player.worldPosition(), character_entity_binding.root_tolerance) or
+            !player_f.world_position.approxEqAbs(scene.player.worldPosition(), character_entity_binding.root_tolerance) or
+            !partner_f.local_position.approxEqAbs(scene.partner.worldPosition(), character_entity_binding.root_tolerance) or
+            !partner_f.world_position.approxEqAbs(scene.partner.worldPosition(), character_entity_binding.root_tolerance))
+        {
+            return error.IntegratedFSceneStateInvalid;
+        }
     }
 
     pub fn validateMilestoneDependencies(scene: *const Scene) !void {
@@ -766,6 +924,7 @@ pub const Scene = struct {
         try scene.manager.reset(&participants_value);
         try scene.player.resetControlled(&scene.world);
         try scene.partner.reset();
+        try scene.publishFBackedTransforms();
         scene.snapshot_builder.reset();
         scene.pending_input.reset();
         scene.clock.reset();
@@ -792,6 +951,7 @@ pub const Scene = struct {
         const preserved_frame = scene.render_frame;
         try scene.player.resetControlled(&scene.world);
         try scene.partner.reset();
+        try scene.publishFBackedTransforms();
         scene.snapshot_builder.reset();
         scene.pending_input.reset();
         scene.phase = .initial_idle;
@@ -816,8 +976,10 @@ pub const Scene = struct {
         _ = try scene.manager.cancelForCharacter(entity_id, .character_reset, &participants_value);
         if (entity_id == scene.player.id()) {
             try scene.player.resetControlled(&scene.world);
+            _ = try scene.entity_bindings.publishCharacterTransform(&scene.player);
         } else if (entity_id == scene.partner.id()) {
             try scene.partner.reset();
+            _ = try scene.entity_bindings.publishCharacterTransform(&scene.partner);
         } else {
             return error.InvalidCharacterResetTarget;
         }

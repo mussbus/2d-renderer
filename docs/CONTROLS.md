@@ -28,7 +28,9 @@ The bounded production-path verification is:
 & '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo playground --scripted-input
 ```
 
-Synthetic input constructs the same per-key raw state used by SDL polling, then calls the one `SnapshotBuilder` mapping. It never constructs `CharacterIntent` directly.
+Synthetic input constructs the same physical per-key/button state returned by
+SDL polling, then calls the one application-owned `SnapshotBuilder` mapping in
+`src/app/demo_actions.zig`. It never constructs `CharacterIntent` directly.
 
 The bounded Prompt 14 camera and parallax route is:
 
@@ -128,7 +130,13 @@ The left-stick dead zone is `0.20`; magnitude outside it is rescaled continuousl
 
 ## Input timing
 
-SDL state is sampled once per rendered frame. `FrameInputSnapshot` records pressed, held, and released state. `PendingInput` preserves jump press, jump release, dash press, and interaction press edges through a frame that executes no fixed tick. The first following tick consumes each edge once; later ticks in the same rendered frame receive held state without replaying the edge. Reset and pause transitions clear pending edges.
+SDL state is sampled once per rendered frame into physical
+`RawInputState`. The application mapper produces `FrameInputSnapshot` with
+pressed, held, and released state. Its `PendingInput` preserves jump press,
+jump release, dash press, and interaction press edges through a frame that
+executes no fixed tick. The first following tick consumes each edge once;
+later ticks in the same rendered frame receive held state without replaying
+the edge. Reset and pause transitions clear pending edges.
 
 Keyboard gameplay edges come from previous/current polled physical state, never SDL keydown repeat or text input. `A` and Left Arrow are one logical left direction; `D` and Right Arrow are one logical right direction. Holding both logical directions resolves to zero independently of press order. Keyboard/gamepad action buttons merge by logical OR, so simultaneous sources produce one edge. Horizontal values use greatest absolute magnitude, with keyboard winning equal-magnitude ties.
 
@@ -235,7 +243,13 @@ Run `zig build run -- --demo wardrobe --interactive`.
 - R resets the controlled female, clears her loadout state, equips the first preset, restores automatic timing, and unpauses.
 - Movement and jump retain the established A/D, arrows, and Space mappings.
 
-O and P are sampled only by `sdl_input.PlatformInput`, then carried as platform-neutral pressed/held/released fields in `FrameInputSnapshot`. Focus loss clears pending customization edges and suppresses held keys until physical release, so refocus cannot synthesize an outfit change or pause toggle. Preset selection never bypasses `CharacterIntent` for movement and never polls SDL from scene code.
+O and P are sampled by `sdl_input.PlatformInput` only as physical key state.
+`demo_actions.SnapshotBuilder` maps them to application-owned
+pressed/held/released fields in `FrameInputSnapshot`. Focus loss clears pending
+customization edges and suppresses held keys until physical release, so
+refocus cannot synthesize an outfit change or pause toggle. Preset selection
+never bypasses `CharacterIntent` for movement and never polls SDL from scene
+code.
 
 The deterministic route is `zig build run -- --demo wardrobe --scripted-input --frames 600`. It uses programmatic scene selection for repeatable preset/view evidence and synthetic input tests for O/P edge semantics. It is not evidence of physical keyboard or gamepad use.
 

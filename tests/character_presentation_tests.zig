@@ -489,7 +489,7 @@ test "Q input cycles presentation only and art submission remains bounded in bot
     var builder = input.SnapshotBuilder{};
     const snapshot = try builder.update(.{ .keyboard = .{ .q = true } });
     const facing_before = scene.conventional_male.facingDirection();
-    try scene.conventional_male.applyPresentationInput(snapshot);
+    if (snapshot.presentation_view_cycle.pressed) try scene.conventional_male.cyclePresentationOverride();
     try std.testing.expectEqual(presentation_view.DebugOverride.force_side, scene.conventional_male.presentationOverride());
     try std.testing.expectEqual(facing_before, scene.conventional_male.facingDirection());
 

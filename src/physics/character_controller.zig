@@ -1,6 +1,6 @@
 const std = @import("std");
 const math = @import("math");
-const input = @import("input");
+const character_intent = @import("character_intent");
 const collider = @import("collider");
 const collision_world = @import("collision_world");
 const fixed_step = @import("fixed_step");
@@ -174,7 +174,7 @@ pub const CharacterController = struct {
     pub fn step(
         controller: *CharacterController,
         world: *const collision_world.CollisionWorld,
-        intent: input.CharacterIntent,
+        intent: character_intent.CharacterIntent,
     ) !StepResult {
         return controller.stepWithProperties(world, intent, GameplayProperties.fromConfiguration(controller.configuration));
     }
@@ -182,7 +182,7 @@ pub const CharacterController = struct {
     pub fn stepWithProperties(
         controller: *CharacterController,
         world: *const collision_world.CollisionWorld,
-        intent: input.CharacterIntent,
+        intent: character_intent.CharacterIntent,
         properties: GameplayProperties,
     ) !StepResult {
         try intent.validate();

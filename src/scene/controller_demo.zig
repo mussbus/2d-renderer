@@ -343,9 +343,9 @@ pub const SecondaryMotionScriptedInput = struct {
 
         var raw = input.RawInputState{};
         if (script.prelude_frame >= 30 and script.prelude_frame < 90) {
-            raw.gamepad_move_axis = 0.60;
+            raw.gamepad_left_x = 0.60;
         } else if (script.prelude_frame >= 90 and script.prelude_frame < 150) {
-            raw.gamepad_move_axis = -1.0;
+            raw.gamepad_left_x = -1.0;
         } else if (script.prelude_frame == 180) {
             raw.keyboard.r = true;
         }

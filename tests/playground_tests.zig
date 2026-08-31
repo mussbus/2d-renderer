@@ -28,11 +28,11 @@ test "production keyboard horizontal alternatives map once and opposing controls
     var merge_builder = input.SnapshotBuilder{};
     try std.testing.expectEqual(@as(f32, -1), (try merge_builder.update(.{
         .keyboard = .{ .a = true },
-        .gamepad_move_axis = 1,
+        .gamepad_left_x = 1,
     })).move_axis);
     merge_builder.reset();
     try std.testing.expectApproxEqAbs(@as(f32, 0.5), (try merge_builder.update(.{
-        .gamepad_move_axis = 0.6,
+        .gamepad_left_x = 0.6,
     })).move_axis, 0.000001);
 }
 
@@ -63,9 +63,9 @@ test "production action mappings emit physical transition edges without repeat o
     try std.testing.expect(!snapshot.jump.pressed and !snapshot.reset.pressed and !snapshot.debug_toggle.pressed);
 
     builder.reset();
-    snapshot = try builder.update(.{ .keyboard = .{ .space = true, .e = true }, .gamepad_jump = true, .gamepad_interact = true });
+    snapshot = try builder.update(.{ .keyboard = .{ .space = true, .e = true }, .gamepad_button_south = true, .gamepad_button_west = true });
     try std.testing.expect(snapshot.jump.pressed and snapshot.interact.pressed);
-    snapshot = try builder.update(.{ .gamepad_jump = true, .gamepad_interact = true });
+    snapshot = try builder.update(.{ .gamepad_button_south = true, .gamepad_button_west = true });
     try std.testing.expect(!snapshot.jump.pressed and !snapshot.jump.released and !snapshot.interact.pressed and !snapshot.interact.released);
     snapshot = try builder.update(.{});
     try std.testing.expect(snapshot.jump.released and snapshot.interact.released);
@@ -186,7 +186,7 @@ test "playground interaction hold requires a release and new E press and reset c
         const state = scene.player.controllerSnapshot().?.state;
         const target = playground.handshake_player_x - 0.01;
         const command = std.math.clamp((target - state.position.x) * 0.5 - state.velocity.x * 0.8, 0, 0.15);
-        try scene.updateFrame(1.0 / 60.0, try builder.update(.{ .gamepad_move_axis = encodeGamepadAxis(command) }));
+        try scene.updateFrame(1.0 / 60.0, try builder.update(.{ .gamepad_left_x = encodeGamepadAxis(command) }));
     }
     try std.testing.expect(scene.interactionEligibility().isEligible());
 

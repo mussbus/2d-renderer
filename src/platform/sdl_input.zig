@@ -1,9 +1,8 @@
 const std = @import("std");
 const c = @import("sdl").c;
-const input = @import("input");
+const input = @import("physical_input");
 
 pub const PlatformInput = struct {
-    snapshot_builder: input.SnapshotBuilder = .{},
     active_gamepad: ?*c.SDL_Gamepad = null,
     active_gamepad_id: c.SDL_JoystickID = 0,
     keyboard_focused: bool = true,
@@ -37,7 +36,7 @@ pub const PlatformInput = struct {
         }
     }
 
-    pub fn pollFrame(platform: *PlatformInput) !input.FrameInputSnapshot {
+    pub fn pollRaw(platform: *PlatformInput) !input.RawInputState {
         var key_count: c_int = 0;
         const keyboard = c.SDL_GetKeyboardState(&key_count);
         if (keyboard == null or key_count <= 0) return error.KeyboardStateUnavailable;
@@ -78,19 +77,14 @@ pub const PlatformInput = struct {
             .window_close_requested = platform.window_close_pending,
         };
         if (platform.active_gamepad) |gamepad| {
-            raw.gamepad_move_axis = normalizeAxis(c.SDL_GetGamepadAxis(gamepad, c.SDL_GAMEPAD_AXIS_LEFTX));
-            raw.gamepad_jump = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_SOUTH);
-            raw.gamepad_dash = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
-            raw.gamepad_interact = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_WEST);
+            raw.gamepad_left_x = normalizeAxis(c.SDL_GetGamepadAxis(gamepad, c.SDL_GAMEPAD_AXIS_LEFTX));
+            raw.gamepad_button_south = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_SOUTH);
+            raw.gamepad_button_right_shoulder = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+            raw.gamepad_button_west = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_WEST);
         }
-        const snapshot = try platform.snapshot_builder.update(raw);
         platform.focus_lost_pending = false;
         platform.window_close_pending = false;
-        return snapshot;
-    }
-
-    pub fn reset(platform: *PlatformInput) void {
-        platform.snapshot_builder.reset();
+        return raw;
     }
 
     fn considerGamepad(platform: *PlatformInput, instance_id: c.SDL_JoystickID) void {

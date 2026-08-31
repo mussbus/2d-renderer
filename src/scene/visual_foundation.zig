@@ -605,7 +605,7 @@ pub const Scene = struct {
                 .camera_delta_m = camera_delta,
             };
         }
-        try scene.integrated.production.female.applyPresentationInput(snapshot);
+        if (snapshot.presentation_view_cycle.pressed) try scene.integrated.production.female.cyclePresentationOverride();
 
         if (scene.time_mode == .paused and !snapshot.single_step.pressed) {
             scene.integrated.production.pending_input.reset();
@@ -2348,7 +2348,7 @@ pub const ScriptedInput = struct {
             },
             .approach => {
                 if (script.approach_nudge_direction == 2) {
-                    raw.gamepad_move_axis = encodeGamepadAxis(0.25);
+                    raw.gamepad_left_x = encodeGamepadAxis(0.25);
                 } else {
                     raw.keyboard.a = script.approach_nudge_direction < 0;
                     raw.keyboard.d = script.approach_nudge_direction > 0;

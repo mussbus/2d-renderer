@@ -923,7 +923,7 @@ pub const ScriptedInput = struct {
                 const error_value = handshake_player_x - controller.position.x;
                 if (@abs(error_value) > 0.012) {
                     const command = std.math.clamp(error_value * 0.5 - controller.velocity.x * 0.8, -0.15, 0.15);
-                    raw.gamepad_move_axis = encodeGamepadAxis(command);
+                    raw.gamepad_left_x = encodeGamepadAxis(command);
                 }
             },
             .interact_press, .interact_hold => raw.keyboard.e = true,

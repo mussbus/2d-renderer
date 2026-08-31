@@ -509,6 +509,7 @@ pub const DemoApplication = struct {
         var playground_snapshot_builder = input.SnapshotBuilder{};
         var foundation_snapshot_builder = input.SnapshotBuilder{};
         var environment_snapshot_builder = input.SnapshotBuilder{};
+        var interactive_snapshot_builder = input.SnapshotBuilder{};
         var previous_playground_snapshot: ?input.FrameInputSnapshot = null;
         var time_mode: TimeMode = .normal;
         var debug_geometry = true;
@@ -545,10 +546,14 @@ pub const DemoApplication = struct {
         }
         if (mode == .integrated) {
             if (!scripted_input_enabled) return error.IntegratedDemoRequiresScriptedInput;
-            integrated_scene = try integrated_demo.Scene.init(humanoid_allocator.allocator(), .{
-                .debug_visualization = integrated_debug_enabled,
-                .diagnostics_each_tick = true,
-            });
+            integrated_scene = try integrated_demo.Scene.initWithRuntimeAllocator(
+                humanoid_allocator.allocator(),
+                std.heap.smp_allocator,
+                .{
+                    .debug_visualization = integrated_debug_enabled,
+                    .diagnostics_each_tick = true,
+                },
+            );
             if (self.renderer.metrics().gpu_resource_creations != gpu_creations_before_humanoid_initialization) {
                 return error.IntegratedInitializationCreatedGpuResources;
             }
@@ -782,7 +787,7 @@ pub const DemoApplication = struct {
                     const snapshot = if (scripted_input_enabled)
                         try scripted_sequence.nextFrame(&simulation.controller)
                     else
-                        try platform_input.?.pollFrame();
+                        try interactive_snapshot_builder.update(try platform_input.?.pollRaw());
 
                     var reset_this_frame = false;
                     if (snapshot.reset.pressed) {
@@ -886,7 +891,7 @@ pub const DemoApplication = struct {
                     const snapshot = if (scripted_input_enabled)
                         try playground_snapshot_builder.update(playground_sequence.nextRaw(scene))
                     else
-                        try platform_input.?.pollFrame();
+                        try interactive_snapshot_builder.update(try platform_input.?.pollRaw());
                     logInputTransitions(previous_playground_snapshot, snapshot, scene.debug_visualization);
                     previous_playground_snapshot = snapshot;
                     if (snapshot.exit.pressed) {
@@ -972,7 +977,7 @@ pub const DemoApplication = struct {
                     const snapshot = if (scripted_input_enabled)
                         try foundation_snapshot_builder.update(foundation_sequence.nextRaw(scene))
                     else
-                        try platform_input.?.pollFrame();
+                        try interactive_snapshot_builder.update(try platform_input.?.pollRaw());
                     if (snapshot.exit.pressed) {
                         std.log.info("exit requested", .{});
                         running = false;
@@ -1010,7 +1015,7 @@ pub const DemoApplication = struct {
                     } else if (scripted_input_enabled) {
                         try scene.updateScriptedFrame();
                     } else {
-                        const snapshot = try platform_input.?.pollFrame();
+                        const snapshot = try interactive_snapshot_builder.update(try platform_input.?.pollRaw());
                         if (snapshot.exit.pressed) {
                             std.log.info("exit requested", .{});
                             running = false;
@@ -1065,7 +1070,7 @@ pub const DemoApplication = struct {
                     const snapshot = if (scripted_input_enabled)
                         try environment_snapshot_builder.update(environment_sequence.nextRaw())
                     else
-                        try platform_input.?.pollFrame();
+                        try interactive_snapshot_builder.update(try platform_input.?.pollRaw());
                     if (snapshot.exit.pressed) {
                         std.log.info("exit requested", .{});
                         running = false;
@@ -1897,7 +1902,7 @@ pub const DemoApplication = struct {
             const runtime_allocation_delta = humanoid_allocator.end_index - humanoid_initialized_bytes;
             std.log.info("INTERACTIVE INPUT EVIDENCE", .{});
             std.log.info("Controls: left=A/Left Arrow right=D/Right Arrow jump=Space interaction=E reset=R debug=F1 exit=Escape/window-close", .{});
-            std.log.info("Input architecture: SDL=src/platform/sdl_input.zig mapping=src/platform/input.zig snapshot=FrameInputSnapshot intent=CharacterIntent direct_controller_mutation=false raw_frame_delta_movement=false", .{});
+            std.log.info("Input architecture: SDL/physical=src/platform mapping=src/app/demo_actions.zig intent=src/physics/character_intent.zig direct_controller_mutation=false raw_frame_delta_movement=false", .{});
             std.log.info("Edge behavior: zero_substep_preserved=true multi_substep_single_consumption=true key_repeat=polled_state_transitions focus_loss=clear_keyboard_held_and_pending_suppress_until_release", .{});
             std.log.info("Horizontal movement: left_displacement={d:.6} right_displacement={d:.6} opposing_displacement={d:.8} release_deceleration={}", .{
                 playground_sequence.left_displacement,

@@ -20,7 +20,7 @@ const arm_ik = @import("arm_ik");
 const leg_ik = @import("leg_ik");
 const foot_planting = @import("foot_planting");
 const fixed_step = @import("fixed_step");
-const input = @import("input");
+const character_intent = @import("character_intent");
 const presentation_view = @import("presentation_view");
 const collision_world = @import("collision_world");
 const character_controller = @import("character_controller");
@@ -632,13 +632,6 @@ const CharacterState = struct {
         try instance.syncPresentationView();
     }
 
-    pub fn applyPresentationInput(
-        instance: *CharacterState,
-        snapshot: input.FrameInputSnapshot,
-    ) !void {
-        if (snapshot.presentation_view_cycle.pressed) try instance.cyclePresentationOverride();
-    }
-
     pub fn interactionGrounded(instance: CharacterState) bool {
         if (instance.controller) |controller| return controller.state.grounded;
         return instance.passive_grounded;
@@ -953,7 +946,7 @@ const CharacterState = struct {
     pub fn stepController(
         instance: *CharacterState,
         world: *const collision_world.CollisionWorld,
-        intent: input.CharacterIntent,
+        intent: character_intent.CharacterIntent,
     ) !character_controller.StepResult {
         const controller = if (instance.controller) |*value| value else return error.CharacterHasNoController;
         const result = try controller.stepWithProperties(world, intent, try instance.controllerGameplayProperties());
@@ -1914,9 +1907,6 @@ pub const CharacterInstance = struct {
     pub fn cyclePresentationOverride(instance: *CharacterInstance) !void {
         try instance.stateMut().cyclePresentationOverride();
     }
-    pub fn applyPresentationInput(instance: *CharacterInstance, snapshot: input.FrameInputSnapshot) !void {
-        try instance.stateMut().applyPresentationInput(snapshot);
-    }
     pub fn interactionGrounded(instance: CharacterInstance) bool {
         return instance.stateConst().interactionGrounded();
     }
@@ -1977,7 +1967,7 @@ pub const CharacterInstance = struct {
     pub fn selectControllerAnimation(instance: *CharacterInstance, physics: character_controller.StepResult) !void {
         try instance.stateMut().selectControllerAnimation(physics);
     }
-    pub fn stepController(instance: *CharacterInstance, world: *const collision_world.CollisionWorld, intent: input.CharacterIntent) !character_controller.StepResult {
+    pub fn stepController(instance: *CharacterInstance, world: *const collision_world.CollisionWorld, intent: character_intent.CharacterIntent) !character_controller.StepResult {
         return instance.stateMut().stepController(world, intent);
     }
     pub fn reset(instance: *CharacterInstance) !void {

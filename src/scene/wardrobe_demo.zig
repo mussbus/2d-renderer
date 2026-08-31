@@ -272,7 +272,7 @@ pub const Scene = struct {
         snapshot: input.FrameInputSnapshot,
         frame_delta: f64,
     ) !void {
-        try scene.female.applyPresentationInput(snapshot);
+        if (snapshot.presentation_view_cycle.pressed) try scene.female.cyclePresentationOverride();
         if (snapshot.outfit_cycle.pressed) {
             try scene.selectPreset(try scene.catalog.nextPreset(scene.current_preset));
         }

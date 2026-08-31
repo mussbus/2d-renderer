@@ -1,8 +1,8 @@
 # Current State
 
-Current F4C3 implementation basis: clean, synchronized `master` at
-`efa584b3b55017eae78e82df27f88d4164acfb2f`, verified on 2026-08-31 before
-the local F4C3 authority hardening began.
+Current F4C4 implementation basis: clean, synchronized `master` at
+`f8ee7e7165c9a331e80aea95bab8db9cef858217`, verified on 2026-08-31 before
+the local F4C4 scene-core adoption and input-boundary work began.
 
 The detailed production-system inventory below retains the visual/runtime
 status accumulated through the earlier Prompt-era roadmap. This administrative
@@ -23,8 +23,8 @@ visual acceptance or revise historical evidence claims.
 | F4B2 | **OWNER-APPROVED** |
 | F4C1 | **OWNER-APPROVED** |
 | F4C2 | **OWNER-APPROVED** |
-| F4C3 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4C4 | **NOT BEGUN** |
+| F4C3 | **OWNER-APPROVED** |
+| F4C4 | **IMPLEMENTED / AWAITING OWNER REVIEW** |
 | F4C5 | **NOT BEGUN** |
 | F4D | **NOT BEGUN** |
 | F4E | **NOT BEGUN** |
@@ -32,7 +32,7 @@ visual acceptance or revise historical evidence claims.
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4C3 owner review**.
+Current immediate step: **F4C4 owner review**.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -59,7 +59,16 @@ interaction manager now similarly owns private slots, lifecycle, IDs and
 metrics, with transactional participant rollback and test-only white-box
 routing. See the
 [F4C3 implementation record](../implementation/f4c3_character_interaction_authority.md).
-F4C4, F4C5, F4D, and F4E have not begun and require separate authorization.
+F4C4 makes F `EntityId`/`EntityHandle` and RuntimeScene authoritative for the
+two characters in the representative `integrated` route through one bounded,
+private adapter. F enabled/lifecycle gates simulation, interaction and render
+submission; generic transforms synchronize at frame/batch publication
+boundaries; F snapshots expose generic identity, transform and enabled state.
+Legacy character IDs remain runtime-only specialized lookup/order keys.
+Platform input now exposes only physical state, application/demo actions live
+in `src/app/demo_actions.zig`, and physics owns `CharacterIntent`. See the
+[F4C4 implementation record](../implementation/f4c4_scene_core_adoption_and_input_boundaries.md).
+F4C5, F4D, and F4E have not begun and require separate authorization.
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the
@@ -84,7 +93,8 @@ Status vocabulary:
 | SDL3 GPU renderer and D3D12/DXIL route | complete | Atlas-backed sprites and deformable meshes use the global unified queue; Prompt 25D goldens and Prompt 26/27 captures were produced through the real production route. |
 | Height-relative production camera | automated complete, owner resize review pending | The 640×480 composition remains 82 px/m and fixes the vertical world span at 480/82 m. Positive drawable heights derive scale as 82×height/480 from actual SDL drawable/swapchain pixels; width changes horizontal visibility only. Zero drawables preserve the last valid camera. |
 | Fixed-step simulation, animation, physics, and controller | complete | One authoritative 240 Hz deterministic simulation; renderer interpolation does not own simulation. |
-| Input and character intent | complete | Keyboard/gamepad state becomes a bounded intent structure; pending edges survive zero-substep frames. |
+| F-backed representative scene route | implemented, owner review pending | `integrated` owns two persistent RuntimeScene entities through a bounded character adapter; F lifecycle/enabled/transform and snapshot semantics are live in production composition. Other routes remain explicitly transitional or specialized. |
+| Input and character intent | complete | SDL/platform owns physical keys, buttons, axes, focus and window close only; application mapping owns semantic actions and pending edges; physics owns `CharacterIntent`. |
 | Interactions, handshake, and IK | complete | Interaction coordination owns fixed-root handshakes; visual IK does not replace root physics. Prompt 27 makes view and occlusion policy definition data. |
 | Semantic anatomy and morphology | complete | One authoritative skeleton, typed anatomy instances, body presets, and bounded morphology channels. |
 | Equipment and loadouts | complete | Typed slots, topology-aware bindings, bounded recipe expansion, transactional equip/unequip, and cosmetic/gameplay separation. |

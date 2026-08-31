@@ -16,26 +16,34 @@ Scene reset clears current history, overwrite count, milestone snapshots, and th
 
 The integrated route executes this order on every authoritative tick:
 
-1. Derive deterministic scripted raw input from the current phase.
-2. Convert raw input through `SnapshotBuilder`, `PendingInput`, and `CharacterIntent`.
-3. Advance the controlled character's controller and collision state.
-4. Produce jump/landing physics results.
-5. Select the controlled character's animation state when it is not interaction-locked.
-6. Advance ordinary animator playback.
-7. Consume the landing result once and advance procedural walk, landing, and head springs.
-8. Compose procedural local-pose offsets and evaluate the pre-IK hierarchy.
-9. Freeze both anatomical foot inputs, query the authoritative ground world, update plant state, solve both legs, and evaluate the resulting hierarchy.
-10. Process a real `interact_pressed` request after ordinary locomotion state is current.
-11. Advance the one shared interaction clock and sample both interaction poses.
-12. Compute one hand target from both pre-arm-IK socket positions.
-13. Apply both analytical arm solves.
-14. Reapply only already-acquired grounded foot constraints through the ordinary foot/leg system; no interaction tick can create a new foot lock.
-15. Observe milestones and copy optional diagnostics after all authoritative updates.
-16. On the render frame, globally submit both characters and environment sprites, then append optional debug sprites before the existing batch sort and draw.
+1. At the frame or explicit fixed-batch boundary, verify both live F bindings
+   and pull changed committed RuntimeScene roots into the character command
+   surfaces.
+2. Derive deterministic scripted physical input from the current phase.
+3. Convert physical input through the application-owned `SnapshotBuilder`,
+   `PendingInput`, and physics-owned `CharacterIntent`.
+4. Advance the controlled character's controller and collision state.
+5. Produce jump/landing physics results.
+6. Select the controlled character's animation state when it is not interaction-locked.
+7. Advance ordinary animator playback.
+8. Consume the landing result once and advance procedural walk, landing, and head springs.
+9. Compose procedural local-pose offsets and evaluate the pre-IK hierarchy.
+10. Freeze both anatomical foot inputs, query the authoritative ground world, update plant state, solve both legs, and evaluate the resulting hierarchy.
+11. Process a real `interact_pressed` request after ordinary locomotion state is current.
+12. Advance the one shared interaction clock and sample both interaction poses.
+13. Compute one hand target from both pre-arm-IK socket positions.
+14. Apply both analytical arm solves.
+15. Reapply only already-acquired grounded foot constraints through the ordinary foot/leg system; no interaction tick can create a new foot lock.
+16. Observe milestones and copy optional diagnostics after all authoritative updates.
+17. After the frame or explicit fixed-batch ticks, publish changed specialized
+    roots transactionally into RuntimeScene.
+18. On the render frame, submit only live enabled F-bound characters and
+    environment sprites, then append optional debug sprites before the existing
+    batch sort and draw.
 
-Steps 6–9 are skipped for an interaction-locked character because shared interaction sampling owns that tick's animator pose. Steps 11–14 do nothing when no interaction is active. These branches prevent two animator clocks and prevent post-IK values from feeding the next authoritative target. Rendering and diagnostics never feed back into the tick.
+Steps 7–10 are skipped for an interaction-locked character because shared interaction sampling owns that tick's animator pose. Steps 12–15 do nothing when no interaction is active. These branches prevent two animator clocks and prevent post-IK values from feeding the next authoritative target. Rendering and diagnostics never feed back into the tick.
 
-During an interaction-locked tick, step 13 applies the arm constraint before step 14 reapplies already-owned leg constraints. The chains are disjoint, both hand inputs were frozen before either arm solve, and the foot target was acquired on an earlier ordinary locomotion tick. Final hierarchy evaluation therefore contains both constraints without either solver reading the other's post-IK endpoint.
+During an interaction-locked tick, step 14 applies the arm constraint before step 15 reapplies already-owned leg constraints. The chains are disjoint, both hand inputs were frozen before either arm solve, and the foot target was acquired on an earlier ordinary locomotion tick. Final hierarchy evaluation therefore contains both constraints without either solver reading the other's post-IK endpoint.
 
 ## Integrated route
 

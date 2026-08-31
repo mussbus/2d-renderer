@@ -584,7 +584,7 @@ pub const ScriptedInput = struct {
             .approach => {
                 const target = handshake_player_x - 0.01;
                 const command = std.math.clamp((target - controller.position.x) * 0.5 - controller.velocity.x * 0.8, 0, 0.15);
-                raw.gamepad_move_axis = encodeGamepadAxis(command);
+                raw.gamepad_left_x = encodeGamepadAxis(command);
             },
             .interact_press, .interact_hold => raw.keyboard.e = true,
             .interact_release => {},

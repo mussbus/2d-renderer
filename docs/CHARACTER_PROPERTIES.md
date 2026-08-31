@@ -72,7 +72,10 @@ Default resolved movement and jump values are exactly `4.5 m/s` and `9.0 m/s`, p
 
 ## Dash contract
 
-The dash input is Left Shift or the gamepad right shoulder. It follows the established `SDL state -> FrameInputSnapshot -> PendingInput -> CharacterIntent` path and survives a zero-substep frame exactly once.
+The dash input is Left Shift or the gamepad right shoulder. It follows the
+established `SDL physical state -> application FrameInputSnapshot ->
+PendingInput -> physics CharacterIntent` path and survives a zero-substep
+frame exactly once.
 
 - Allowed states: grounded or airborne, when the resolved `dash` capability is active.
 - Direction: current movement intent when its magnitude reaches the existing facing threshold; otherwise the current facing.
