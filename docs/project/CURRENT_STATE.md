@@ -1,9 +1,11 @@
 # Current State
 
-Current F4E implementation basis: clean, synchronized `master` at
-`ff65ac7219deca6402da7b4c06fec80c81268781`, verified on 2026-08-31 before
-repository canonicalization began. F4D is owner-approved. F4E is implemented
-locally and awaits owner review; F4 itself is not yet accepted.
+Current F4 acceptance basis: the Final F4 Independent Production Architecture
+Acceptance Audit inspected clean, synchronized `master` at
+`48a7c677d781543e479b178c6e7b10b139eeb26e`. It found no CRITICAL or MAJOR
+blocker, verified every original F4A CRITICAL/MAJOR finding as resolved, and
+passed every required final validation gate. The owner accepts the audit and
+F4 — Production Architecture Hardening is accepted.
 
 The production-system inventory below distinguishes current engine authority
 from protected historical visual lineage. Historical names identify accepted
@@ -27,13 +29,15 @@ provenance only and do not define current production architecture.
 | F4C4 | **OWNER-APPROVED** |
 | F4C5 | **OWNER-APPROVED** |
 | F4D | **OWNER-APPROVED** |
-| F4E | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4 overall | **NOT YET ACCEPTED** |
+| F4E | **OWNER-APPROVED** |
+| F4 — Production Architecture Hardening | **ACCEPTED** |
 
-Current track: **F4 — Production Architecture Hardening**.
+Current architecture foundation: **F4 — Production Architecture Hardening,
+ACCEPTED**.
 
-Current immediate step: **final independent read-only F4 acceptance audit**, but
-only after owner approval of this F4E candidate.
+Post-F4 feature development is unblocked at the architecture gate. No
+downstream track begins through this administrative record; each requires a
+dedicated implementation request and must respect the dependency gates below.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -90,9 +94,64 @@ fixture, establishes active/history asset manifests, and moves prompt-era
 records under the explicitly non-normative `docs/history` boundary. See the
 [F4E implementation record](../implementation/f4e_repository_canonicalization.md).
 
-Major post-F4 parallel feature fan-out remains blocked until final F4
-acceptance. See the
-[owner-approved F4A record](../implementation/f4a_production_architecture_audit.md).
+The accepted F4 dependency direction, ownership boundaries, runtime authority,
+independent-client proof, and modular validation architecture now govern
+post-F4 work. See the
+[owner-approved F4A record](../implementation/f4a_production_architecture_audit.md)
+and the milestone-time F4 implementation records for provenance.
+
+## Final F4 acceptance
+
+The owner-approved final independent audit established:
+
+- audited commit: `48a7c677d781543e479b178c6e7b10b139eeb26e`;
+- CRITICAL findings: **0**;
+- MAJOR findings: **0**;
+- original F4A CRITICAL/MAJOR findings: **all RESOLVED**;
+- required final validation gates: **all PASS**;
+- final disposition: **F4 ACCEPTED**;
+- post-F4 feature fan-out: **unblocked after owner acceptance**, subject to the
+  dedicated-request and dependency rules below.
+
+Historical implementation and audit records retain their original
+milestone-time candidate wording. They do not override this current normative
+status.
+
+## Post-F4 architecture debt
+
+### POST-F4-DEBT-001 — Renderer diagnostics compile coupling
+
+**MODERATE, nonblocking.** Renderer resource reporting imports a diagnostics
+module whose dependency graph also reaches character and interaction types.
+This is compile-graph coupling, not a runtime-authority violation. Narrow it
+only when renderer/diagnostics work naturally provides the appropriate scope.
+
+### POST-F4-DEBT-002 — Explicit module catalog growth
+
+**MINOR, monitor.** `build/modules.zig` remains a large explicit module
+catalog. Its visible ownership is preferable to hidden directory discovery.
+Revisit it only if future parallel-domain additions make it a meaningful
+change magnet.
+
+## Post-F4 track readiness
+
+Immediately architecture-ready for dedicated implementation requests:
+
+```text
+SEM  SAF  MAT  CHR  CL  OBJ  LVL  AN  INT  PHY  WRD  ENV  IMG
+```
+
+Dependency-gated:
+
+- **PFB** — after the OBJ authored-object contract;
+- **SCN** — after the intended LVL/PFB composition contract;
+- **PG** — after the LVL loading/origin/streaming boundary;
+- **AI** — after SEM, OBJ, and the required PHY query contracts;
+- **GAME** — after the selected LVL/SCN/OBJ gameplay dependencies;
+- **ED** — after the first authored schemas it is intended to edit are
+  accepted.
+
+This status record begins none of these tracks.
 
 Status vocabulary:
 
@@ -113,8 +172,8 @@ Status vocabulary:
 | SDL3 GPU renderer and D3D12/DXIL route | complete | Atlas-backed sprites and deformable meshes use the global unified queue; Prompt 25D goldens and Prompt 26/27 captures were produced through the real production route. |
 | Height-relative production camera | automated complete, owner resize review pending | The 640×480 composition remains 82 px/m and fixes the vertical world span at 480/82 m. Positive drawable heights derive scale as 82×height/480 from actual SDL drawable/swapchain pixels; width changes horizontal visibility only. Zero drawables preserve the last valid camera. |
 | Fixed-step simulation, animation, physics, and controller | complete | One authoritative 240 Hz deterministic simulation; renderer interpolation does not own simulation. |
-| F-backed representative scene route | implemented, owner review pending | `integrated` owns two persistent RuntimeScene entities through a bounded character adapter; F lifecycle/enabled/transform and snapshot semantics are live in production composition. Other routes remain explicitly transitional or specialized. |
-| Independent engine client | implemented, F4D owner review pending | `engine_smoke` owns one generic RuntimeScene entity, consumes the supported renderer/queue/capture surfaces directly, and has no demo or evidence dependency. |
+| F-backed representative scene route | complete | `integrated` owns two persistent RuntimeScene entities through a bounded character adapter; F lifecycle/enabled/transform and snapshot semantics are live in production composition. Other routes remain explicitly transitional or specialized. |
+| Independent engine client | complete | `engine_smoke` owns one generic RuntimeScene entity, consumes the supported renderer/queue/capture surfaces directly, and has no demo or evidence dependency. |
 | Input and character intent | complete | SDL/platform owns physical keys, buttons, axes, focus and window close only; application mapping owns semantic actions and pending edges; physics owns `CharacterIntent`. |
 | Interactions, handshake, and IK | complete | Interaction coordination owns fixed-root handshakes; visual IK does not replace root physics. Prompt 27 makes view and occlusion policy definition data. |
 | Semantic anatomy and morphology | complete | One authoritative skeleton, typed anatomy instances, body presets, and bounded morphology channels. |
@@ -343,9 +402,9 @@ The impact and intended future milestones are in
 
 ## Next authorized milestone
 
-VF-03-R1 is the current bounded rendered-topology correction and is stopped for owner
-review. Prompt 27A, Prompt 27B, Prompt 27C-R1, VF-01, VF-02, and VF-03
-owner/manual visual acceptance remains `[PENDING OWNER REVIEW]`. Prompt 28,
-gameplay vertical slice, editor, combat, mission, broad production migration,
-materials, and morphology expansion have not started. Future work requires an
-explicit user request and must preserve the existing authority boundaries.
+F4 is accepted. The architecture-ready post-F4 tracks listed above may begin
+only through dedicated implementation requests; dependency-gated tracks must
+first satisfy their recorded prerequisites. Prompt 27A, Prompt 27B, Prompt
+27C-R1, VF-01, VF-02, and VF-03 owner/manual visual acceptance remains
+`[PENDING OWNER REVIEW]` as a separate presentation matter. No post-F4 track
+has begun through this administrative update.

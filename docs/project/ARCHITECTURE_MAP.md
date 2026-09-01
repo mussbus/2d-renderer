@@ -1,10 +1,12 @@
 # Architecture Map
 
-> **Current authority note (2026-08-31):** F1-F3 and F4A-F4D are
-> owner-approved. F4E is implemented and awaits owner review; F4 overall is not
-> yet accepted. The map below describes the current post-F4D production
-> architecture. Historical prompt/milestone records under `docs/history` are
-> non-normative.
+> **Current authority note (2026-08-31):** F1-F4 are accepted. F4A, F4B1,
+> F4B2, F4C1, F4C2, F4C3, F4C4, F4C5, F4D, and F4E are owner-approved. The
+> Final F4 Independent Acceptance Audit inspected commit
+> `48a7c677d781543e479b178c6e7b10b139eeb26e`, found no CRITICAL or MAJOR
+> blocker, and passed every required final gate. The map below describes the
+> accepted post-F4 production architecture. Historical prompt/milestone
+> records under `docs/history` are non-normative.
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production

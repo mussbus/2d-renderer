@@ -1,33 +1,39 @@
 # Master Roadmap
 
-## Current production-architecture hardening track
+## Accepted production-architecture foundation
 
 The Foundation milestones F1, F2A, F2B, F2C and F3 are owner-approved. The
 F2C authority-encapsulation amendment at
 `685383a9012f10769c89b363d2eeff820410e0ae` is accepted.
 
-F4A, F4-ADMIN, F4B1, and F4B2 are owner-approved. F4C1 is implemented and
-awaiting owner review. F4 is not yet accepted; F4C2 through F4C5, F4D, and F4E
-have not begun, and the major post-F4 parallel feature fan-out remains
-blocked. The accepted sequence is:
+F4A, F4B1, F4B2, F4C1, F4C2, F4C3, F4C4, F4C5, F4D, and F4E are
+owner-approved. The Final F4 Independent Production Architecture Acceptance
+Audit inspected commit `48a7c677d781543e479b178c6e7b10b139eeb26e`, found
+no CRITICAL or MAJOR blocker, verified every original F4A CRITICAL/MAJOR
+finding as resolved, and passed every required final gate. The owner accepts
+that audit and **F4 — Production Architecture Hardening is ACCEPTED**.
+
+The completed sequence is:
 
 ```text
-F4A (owner-approved)
+F4A whole-repository audit
   -> F4-ADMIN (current state-recording step)
   -> F4B1 safe hygiene and retention groundwork
   -> F4B2 superseded demo/test retirement with replacement coverage
-  -> F4C production architecture migration
+  -> F4C1-F4C5 production architecture migration
   -> F4D independent-engine and decoupling proof
   -> F4E repository canonicalization and provenance cleanup
-  -> final F4 acceptance
-  -> post-F4 parallel development
+  -> Final F4 Independent Acceptance Audit
+  -> owner acceptance
+  -> post-F4 parallel development available through dedicated requests
 ```
 
-F4C1 stops at owner review. F4C2 requires a dedicated request. See the
-[F4C1 implementation record](../implementation/f4c1_production_definition_extraction.md).
+Milestone-time implementation records retain their original candidate wording.
+Current disposition and post-F4 readiness are recorded in
+[CURRENT_STATE.md](CURRENT_STATE.md).
 
 The renderer/character phases below remain useful implementation history and
-capability inventory. They do not supersede the current F4 gate.
+capability inventory. They do not supersede the accepted F4 contracts.
 
 ## Product target
 
@@ -152,9 +158,11 @@ collision, theme, or atlas-identity models.
 
 ## Milestone gate
 
-Prompts 0–27C remain the historical implementation sequence. The current
-architecture gate is F4: F4A, F4B1, and F4B2 are owner-approved; F4C1 awaits
-owner review; and no post-F4 feature track is authorized before final F4
-acceptance. Current
-non-blocking visual limitations, pending Prompt 27A/27B/27C owner review, and
-future schema triggers remain recorded in [KNOWN_GAPS.md](KNOWN_GAPS.md).
+Prompts 0–27C remain the historical implementation sequence. F4 is accepted,
+and its architecture gate no longer blocks post-F4 development. SEM, SAF, MAT,
+CHR, CL, OBJ, LVL, AN, INT, PHY, WRD, ENV, and IMG are architecture-ready for
+dedicated implementation requests. PFB, SCN, PG, AI, GAME, and ED retain the
+specific dependency gates recorded in [CURRENT_STATE.md](CURRENT_STATE.md).
+This status record begins none of those tracks. Current non-blocking visual
+limitations, pending visual owner review, and future schema triggers remain
+recorded in [KNOWN_GAPS.md](KNOWN_GAPS.md).

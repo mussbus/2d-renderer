@@ -30,17 +30,27 @@ recorded in
 The owner-approved F4D independent-engine composition is
 recorded in
 [`implementation/f4d_independent_engine_composition.md`](implementation/f4d_independent_engine_composition.md).
-The F4E repository canonicalization candidate awaiting owner review is recorded
+The owner-approved F4E repository canonicalization implementation is recorded
 in [`implementation/f4e_repository_canonicalization.md`](implementation/f4e_repository_canonicalization.md).
 
-F4 is the current production-architecture hardening track; F4 itself is not
-accepted. F4B1, F4B2, F4C1, F4C2, F4C3, F4C4, F4C5, and F4D are
-owner-approved; F4E is implemented and awaits owner review. Every
-downstream track and further production migration still requires dedicated
-authorization. Accepted F identity,
+F4A, F4B1, F4B2, F4C1, F4C2, F4C3, F4C4, F4C5, F4D, and F4E are
+owner-approved. The Final F4 Independent Production Architecture Acceptance
+Audit inspected commit `48a7c677d781543e479b178c6e7b10b139eeb26e`, found
+no CRITICAL or MAJOR blocker, verified all original F4A CRITICAL/MAJOR
+findings as resolved, and passed every required final validation gate. The
+owner accepts the audit: **F4 — Production Architecture Hardening is
+ACCEPTED**. Post-F4 development is unblocked at the architecture gate, while
+every downstream implementation track still requires its own dedicated
+authorization and applicable dependency gates. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,
 publication, hierarchy and lifecycle contracts remain closed unless a future
 owner-approved amendment explicitly reopens them.
+
+The two recorded nonblocking post-F4 debts are renderer diagnostics compile
+coupling (**MODERATE**) and growth of the explicit `build/modules.zig` catalog
+(**MINOR/monitor**). Their disposition and post-F4 track readiness are recorded
+in [`project/CURRENT_STATE.md`](project/CURRENT_STATE.md); neither is changed
+by this administrative acceptance record.
 
 ## Scope and invariants
 
