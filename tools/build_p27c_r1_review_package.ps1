@@ -498,13 +498,13 @@ foreach ($captureId in $clothedIds) {
 }
 
 $assetPaths = [ordered]@{
-    currentMale = Join-Path $repositoryRoot 'assets/art/p27c_male_base_anatomy_atlas.png'
-    currentFemale = Join-Path $repositoryRoot 'assets/art/p27c_female_base_anatomy_atlas.png'
+    currentMale = Join-Path $repositoryRoot 'assets/art/male_base_anatomy_atlas.png'
+    currentFemale = Join-Path $repositoryRoot 'assets/art/female_base_anatomy_atlas.png'
     preMale = Join-Path $repositoryRoot 'assets/art/p25a_male_base_anatomy_atlas.png'
     preFemale = Join-Path $repositoryRoot 'assets/art/p25a_female_base_anatomy_atlas.png'
-    rejectedMale = Join-Path $repositoryRoot 'assets/art/source/p27c_rejected/prompt27c_owner_rejected_male_atlas.png'
-    rejectedFemale = Join-Path $repositoryRoot 'assets/art/source/p27c_rejected/prompt27c_owner_rejected_female_atlas.png'
-    candidate = Join-Path $repositoryRoot 'assets/art/source/p27c_candidates/male_torso_imagegen_candidate_v1_rejected.png'
+    rejectedMale = Join-Path $repositoryRoot 'assets/history/art/rejected/owner_rejected_male_atlas.png'
+    rejectedFemale = Join-Path $repositoryRoot 'assets/history/art/rejected/owner_rejected_female_atlas.png'
+    candidate = Join-Path $repositoryRoot 'assets/history/art/rejected/male_torso_imagegen_candidate_v1_rejected.png'
 }
 $assetHashes = [ordered]@{}
 foreach ($property in $assetPaths.GetEnumerator()) {
@@ -910,9 +910,9 @@ $provenanceManifest = [ordered]@{
         production_source = 'src/scene/character_art.zig'
         installed_resource_root = 'zig-out/bin/art'
         male_runtime_resource =
-            'zig-out/bin/art/p27c_male_base_anatomy_atlas.png'
+            'zig-out/bin/art/male_base_anatomy_atlas.png'
         female_runtime_resource =
-            'zig-out/bin/art/p27c_female_base_anatomy_atlas.png'
+            'zig-out/bin/art/female_base_anatomy_atlas.png'
         sampling = 'nearest'
         alpha = 'straight_alpha'
         rgb_blend = 'src_alpha_one_minus_src_alpha'

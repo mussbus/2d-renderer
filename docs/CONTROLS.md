@@ -193,7 +193,7 @@ Deterministic route:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\zig-out\bin\engine_sandbox.exe' --demo foundation --scripted-input --frames 2400
 & '.\.deps\zig-0.16.0\zig.exe' build p27a-review
 ```
 
@@ -275,7 +275,7 @@ data for migrated components.
 For repeatable VF-02 review, the initialization-only diagnostic selector is:
 
 ```powershell
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --interactive `
+& '.\zig-out\bin\engine_sandbox.exe' --demo foundation --interactive `
   --registration-proof-case <body-front|body-side-left|body-side-right|equipped-front|equipped-side-left|equipped-side-right>
 ```
 
@@ -291,7 +291,7 @@ VF-03 adds or remaps no interactive controls. For repeatable component-graph
 review, use the initialization-only diagnostic selector:
 
 ```powershell
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --interactive `
+& '.\zig-out\bin\engine_sandbox.exe' --demo foundation --interactive `
   --component-proof-case <disabled|continuous-front|intentional-gap-front|continuous-side-left|continuous-side-right|intentional-gap-side-left|intentional-gap-side-right|two-modules> `
   --capture-manual-bundle
 ```

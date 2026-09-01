@@ -56,7 +56,7 @@ pub const Catalog = struct {
     character_controller_module: *std.Build.Module,
     render_queue_module: *std.Build.Module,
     art_asset_catalog_module: *std.Build.Module,
-    art_asset_demo_module: *std.Build.Module,
+    art_pipeline_fixture_module: *std.Build.Module,
     appearance_module: *std.Build.Module,
     anatomy_module: *std.Build.Module,
     component_graph_module: *std.Build.Module,
@@ -492,16 +492,16 @@ pub fn register(options: Options) Catalog {
         .optimize = optimize,
     });
     art_asset_catalog_module.addImport("art_pack", art_pack_module);
-    const art_asset_demo_module = b.createModule(.{
-        .root_source_file = b.path("src/scene/art_asset_demo.zig"),
+    const art_pipeline_fixture_module = b.createModule(.{
+        .root_source_file = b.path("tests/support/art_pipeline_fixture.zig"),
         .target = target,
         .optimize = optimize,
     });
-    art_asset_demo_module.addImport("art_pack", art_pack_module);
-    art_asset_demo_module.addImport("art_asset_catalog", art_asset_catalog_module);
-    art_asset_demo_module.addImport("deformable_mesh", deformable_mesh_module);
-    art_asset_demo_module.addImport("math", math_module);
-    art_asset_demo_module.addImport("render_queue", render_queue_module);
+    art_pipeline_fixture_module.addImport("art_pack", art_pack_module);
+    art_pipeline_fixture_module.addImport("art_asset_catalog", art_asset_catalog_module);
+    art_pipeline_fixture_module.addImport("deformable_mesh", deformable_mesh_module);
+    art_pipeline_fixture_module.addImport("math", math_module);
+    art_pipeline_fixture_module.addImport("render_queue", render_queue_module);
     const mesh_gpu_catalog_module = b.createModule(.{
         .root_source_file = b.path("src/graphics/mesh_gpu_catalog.zig"),
         .target = target,
@@ -971,6 +971,7 @@ pub fn register(options: Options) Catalog {
     });
     engine_smoke_entry_module.addImport("engine_smoke_client", engine_smoke_client_module);
     engine_smoke_entry_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
+    engine_smoke_entry_module.addImport("fault_injection", fault_injection_module);
     const integrated_demo_module = b.createModule(.{
         .root_source_file = b.path("src/scene/integrated_demo.zig"),
         .target = target,
@@ -1268,7 +1269,6 @@ pub fn register(options: Options) Catalog {
     demo_application_module.addImport("foundation_playground", foundation_playground_module);
     demo_application_module.addImport("art_pack", art_pack_module);
     demo_application_module.addImport("image_decode", image_decode_module);
-    demo_application_module.addImport("art_asset_demo", art_asset_demo_module);
     demo_application_module.addImport("presentation_view", presentation_view_module);
     demo_application_module.addImport("presentation_pose", presentation_pose_module);
     demo_application_module.addImport("character_art", character_art_module);
@@ -1379,7 +1379,7 @@ pub fn register(options: Options) Catalog {
     test_module.addImport("foundation_world", foundation_world_module);
     test_module.addImport("art_pack", art_pack_module);
     test_module.addImport("art_asset_catalog", art_asset_catalog_module);
-    test_module.addImport("art_asset_demo", art_asset_demo_module);
+    test_module.addImport("art_pipeline_fixture", art_pipeline_fixture_module);
     test_module.addImport("presentation_view", presentation_view_module);
     test_module.addImport("presentation_pose", presentation_pose_module);
     test_module.addImport("character_art", character_art_module);
@@ -1466,7 +1466,7 @@ pub fn register(options: Options) Catalog {
         .character_controller_module = character_controller_module,
         .render_queue_module = render_queue_module,
         .art_asset_catalog_module = art_asset_catalog_module,
-        .art_asset_demo_module = art_asset_demo_module,
+        .art_pipeline_fixture_module = art_pipeline_fixture_module,
         .appearance_module = appearance_module,
         .anatomy_module = anatomy_module,
         .component_graph_module = component_graph_module,

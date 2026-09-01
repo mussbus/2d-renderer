@@ -13,44 +13,44 @@ $requiredFiles = @(
     'docs/project/WARDROBE_AUDIT.md',
     'docs/project/SCOPE_BOUNDARIES.md',
     'docs/project/KNOWN_GAPS.md',
-    'docs/prompts/INDEX.md',
-    'docs/prompts/000-022-reconstructed-ledger.md',
-    'docs/prompts/exact/README.md',
-    'docs/prompts/exact/023-027-roadmap-source.txt',
-    'docs/prompts/exact/023-source.txt',
-    'docs/prompts/exact/024-source.txt',
-    'docs/prompts/exact/024A-source.txt',
-    'docs/prompts/exact/025-source.txt',
-    'docs/prompts/exact/025A-source.txt',
-    'docs/prompts/exact/025B-source.txt',
-    'docs/prompts/exact/025C-source.txt',
-    'docs/prompts/exact/025D-source.txt',
-    'docs/prompts/exact/025E-source.txt',
-    'docs/prompts/exact/026-source.txt',
-    'docs/prompts/exact/027-source.txt',
-    'docs/prompts/027A-evidence-integrity.md',
-    'docs/prompts/027B-ground-contact-camera-parallax-presence.md',
-    'docs/prompts/027C-production-anatomy.md',
-    'prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md',
-    'docs/PROMPT27A_DECISION_RECORD.md',
-    'docs/PROMPT27B_DECISION_RECORD.md',
-    'docs/PROMPT27C_DECISION_RECORD.md',
+    'docs/history/prompts/INDEX.md',
+    'docs/history/prompts/000-022-reconstructed-ledger.md',
+    'docs/history/prompts/exact/README.md',
+    'docs/history/prompts/exact/023-027-roadmap-source.txt',
+    'docs/history/prompts/exact/023-source.txt',
+    'docs/history/prompts/exact/024-source.txt',
+    'docs/history/prompts/exact/024A-source.txt',
+    'docs/history/prompts/exact/025-source.txt',
+    'docs/history/prompts/exact/025A-source.txt',
+    'docs/history/prompts/exact/025B-source.txt',
+    'docs/history/prompts/exact/025C-source.txt',
+    'docs/history/prompts/exact/025D-source.txt',
+    'docs/history/prompts/exact/025E-source.txt',
+    'docs/history/prompts/exact/026-source.txt',
+    'docs/history/prompts/exact/027-source.txt',
+    'docs/history/prompts/027A-evidence-integrity.md',
+    'docs/history/prompts/027B-ground-contact-camera-parallax-presence.md',
+    'docs/history/prompts/027C-production-anatomy.md',
+    'docs/history/source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md',
+    'docs/history/decisions/PROMPT27A_DECISION_RECORD.md',
+    'docs/history/decisions/PROMPT27B_DECISION_RECORD.md',
+    'docs/history/decisions/PROMPT27C_DECISION_RECORD.md',
     'docs/decisions/README.md',
-    'docs/reports/README.md',
-    'docs/reports/prompt-implementation-reports/INDEX.md',
-    'docs/reports/prompt-implementation-reports/025E-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/README.md',
-    'docs/reports/prompt-implementation-reports/exact/023-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/024-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/024A-025-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/025A-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/025B-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/025B-final-visual-gate-report.md',
-    'docs/reports/prompt-implementation-reports/exact/025C-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/025D-implementation-report.md',
-    'docs/reports/prompt-implementation-reports/exact/027A-implementation-report.md'
-    'docs/reports/prompt-implementation-reports/exact/027B-implementation-report.md'
-    'docs/reports/prompt-implementation-reports/exact/027C-implementation-report.md'
+    'docs/history/reports/README.md',
+    'docs/history/reports/prompt-implementation-reports/INDEX.md',
+    'docs/history/reports/prompt-implementation-reports/025E-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/README.md',
+    'docs/history/reports/prompt-implementation-reports/exact/023-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/024-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/024A-025-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/025A-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/025B-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/025B-final-visual-gate-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/025C-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/025D-implementation-report.md',
+    'docs/history/reports/prompt-implementation-reports/exact/027A-implementation-report.md'
+    'docs/history/reports/prompt-implementation-reports/exact/027B-implementation-report.md'
+    'docs/history/reports/prompt-implementation-reports/exact/027C-implementation-report.md'
 )
 
 $failures = [Collections.Generic.List[string]]::new()
@@ -63,16 +63,16 @@ foreach ($relativePath in $requiredFiles) {
 
 $documentationRoots = @(
     (Join-Path $repositoryRoot 'docs/project'),
-    (Join-Path $repositoryRoot 'docs/prompts'),
+    (Join-Path $repositoryRoot 'docs/history/prompts'),
     (Join-Path $repositoryRoot 'docs/decisions'),
-    (Join-Path $repositoryRoot 'docs/reports')
+    (Join-Path $repositoryRoot 'docs/history/reports')
 )
 
 $markdownFiles = @(
     Join-Path $repositoryRoot 'README.md'
     Get-ChildItem -LiteralPath $documentationRoots -Recurse -File -Filter '*.md' |
         Where-Object {
-            $_.FullName -notlike '*\docs\reports\prompt-implementation-reports\exact\*'
+            $_.FullName -notlike '*\docs\history\reports\prompt-implementation-reports\exact\*'
         } |
         ForEach-Object FullName
 )
@@ -129,7 +129,7 @@ foreach ($markdownFile in $markdownFiles) {
 $orphanCandidates = Get-ChildItem -LiteralPath $documentationRoots -Recurse -File -Filter '*.md' |
     Where-Object {
         $_.Name -notin @('README.md', 'INDEX.md') -and
-        $_.FullName -notlike '*\docs\reports\prompt-implementation-reports\exact\*'
+        $_.FullName -notlike '*\docs\history\reports\prompt-implementation-reports\exact\*'
     }
 foreach ($candidate in $orphanCandidates) {
     if (-not $inboundReferences.Contains($candidate.FullName)) {
@@ -139,7 +139,7 @@ foreach ($candidate in $orphanCandidates) {
     }
 }
 
-$promptIndex = Join-Path $repositoryRoot 'docs/prompts/INDEX.md'
+$promptIndex = Join-Path $repositoryRoot 'docs/history/prompts/INDEX.md'
 if (Test-Path -LiteralPath $promptIndex) {
     $indexText = [IO.File]::ReadAllText($promptIndex)
     foreach ($prompt in 0..27) {
@@ -191,7 +191,7 @@ $exactPromptHashes = [ordered]@{
     '026-source.txt' = 'e6e19c484fcd79d0ab8eea1030a1aa037c3a569a44abaf31ece3e3a4d5f1a532'
     '027-source.txt' = '66ce11018f66dbf004ad6a5723bad2d6c94fabb6f9b15b93b39ab893a5f610dd'
 }
-$exactPromptRoot = Join-Path $repositoryRoot 'docs/prompts/exact'
+$exactPromptRoot = Join-Path $repositoryRoot 'docs/history/prompts/exact'
 foreach ($hashEntry in $exactPromptHashes.GetEnumerator()) {
     $promptPath = Join-Path $exactPromptRoot $hashEntry.Key
     if (-not (Test-Path -LiteralPath $promptPath -PathType Leaf)) {
@@ -215,7 +215,7 @@ $exactReportHashes = [ordered]@{
     '025C-implementation-report.md' = '301feba6f46e4731305ec88d04fa5b815b6e3dcef1822395ac9bce8ec03741bb'
     '025D-implementation-report.md' = 'ce5c11c8a95b53172038e3abdf6728d6979d5fa2650bbf20b7e4ab7c0add9a4a'
 }
-$exactReportRoot = Join-Path $repositoryRoot 'docs/reports/prompt-implementation-reports/exact'
+$exactReportRoot = Join-Path $repositoryRoot 'docs/history/reports/prompt-implementation-reports/exact'
 foreach ($hashEntry in $exactReportHashes.GetEnumerator()) {
     $reportPath = Join-Path $exactReportRoot $hashEntry.Key
     if (-not (Test-Path -LiteralPath $reportPath -PathType Leaf)) {

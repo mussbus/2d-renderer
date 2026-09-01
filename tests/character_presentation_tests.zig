@@ -135,19 +135,19 @@ test "character art definitions cover both views bald buzz cut and long hair" {
 
 test "Prompt 25B production anatomy pages and regions have exact valid bounds" {
     try std.testing.expectEqualStrings(
-        "art/p27c_male_base_anatomy_atlas.png",
+        "art/male_base_anatomy_atlas.png",
         character_art.page_inputs[0].asset_path,
     );
     try std.testing.expectEqual(@as(u32, 1600), character_art.page_inputs[0].expected_width);
     try std.testing.expectEqual(@as(u32, 983), character_art.page_inputs[0].expected_height);
     try std.testing.expectEqualStrings(
-        "art/p27c_female_base_anatomy_atlas.png",
+        "art/female_base_anatomy_atlas.png",
         character_art.page_inputs[1].asset_path,
     );
     try std.testing.expectEqual(@as(u32, 1599), character_art.page_inputs[1].expected_width);
     try std.testing.expectEqual(@as(u32, 984), character_art.page_inputs[1].expected_height);
     try std.testing.expectEqualStrings(
-        "art/p27c_anatomy_components_atlas.png",
+        "art/anatomy_components_atlas.png",
         character_art.page_inputs[2].asset_path,
     );
     try std.testing.expectEqual(@as(u32, 1792), character_art.page_inputs[2].expected_width);

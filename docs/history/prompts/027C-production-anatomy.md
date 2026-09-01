@@ -8,7 +8,7 @@
 ## Source
 
 The exact user-supplied scope is the Prompt 27C section of
-[`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md).
+[`../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md).
 
 ## Implemented boundary
 
@@ -39,6 +39,6 @@ Owner/manual visual acceptance for Prompts 27A, 27B, and 27C remains
 
 ## Maintenance records
 
-- [Engineering decision record](../PROMPT27C_DECISION_RECORD.md)
-- [Testing and evidence](../TESTING.md#prompt-27c-production-anatomy)
+- [Engineering decision record](../decisions/PROMPT27C_DECISION_RECORD.md)
+- [Testing and evidence](../../TESTING.md#prompt-27c-production-anatomy)
 - [Implementation report](../reports/prompt-implementation-reports/exact/027C-implementation-report.md)

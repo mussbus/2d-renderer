@@ -8,11 +8,11 @@ Add-Type -AssemblyName System.Drawing
 $atlases = @(
     [pscustomobject]@{
         Name = 'violet_crystal_ruin'
-        Path = Join-Path $RepositoryRoot 'assets/art/p26_violet_crystal_ruin_atlas.png'
+        Path = Join-Path $RepositoryRoot 'assets/art/environment_violet_crystal_ruin_atlas.png'
     },
     [pscustomobject]@{
         Name = 'neutral_debug'
-        Path = Join-Path $RepositoryRoot 'assets/art/p26_neutral_debug_atlas.png'
+        Path = Join-Path $RepositoryRoot 'assets/art/environment_neutral_debug_atlas.png'
     }
 )
 $regions = @(

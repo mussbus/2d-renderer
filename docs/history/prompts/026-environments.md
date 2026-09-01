@@ -10,14 +10,14 @@
   decorative non-collision ledges, detailed collider debug, allocation-free
   theme switching, and focused environment acceptance.
 - Major runtime files:
-  [`../../src/scene/environment_art.zig`](../../src/scene/environment_art.zig),
-  [`../../src/scene/environment_theme.zig`](../../src/scene/environment_theme.zig),
+  [`../../../src/scene/environment_art.zig`](../../../src/scene/environment_art.zig),
+  [`../../../src/scene/environment_theme.zig`](../../../src/scene/environment_theme.zig),
   and
-  [`../../src/scene/environment_demo.zig`](../../src/scene/environment_demo.zig).
+  [`../../../src/scene/environment_demo.zig`](../../../src/scene/environment_demo.zig).
 - Major test/documentation files:
-  [`../../tests/environment_tests.zig`](../../tests/environment_tests.zig),
-  [`../ENVIRONMENT_THEMES.md`](../ENVIRONMENT_THEMES.md), and
-  [`../PROMPT26_DECISION_RECORD.md`](../PROMPT26_DECISION_RECORD.md).
+  [`../../../tests/environment_tests.zig`](../../../tests/environment_tests.zig),
+  [`../../ENVIRONMENT_THEMES.md`](../../ENVIRONMENT_THEMES.md), and
+  [`../decisions/PROMPT26_DECISION_RECORD.md`](../decisions/PROMPT26_DECISION_RECORD.md).
 - Production art:
   `assets/art/p26_violet_crystal_ruin_atlas.png` and
   `assets/art/p26_neutral_debug_atlas.png`.

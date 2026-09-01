@@ -60,4 +60,4 @@ decision. Manual physical drag-resize and visible 4K acceptance remain owner
 review work.
 
 The focused numeric results are recorded in the current
-[height-relative viewport evidence report](../reports/viewport-height-scaling-evidence.md).
+[height-relative viewport evidence report](../history/reports/viewport-height-scaling-evidence.md).

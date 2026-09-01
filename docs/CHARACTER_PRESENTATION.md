@@ -139,7 +139,7 @@ The body-only D3D12 inspection route is:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
+& '.\zig-out\bin\engine_sandbox.exe' --demo anatomy-quality --scripted-input --frames 600
 ```
 
 It selects eight poses through production state predicates and submits both

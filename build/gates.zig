@@ -24,7 +24,7 @@ pub fn register(options: Options) void {
     test_step.dependOn(&options.engine.run_renderer_boundary.step);
     test_step.dependOn(&options.content.run_image_decode.step);
     test_step.dependOn(&options.engine.run_foundation_primitives.step);
-    test_step.dependOn(&options.engine.run_f4c4_adoption.step);
+    test_step.dependOn(&options.engine.run_scene_binding_boundary.step);
     test_step.dependOn(&options.engine.run_scene_core_authored.step);
     test_step.dependOn(&options.engine.run_scene_core_runtime.step);
     test_step.dependOn(&options.engine.run_scene_core_registry.step);
@@ -79,9 +79,9 @@ pub fn register(options: Options) void {
     );
     content_step.dependOn(options.content.content_tests);
     content_step.dependOn(&options.content.environment_art_audit.step);
-    content_step.dependOn(&options.evidence.p27c_art_audit.step);
-    content_step.dependOn(&options.evidence.p27c_r1_torso_audit.step);
-    content_step.dependOn(&options.evidence.p25d_goldens.step);
+    content_step.dependOn(&options.evidence.anatomy_art_audit.step);
+    content_step.dependOn(&options.evidence.anatomy_torso_audit.step);
+    content_step.dependOn(&options.evidence.visual_geometry_goldens.step);
     content_step.dependOn(&options.evidence.human_base_export_compile.step);
     content_step.dependOn(&content_policy_audit.step);
 

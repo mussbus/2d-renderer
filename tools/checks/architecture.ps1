@@ -42,7 +42,7 @@ foreach ($file in @(Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (J
 $scenarioModules = @(
     'controller_demo', 'handshake_ik_demo', 'integrated_demo', 'playground_demo',
     'modular_body_demo', 'equipment_demo', 'mesh_attachment_demo',
-    'foundation_playground', 'visual_foundation', 'art_asset_demo',
+    'foundation_playground', 'visual_foundation',
     'wardrobe_demo', 'environment_demo'
 )
 $allowedScenarioImports = @{
@@ -86,7 +86,6 @@ $renderer = Read-RepositoryFile 'src/graphics/sdl_gpu_renderer.zig'
 $application = Read-RepositoryFile 'src/app/demo_application.zig'
 $captureContract = Read-RepositoryFile 'src/graphics/frame_capture.zig'
 $captureWriter = Read-RepositoryFile 'src/evidence/capture_writer.zig'
-$gpuCompatibility = Read-RepositoryFile 'src/graphics/gpu_demo.zig'
 foreach ($forbidden in $scenarioModules + @('foundation_evidence', 'foundation_coherence', 'acceptance_hud', 'visual_truth', 'anatomy_evidence', 'capture_writer', 'demo_application')) {
     if ([regex]::IsMatch($renderer, '@import\s*\(\s*"' + [regex]::Escape($forbidden) + '"\s*\)')) {
         Add-Failure "F4C2 dependency violation: renderer imports '$forbidden'."
@@ -106,9 +105,12 @@ if ([regex]::IsMatch($application, $rawGpuPattern) -or
     [regex]::IsMatch($captureContract, 'SDL_GPU|@import\s*\(\s*"sdl"')) {
     Add-Failure 'F4C2 authority violation: application or evidence code owns raw GPU backend state.'
 }
-if (-not $gpuCompatibility.Contains('pub const GpuDemo = demo_application.DemoApplication') -or
-    $gpuCompatibility.Contains('SDL_GPU') -or $gpuCompatibility.Contains('pub fn runVisible')) {
-    Add-Failure 'F4C2 compatibility route is not a thin DemoApplication alias.'
+$engineSmoke = Read-RepositoryFile 'src/app/engine_smoke.zig'
+if (-not $engineSmoke.Contains('renderer_module.Renderer.init') -or
+    -not $engineSmoke.Contains('renderer.runSmoke()') -or
+    $engineSmoke.Contains('demo_application') -or
+    $engineSmoke.Contains('gpu_demo')) {
+    Add-Failure 'F4E GPU-smoke route is not independently owned by the production renderer client.'
 }
 
 # F4C3 opaque character and interaction state.
@@ -239,7 +241,7 @@ foreach ($phrase in @(
         Add-Failure "F4D composition proof is missing '$phrase'."
     }
 }
-if (-not $appsBuild.Contains('.name = "skeletal_gpu_demo"') -or
+if (-not $appsBuild.Contains('.name = "engine_sandbox"') -or
     -not $appsBuild.Contains('.name = "engine_smoke"') -or
     -not $appsBuild.Contains('"run-engine-smoke"') -or
     -not $engineBuild.Contains('"test-engine-composition"') -or
@@ -278,5 +280,5 @@ if ([regex]::IsMatch($engineCompositionTests, '@import\s*\(\s*"(demo_application
 if ($failed) {
     exit 1
 }
-Write-Host 'Current architecture policy passed: F2C and F4C1-F4D authority/dependency boundaries are intact.'
+Write-Host 'Current architecture policy passed: F2C and F4C1-F4E authority/dependency boundaries are intact.'
 exit 0

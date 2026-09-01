@@ -6,8 +6,8 @@
   "shader_format": "DXIL",
   "width": 640,
   "height": 480,
-  "capture_command": "$env:SDL_GPU_DRIVER='direct3d12'; .\\zig-out\\bin\\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input",
-  "debug_capture_command": "$env:SDL_GPU_DRIVER='direct3d12'; .\\zig-out\\bin\\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input --debug-visualization",
+  "capture_command": "$env:SDL_GPU_DRIVER='direct3d12'; .\\zig-out\\bin\\engine_sandbox.exe --frames 600 --demo visual-quality --scripted-input",
+  "debug_capture_command": "$env:SDL_GPU_DRIVER='direct3d12'; .\\zig-out\\bin\\engine_sandbox.exe --frames 600 --demo visual-quality --scripted-input --debug-visualization",
   "captures": [
     {
       "path": "tests/goldens/p25d/clean/01_base_front.ppm",

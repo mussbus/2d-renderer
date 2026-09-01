@@ -38,7 +38,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = violet_page_id,
         .stable_name = "p26_violet_crystal_ruin_atlas",
-        .asset_path = "art/p26_violet_crystal_ruin_atlas.png",
+        .asset_path = "art/environment_violet_crystal_ruin_atlas.png",
         .sampling = .nearest,
         .expected_width = 1024,
         .expected_height = 1024,
@@ -46,7 +46,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = debug_page_id,
         .stable_name = "p26_neutral_debug_atlas",
-        .asset_path = "art/p26_neutral_debug_atlas.png",
+        .asset_path = "art/environment_neutral_debug_atlas.png",
         .sampling = .nearest,
         .expected_width = 1024,
         .expected_height = 1024,

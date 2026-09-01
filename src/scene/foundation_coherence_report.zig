@@ -978,37 +978,37 @@ const ProductionPages = struct {
     fn init(allocator: std.mem.Allocator) !ProductionPages {
         var male = try image_decode.decodePngFile(
             allocator,
-            "assets/art/p27c_male_base_anatomy_atlas.png",
+            "assets/art/male_base_anatomy_atlas.png",
             null,
         );
         errdefer male.deinit();
         var female = try image_decode.decodePngFile(
             allocator,
-            "assets/art/p27c_female_base_anatomy_atlas.png",
+            "assets/art/female_base_anatomy_atlas.png",
             null,
         );
         errdefer female.deinit();
         var components = try image_decode.decodePngFile(
             allocator,
-            "assets/art/p27c_anatomy_components_atlas.png",
+            "assets/art/anatomy_components_atlas.png",
             null,
         );
         errdefer components.deinit();
         var upper = try image_decode.decodePngFile(
             allocator,
-            "assets/art/p25_wardrobe_upper_atlas.png",
+            "assets/art/wardrobe_upper_atlas.png",
             null,
         );
         errdefer upper.deinit();
         var layers = try image_decode.decodePngFile(
             allocator,
-            "assets/art/p25_wardrobe_layers_atlas.png",
+            "assets/art/wardrobe_layers_atlas.png",
             null,
         );
         errdefer layers.deinit();
         var lower = try image_decode.decodePngFile(
             allocator,
-            "assets/art/p25_wardrobe_lower_atlas.png",
+            "assets/art/wardrobe_lower_atlas.png",
             null,
         );
         errdefer lower.deinit();

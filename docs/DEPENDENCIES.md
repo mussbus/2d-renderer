@@ -109,7 +109,7 @@ One pinned compiler/header conflict was demonstrated during the required release
 
 ## Linking and runtime files
 
-The initial supported target is Windows 11 x86_64. Zig links the exact VC archive import library at `.deps/SDL3-3.4.10/lib/x64/SDL3.lib` and includes `.deps/SDL3-3.4.10/include`. The install step copies the pinned `.deps/SDL3-3.4.10/lib/x64/SDL3.dll` beside `zig-out/bin/skeletal_gpu_demo.exe`; `zig build run` depends on that installed layout instead of a global DLL.
+The supported target is Windows 11 x86_64. Zig links the exact VC archive import library at `.deps/SDL3-3.4.10/lib/x64/SDL3.lib` and includes `.deps/SDL3-3.4.10/include`. The install step copies the pinned `.deps/SDL3-3.4.10/lib/x64/SDL3.dll` beside `zig-out/bin/engine_sandbox.exe` and `engine_smoke.exe`; both run routes depend on that installed layout instead of a global DLL.
 
 DXC is an offline build tool only. Shader compilation invokes the pinned x64 `dxc.exe` with structured PowerShell process arguments, with `dxcompiler.dll` and `dxil.dll` beside it; `dxv.exe` validates emitted DXIL. Build dependencies include the HLSL source, compiler/validator binaries and companion DLLs, lock file, compile script, stage, entry point, target profile, flags, and Zig optimization configuration. A changed input regenerates the DXIL. Compilation and validation use temporary output and delete any authoritative output on failure, so stale shaders are not silently accepted. These DXC files are not application runtime dependencies. Windows supplies the D3D12 system runtime and a compatible display driver.
 

@@ -38,9 +38,9 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 | 25E | Consolidation and authoring contracts | complete | exact | [record](025E-consolidation.md) · [source](exact/025E-source.txt) | `e328ec0` |
 | 26 | Environment themes | complete | exact roadmap source | [record](026-environments.md) · [source](exact/026-source.txt) | `0dd0f21` |
 | 27 | Integrated visual foundation | automated complete; manual review reopened | exact roadmap source | [record](027-integrated-foundation.md) · [source](exact/027-source.txt) | `1de0d1d` |
-| 27A | Evidence integrity and owner-review harness | automated complete; owner review pending | exact user-supplied roadmap | [record](027A-evidence-integrity.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `7c4721a` |
-| 27B | Ground contact, framing, parallax, and presence | automated complete; owner review pending | exact user-supplied roadmap | [record](027B-ground-contact-camera-parallax-presence.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `0e29e0c` |
-| 27C | Production anatomy silhouette, proportion, and joint continuity | torso result owner-rejected; superseded by 27C-R1 | exact user-supplied roadmap | [record](027C-production-anatomy.md) · [source](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `3259f79` |
+| 27A | Evidence integrity and owner-review harness | automated complete; owner review pending | exact user-supplied roadmap | [record](027A-evidence-integrity.md) · [source](../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `7c4721a` |
+| 27B | Ground contact, framing, parallax, and presence | automated complete; owner review pending | exact user-supplied roadmap | [record](027B-ground-contact-camera-parallax-presence.md) · [source](../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `0e29e0c` |
+| 27C | Production anatomy silhouette, proportion, and joint continuity | torso result owner-rejected; superseded by 27C-R1 | exact user-supplied roadmap | [record](027C-production-anatomy.md) · [source](../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md) | worktree on `3259f79` |
 | 27C-R1 | Owner-rejected torso and interactive presence crash | automated corrective pass complete; owner review pending | copied exact user request | [record](027C-R1-owner-rejected-torso-presence.md) | worktree on `3259f79` |
 | VF-01 | Visual truth debugger and manual capture bundles | automated complete; owner review pending | exact active handoff package | [record](VF-01-visual-truth-debugger.md) | worktree on `0e9bfcb` |
 | VF-02 | Authoritative rig-to-art registration | automated implementation complete; owner review pending | exact active handoff package | [record](VF-02-authoritative-rig-to-art-registration.md) | worktree on `0e9bfcb` |
@@ -53,7 +53,7 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
 - The original combined Prompt 23–27 roadmap is preserved as [`exact/023-027-roadmap-source.txt`](exact/023-027-roadmap-source.txt).
 - The user-supplied Prompt 27A–27H reopened visual-foundation roadmap is
   preserved as
-  [`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md);
+  [`../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md);
   Prompts 27A and 27B are implemented; Prompt 27C's rejected torso result is
   superseded by the bounded 27C-R1 corrective pass. VF-01 is implemented as a
   diagnostic milestone, VF-02 implements bounded production registration, and

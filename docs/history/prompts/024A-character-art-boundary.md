@@ -4,7 +4,7 @@
 - Source: **exact** — [`exact/024A-source.txt`](exact/024A-source.txt).
 - Original objective: ensure non-sexual base anatomy and removable clothing/equipment are independently addressable in actual production art and bindings.
 - Major systems: semantic anatomy ownership, base-presentation modesty classification, separate garment/equipment visuals, deterministic front/side resolution.
-- Major files: character art/bindings plus [`docs/CHARACTER_ART_BOUNDARY_DECISION.md`](../CHARACTER_ART_BOUNDARY_DECISION.md).
+- Major files: character art/bindings plus [`docs/CHARACTER_ART_BOUNDARY_DECISION.md`](../../CHARACTER_ART_BOUNDARY_DECISION.md).
 - Tests/evidence: base anatomy without equipment, identity separation, shared-page semantic separation, front/side determinism, allocation/render-path invariants, D3D12 inspection.
 - Implementation report: [archive entry](../reports/prompt-implementation-reports/INDEX.md#prompt-24a).
 - Commit: correction lineage represented by `4937122`.

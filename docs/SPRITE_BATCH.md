@@ -2,7 +2,7 @@
 
 ## One authoritative path
 
-`src/graphics/sprite_batch.zig` owns deterministic submission validation, capacity, stable ordering, draw-range generation, metrics, and conversion to transferred data. `src/graphics/gpu_demo.zig` owns the SDL GPU resources and contains one sprite draw site. Both the 1,000-sprite application and `gpu-smoke` pass a `PreparedBatch` to `encodeAuthoritativeSpriteBatch`; there is no retained Prompt 1 direct-quad submission path.
+`src/graphics/sprite_batch.zig` owns deterministic submission validation, capacity, stable ordering, draw-range generation, metrics, and conversion to transferred data. `src/graphics/sdl_gpu_renderer.zig` owns the SDL GPU resources and the authoritative sprite draw site. Both the 1,000-sprite sandbox route and independent `gpu-smoke` pass a `PreparedBatch` to that production renderer; no direct-quad compatibility path remains.
 
 The actual draw is `SDL_DrawGPUIndexedPrimitives(render_pass, 6, range.instance_count, 0, 0, range.first_instance)`. The demonstration has one texture page, one range, and `range.instance_count == 1000`. The shared geometry remains four `QuadVertex` records and six `u16` indices; CPU code never expands sprites into unique quad vertices.
 

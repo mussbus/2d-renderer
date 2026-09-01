@@ -27,13 +27,15 @@ is recorded in
 The owner-approved F4C5 build, test, and repository-policy modularization is
 recorded in
 [`implementation/f4c5_build_test_policy_modularization.md`](implementation/f4c5_build_test_policy_modularization.md).
-The F4D independent-engine composition candidate awaiting owner review is
+The owner-approved F4D independent-engine composition is
 recorded in
 [`implementation/f4d_independent_engine_composition.md`](implementation/f4d_independent_engine_composition.md).
+The F4E repository canonicalization candidate awaiting owner review is recorded
+in [`implementation/f4e_repository_canonicalization.md`](implementation/f4e_repository_canonicalization.md).
 
 F4 is the current production-architecture hardening track; F4 itself is not
-accepted. F4B1, F4B2, F4C1, F4C2, F4C3, and F4C4 are owner-approved. F4C5 is
-owner-approved; F4D is implemented and awaits owner review; F4E has not begun. Every
+accepted. F4B1, F4B2, F4C1, F4C2, F4C3, F4C4, F4C5, and F4D are
+owner-approved; F4E is implemented and awaits owner review. Every
 downstream track and further production migration still requires dedicated
 authorization. Accepted F identity,
 canonical-data, scene-core ownership, mutation authority, snapshot,
@@ -371,8 +373,8 @@ per-frame coordination, and evidence scheduling. It sends prepared
 owns an SDL GPU handle. Generic GPU readback returns an owned, compact RGBA8
 `CapturedFrame` copied from the backend transfer buffer. The evidence writer
 receives only that copied value, writes historical PPM/PNG files, and cannot
-mutate renderer or scene state. `gpu_demo.zig` is a compatibility alias and no
-longer implements application, backend, rendering, or evidence behavior.
+mutate renderer or scene state. Physical `gpu-smoke` is invoked directly by
+`engine_smoke`; no renderer compatibility alias remains.
 
 SDL GPU resource destruction maps to the matching API: buffers, transfer buffers, textures, samplers, shaders, pipelines, fences, the claimed window, and the GPU device are each released by their documented function. Command buffers are either submitted or cancelled on every path. Destruction waits for GPU idle when in-flight access makes that necessary.
 

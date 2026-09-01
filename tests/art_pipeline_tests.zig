@@ -1,5 +1,5 @@
 const std = @import("std");
-const art_asset_demo = @import("art_asset_demo");
+const art_pipeline_fixture = @import("art_pipeline_fixture");
 const art_asset_catalog = @import("art_asset_catalog");
 const art_pack = @import("art_pack");
 const render_queue = @import("render_queue");
@@ -207,7 +207,7 @@ test "art definition initialization exposes bounded allocation failure" {
 }
 
 test "focused art scene submits sprites and mesh across pages without steady-state allocation" {
-    var scene = try art_asset_demo.Scene.init(std.testing.allocator, 0);
+    var scene = try art_pipeline_fixture.Scene.init(std.testing.allocator, 0);
     defer scene.deinit();
     const definitions = scene.meshDefinitions();
     try definitions[0].validate();

@@ -1,6 +1,6 @@
 # Testing Strategy
 
-## F4C5/F4D verification workflow
+## Current verification workflow
 
 This section is the current repository-wide command contract. Historical
 milestone counts, aggregate membership statements, and commands later in this
@@ -22,10 +22,10 @@ pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
 
 | Gate | Primary command | Contents | Explicit exclusions / required use |
 | --- | --- | --- | --- |
-| Fast engine contract/static | `zig build check -j1` | Demo and independent application compilation, formatting, current architecture and hygiene policy, documentation validation, and fast engine/F/scene/input/renderer-boundary CPU contracts including the independent composition test | No physical GPU, canonical/content qualification, manual review, or historical evidence generation. Run for ordinary engine work and every review request. |
+| Fast engine contract/static | `zig build check -j1` | Sandbox and independent application compilation, formatting, current architecture and hygiene policy, documentation validation, and fast engine/F/scene/input/renderer-boundary CPU contracts including the independent composition test | No physical GPU, canonical/content qualification, manual review, or historical evidence generation. Run for ordinary engine work and every review request. |
 | Full deterministic CPU integration | `zig build test-full -j1` | `check`, broader deterministic integration, production-route suites, environment/wardrobe/foundation composition, and the existing long-duration stress tests | No physical GPU, manual review, or canonical/historical evidence generation. Run for substantial engine or cross-system changes. |
 | Current canonical/content qualification | `zig build test-content -j1` | Canonical model/human/geometry, current authored art/visual/anatomy qualification, current content audits, approved goldens, exporter compilation, and the retained full content-policy audit | Required for canonical/content-authority changes; not required for unrelated engine iteration. |
-| Physical GPU validation | `zig build gpu-smoke -j1` | Real D3D12/DXIL device, shader, draw, readback, fault, and cleanup proof | Requires suitable Windows GPU access and remains separate from CPU-only gates. |
+| Physical GPU validation | `zig build gpu-smoke -j1` | Real D3D12/DXIL device, shader, draw, readback, fault, and cleanup proof through the independent `engine_smoke` client | Requires suitable Windows GPU access and remains separate from CPU-only gates; it does not enter `DemoApplication`. |
 | Manual/visual acceptance | `zig build visual-acceptance -j1` | Builds the application and current report executables used by the documented capture/review routes | Does not claim human approval and is never an automatic dependency of `check`. |
 | Historical evidence reproduction | `zig build evidence-history -j1` | Explicit, potentially mutating historical exporters, Blender bridge checks, and Prompt-era review packages | On demand only. Use `zig build evidence-history-check -j1` for a non-mutating registration check. |
 | CPU verification aggregate | `zig build verify -j1` | `check` + `test-full` + `test-content`, with shared nodes executed once | No physical GPU, manual acceptance, or historical reproduction. |
@@ -34,6 +34,12 @@ pinned Zig 0.16.0 executable and `-j1` on the Windows reference workflow:
 the fast CPU contract suite used by `check`. `zig build test-stress -j1`
 remains callable and is now also included by `test-full`; the stress tests were
 not weakened or deleted.
+
+All engine and content test roots use the simple runner bundled with the pinned
+Zig 0.16.0 toolchain. This runs the same declarations and reports failure by
+process exit code, while avoiding the server-listener timeouts observed on the
+Windows reference machine during long aggregate gates. Gate membership,
+assertions, filtering, and focused target names are unchanged.
 
 ### Change-based gate guidance
 
@@ -615,7 +621,7 @@ The clean D3D12 capture uses:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-.\zig-out\bin\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input
+.\zig-out\bin\engine_sandbox.exe --frames 600 --demo visual-quality --scripted-input
 ```
 
 The corresponding geometry overlay uses the identical character, production
@@ -623,15 +629,15 @@ submission, global queue, shaders, D3D12 backend, and readback:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-.\zig-out\bin\skeletal_gpu_demo.exe --frames 600 --demo visual-quality --scripted-input --debug-visualization
+.\zig-out\bin\engine_sandbox.exe --frames 600 --demo visual-quality --scripted-input --debug-visualization
 ```
 
 Golden hashing is a final change-detection layer only. After quantitative and
 human acceptance, the approved D3D12/DXIL PPMs are verified with:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build check-p25d-goldens -j1
-& '.\tools\check_p25d_goldens.ps1' -CompareLatest
+& '.\.deps\zig-0.16.0\zig.exe' build check-visual-geometry-goldens -j1
+& '.\tools\check_visual_geometry_goldens.ps1' -CompareLatest
 ```
 
 The second command proves that the latest real-GPU readbacks equal the stored
@@ -945,13 +951,17 @@ Prompt 1 introduced each listed command with a real target. Later milestones ext
 
 `zig build test-art` runs ten focused tests split between platform-independent definition/render routing and Windows WIC decode behavior. Coverage includes page definitions and per-page nearest/linear policy; duplicate page and region IDs/names; exact normalized UV derivation; atlas bounds and arithmetic overflow; invalid pivots; missing page and region references; duplicate or conflicting semantic bindings; fixed-buffer allocation failure; synthetic view 37; declaration reorder stability; two-page unified ranges; deformable-mesh material compatibility; alpha-bearing RGBA decode; missing/corrupt/unsupported image errors; image metadata bounds; and zero post-stabilization queue allocation.
 
-The GPU-backed command is:
+The permanent focused command is:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo art-assets --frames 240
+& '.\.deps\zig-0.16.0\zig.exe' build test-art -j1
 ```
 
-It requires D3D12/DXIL and the installed asset layout. Startup runs GPU fault-cleanup cases, then uploads both real pages and renders six PNG-backed sprites plus one mesh. Runtime assertions require both nearest-sampled pages, six sprite ranges/draws plus one mesh range/draw, exact decode counts, no retained CPU images, no steady-state fixed-buffer or queue allocation, and no steady-state GPU-resource creation. A successful bounded run is GPU execution evidence; it is not a claim of subjective manual art review.
+The former `art-assets` sandbox route was retired after its multi-page
+sprite/mesh submission, semantic resolution, exact decode, and steady-state
+allocation coverage moved to a test-only fixture. Physical D3D12/DXIL proof is
+owned by `gpu-smoke` and `run-engine-smoke`; neither command claims subjective
+manual art approval.
 
 ## Prompt 24 character-presentation verification
 
@@ -1004,7 +1014,7 @@ Run the non-interactive hard gate only through its exact route:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
+& '.\zig-out\bin\engine_sandbox.exe' --frames 600 --demo visual-quality --scripted-input
 ```
 
 The route writes eleven P6 images from the same prepared 640 by 480 global queue
@@ -1150,7 +1160,7 @@ Real D3D12 route:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\zig-out\bin\engine_sandbox.exe' --demo foundation --scripted-input --frames 2400
 & '.\.deps\zig-0.16.0\zig.exe' build p27a-review
 ```
 
@@ -1243,7 +1253,7 @@ Real D3D12 route and independent readback review:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\zig-out\bin\engine_sandbox.exe' --demo foundation --scripted-input --frames 2400
 & '.\.deps\zig-0.16.0\zig.exe' build p27b-review
 ```
 
@@ -1281,7 +1291,7 @@ goldens. Owner/manual acceptance remains `[PENDING OWNER REVIEW]`.
 Fast source and semantic gates:
 
 ```powershell
-& '.\tools\audit_p27c_art.ps1'
+& '.\tools\audit_anatomy_art.ps1'
 & '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
 & '.\.deps\zig-0.16.0\zig.exe' build p27c-anatomy-report -j1 -- --output 'zig-out\p27c_evidence\final_semantic_report' --expect-pass
 ```
@@ -1305,7 +1315,7 @@ Real D3D12/DXIL evidence:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
+& '.\zig-out\bin\engine_sandbox.exe' --demo anatomy-quality --scripted-input --frames 600
 & '.\tools\build_p27c_review_package.ps1'
 ```
 
@@ -1343,7 +1353,7 @@ Prompt 27A, Prompt 27B, and Prompt 27C owner/manual visual acceptance remains
 Focused deterministic gates:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build audit-p27c-r1-torso -j1
+& '.\.deps\zig-0.16.0\zig.exe' build audit-anatomy-torso -j1
 & '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
 & '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
 & '.\.deps\zig-0.16.0\zig.exe' build p27c-anatomy-report -j1 -- --output 'zig-out\p27c_r1_evidence\final_semantic_report' --expect-pass
@@ -1372,10 +1382,10 @@ Real D3D12/DXIL and review-package gates:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
+& '.\zig-out\bin\engine_sandbox.exe' --demo anatomy-quality --scripted-input --frames 600
+& '.\zig-out\bin\engine_sandbox.exe' --demo foundation --scripted-input --frames 2400
 & '.\tools\build_p27c_r1_review_package.ps1'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --interactive --frames 300
+& '.\zig-out\bin\engine_sandbox.exe' --demo foundation --interactive --frames 300
 ```
 
 Run the anatomy and foundation routes from an isolated R1 working directory

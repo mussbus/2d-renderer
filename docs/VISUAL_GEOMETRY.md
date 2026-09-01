@@ -114,8 +114,8 @@ Run:
 & '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
 & '.\.deps\zig-0.16.0\zig.exe' build visual-geometry-report -j1
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input --debug-visualization
+& '.\zig-out\bin\engine_sandbox.exe' --frames 600 --demo visual-quality --scripted-input
+& '.\zig-out\bin\engine_sandbox.exe' --frames 600 --demo visual-quality --scripted-input --debug-visualization
 ```
 
 The report command writes `final_report.txt` and `final_report.json` under

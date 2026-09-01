@@ -18,7 +18,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = upper_page_id,
         .stable_name = "p25_wardrobe_upper_atlas",
-        .asset_path = "art/p25_wardrobe_upper_atlas.png",
+        .asset_path = "art/wardrobe_upper_atlas.png",
         .sampling = .linear,
         .expected_width = 1536,
         .expected_height = 1024,
@@ -26,7 +26,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = layers_page_id,
         .stable_name = "p25_wardrobe_layers_atlas",
-        .asset_path = "art/p25_wardrobe_layers_atlas.png",
+        .asset_path = "art/wardrobe_layers_atlas.png",
         .sampling = .linear,
         .expected_width = 1536,
         .expected_height = 1024,
@@ -34,7 +34,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = lower_page_id,
         .stable_name = "p25_wardrobe_lower_atlas",
-        .asset_path = "art/p25_wardrobe_lower_atlas.png",
+        .asset_path = "art/wardrobe_lower_atlas.png",
         .sampling = .linear,
         .expected_width = 1536,
         .expected_height = 1024,

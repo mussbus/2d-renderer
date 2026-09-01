@@ -38,6 +38,79 @@ if ($forbiddenPatterns.Count -ne 6 -or $unfinishedPatterns.Count -ne 6) {
 }
 
 $failed = $false
+
+# Active art authority is manifest-driven. Each listed binary must exist with
+# the exact accepted byte count and SHA-256; runtime paths may not regress to
+# prompt-numbered filenames.
+$assetManifestPath = Join-Path $repositoryRoot 'assets/manifest.json'
+$historyManifestPath = Join-Path $repositoryRoot 'assets/history/manifest.json'
+if (-not (Test-Path -LiteralPath $assetManifestPath -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $historyManifestPath -PathType Leaf)) {
+    Write-Error 'F4E active/history asset manifests are missing.' -ErrorAction Continue
+    $failed = $true
+} else {
+    $assetManifest = Get-Content -Raw -LiteralPath $assetManifestPath | ConvertFrom-Json
+    foreach ($asset in $assetManifest.assets) {
+        $assetPath = Join-Path $repositoryRoot $asset.runtime_path
+        if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) {
+            Write-Error "Manifest asset is missing: $($asset.runtime_path)." -ErrorAction Continue
+            $failed = $true
+            continue
+        }
+        $assetFile = Get-Item -LiteralPath $assetPath
+        $assetHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $assetPath).Hash.ToLowerInvariant()
+        if ($assetFile.Length -ne [int64]$asset.bytes -or $assetHash -ne $asset.sha256) {
+            Write-Error "Manifest authority mismatch for $($asset.runtime_path)." -ErrorAction Continue
+            $failed = $true
+        }
+        $hasInstallPath = $null -ne $asset.PSObject.Properties['install_path']
+        if ($hasInstallPath -and $asset.runtime_path -match '/p(?:23|24|25|26|27)') {
+            Write-Error "Active runtime asset retains a prompt-numbered path: $($asset.runtime_path)." -ErrorAction Continue
+            $failed = $true
+        }
+    }
+
+    $historyManifest = Get-Content -Raw -LiteralPath $historyManifestPath | ConvertFrom-Json
+    foreach ($family in $historyManifest.families) {
+        $hasPaths = $null -ne $family.PSObject.Properties['paths']
+        $hasPath = $null -ne $family.PSObject.Properties['path']
+        if ($hasPaths -eq $hasPath) {
+            Write-Error "Historical manifest family '$($family.family)' must declare exactly one of path or paths." -ErrorAction Continue
+            $failed = $true
+            continue
+        }
+        if ($hasPaths) {
+            $familyBytes = 0L
+            foreach ($relativePath in $family.paths) {
+                $resolvedPath = Join-Path $repositoryRoot $relativePath
+                if (-not (Test-Path -LiteralPath $resolvedPath -PathType Leaf)) {
+                    Write-Error "Historical manifest file is missing: $relativePath." -ErrorAction Continue
+                    $failed = $true
+                    continue
+                }
+                $familyBytes += (Get-Item -LiteralPath $resolvedPath).Length
+            }
+            if ($familyBytes -ne [int64]$family.bytes) {
+                Write-Error "Historical manifest byte count mismatch for '$($family.family)'." -ErrorAction Continue
+                $failed = $true
+            }
+            continue
+        }
+
+        $resolvedDirectory = Join-Path $repositoryRoot $family.path
+        if (-not (Test-Path -LiteralPath $resolvedDirectory -PathType Container)) {
+            Write-Error "Historical manifest directory is missing: $($family.path)." -ErrorAction Continue
+            $failed = $true
+            continue
+        }
+        $familyFiles = @(Get-ChildItem -LiteralPath $resolvedDirectory -File -Recurse)
+        $familyBytes = [int64](($familyFiles | Measure-Object -Property Length -Sum).Sum)
+        if ($familyFiles.Count -ne [int]$family.files -or $familyBytes -ne [int64]$family.bytes) {
+            Write-Error "Historical manifest inventory mismatch for '$($family.family)': files=$($familyFiles.Count) bytes=$familyBytes." -ErrorAction Continue
+            $failed = $true
+        }
+    }
+}
 foreach ($pattern in $forbiddenPatterns) {
     $matches = @(Select-String -LiteralPath $sourceFiles.FullName -SimpleMatch -CaseSensitive -Pattern $pattern)
     foreach ($match in $matches) {
@@ -102,7 +175,7 @@ if ($failed) {
     exit 1
 }
 
-$gpuCompatibilitySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/gpu_demo.zig')
+$engineSmokeSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/app/engine_smoke.zig')
 $demoApplicationSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/app/demo_application.zig')
 $rendererSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/sdl_gpu_renderer.zig')
 $frameCaptureSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/frame_capture.zig')
@@ -126,7 +199,7 @@ $sdlInputSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/
 $demoActionsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/app/demo_actions.zig')
 $characterIntentSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/character_intent.zig')
 $characterEntityBindingSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/character_entity_binding.zig')
-$f4c4AdoptionTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/f4c4_adoption_tests.zig')
+$sceneBindingBoundaryTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/scene_binding_boundary_tests.zig')
 $fixedStepSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/fixed_step.zig')
 $colliderSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/collider.zig')
 $collisionWorldSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/physics/collision_world.zig')
@@ -232,7 +305,7 @@ $foundationWorldSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoo
 $foundationTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/foundation_playground_tests.zig')
 $artPackSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/art_pack.zig')
 $imageDecodeSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/graphics/image_decode.zig')
-$artAssetDemoSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/art_asset_demo.zig')
+$artPipelineFixtureSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/support/art_pipeline_fixture.zig')
 $artAssetCatalogSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/art_asset_catalog.zig')
 $artPipelineTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/art_pipeline_tests.zig')
 $imageDecodeTestsSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tests/image_decode_tests.zig')
@@ -263,8 +336,8 @@ $anatomyQualitySource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot
 $anatomyQualityReportSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy_quality_report.zig')
 $anatomyEvidenceSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'src/scene/anatomy_evidence.zig')
 $p27cReviewSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/build_p27c_review_package.ps1')
-$p27cArtAuditSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/audit_p27c_art.ps1')
-$p27cArtAuthoringSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/reauthor_p27c_anatomy.ps1')
+$p27cArtAuditSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/audit_anatomy_art.ps1')
+$p27cArtAuthoringSource = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'tools/author_anatomy_art.ps1')
 $buildSources = @(
     Get-Item -LiteralPath (Join-Path $repositoryRoot 'build.zig')
     Get-ChildItem -File -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot 'build') -ErrorAction Stop
@@ -1786,12 +1859,12 @@ if ([regex]::Matches($gpuSource, 'image_decode\.decodePngFile').Count -ne 1) {
     $failed = $true
 }
 foreach ($phrase in @(
-    'p23_mechanical_atlas.png',
-    'p23_energy_atlas.png',
+    'mechanical_atlas.png',
+    'energy_atlas.png',
     'addInstallFileWithDir',
     'demo_application_module.addImport("art_pack", art_pack_module)',
     'demo_application_module.addImport("image_decode", image_decode_module)',
-    'demo_application_module.addImport("art_asset_demo", art_asset_demo_module)',
+    'art_test_module.addImport("art_pipeline_fixture", modules.art_pipeline_fixture_module)',
     'b.step("test-art"'
 )) {
     if (-not $buildSource.Contains($phrase)) {
@@ -1829,7 +1902,7 @@ foreach ($phrase in @(
     '.kind = .environment',
     'renderer_page_offset'
 )) {
-    if (-not ($artAssetCatalogSource + [Environment]::NewLine + $artAssetDemoSource).Contains($phrase)) {
+    if (-not ($artAssetCatalogSource + [Environment]::NewLine + $artPipelineFixtureSource).Contains($phrase)) {
         Write-Error "Prompt 23 focused proof content is missing: '$phrase'." -ErrorAction Continue
         $failed = $true
     }
@@ -1909,9 +1982,9 @@ if ([regex]::IsMatch($presentationPoseSource, 'allocator|SDL_|CreateGPU|Characte
     $failed = $true
 }
 foreach ($phrase in @(
-    'p27c_male_base_anatomy_atlas.png',
-    'p27c_female_base_anatomy_atlas.png',
-    'p27c_anatomy_components_atlas.png',
+    'male_base_anatomy_atlas.png',
+    'female_base_anatomy_atlas.png',
+    'anatomy_components_atlas.png',
     'pub const region_inputs = makeRegionInputs()',
     'pub const binding_inputs = makeBindingInputs()',
     'presentation_view.View',
@@ -1955,9 +2028,9 @@ if ([regex]::IsMatch($characterArtSource, 'FemaleRenderer|MaleRenderer|SDL_Creat
     $failed = $true
 }
 foreach ($phrase in @(
-    'p27c_male_base_anatomy_atlas.png',
-    'p27c_female_base_anatomy_atlas.png',
-    'p27c_anatomy_components_atlas.png',
+    'male_base_anatomy_atlas.png',
+    'female_base_anatomy_atlas.png',
+    'anatomy_components_atlas.png',
     'demo_application_module.addImport("presentation_view", presentation_view_module)',
     'demo_application_module.addImport("character_art", character_art_module)',
     '"test-presentation",'
@@ -1988,9 +2061,9 @@ foreach ($phrase in @(
 }
 
 foreach ($relativePath in @(
-    'assets/art/p25_wardrobe_upper_atlas.png',
-    'assets/art/p25_wardrobe_layers_atlas.png',
-    'assets/art/p25_wardrobe_lower_atlas.png',
+    'assets/art/wardrobe_upper_atlas.png',
+    'assets/art/wardrobe_layers_atlas.png',
+    'assets/art/wardrobe_lower_atlas.png',
     'docs/OUTFIT_REFERENCE_INVENTORY.md',
     'docs/WARDROBE.md',
     'docs/WARDROBE_DECISION_RECORD.md'
@@ -2026,9 +2099,9 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'p25_wardrobe_upper_atlas.png',
-    'p25_wardrobe_layers_atlas.png',
-    'p25_wardrobe_lower_atlas.png',
+    'wardrobe_upper_atlas.png',
+    'wardrobe_layers_atlas.png',
+    'wardrobe_lower_atlas.png',
     'pub const region_count: usize = wardrobe_catalog.visual_count * regions_per_visual',
     'pub const binding_count: usize = region_count',
     'validateCatalog',
@@ -2110,9 +2183,9 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'p25_wardrobe_upper_atlas.png',
-    'p25_wardrobe_layers_atlas.png',
-    'p25_wardrobe_lower_atlas.png',
+    'wardrobe_upper_atlas.png',
+    'wardrobe_layers_atlas.png',
+    'wardrobe_lower_atlas.png',
     'demo_application_module.addImport("wardrobe_demo", wardrobe_demo_module)',
     'test_module.addImport("wardrobe_demo", wardrobe_demo_module)',
     '"test-wardrobe",'
@@ -2134,12 +2207,12 @@ foreach ($relativePath in @(
     'assets/art/p25a_male_base_anatomy_atlas.png',
     'assets/art/p25a_female_base_anatomy_atlas.png',
     'assets/art/p25b_anatomy_components_atlas.png',
-    'assets/art/p27c_male_base_anatomy_atlas.png',
-    'assets/art/p27c_female_base_anatomy_atlas.png',
-    'assets/art/p27c_anatomy_components_atlas.png',
-    'docs/PROMPT27C_DECISION_RECORD.md',
-    'docs/PROMPT25A_DECISION_RECORD.md',
-    'docs/PROMPT25B_DECISION_RECORD.md',
+    'assets/art/male_base_anatomy_atlas.png',
+    'assets/art/female_base_anatomy_atlas.png',
+    'assets/art/anatomy_components_atlas.png',
+    'docs/history/decisions/PROMPT27C_DECISION_RECORD.md',
+    'docs/history/decisions/PROMPT25A_DECISION_RECORD.md',
+    'docs/history/decisions/PROMPT25B_DECISION_RECORD.md',
     'docs/VISUAL_ACCEPTANCE_25A.md'
 )) {
     $path = Join-Path $repositoryRoot $relativePath
@@ -2283,7 +2356,7 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'Prompt 26 art pack contains both complete nearest-sampled original themes',
+    'environment art pack contains both complete nearest-sampled themes',
     'standable surface overlay is an exact collision-authority projection',
     'theme switching preserves collision spawn view outfit clock input and interaction state',
     'environment submission orders terrain then white surfaces then characters and debug',
@@ -2294,7 +2367,7 @@ foreach ($phrase in @(
         $failed = $true
     }
 }
-$prompt26ArtAudit = Join-Path $repositoryRoot 'tools/audit_p26_environment_art.ps1'
+$prompt26ArtAudit = Join-Path $repositoryRoot 'tools/audit_environment_art.ps1'
 if (-not (Test-Path -LiteralPath $prompt26ArtAudit -PathType Leaf)) {
     Write-Error 'Prompt 26 automated environment-art audit is missing.' -ErrorAction Continue
     $failed = $true
@@ -2489,16 +2562,16 @@ foreach ($phrase in @(
     }
 }
 foreach ($relativePath in @(
-    'assets/art/p27c_male_base_anatomy_atlas.png',
-    'assets/art/p27c_female_base_anatomy_atlas.png',
-    'assets/art/p27c_anatomy_components_atlas.png',
-    'docs/PROMPT27C_DECISION_RECORD.md',
+    'assets/art/male_base_anatomy_atlas.png',
+    'assets/art/female_base_anatomy_atlas.png',
+    'assets/art/anatomy_components_atlas.png',
+    'docs/history/decisions/PROMPT27C_DECISION_RECORD.md',
     'src/scene/anatomy_quality.zig',
     'src/scene/anatomy_quality_report.zig',
     'src/scene/anatomy_evidence.zig',
-    'tools/audit_p27c_art.ps1',
+    'tools/audit_anatomy_art.ps1',
     'tools/build_p27c_review_package.ps1',
-    'tools/reauthor_p27c_anatomy.ps1'
+    'tools/author_anatomy_art.ps1'
 )) {
     $path = Join-Path $repositoryRoot $relativePath
     if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
@@ -2581,9 +2654,9 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'p27c_male_base_anatomy_atlas.png',
-    'p27c_female_base_anatomy_atlas.png',
-    'p27c_anatomy_components_atlas.png',
+    'male_base_anatomy_atlas.png',
+    'female_base_anatomy_atlas.png',
+    'anatomy_components_atlas.png',
     'preserved predecessor hashes'
 )) {
     if (-not ($p27cArtAuditSource + [Environment]::NewLine +
@@ -2593,7 +2666,7 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    '"p27c-anatomy-report"',
+    '"anatomy-quality-report"',
     'src/scene/anatomy_quality.zig',
     'src/scene/anatomy_quality_report.zig',
     'src/scene/anatomy_evidence.zig'
@@ -2616,7 +2689,6 @@ $scenarioModuleNames = @(
     'mesh_attachment_demo',
     'foundation_playground',
     'visual_foundation',
-    'art_asset_demo',
     'wardrobe_demo',
     'environment_demo'
 )
@@ -2669,7 +2741,6 @@ $forbiddenDemoAuthority = @(
     @($meshAttachmentDemoSource, 'pub fn initFittedGarmentMesh', 'mesh_attachment_demo'),
     @($meshAttachmentDemoSource, 'pub fn initSleeveMesh', 'mesh_attachment_demo'),
     @($meshAttachmentDemoSource, 'pub fn initCapeMesh', 'mesh_attachment_demo'),
-    @($artAssetDemoSource, 'pub fn definitionInput', 'art_asset_demo'),
     @($foundationSource, 'pub fn worldColliderInputs', 'foundation_playground')
 )
 foreach ($forbiddenAuthority in $forbiddenDemoAuthority) {
@@ -2684,7 +2755,7 @@ $testSources = @(
         ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }
 )
 $combinedTestSource = $testSources -join [Environment]::NewLine
-$legacyFixtureProviderPattern = '(modular|modular_body_demo)\.initDefinition|equipment_demo\.initDefinition|mesh_demo\.init(FittedGarment|Sleeve|Cape)Mesh|art_asset_demo\.definitionInput|foundation\.worldColliderInputs'
+$legacyFixtureProviderPattern = '(modular|modular_body_demo)\.initDefinition|equipment_demo\.initDefinition|mesh_demo\.init(FittedGarment|Sleeve|Cape)Mesh|foundation\.worldColliderInputs'
 if ([regex]::IsMatch($combinedTestSource, $legacyFixtureProviderPattern)) {
     Write-Error 'F4C1 test ownership violation: a test still calls a demo-owned production definition or factory.' -ErrorAction Continue
     $failed = $true
@@ -2767,10 +2838,11 @@ foreach ($phrase in $requiredF4C2ApplicationPhrases) {
     }
 }
 
-if (-not $gpuCompatibilitySource.Contains('pub const GpuDemo = demo_application.DemoApplication') -or
-    $gpuCompatibilitySource.Contains('SDL_GPU') -or
-    $gpuCompatibilitySource.Contains('pub fn runVisible')) {
-    Write-Error 'F4C2 GpuDemo compatibility source must remain a thin alias over DemoApplication.' -ErrorAction Continue
+if (-not $engineSmokeSource.Contains('renderer_module.Renderer.init') -or
+    -not $engineSmokeSource.Contains('renderer.runSmoke()') -or
+    $engineSmokeSource.Contains('demo_application') -or
+    $engineSmokeSource.Contains('gpu_demo')) {
+    Write-Error 'F4E GPU-smoke route must use the production renderer without demo compatibility ownership.' -ErrorAction Continue
     $failed = $true
 }
 
@@ -2876,7 +2948,7 @@ foreach ($phrase in @(
     }
 }
 foreach ($phrase in @(
-    'test-f4c4-adoption',
+    'test-scene-binding-boundaries',
     'src/app/demo_actions.zig',
     'src/physics/character_intent.zig',
     'src/scene/character_entity_binding.zig',
@@ -2909,8 +2981,8 @@ foreach ($productionFile in $productionZigFiles) {
     }
 }
 if ([regex]::IsMatch($sceneCoreRootSource + [Environment]::NewLine + $runtimeSceneSource, '@import\s*\(\s*"character"') -or
-    -not $f4c4AdoptionTestsSource.Contains('bounded binding contains legacy identity') -or
-    -not $f4c4AdoptionTestsSource.Contains('integrated route uses F transform lifecycle snapshot')) {
+    -not $sceneBindingBoundaryTestsSource.Contains('bounded binding contains legacy identity') -or
+    -not $sceneBindingBoundaryTestsSource.Contains('integrated route uses F transform lifecycle snapshot')) {
     Write-Error 'F4C4 identity direction or focused binding/lifecycle coverage is incomplete.' -ErrorAction Continue
     $failed = $true
 }

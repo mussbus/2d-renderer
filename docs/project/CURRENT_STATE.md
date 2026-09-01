@@ -1,13 +1,13 @@
 # Current State
 
-Current F4D implementation basis: clean, synchronized `master` at
-`c648697aeaf75d03823aa7e9f874898464a79679`, verified on 2026-08-31 before
-the local F4D independent-engine composition proof began.
+Current F4E implementation basis: clean, synchronized `master` at
+`ff65ac7219deca6402da7b4c06fec80c81268781`, verified on 2026-08-31 before
+repository canonicalization began. F4D is owner-approved. F4E is implemented
+locally and awaits owner review; F4 itself is not yet accepted.
 
-The detailed production-system inventory below retains the visual/runtime
-status accumulated through the earlier Prompt-era roadmap. This administrative
-update changes Foundation and F4 authority status only; it does not grant new
-visual acceptance or revise historical evidence claims.
+The production-system inventory below distinguishes current engine authority
+from protected historical visual lineage. Historical names identify accepted
+provenance only and do not define current production architecture.
 
 ## Foundation and current architecture track
 
@@ -26,13 +26,14 @@ visual acceptance or revise historical evidence claims.
 | F4C3 | **OWNER-APPROVED** |
 | F4C4 | **OWNER-APPROVED** |
 | F4C5 | **OWNER-APPROVED** |
-| F4D | **IMPLEMENTED / AWAITING OWNER REVIEW** |
-| F4E | **NOT BEGUN** |
-| F4 overall | In progress; **not accepted** |
+| F4D | **OWNER-APPROVED** |
+| F4E | **IMPLEMENTED / AWAITING OWNER REVIEW** |
+| F4 overall | **NOT YET ACCEPTED** |
 
 Current track: **F4 — Production Architecture Hardening**.
 
-Current immediate step: **F4D owner review**.
+Current immediate step: **final independent read-only F4 acceptance audit**, but
+only after owner approval of this F4E candidate.
 
 F4B1 removed only the F4A-OD-014 low-risk hygiene set and established the
 [repository retention policy](REPOSITORY_RETENTION.md). F4B2 retired ten
@@ -51,7 +52,7 @@ F4C2 moves reusable SDL3/D3D12 device, resource, upload, queue execution, and
 generic readback ownership into `src/graphics/sdl_gpu_renderer.zig`. The
 surviving executable is composed by `src/app/demo_application.zig`; copied
 readback data crosses `frame_capture.CapturedFrame` into the evidence writer.
-The former `GpuDemo` source is now a four-line compatibility alias only. See
+The renderer remains independent of application and evidence ownership. See
 the [F4C2 implementation record](../implementation/f4c2_renderer_application_evidence_boundaries.md).
 F4C3 keeps `CharacterInstance` as a coordinator while placing all semantic
 mutable state behind private inline storage and command/read surfaces. The
@@ -82,7 +83,12 @@ importing `DemoApplication`, `GpuDemo`, scenario modules, or evidence
 orchestration. Independent CPU tests also cover F-to-character binding and
 production interaction lifecycle. See the
 [F4D implementation record](../implementation/f4d_independent_engine_composition.md).
-F4E has not begun and requires separate authorization.
+F4E canonicalizes active atlas and executable names, removes the obsolete
+`GpuDemo` alias, routes physical GPU smoke directly through `engine_smoke`,
+retires the redundant `art_assets` scenario while preserving its integration
+fixture, establishes active/history asset manifests, and moves prompt-era
+records under the explicitly non-normative `docs/history` boundary. See the
+[F4E implementation record](../implementation/f4e_repository_canonicalization.md).
 
 Major post-F4 parallel feature fan-out remains blocked until final F4
 acceptance. See the

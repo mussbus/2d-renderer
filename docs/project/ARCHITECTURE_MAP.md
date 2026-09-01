@@ -1,17 +1,14 @@
 # Architecture Map
 
-> **Current authority note (2026-08-31):** F1, F2A, F2B, F2C and F3 are
-> owner-approved. F4A is owner-approved, and F4 production-architecture
-> hardening is the current track. The composition map below describes the
-> existing demo-driven runtime audited by F4A; it is not the accepted post-F4
-> target architecture. F4B1, F4B2, F4C1, F4C2, F4C3, and F4C4 are
-> owner-approved. F4C5 is owner-approved. F4D adds a second independent
-> RuntimeScene + production-renderer application and awaits owner review. See
-> the [F4D record](../implementation/f4d_independent_engine_composition.md).
+> **Current authority note (2026-08-31):** F1-F3 and F4A-F4D are
+> owner-approved. F4E is implemented and awaits owner review; F4 overall is not
+> yet accepted. The map below describes the current post-F4D production
+> architecture. Historical prompt/milestone records under `docs/history` are
+> non-normative.
 
 This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
-modules and their authority boundaries through Prompt 27.
+modules and their current authority boundaries.
 
 ## Integrated production flow
 
@@ -90,7 +87,7 @@ collider-data authority.
 | Prompt 27B D3D12 readback review | [`tools/build_p27b_review_package.ps1`](../../tools/build_p27b_review_package.ps1) |
 | Prompt 27C anatomy-quality contracts and report | [`src/scene/anatomy_quality.zig`](../../src/scene/anatomy_quality.zig), [`src/scene/anatomy_quality_report.zig`](../../src/scene/anatomy_quality_report.zig) |
 | Prompt 27C state-conditioned D3D12 evidence | [`src/scene/anatomy_evidence.zig`](../../src/scene/anatomy_evidence.zig), [`tools/build_p27c_review_package.ps1`](../../tools/build_p27c_review_package.ps1) |
-| Prompt 27C deterministic art reauthoring and audit | [`tools/reauthor_p27c_anatomy.ps1`](../../tools/reauthor_p27c_anatomy.ps1), [`tools/audit_p27c_art.ps1`](../../tools/audit_p27c_art.ps1) |
+| Prompt 27C deterministic art reauthoring and audit | [`tools/author_anatomy_art.ps1`](../../tools/author_anatomy_art.ps1), [`tools/audit_anatomy_art.ps1`](../../tools/audit_anatomy_art.ps1) |
 | VF-01 truth snapshot, overlay categories, schema, bundle finalization, and PNG writer | [`src/debug/visual_truth.zig`](../../src/debug/visual_truth.zig) |
 | VF-01 F1/F4 scene orchestration | [`src/scene/visual_foundation.zig`](../../src/scene/visual_foundation.zig) |
 | Application mode routing, scenario lifetime, and capture scheduling | [`src/app/demo_application.zig`](../../src/app/demo_application.zig) |
@@ -100,7 +97,7 @@ collider-data authority.
 | SDL window/device/resource lifetime, queue execution, upload, and generic D3D12 readback | [`src/graphics/sdl_gpu_renderer.zig`](../../src/graphics/sdl_gpu_renderer.zig) |
 | Copied frame result contract | [`src/graphics/frame_capture.zig`](../../src/graphics/frame_capture.zig) |
 | Historical PPM/PNG evidence output | [`src/evidence/capture_writer.zig`](../../src/evidence/capture_writer.zig) |
-| Legacy `GpuDemo` source compatibility | [`src/graphics/gpu_demo.zig`](../../src/graphics/gpu_demo.zig), alias only |
+| GPU smoke ownership | [`src/app/engine_smoke.zig`](../../src/app/engine_smoke.zig), direct production-renderer client |
 | Physical platform input | [`src/platform/input.zig`](../../src/platform/input.zig), [`src/platform/sdl_input.zig`](../../src/platform/sdl_input.zig) |
 | Application/demo action mapping | [`src/app/demo_actions.zig`](../../src/app/demo_actions.zig) |
 | Character movement/interaction intent value | [`src/physics/character_intent.zig`](../../src/physics/character_intent.zig) |

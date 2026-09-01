@@ -16,7 +16,7 @@ pub fn register(options: Options) Registration {
     const modules = options.modules;
 
     const demo = b.addExecutable(.{
-        .name = "skeletal_gpu_demo",
+        .name = "engine_sandbox",
         .root_module = modules.demo_entry_module,
     });
     b.installArtifact(demo);
@@ -29,7 +29,7 @@ pub fn register(options: Options) Registration {
 
     const installed_demo = b.getInstallPath(.bin, demo.out_filename);
     const run_demo = b.addSystemCommand(&.{installed_demo});
-    run_demo.setName("run installed skeletal_gpu_demo");
+    run_demo.setName("run installed engine sandbox");
     run_demo.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_demo.addArgs(args);
     const run_step = b.step(
@@ -38,7 +38,8 @@ pub fn register(options: Options) Registration {
     );
     run_step.dependOn(&run_demo.step);
 
-    const gpu_smoke_command = b.addSystemCommand(&.{ installed_demo, "--gpu-smoke" });
+    const installed_engine_smoke = b.getInstallPath(.bin, engine_smoke.out_filename);
+    const gpu_smoke_command = b.addSystemCommand(&.{ installed_engine_smoke, "--gpu-smoke" });
     gpu_smoke_command.setName("run D3D12/DXIL draw and readback smoke test");
     gpu_smoke_command.step.dependOn(b.getInstallStep());
     const gpu_smoke_step = b.step(
@@ -53,7 +54,6 @@ pub fn register(options: Options) Registration {
     );
     engine_smoke_step.dependOn(&engine_smoke.step);
 
-    const installed_engine_smoke = b.getInstallPath(.bin, engine_smoke.out_filename);
     const run_engine_smoke = b.addSystemCommand(&.{installed_engine_smoke});
     run_engine_smoke.setName("run independent D3D12/DXIL engine composition proof");
     run_engine_smoke.step.dependOn(b.getInstallStep());

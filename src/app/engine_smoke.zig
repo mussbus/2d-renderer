@@ -1,11 +1,19 @@
 const std = @import("std");
 const client_module = @import("engine_smoke_client");
 const renderer_module = @import("sdl_gpu_renderer");
+const fault_injection = @import("fault_injection");
 
 pub const proof_frame_count: u32 = 6;
 
 pub fn main(init: std.process.Init) !void {
-    _ = init;
+    const arguments = try init.minimal.args.toSlice(init.arena.allocator());
+    if (arguments.len > 1) {
+        if (arguments.len == 2 and std.mem.eql(u8, arguments[1], "--gpu-smoke")) {
+            try runGpuSmoke(init.io);
+            return;
+        }
+        return error.UnknownArgument;
+    }
     const allocator = std.heap.page_allocator;
 
     var client = try client_module.Client.init(allocator);
@@ -127,6 +135,49 @@ pub fn main(init: std.process.Init) !void {
             final_resources.fence_releases,
         },
     );
+}
+
+fn runGpuSmoke(io: std.Io) !void {
+    for (fault_injection.initialization_stages) |stage| {
+        var attempt = renderer_module.Renderer.init(
+            std.heap.page_allocator,
+            true,
+            .{ .fail_after = stage },
+        ) catch |err| {
+            if (err != error.InjectedInitializationFailure) {
+                std.log.err(
+                    "renderer initialization cleanup check failed before {s}: {s}",
+                    .{ @tagName(stage), @errorName(err) },
+                );
+                return err;
+            }
+            std.log.info(
+                "renderer initialization cleanup check passed after {s}",
+                .{@tagName(stage)},
+            );
+            continue;
+        };
+        attempt.deinit();
+        return error.FaultInjectionDidNotTrigger;
+    }
+
+    _ = io;
+    var renderer = try renderer_module.Renderer.init(
+        std.heap.page_allocator,
+        true,
+        null,
+    );
+    var renderer_live = true;
+    defer if (renderer_live) renderer.deinit();
+    try renderer.runRuntimeFaultChecks();
+    try renderer.runSmoke();
+    const final_resources = renderer.deinitWithMetrics();
+    renderer_live = false;
+    if (final_resources.gpu_resource_creations != final_resources.gpu_resource_releases or
+        final_resources.fence_acquisitions != final_resources.fence_releases)
+    {
+        return error.RendererResourceLeak;
+    }
 }
 
 fn countPixelsDifferentFromFirst(rgba: []const u8) usize {

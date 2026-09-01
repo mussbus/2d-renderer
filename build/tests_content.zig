@@ -19,6 +19,15 @@ pub const Registration = struct {
     run_visual_foundation: *std.Build.Step.Run,
 };
 
+fn addContentTest(b: *std.Build, options: std.Build.TestOptions) *std.Build.Step.Compile {
+    var configured = options;
+    configured.test_runner = .{
+        .path = b.path(".deps/zig-0.16.0/lib/compiler/test_runner.zig"),
+        .mode = .simple,
+    };
+    return b.addTest(configured);
+}
+
 pub fn register(options: Options) Registration {
     const b = options.b;
     const target = options.target;
@@ -32,9 +41,9 @@ pub fn register(options: Options) Registration {
     });
     art_test_module.addImport("art_pack", modules.art_pack_module);
     art_test_module.addImport("art_asset_catalog", modules.art_asset_catalog_module);
-    art_test_module.addImport("art_asset_demo", modules.art_asset_demo_module);
+    art_test_module.addImport("art_pipeline_fixture", modules.art_pipeline_fixture_module);
     art_test_module.addImport("render_queue", modules.render_queue_module);
-    const art_tests = b.addTest(.{ .name = "art-pipeline-tests", .root_module = art_test_module });
+    const art_tests = addContentTest(b, .{ .name = "art-pipeline-tests", .root_module = art_test_module });
     const run_art_tests = b.addRunArtifact(art_tests);
     const image_decode_test_module = b.createModule(.{
         .root_source_file = b.path("tests/image_decode_tests.zig"),
@@ -42,9 +51,9 @@ pub fn register(options: Options) Registration {
         .optimize = optimize,
     });
     image_decode_test_module.addImport("image_decode", modules.image_decode_module);
-    const image_decode_tests = b.addTest(.{ .name = "image-decode-tests", .root_module = image_decode_test_module });
+    const image_decode_tests = addContentTest(b, .{ .name = "image-decode-tests", .root_module = image_decode_test_module });
     const run_image_decode_tests = b.addRunArtifact(image_decode_tests);
-    const art_test_step = b.step("test-art", "Run the Prompt 23 art-definition, PNG-decoder, and renderer-routing tests");
+    const art_test_step = b.step("test-art", "Run art-definition, PNG-decoder, and renderer-routing tests");
     art_test_step.dependOn(&run_art_tests.step);
     art_test_step.dependOn(&run_image_decode_tests.step);
     const presentation_test_module = b.createModule(.{
@@ -62,14 +71,14 @@ pub fn register(options: Options) Registration {
     presentation_test_module.addImport("modular_humanoid", modules.modular_humanoid_module);
     presentation_test_module.addImport("handshake_ik_demo", modules.handshake_ik_demo_module);
     presentation_test_module.addImport("render_queue", modules.render_queue_module);
-    const presentation_tests = b.addTest(.{
+    const presentation_tests = addContentTest(b, .{
         .name = "character-presentation-tests",
         .root_module = presentation_test_module,
     });
     const run_presentation_tests = b.addRunArtifact(presentation_tests);
     const presentation_test_step = b.step(
         "test-presentation",
-        "Run the Prompt 24 view-policy, character-art, interaction, and steady-state tests",
+        "Run view-policy, character-art, interaction, and steady-state tests",
     );
     presentation_test_step.dependOn(&run_presentation_tests.step);
     const component_graph_test_module = b.createModule(.{
@@ -85,7 +94,7 @@ pub fn register(options: Options) Registration {
     component_graph_test_module.addImport("character", modules.character_module);
     component_graph_test_module.addImport("modular_body_demo", modules.modular_body_demo_module);
     component_graph_test_module.addImport("presentation_pose", modules.presentation_pose_module);
-    const component_graph_tests = b.addTest(.{
+    const component_graph_tests = addContentTest(b, .{
         .name = "component-graph-tests",
         .root_module = component_graph_test_module,
     });
@@ -116,14 +125,14 @@ pub fn register(options: Options) Registration {
     wardrobe_test_module.addImport("render_queue", modules.render_queue_module);
     wardrobe_test_module.addImport("character_art", modules.character_art_module);
     wardrobe_test_module.addImport("visual_geometry", modules.visual_geometry_module);
-    const wardrobe_tests = b.addTest(.{
+    const wardrobe_tests = addContentTest(b, .{
         .name = "wardrobe-tests",
         .root_module = wardrobe_test_module,
     });
     const run_wardrobe_tests = b.addRunArtifact(wardrobe_tests);
     const wardrobe_test_step = b.step(
         "test-wardrobe",
-        "Run Prompt 25 wardrobe catalog, preset, view-binding, and steady-state tests",
+        "Run wardrobe catalog, preset, view-binding, and steady-state tests",
     );
     wardrobe_test_step.dependOn(&run_wardrobe_tests.step);
     const visual_registration_test_module = b.createModule(.{
@@ -135,7 +144,7 @@ pub fn register(options: Options) Registration {
     visual_registration_test_module.addImport("sprite_batch", modules.sprite_batch_module);
     visual_registration_test_module.addImport("visual_geometry", modules.visual_geometry_module);
     visual_registration_test_module.addImport("visual_registration", modules.visual_registration_module);
-    const visual_registration_tests = b.addTest(.{
+    const visual_registration_tests = addContentTest(b, .{
         .name = "visual-registration-tests",
         .root_module = visual_registration_test_module,
     });
@@ -162,14 +171,14 @@ pub fn register(options: Options) Registration {
     visual_geometry_test_module.addImport("visual_geometry", modules.visual_geometry_module);
     visual_geometry_test_module.addImport("visual_geometry_audit", modules.visual_geometry_audit_module);
     visual_geometry_test_module.addImport("anatomy_quality", modules.anatomy_quality_module);
-    const visual_geometry_tests = b.addTest(.{
+    const visual_geometry_tests = addContentTest(b, .{
         .name = "visual-geometry-tests",
         .root_module = visual_geometry_test_module,
     });
     const run_visual_geometry_tests = b.addRunArtifact(visual_geometry_tests);
     const visual_geometry_test_step = b.step(
         "test-visual-geometry",
-        "Run Prompt 25D semantic landmark, alpha, fit, coverage, pose, and production acceptance",
+        "Run visual-geometry landmark, alpha, fit, coverage, pose, and production acceptance",
     );
     visual_geometry_test_step.dependOn(&run_visual_geometry_tests.step);
     const foundation_test_module = b.createModule(.{
@@ -184,9 +193,9 @@ pub fn register(options: Options) Registration {
     foundation_test_module.addImport("camera2d", modules.camera2d_module);
     foundation_test_module.addImport("foundation_playground", modules.foundation_playground_module);
     foundation_test_module.addImport("foundation_world", modules.foundation_world_module);
-    const foundation_tests = b.addTest(.{ .name = "foundation-playground-tests", .root_module = foundation_test_module });
+    const foundation_tests = addContentTest(b, .{ .name = "foundation-playground-tests", .root_module = foundation_test_module });
     const run_foundation_tests = b.addRunArtifact(foundation_tests);
-    const foundation_test_step = b.step("test-foundation", "Run the Prompt 22 deterministic foundation-playground tests");
+    const foundation_test_step = b.step("test-foundation", "Run deterministic foundation-playground tests");
     foundation_test_step.dependOn(&run_foundation_tests.step);
     const environment_test_module = b.createModule(.{
         .root_source_file = b.path("tests/environment_tests.zig"),
@@ -204,7 +213,7 @@ pub fn register(options: Options) Registration {
     environment_test_module.addImport("environment_art", modules.environment_art_module);
     environment_test_module.addImport("environment_theme", modules.environment_theme_module);
     environment_test_module.addImport("environment_demo", modules.environment_demo_module);
-    const environment_tests = b.addTest(.{ .name = "environment-tests", .root_module = environment_test_module });
+    const environment_tests = addContentTest(b, .{ .name = "environment-tests", .root_module = environment_test_module });
     const run_environment_tests = b.addRunArtifact(environment_tests);
     const environment_art_audit = b.addSystemCommand(&.{
         "pwsh",
@@ -214,11 +223,11 @@ pub fn register(options: Options) Registration {
         "Bypass",
         "-File",
     });
-    environment_art_audit.addFileArg(b.path("tools/audit_p26_environment_art.ps1"));
-    environment_art_audit.setName("audit Prompt 26 environment atlas geometry");
+    environment_art_audit.addFileArg(b.path("tools/audit_environment_art.ps1"));
+    environment_art_audit.setName("audit current environment atlas geometry");
     const environment_test_step = b.step(
         "test-environment",
-        "Run Prompt 26 theme, hot-swap, collision-surface, ordering, and invariance tests",
+        "Run environment theme, hot-swap, collision-surface, ordering, and invariance tests",
     );
     environment_test_step.dependOn(&run_environment_tests.step);
     environment_test_step.dependOn(&environment_art_audit.step);
@@ -243,7 +252,7 @@ pub fn register(options: Options) Registration {
     visual_foundation_test_module.addImport("debug_draw", modules.debug_draw_module);
     visual_foundation_test_module.addImport("anatomy", modules.anatomy_module);
     visual_foundation_test_module.addImport("character_art", modules.character_art_module);
-    const visual_foundation_tests = b.addTest(.{
+    const visual_foundation_tests = addContentTest(b, .{
         .name = "visual-foundation-tests",
         .root_module = visual_foundation_test_module,
         .filters = if (b.option(
@@ -255,10 +264,10 @@ pub fn register(options: Options) Registration {
     const run_visual_foundation_tests = b.addRunArtifact(visual_foundation_tests);
     const visual_foundation_test_step = b.step(
         "test-visual-foundation",
-        "Run Prompt 27 real-art integrated foundation and interaction-presentation tests",
+        "Run integrated foundation and interaction-presentation tests",
     );
     visual_foundation_test_step.dependOn(&run_visual_foundation_tests.step);
-    const canonical_model_core_tests = b.addTest(.{
+    const canonical_model_core_tests = addContentTest(b, .{
         .name = "canonical-model-core-tests",
         .root_module = modules.canonical_model_core_test_module,
     });
@@ -269,7 +278,7 @@ pub fn register(options: Options) Registration {
     );
     canonical_model_core_test_step.dependOn(&run_canonical_model_core_tests.step);
 
-    const canonical_model_phase_c_tests = b.addTest(.{
+    const canonical_model_phase_c_tests = addContentTest(b, .{
         .name = "canonical-model-phase-c-tests",
         .root_module = modules.canonical_model_phase_c_test_module,
     });
@@ -280,7 +289,7 @@ pub fn register(options: Options) Registration {
     );
     canonical_model_phase_c_test_step.dependOn(&run_canonical_model_phase_c_tests.step);
 
-    const canonical_model_phase_de_tests = b.addTest(.{
+    const canonical_model_phase_de_tests = addContentTest(b, .{
         .name = "canonical-model-phase-de-tests",
         .root_module = modules.canonical_model_phase_de_test_module,
     });
@@ -291,7 +300,7 @@ pub fn register(options: Options) Registration {
     );
     canonical_model_phase_de_test_step.dependOn(&run_canonical_model_phase_de_tests.step);
 
-    const canonical_model_phase_f_tests = b.addTest(.{
+    const canonical_model_phase_f_tests = addContentTest(b, .{
         .name = "canonical-model-phase-f-tests",
         .root_module = modules.canonical_model_phase_f_test_module,
     });
@@ -302,7 +311,7 @@ pub fn register(options: Options) Registration {
     );
     canonical_model_phase_f_test_step.dependOn(&run_canonical_model_phase_f_tests.step);
 
-    const canonical_human_identity_tests = b.addTest(.{
+    const canonical_human_identity_tests = addContentTest(b, .{
         .name = "canonical-human-identity-tests",
         .root_module = modules.canonical_human_identity_test_module,
     });
@@ -315,7 +324,7 @@ pub fn register(options: Options) Registration {
     canonical_human_identity_test_step.dependOn(&run_canonical_model_phase_de_tests.step);
     canonical_human_identity_test_step.dependOn(&run_canonical_model_phase_f_tests.step);
 
-    const canonical_human_rig_tests = b.addTest(.{
+    const canonical_human_rig_tests = addContentTest(b, .{
         .name = "canonical-human-rig-tests",
         .root_module = modules.canonical_human_rig_test_module,
     });
@@ -327,7 +336,7 @@ pub fn register(options: Options) Registration {
     canonical_human_rig_test_step.dependOn(&run_canonical_human_rig_tests.step);
     canonical_human_rig_test_step.dependOn(canonical_human_identity_test_step);
 
-    const canonical_human_joint_control_tests = b.addTest(.{
+    const canonical_human_joint_control_tests = addContentTest(b, .{
         .name = "canonical-human-joint-control-tests",
         .root_module = modules.canonical_human_joint_control_test_module,
     });
@@ -339,7 +348,7 @@ pub fn register(options: Options) Registration {
     canonical_human_joint_control_test_step.dependOn(&run_canonical_human_joint_control_tests.step);
     canonical_human_joint_control_test_step.dependOn(canonical_human_rig_test_step);
 
-    const canonical_human_structural_tests = b.addTest(.{
+    const canonical_human_structural_tests = addContentTest(b, .{
         .name = "canonical-human-structural-tests",
         .root_module = modules.canonical_human_structural_test_module,
     });
@@ -351,7 +360,7 @@ pub fn register(options: Options) Registration {
     canonical_human_structural_test_step.dependOn(&run_canonical_human_structural_tests.step);
     canonical_human_structural_test_step.dependOn(canonical_human_joint_control_test_step);
 
-    const canonical_human_base_tests = b.addTest(.{
+    const canonical_human_base_tests = addContentTest(b, .{
         .name = "canonical-human-base-acceptance-tests",
         .root_module = modules.canonical_human_base_test_module,
     });
@@ -363,7 +372,7 @@ pub fn register(options: Options) Registration {
     canonical_human_base_test_step.dependOn(&run_canonical_human_base_tests.step);
     canonical_human_base_test_step.dependOn(canonical_human_structural_test_step);
 
-    const canonical_geometry_tests = b.addTest(.{
+    const canonical_geometry_tests = addContentTest(b, .{
         .name = "canonical-geometry-foundation-tests",
         .root_module = modules.canonical_geometry_test_module,
     });
@@ -374,7 +383,7 @@ pub fn register(options: Options) Registration {
     );
     canonical_geometry_test_step.dependOn(&run_canonical_geometry_tests.step);
 
-    const canonical_human_geometry_scaffold_tests = b.addTest(.{
+    const canonical_human_geometry_scaffold_tests = addContentTest(b, .{
         .name = "canonical-human-geometry-scaffold-tests",
         .root_module = modules.canonical_human_geometry_scaffold_test_module,
     });
@@ -386,7 +395,7 @@ pub fn register(options: Options) Registration {
     canonical_human_geometry_scaffold_test_step.dependOn(&run_canonical_human_geometry_scaffold_tests.step);
     canonical_human_geometry_scaffold_test_step.dependOn(canonical_geometry_test_step);
 
-    const canonical_human_geometry_refinement_tests = b.addTest(.{
+    const canonical_human_geometry_refinement_tests = addContentTest(b, .{
         .name = "canonical-human-geometry-refinement-tests",
         .root_module = modules.canonical_human_geometry_refinement_test_module,
     });
@@ -398,7 +407,7 @@ pub fn register(options: Options) Registration {
     canonical_human_geometry_refinement_test_step.dependOn(&run_canonical_human_geometry_refinement_tests.step);
     canonical_human_geometry_refinement_test_step.dependOn(canonical_human_geometry_scaffold_test_step);
 
-    const canonical_human_geometry_adoption_tests = b.addTest(.{
+    const canonical_human_geometry_adoption_tests = addContentTest(b, .{
         .name = "canonical-human-geometry-adoption-tests",
         .root_module = modules.canonical_human_geometry_adoption_test_module,
     });
@@ -410,7 +419,7 @@ pub fn register(options: Options) Registration {
     canonical_human_geometry_adoption_test_step.dependOn(&run_canonical_human_geometry_adoption_tests.step);
     canonical_human_geometry_adoption_test_step.dependOn(canonical_human_geometry_refinement_test_step);
 
-    const canonical_human_geometry_r3_tests = b.addTest(.{
+    const canonical_human_geometry_r3_tests = addContentTest(b, .{
         .name = "canonical-human-geometry-r3-tests",
         .root_module = modules.canonical_human_geometry_r3_test_module,
     });
@@ -422,7 +431,7 @@ pub fn register(options: Options) Registration {
     canonical_human_geometry_r3_test_step.dependOn(&run_canonical_human_geometry_r3_tests.step);
     canonical_human_geometry_r3_test_step.dependOn(canonical_human_geometry_adoption_test_step);
 
-    const canonical_human_geometry_r4_tests = b.addTest(.{
+    const canonical_human_geometry_r4_tests = addContentTest(b, .{
         .name = "canonical-human-geometry-r4-tests",
         .root_module = modules.canonical_human_geometry_r4_test_module,
     });
@@ -434,7 +443,7 @@ pub fn register(options: Options) Registration {
     canonical_human_geometry_r4_test_step.dependOn(&run_canonical_human_geometry_r4_tests.step);
     canonical_human_geometry_r4_test_step.dependOn(canonical_human_geometry_r3_test_step);
 
-    const canonical_human_geometry_full_tests = b.addTest(.{
+    const canonical_human_geometry_full_tests = addContentTest(b, .{
         .name = "canonical-human-geometry-full-tests",
         .root_module = modules.canonical_human_geometry_full_test_module,
     });

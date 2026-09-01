@@ -802,7 +802,7 @@ $femaleSkin = [System.Drawing.Color]::FromArgb(255, 210, 104, 58)
 
 Save-Copy `
     'assets/art/p25a_male_base_anatomy_atlas.png' `
-    'assets/art/p27c_male_base_anatomy_atlas.png' `
+    'assets/art/male_base_anatomy_atlas.png' `
     {
         param($bitmap)
         Fill-Front-Shoulders $bitmap 248 430 150 182 $maleSkin
@@ -813,7 +813,7 @@ Save-Copy `
 
 Save-Copy `
     'assets/art/p25a_female_base_anatomy_atlas.png' `
-    'assets/art/p27c_female_base_anatomy_atlas.png' `
+    'assets/art/female_base_anatomy_atlas.png' `
     {
         param($bitmap)
         Fill-Front-Shoulders $bitmap 224 446 124 182 $femaleSkin
@@ -826,7 +826,7 @@ Save-Copy `
 # straight-alpha copy correction is intentionally restricted to torso pages.
 Save-SurfaceCopy `
     'assets/art/p25b_anatomy_components_atlas.png' `
-    'assets/art/p27c_anatomy_components_atlas.png' `
+    'assets/art/anatomy_components_atlas.png' `
     {
         param($bitmap)
         $styles = @(
@@ -965,9 +965,9 @@ Save-SurfaceCopy `
     }
 
 Get-FileHash -Algorithm SHA256 @(
-    (Join-Path $RepositoryRoot 'assets/art/p27c_male_base_anatomy_atlas.png'),
-    (Join-Path $RepositoryRoot 'assets/art/p27c_female_base_anatomy_atlas.png'),
-    (Join-Path $RepositoryRoot 'assets/art/p27c_anatomy_components_atlas.png')
+    (Join-Path $RepositoryRoot 'assets/art/male_base_anatomy_atlas.png'),
+    (Join-Path $RepositoryRoot 'assets/art/female_base_anatomy_atlas.png'),
+    (Join-Path $RepositoryRoot 'assets/art/anatomy_components_atlas.png')
 ) | ForEach-Object {
     '{0}  {1}' -f $_.Hash.ToLowerInvariant(), (Split-Path -Leaf $_.Path)
 }

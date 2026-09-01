@@ -15,7 +15,7 @@ test "WIC decodes production PNG alpha and classifies missing corrupt and unsupp
     var metrics = image_decode.Metrics{};
     var decoded = try image_decode.decodePngFile(
         std.testing.allocator,
-        "assets/art/p23_mechanical_atlas.png",
+        "assets/art/mechanical_atlas.png",
         &metrics,
     );
     defer decoded.deinit();
@@ -52,7 +52,7 @@ test "PNG decode allocation failure leaves the fixed allocator unchanged" {
     var fixed = std.heap.FixedBufferAllocator.init(&bytes);
     try std.testing.expectError(
         error.AllocationFailure,
-        image_decode.decodePngFile(fixed.allocator(), "assets/art/p23_energy_atlas.png", null),
+        image_decode.decodePngFile(fixed.allocator(), "assets/art/energy_atlas.png", null),
     );
     try std.testing.expectEqual(@as(usize, 0), fixed.end_index);
 }

@@ -30,6 +30,6 @@ Owner aesthetic acceptance remains `[PENDING OWNER REVIEW]`.
 
 ## Maintenance records
 
-- [Engineering decision record](../PROMPT27C_R1_DECISION_RECORD.md)
-- [Testing and evidence](../TESTING.md#prompt-27c-r1-corrective-torso-and-presence-policy)
+- [Engineering decision record](../decisions/PROMPT27C_R1_DECISION_RECORD.md)
+- [Testing and evidence](../../TESTING.md#prompt-27c-r1-corrective-torso-and-presence-policy)
 - [Implementation report](../reports/prompt-implementation-reports/exact/027C-R1-implementation-report.md)

@@ -6,9 +6,9 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $pages = @(
-    @{ path = 'assets/art/p27c_male_base_anatomy_atlas.png'; width = 1600; height = 983 },
-    @{ path = 'assets/art/p27c_female_base_anatomy_atlas.png'; width = 1599; height = 984 },
-    @{ path = 'assets/art/p27c_anatomy_components_atlas.png'; width = 1792; height = 1024 }
+    @{ path = 'assets/art/male_base_anatomy_atlas.png'; width = 1600; height = 983 },
+    @{ path = 'assets/art/female_base_anatomy_atlas.png'; width = 1599; height = 984 },
+    @{ path = 'assets/art/anatomy_components_atlas.png'; width = 1792; height = 1024 }
 )
 foreach ($page in $pages) {
     $path = Join-Path $RepositoryRoot $page.path
@@ -41,7 +41,7 @@ foreach ($page in $pages) {
     }
 }
 
-$componentPath = Join-Path $RepositoryRoot 'assets/art/p27c_anatomy_components_atlas.png'
+$componentPath = Join-Path $RepositoryRoot 'assets/art/anatomy_components_atlas.png'
 $component = [System.Drawing.Bitmap]::new($componentPath)
 try {
     $regions = @(

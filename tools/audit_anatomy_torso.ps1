@@ -355,9 +355,9 @@ function Test-BilinearMatteFixture {
 $styles = @(
     [pscustomobject]@{
         style = 'male'
-        current = 'assets/art/p27c_male_base_anatomy_atlas.png'
+        current = 'assets/art/male_base_anatomy_atlas.png'
         predecessor = 'assets/art/p25a_male_base_anatomy_atlas.png'
-        rejected = 'assets/art/source/p27c_rejected/prompt27c_owner_rejected_male_atlas.png'
+        rejected = 'assets/history/art/rejected/owner_rejected_male_atlas.png'
         rejected_sha256 = 'fffe01c6f525801881d5c9ac7700ce395aa855bf7a1fa912fe4e752a1a3ba1f7'
         regions = @(
             [pscustomobject]@{
@@ -374,9 +374,9 @@ $styles = @(
     },
     [pscustomobject]@{
         style = 'female'
-        current = 'assets/art/p27c_female_base_anatomy_atlas.png'
+        current = 'assets/art/female_base_anatomy_atlas.png'
         predecessor = 'assets/art/p25a_female_base_anatomy_atlas.png'
-        rejected = 'assets/art/source/p27c_rejected/prompt27c_owner_rejected_female_atlas.png'
+        rejected = 'assets/history/art/rejected/owner_rejected_female_atlas.png'
         rejected_sha256 = 'c31aba20b4cff0439abe71f22c9d61a91308a7f02096518c230f9c7d046b3af2'
         regions = @(
             [pscustomobject]@{

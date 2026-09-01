@@ -26,7 +26,6 @@ const foundation_coherence = @import("foundation_coherence");
 const acceptance_hud = @import("acceptance_hud");
 const visual_foundation = @import("visual_foundation");
 const art_pack = @import("art_pack");
-const art_asset_demo = @import("art_asset_demo");
 const wardrobe_demo = @import("wardrobe_demo");
 const environment_demo = @import("environment_demo");
 const image_decode = @import("image_decode");
@@ -51,7 +50,6 @@ pub const DemoMode = enum {
     mesh_attachments,
     side_scroller,
     foundation,
-    art_assets,
     wardrobe,
     visual_quality,
     anatomy_quality,
@@ -60,7 +58,7 @@ pub const DemoMode = enum {
 
 fn usesUnifiedRendering(mode: DemoMode) bool {
     return mode == .mesh_attachments or mode == .foundation or
-        mode == .art_assets or mode == .wardrobe or
+        mode == .wardrobe or
         mode == .visual_quality or mode == .anatomy_quality or
         mode == .environment;
 }
@@ -102,14 +100,14 @@ const p27c_capture_directory = "zig-out/p27c_evidence/candidate";
 const p27c_capture_count: u32 = @intCast(anatomy_evidence.capture_count);
 const manual_capture_directory = "zig-out/manual_debug_captures";
 const manual_capture_asset_paths = [_][]const u8{
-    "assets/art/p27c_male_base_anatomy_atlas.png",
-    "assets/art/p27c_female_base_anatomy_atlas.png",
-    "assets/art/p27c_anatomy_components_atlas.png",
-    "assets/art/p25_wardrobe_upper_atlas.png",
-    "assets/art/p25_wardrobe_layers_atlas.png",
-    "assets/art/p25_wardrobe_lower_atlas.png",
-    "assets/art/p26_violet_crystal_ruin_atlas.png",
-    "assets/art/p26_neutral_debug_atlas.png",
+    "assets/art/male_base_anatomy_atlas.png",
+    "assets/art/female_base_anatomy_atlas.png",
+    "assets/art/anatomy_components_atlas.png",
+    "assets/art/wardrobe_upper_atlas.png",
+    "assets/art/wardrobe_layers_atlas.png",
+    "assets/art/wardrobe_lower_atlas.png",
+    "assets/art/environment_violet_crystal_ruin_atlas.png",
+    "assets/art/environment_neutral_debug_atlas.png",
 };
 
 fn environmentCapturePath(frame: u32) ?[]const u8 {
@@ -485,8 +483,6 @@ pub const DemoApplication = struct {
             scene.deinit();
             self.allocator.destroy(scene);
         };
-        var art_scene: ?art_asset_demo.Scene = null;
-        defer if (art_scene) |*scene| scene.deinit();
         var wardrobe_scene: ?wardrobe_demo.Scene = null;
         defer if (wardrobe_scene) |*scene| scene.deinit();
         var environment_scene: ?environment_demo.Scene = null;
@@ -652,13 +648,6 @@ pub const DemoApplication = struct {
             const definitions = foundation_scene.?.meshDefinitions();
             try self.initializeMeshRendering(&definitions);
             try self.initializeVisualCaptureTransfer(false);
-        }
-        if (mode == .art_assets) {
-            art_scene = try art_asset_demo.Scene.init(humanoid_allocator.allocator(), 1);
-            try self.runArtTextureFaultChecks(&art_scene.?.definition);
-            try self.initializeArtTexturePages(&art_scene.?.definition);
-            const definitions = art_scene.?.meshDefinitions();
-            try self.initializeMeshRendering(&definitions);
         }
         if (mode == .wardrobe or mode == .visual_quality or
             mode == .anatomy_quality)
@@ -998,12 +987,6 @@ pub const DemoApplication = struct {
                     // the real submitted trace, so publish that same-frame
                     // camera to the production renderer before encoding.
                     self.renderer.camera().* = scene.integrated.camera;
-                },
-                .art_assets => {
-                    self.renderer.renderQueue().beginFrame();
-                    const submission_checkpoint = humanoid_allocator.end_index;
-                    humanoid_instances = try art_scene.?.submit(self.renderer.renderQueue(), frame);
-                    humanoid_submission_allocations += humanoid_allocator.end_index - submission_checkpoint;
                 },
                 .wardrobe, .visual_quality, .anatomy_quality => {
                     const scene = &wardrobe_scene.?;

@@ -1,295 +1,117 @@
-# SDL3 GPU 2D Skeletal Character Prototype
+# SDL3 GPU 2D Engine
 
-This repository contains the reproducible Prompt 1 build foundation for Zig 0.16.0, Windows 11 x64, SDL 3.4.10, the SDL3 GPU API with an explicit Direct3D 12 backend, and offline DXIL compilation with DXC v1.9.2602.24.
+This repository is a Windows-first 2D engine and reference sandbox built with
+Zig 0.16.0, SDL3, HLSL, and SDL's Direct3D 12 GPU backend. It combines a
+deterministic CPU simulation with GPU-instanced sprite and deformable-mesh
+rendering. The production engine is reusable independently of the sandbox that
+hosts the larger character, interaction, environment, and visual-acceptance
+scenarios.
 
-Project navigation:
+## Architecture at a glance
 
-- [roadmap, current state, architecture, scope, and authoring contracts](docs/project/README.md);
-- [prompt ledger and exact/reconstructed source status](docs/prompts/INDEX.md);
-- [architecture decisions](docs/decisions/README.md);
-- [implementation-report archive](docs/reports/README.md).
+- `src/foundation` owns stable identity, deterministic primitives, canonical
+  data helpers, references, transforms, and shared diagnostics.
+- `src/scene_core` owns authored scene schemas and the generic `RuntimeScene`,
+  including entity registry, hierarchy, lifecycle, extensions, snapshots, and
+  transactional publication.
+- `src/animation`, `src/physics`, `src/interaction`, and specialized modules in
+  `src/scene` consume those contracts without becoming generic scene authority.
+- `src/graphics/sdl_gpu_renderer.zig` owns SDL GPU resources, submission,
+  capture, and cleanup behind the production `Renderer` handle.
+- `src/app/engine_smoke.zig` is an independent physical renderer/scene client.
+- `src/app/demo_application.zig` is the interactive engine sandbox and scenario
+  client; it does not own renderer or reusable scene-system implementation.
+- `build/` owns modular application, engine-test, content-test, evidence, and
+  aggregate-gate registration. `build.zig` remains the readable composition
+  root.
 
-Current architecture status: F1 through F3 are owner-approved, including the
-F2C authority-encapsulation amendment at
-`685383a9012f10769c89b363d2eeff820410e0ae`. The read-only F4A
-whole-repository architecture audit is owner-approved. F4 production-
-architecture hardening is in progress; F4B has not begun, and post-F4 feature
-tracks remain blocked pending final F4 acceptance. See the
-[current state](docs/project/CURRENT_STATE.md) and
-[F4A record](docs/implementation/f4a_production_architecture_audit.md).
+The supported dependency direction is:
 
-Bootstrap the exact dependencies once from PowerShell, then normal build operations are offline:
-
-```powershell
-& '.\tools\bootstrap_dependencies.ps1'
-zig build
-zig build test
-zig build run
-zig build gpu-smoke
-zig build check
+```text
+authored definitions / canonical assets
+                 ↓
+      foundation + scene_core
+                 ↓
+ specialized deterministic runtime systems
+                 ↓
+     render-facing data and queues
+                 ↓
+       SDL3 production renderer
+                 ↓
+       application clients / tools
 ```
 
-The default build compiles and validates both HLSL stages with repository-local DXC, installs `SDL3.dll` beside `skeletal_gpu_demo.exe`, and installs DXIL under `zig-out/bin/shaders`. `zig build run` launches that installed layout. The default visible demonstration submits 1,000 deterministic procedural sprites through one authoritative instanced batch and one actual GPU draw. `gpu-smoke` uses the batch for fault cleanup, presentation, two UV-selected sprites, and fenced render-target readback. It fails rather than skipping when the required graphical session, D3D12 backend, DXIL support, pipeline, or readback is unavailable.
+Production code does not depend on sandbox scenarios, acceptance evidence, or
+historical development records.
 
-F4B2 retired the standalone `humanoid`, `animation`, `secondary-motion`,
-`multi-character`, `handshake`, `foot-planting`, `properties`, `breathing`,
-`attachment-secondary`, and `character-presentation` scenario shells after
-their useful invariants were mapped to permanent production-facing tests.
-Historical prompt reports remain available, while current regression coverage
-runs through `zig build test`. The retained runnable modes are `sprites`,
-`controller`, `handshake-ik`, `integrated`, `playground`, `modular-body`,
-`equipment`, `mesh-attachments`, `side-scroller`, `foundation`, `art-assets`,
-`wardrobe`, `visual-quality`, `anatomy-quality`, and `environment`.
+## Build and run
 
-The batch is the production rendering foundation, not a parallel demonstration renderer. Prompt 3 adds foundational math, immutable skeleton definitions, independent mutable poses, hierarchical sockets, render attachments, and programmatic pose manipulation; Prompt 4 adds eight immutable authored clips, typed events, deterministic sampling, component-space blending, and one-shot fallbacks. Prompt 5 adds one authoritative 240 Hz physics/animation clock, SDL keyboard/gamepad input, edge-preserving `CharacterIntent`, swept static AABB collision, gravity, variable-height jump, coyote time, jump buffering, landing reporting, render interpolation, and the retained interactive `zig build run -- --demo controller` mode. Its deterministic GPU-backed acceptance route is `zig build run -- --frames 600 --demo controller --scripted-input`. Prompt 6's procedural motion, Prompt 7's multi-character isolation/ordering, Prompt 8's non-IK interaction lifecycle, and Prompt 10's foot-planting behavior now remain protected by the aggregate production-facing test suite. Prompt 9's analytical paired arm-IK route remains `zig build run -- --frames 720 --demo handshake-ik --scripted-input` because a permanent presentation regression still consumes that scene fixture. Prompt 11 composes every production path into `zig build run -- --frames 2400 --demo integrated --scripted-input`, adds bounded read-only diagnostics and milestone snapshots, and optionally appends debug primitives with `--debug-visualization` through the same one-draw sprite batch. Prompt 14 moves every sprite submission into world metres, adds a pure `Camera2D`, resizable/high-DPI swapchain rendering, deterministic dead-zone following, an extended cave playground, and three-layer parallax. Its bounded evidence route is `zig build run -- --frames 1100 --demo side-scroller --scripted-input`; the fixed 640×480 GPU readback target remains independent.
-
-Prompt 16 adds data-defined adult anatomy modules, repeated hierarchical body parts, parametric build morphology, per-channel and per-instance overrides, independently addressable face features, short/long/ponytail hair, and topology-independent presentation profiles. Its non-sexual evidence route is `zig build run -- --frames 240 --demo modular-body`: the conventional male and female visibly select different compositional face definitions, while those presets and the articulated extra-arms/tail/horn preset share one canonical skeleton, animation library, global sprite batch, and draw path.
-
-Prompt 17 adds topology-aware layered clothing and equipment, transactional per-character loadouts, separate logical slots and coverage metadata, bounded one/every/specific anatomy binding, deterministic numeric attribute modifiers, and declarative capability grants. Its evidence route is `zig build run -- --frames 240 --demo equipment`: one sweatshirt definition produces two sleeves on the conventional body and four on the modular four-arm body while layered clothing, bilateral armor, multi-slot replacement, conflict rejection, restoration, modifiers, and capabilities remain on the existing global sprite batch.
-
-Prompt 18 adds drift-resistant per-character breathing and one resolved appearance-deformation pipeline shared by anatomy and topology-generated clothing/equipment. Exact anatomy-instance bindings drive every generated sleeve, flexible visuals use declarative response strengths, rigid equipment can opt out, and physics/controller/IK/interaction/effect state remains invariant. F4B2 retired the standalone visual shell; all eight deformation regressions remain in `zig build test`.
-
-Prompt 19 generalizes an equipment visual to either the established rigid sprite or a validated immutable deformable mesh without adding a second character/item architecture. Its unified semantic queue interleaves both primitive kinds, while persistent topology buffers and three bounded dynamic instance slots support fitted garments, topology-expanded sleeves, and capes. Its honest mixed-render evidence route is `zig build run -- --frames 240 --demo mesh-attachments`.
-
-Prompt 20 adds one reusable fixed-capacity attachment secondary-motion primitive shared by equipment and anatomy visuals. Mutable nodes live in resolved character visual instances, never shared cape/hair/mesh definitions. The equipment cape, topology-expanded loose sleeves, long hair, and ponytail use the same bounded fixed-step path; short hair remains rigid. Equip/unequip/re-equip and facing changes reset deterministically, and controller/physics/interaction state remains invariant. F4B2 retired the duplicate route alias; permanent attachment-secondary tests and the retained `mesh-attachments` route preserve the behavior.
-
-Prompt 21 adds data-defined finite numeric attributes, source-counted capabilities, stable-source additive/multiplicative resolution, and character-owned recomputation after loadout changes. Movement speed and jump strength feed the existing controller, double jump grants exactly one air jump, and Left Shift/gamepad right shoulder produces a bounded collision-aware dash only when granted. Carrying capacity, armor, and physical damage reduction remain queryable for future inventory/combat consumers. Appearance never implies gameplay properties. F4B2 retired the standalone route after the seven direct property/controller regressions were confirmed permanent.
-
-Prompt 22 added the focused Character + World Foundation Playground. One
-modular controlled character, a canonical handshake partner, and a
-nonstandard-topology showcase share the established skeleton, animation,
-controller, collision, interaction, IK, foot-planting, deformation,
-secondary-motion, equipment, and unified sprite/mesh paths in a traversable
-cave. Prompt 27 later promoted the visible `foundation` CLI to the production
-art composition. The original 1,800-frame Prompt 22 scene remains covered by:
+Bootstrap the pinned dependencies as documented in
+[`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md), then use the repository-local
+compiler:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-foundation
+& '.\.deps\zig-0.16.0\zig.exe' build -j1
+& '.\.deps\zig-0.16.0\zig.exe' build run -j1 -- --demo sprites --frames 120
+& '.\.deps\zig-0.16.0\zig.exe' build run-engine-smoke -j1
 ```
 
-Prompt 23 adds a production-oriented PNG/atlas presentation boundary without changing gameplay or creating another renderer. Windows Imaging Component decodes alpha-bearing installed PNGs, immutable art-pack definitions resolve numeric semantic/view IDs to validated regions, and bounded persistent texture/sampler pages are shared by sprite and mesh ranges. Two original nearest-sampled technical pixel-art atlases prove eight regions, synthetic view extensibility, alpha, honest page-transition draws, cleanup, and allocation-free steady state; a definition test proves that a future pack may instead select linear filtering:
+The installed applications are:
+
+- `zig-out/bin/engine_sandbox.exe`: interactive/scripted sandbox scenarios;
+- `zig-out/bin/engine_smoke.exe`: independent `RuntimeScene` and physical
+  renderer composition proof.
+
+The renderer requires the physical Direct3D 12/DXIL path. It fails closed when
+device, shader, pipeline, draw, readback, or resource-cleanup validation fails.
+
+## Validation gates
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-art
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo art-assets --frames 240
+& '.\.deps\zig-0.16.0\zig.exe' build check -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-full -j1
+& '.\.deps\zig-0.16.0\zig.exe' build test-content -j1
+& '.\.deps\zig-0.16.0\zig.exe' build verify -j1
+& '.\.deps\zig-0.16.0\zig.exe' build gpu-smoke -j1
 ```
 
-Prompt 24 adds original segmented male and female side/front pixel-art atlases, separates gameplay left/right facing from presentation view, projects the shared authoritative pose into front art, keeps reflection side-only, gives interactions view authority, and integrates breathing, long-hair secondary motion, IK, foot planting, explicit front layering, bald/buzz selection, and bounded view overrides without another animator or renderer:
+- `check` is the routine static and fast engine-contract gate.
+- `test-full` adds deterministic CPU integration and stress coverage.
+- `test-content` qualifies current canonical and authored content authority.
+- `verify` composes the CPU/static/content gates without requiring a GPU.
+- `gpu-smoke` runs the production renderer directly through `engine_smoke`.
+- `visual-acceptance` and `evidence-history` remain explicit, non-routine
+  manual/historical routes.
 
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-presentation
-```
+See [`docs/TESTING.md`](docs/TESTING.md) for focused targets and change-based
+gate guidance.
 
-F4B2 retired the two standalone character-presentation routes; the focused
-test target above and retained production `foundation`/`anatomy-quality`
-routes preserve the presentation contract and current visual inspection path.
+## Assets and authority
 
-Prompt 24A separates the shipped neutral base anatomy from removable clothing. Prompt 25 adds 30 reusable cosmetic wardrobe items, 36 side/front components, 15 typed outfit presets, topology-aware sleeves/gloves/legwear/footwear, layered blouse-plus-cardigan composition, a deformable long skirt with bounded secondary motion, and transactional hot swapping through the existing global queue:
+[`assets/manifest.json`](assets/manifest.json) is the machine-readable index of
+active runtime atlases, installed paths, dimensions, hashes, consumers, source
+authority, and protected predecessor mappings. Current canonical-model and
+geometry authority remains under `assets/canonical_model`; current qualification
+is protected by `test-content`.
 
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-wardrobe
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo wardrobe --scripted-input --frames 600
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo wardrobe --interactive
-```
+Historical/rejected art and protected canonical-geometry lineage are classified
+in [`assets/history/manifest.json`](assets/history/manifest.json). Prompt-era
+names retained there identify accepted lineage, not current production naming.
 
-Prompt 25A re-authors the separated male/female production atlases, corrects
-view spacing, joint overlap, internal connector layering, padded sleeve/shoe
-extraction, and footwear registration, and adds an exact D3D12 capture gate.
-It preserves the Prompt 24A anatomy boundary and Prompt 25 reusable wardrobe:
+## Current documentation
 
-```powershell
-$env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\.deps\zig-0.16.0\zig.exe' build test-presentation
-& '.\.deps\zig-0.16.0\zig.exe' build test-wardrobe
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
-```
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): production architecture and
+  responsibility boundaries;
+- [`docs/architecture/shared_engine_scene_foundation_architecture_v1.md`](docs/architecture/shared_engine_scene_foundation_architecture_v1.md): accepted
+  shared scene/foundation contract;
+- [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md): exact toolchain/dependencies;
+- [`docs/TESTING.md`](docs/TESTING.md): test taxonomy and gates;
+- [`docs/CONTROLS.md`](docs/CONTROLS.md): sandbox controls and routes;
+- [`docs/project/CURRENT_STATE.md`](docs/project/CURRENT_STATE.md): normative
+  project status;
+- [`docs/project/ARCHITECTURE_MAP.md`](docs/project/ARCHITECTURE_MAP.md): current
+  ownership map.
 
-Prompt 25B completes the remaining footwear, shoulder, elbow, pelvis/thigh,
-and hand corrections. Prompt 25C builds the semantic visual-geometry
-measuring system, and Prompt 25D hardens that ruler, reauthors the actual
-production content, retains controlled failing fixtures, reaches zero
-production geometry failures, and approves 12 real D3D12 goldens. Prompt 25E
-then consolidates project history, authority boundaries, authoring contracts,
-known gaps, exact prompt provenance, and documentation auditing without
-changing accepted art or runtime behavior.
-
-Prompt 26 adds two original layered environment themes over the unchanged
-Prompt 22 world: a violet crystal ruin and a neutral diagnostic chamber.
-Far/mid/terrain/foreground art uses the existing camera and global queue, both
-theme pages preload before steady state, and `T` swaps them without changing
-physics, animation, view, wardrobe, clock, pending input, interaction
-ownership, camera, collision, or GPU resources. Thin white standable tops are
-derived exactly from `ground_query_eligible` collider tops; walls and
-decorative ledges receive none:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-environment -j1
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo environment --scripted-input --frames 720
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo environment --interactive
-```
-
-The open-ended primary foundation route is:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo foundation --interactive
-```
-
-Prompt 27 promotes that same `foundation` route to the complete real-art
-integration root. Prompt 27A retains the original 2,100-frame report and nine
-captures under `zig-out/p27_visual_foundation` as historical evidence, while
-reopening manual visual acceptance and replacing phase/frame capture timing
-with a 2,400-frame, 16-case state-conditioned evidence matrix. The current
-route records authoritative controller, presentation, interaction, foot
-surface, theme, debug, renderer, resource, and allocation metadata beside
-each real D3D12 readback under `zig-out/p27a_evidence/candidate`.
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1
-$env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
-& '.\.deps\zig-0.16.0\zig.exe' build p27a-review
-```
-
-`p27a-review` validates capture order, metadata, PPM payloads, independent
-pixel hashes, semantic thresholds, and steady-state counters, then writes
-PNG conversions, five labeled contact sheets, an ordered review manifest, and
-260 or more raw metrics to `zig-out/p27a_evidence/review_package`. It does not
-approve aesthetics or promote goldens. Prompt 27A manual visual acceptance is
-`[PENDING OWNER REVIEW]`.
-
-Prompt 27B keeps that 16-case matrix and adds one measured
-contact/framing/parallax/presence contract over the same production scene.
-Ground evidence connects immutable collider tops, post-IK sole sockets,
-alpha-derived footwear endpoints, actual queue submissions, and real D3D12
-pixels. One existing camera applies a bounded vertical safe-region correction
-from actual submitted character bounds. Actual far/mid/gameplay anchors and
-camera factors are traced and checked semantically and from readback pixels.
-The script uses ordinary controller movement to avoid uncontrolled
-character-character overlap; general interactive character collision is not
-claimed.
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-visual-foundation -j1 --global-cache-dir '.zig-cache\p27b-global'
-& '.\.deps\zig-0.16.0\zig.exe' build p27b-coherence-report -j1 --global-cache-dir '.zig-cache\p27b-global'
-$env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo foundation --scripted-input --frames 2400
-& '.\.deps\zig-0.16.0\zig.exe' build p27b-review
-```
-
-The current semantic report contains 9,714 metrics with zero failures. The
-independent D3D12 review contains 55 pixel metrics with zero failures, and two
-isolated runs are byte-identical. Prompt 27B adds four supplemental captures
-without overwriting the 16 Prompt 27A cases. The fourth is a diagnostic
-readback of the first frame after a direct 960×540 to 640×480 resize; it
-proves 37.50 px headroom, 36.77 px footroom, and projection agreement while
-subsequent world-camera movement remains below the unchanged 16 px bound.
-The review candidates are not approved goldens; owner/manual acceptance
-remains `[PENDING OWNER REVIEW]`.
-
-Prompt 27C versions and reauthors the production male/female base-anatomy
-pages without changing anatomy identity, the authoritative skeleton,
-simulation, garments, camera policy, or rendering architecture. A
-style/view-specific anatomy ruler evaluates shoulder contour, joint width
-continuity, body-relative proportions, dark crop edges, foot direction, and
-bilateral stance across 102 production cases. The focused gate retains the
-existing visual-geometry suite and adds controlled bad fixtures; the final
-anatomy report contains 3,788 metrics with zero failures.
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build test-visual-geometry -j1
-& '.\.deps\zig-0.16.0\zig.exe' build p27c-anatomy-report -j1 -- --output 'zig-out\p27c_evidence\final_semantic_report' --expect-pass
-$env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --demo anatomy-quality --scripted-input --frames 600
-& '.\tools\build_p27c_review_package.ps1'
-```
-
-The real D3D12/DXIL route captures eight body-only state-conditioned frames;
-the review package supplies before/after and five anatomical close-up sheets.
-The original Prompt 27C torso result was owner-rejected. Prompt 27C-R1
-restores the last accepted chest identity inside four fixed shoulder
-rectangles and changes zero pixels outside them. It also makes character
-presence an explicit `measure_only` policy in unrestricted interactive
-execution while preserving fail-closed scripted acceptance and the unchanged
-`0.02`/`0.15` thresholds. The R1 review package labels every visual as runtime
-production, candidate, reference, or evaluation. Prompt 27A, Prompt 27B, and
-Prompt 27C-R1 owner/manual visual acceptance remains
-`[PENDING OWNER REVIEW]`; no R1 candidate is an approved golden.
-
-## Interactive playground
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo playground --interactive
-```
-
-| Control | Action |
-| --- | --- |
-| `A` / Left Arrow | Move left |
-| `D` / Right Arrow | Move right |
-| Space | Jump; hold for a higher jump or release early for a shorter jump |
-| Left Shift | Dash when granted by resolved character capabilities |
-| `E` | Interact |
-| `R` | Reset the playground |
-| `F1` | Toggle debug visualization |
-| `F2` | Cycle normal, quarter-speed, and paused controller time modes where exposed |
-| `F3` | Single-step a paused controller route where exposed |
-| `C` | Cycle the controlled character body preset in the foundation playground |
-| `V` | Cycle the controlled character global build value in the foundation playground |
-| `H` | Cycle hair in the foundation playground |
-| `L` | Legacy alias for cycling complete equipment/outfit loadouts in the foundation route |
-| `Q` | Cycle automatic, force side, and force front in presentation routes |
-| `O` | Cycle complete outfit presets in wardrobe and foundation routes |
-| `P` | Pause or resume wardrobe/foundation simulation for inspection |
-| `T` | Cycle the preloaded environment theme in environment and foundation routes |
-| Escape | Exit |
-
-Walk right toward the passive character and stop near the authored handshake position. Both characters must be grounded and facing one another; spacing remains deliberately strict, and pressing `E` never snaps or warps either root. The raised platforms, short/held jump behavior, foot planting, arm IK, reset, and debug overlay all use the production runtime paths.
-
-The window uses a fixed vertical composition: 640×480 is the 82 px/m
-reference, and drawable height scales character/world pixels linearly while
-preserving vertical world bounds. Wider aspect ratios expose more horizontal
-world without stretching. Walk left beyond the original view to exercise
-camera following and the distant, midground, and gameplay cave layers.
-
-The bounded automated route uses synthetic raw key state through the identical keyboard mapping:
-
-```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --frames 1800 --demo playground --scripted-input
-```
-
-`playground`, `side-scroller`, `equipment`, and `mesh-attachments` remain focused runnable routes. Permanent tests cover the retired properties, breathing, and attachment-secondary shells. `foundation` composes their production implementations; it does not replace them.
-
-Start with:
-
-- [`AGENTS.md`](AGENTS.md) for binding requirements and prohibitions.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for system boundaries and conventions.
-- [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md) for exact versions, hashes, and backend policy.
-- [`docs/TESTING.md`](docs/TESTING.md) for test layers and acceptance checks.
-- [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) for staged implementation and the final build interface.
-- [`docs/SPRITE_BATCH.md`](docs/SPRITE_BATCH.md) for exact CPU/HLSL layout, ordering, capacity, and frame-safety contracts.
-- [`docs/HUMANOID.md`](docs/HUMANOID.md) for transform, hierarchy, attachment, body-proportion, and deterministic-demo contracts.
-- [`docs/ANATOMY.md`](docs/ANATOMY.md) for compositional adult anatomy, multiplicity, morphology, presentation, face/hair, ownership, and alternative-rig boundaries.
-- [`docs/EQUIPMENT.md`](docs/EQUIPMENT.md) for typed equipment definitions, topology-aware visual recipes, transactional loadouts, layered coverage, effect declarations, rendering integration, and evidence.
-- [`docs/CHARACTER_PROPERTIES.md`](docs/CHARACTER_PROPERTIES.md) for attribute metadata, deterministic stacking, capability sources, controller consumers, dash/double-jump state, and evidence.
-- [`docs/DEFORMATION.md`](docs/DEFORMATION.md) for fixed-tick breathing, shared instance-resolved deformation, clothing response, composition order, gameplay invariants, and evidence.
-- [`docs/MESH_ATTACHMENTS.md`](docs/MESH_ATTACHMENTS.md) for mesh validation, topology-aware runtime ownership, unified ordering, GPU resources, batching, metrics, and evidence.
-- [`docs/ATTACHMENT_SECONDARY_MOTION.md`](docs/ATTACHMENT_SECONDARY_MOTION.md) for bounded visual control points, per-instance ownership, lifecycle/facing reset, composition, and evidence.
-- [`docs/ART_PIPELINE.md`](docs/ART_PIPELINE.md) for PNG decoding, immutable art packs, stable semantic/view identity, atlas validation, multi-page GPU ownership, installed assets, and the future offline authoring boundary.
-- [`docs/ENVIRONMENT_THEMES.md`](docs/ENVIRONMENT_THEMES.md) for layered theme ownership, parallax, collision-derived white standable edges, hot-swap invariants, bounds, and the future level-editor boundary.
-- [`docs/CHARACTER_PRESENTATION.md`](docs/CHARACTER_PRESENTATION.md) for facing/view separation, interaction authority, shared-pose interpretation, original character art, layers, secondary reset, and evidence.
-- [`docs/WARDROBE.md`](docs/WARDROBE.md) for garment semantics, view/topology binding, presets, controls, and the future authoring workflow.
-- [`docs/VISUAL_GEOMETRY.md`](docs/VISUAL_GEOMETRY.md) for semantic landmarks, visible-alpha geometry, anatomy-relative fit contracts, pose/morphology sweeps, quantitative failure reports, debug overlays, and golden policy.
-- [`docs/PROMPT25D_DECISION_RECORD.md`](docs/PROMPT25D_DECISION_RECORD.md) for validator hardening, production root-cause corrections, before/after metrics, golden evidence, and the no-test-gaming audit.
-- [`docs/PROMPT26_DECISION_RECORD.md`](docs/PROMPT26_DECISION_RECORD.md) for environment composition, collision-derived edges, art provenance, and evidence staging.
-- [`docs/PROMPT27_DECISION_RECORD.md`](docs/PROMPT27_DECISION_RECORD.md) for production composition, interaction presentation, side projection, property ownership, and bounds.
-- [`docs/PROMPT27C_DECISION_RECORD.md`](docs/PROMPT27C_DECISION_RECORD.md) for the production anatomy ruler, reauthoring rationale, before/after evidence, and preservation boundary.
-- [`docs/PROMPT27C_R1_DECISION_RECORD.md`](docs/PROMPT27C_R1_DECISION_RECORD.md) for the bounded torso restoration, exact asset provenance, changed-pixel audit, and character-presence policy boundary.
-- [`docs/OUTFIT_REFERENCE_INVENTORY.md`](docs/OUTFIT_REFERENCE_INVENTORY.md) for the required reference-cluster inventory and project-local IDs.
-- [`docs/ANIMATION.md`](docs/ANIMATION.md) for clip, key, event, playback, blending, fallback, authored-timeline, and animation-demo contracts.
-- [`docs/PHYSICS.md`](docs/PHYSICS.md) for the 240 Hz clock, controller configuration, collision, jump, landing, and allocation contracts.
-- [`docs/SECONDARY_MOTION.md`](docs/SECONDARY_MOTION.md) for procedural walk, landing, spring, composition, reset, and evidence contracts.
-- [`docs/MULTI_CHARACTER.md`](docs/MULTI_CHARACTER.md) for entity IDs, instance ownership, facing reflection, global ordering, overrides, and two-character evidence.
-- [`docs/INTERACTIONS.md`](docs/INTERACTIONS.md) for paired definitions, eligibility, shared timing, event authority, locks, overrides, cancellation, and handshake evidence.
-- [`docs/IK.md`](docs/IK.md) for analytical geometry, reachability, arm binding, pose-pipeline order, shared-target ownership, weighting, and quantitative evidence.
-- [`docs/FOOT_PLANTING.md`](docs/FOOT_PLANTING.md) for ground-query inclusion rules, anatomical leg bindings, fixed-tick plant/release semantics, visual-only ownership, and quantitative slip/contact evidence.
-- [`docs/DIAGNOSTICS.md`](docs/DIAGNOSTICS.md) for the integrated fixed-tick order, bounded observer model, debug-command capacity, reset policy, invariance, and resource accounting.
-- [`docs/CONTROLS.md`](docs/CONTROLS.md) for keyboard/gamepad controls, pending-edge semantics, pause, and deterministic scripted input.
+Historical prompt sources, milestone decisions, and implementation reports are
+preserved under [`docs/history`](docs/history/README.md). They are provenance,
+not normative engine documentation.

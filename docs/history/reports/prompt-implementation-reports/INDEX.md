@@ -99,26 +99,26 @@ It records the milestone boundary before Prompt 26/27 were authorized.
 Implemented at commit `0dd0f21`; no verbatim completion report was recovered
 for this archive. Use the
 [prompt record](../../prompts/026-environments.md),
-[decision record](../../PROMPT26_DECISION_RECORD.md),
-[environment contract](../../ENVIRONMENT_THEMES.md), and
-[test evidence](../../TESTING.md#prompt-26-environment-validation).
+[decision record](../../decisions/PROMPT26_DECISION_RECORD.md),
+[environment contract](../../../ENVIRONMENT_THEMES.md), and
+[test evidence](../../../TESTING.md#prompt-26-environment-validation).
 
 ### Prompt 27
 
 Implemented at commit `1de0d1d`; no verbatim completion report was recovered
 for this archive. Use the
 [prompt record](../../prompts/027-integrated-foundation.md),
-[decision record](../../PROMPT27_DECISION_RECORD.md),
-[current state](../../project/CURRENT_STATE.md), and
-[test evidence](../../TESTING.md#prompt-27-integrated-visual-foundation).
+[decision record](../../decisions/PROMPT27_DECISION_RECORD.md),
+[current state](../../../project/CURRENT_STATE.md), and
+[test evidence](../../../TESTING.md#prompt-27-integrated-visual-foundation).
 
 ### Prompt 27A
 
 Prompt 27 automated integration remains protected, but its manual visual
 acceptance is reopened. Use the
-[roadmap source](../../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
-[decision record](../../PROMPT27A_DECISION_RECORD.md), and
-[test evidence](../../TESTING.md#prompt-27a-evidence-integrity).
+[roadmap source](../../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
+[decision record](../../decisions/PROMPT27A_DECISION_RECORD.md), and
+[test evidence](../../../TESTING.md#prompt-27a-evidence-integrity).
 The exact implementation report is archived in
 [`exact/027A-implementation-report.md`](exact/027A-implementation-report.md).
 
@@ -127,10 +127,10 @@ The exact implementation report is archived in
 Prompt 27B preserves Prompt 27/27A evidence while adding ground-contact,
 camera-framing, measured-parallax, and scripted character-presence closure.
 Use the
-[roadmap source](../../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
+[roadmap source](../../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
 [prompt record](../../prompts/027B-ground-contact-camera-parallax-presence.md),
-[decision record](../../PROMPT27B_DECISION_RECORD.md), and
-[test evidence](../../TESTING.md#prompt-27b-contact-framing-parallax-and-presence).
+[decision record](../../decisions/PROMPT27B_DECISION_RECORD.md), and
+[test evidence](../../../TESTING.md#prompt-27b-contact-framing-parallax-and-presence).
 The exact implementation report is archived in
 [`exact/027B-implementation-report.md`](exact/027B-implementation-report.md).
 
@@ -140,10 +140,10 @@ Prompt 27C versions and reauthors production base anatomy, adds a
 style/view-specific anatomy-quality ruler, and produces repeatable body-only
 D3D12 evidence while preserving all historical Prompt 27/27A and final Prompt
 27B evidence. Use the
-[roadmap source](../../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
+[roadmap source](../../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md),
 [prompt record](../../prompts/027C-production-anatomy.md),
-[decision record](../../PROMPT27C_DECISION_RECORD.md), and
-[test evidence](../../TESTING.md#prompt-27c-production-anatomy).
+[decision record](../../decisions/PROMPT27C_DECISION_RECORD.md), and
+[test evidence](../../../TESTING.md#prompt-27c-production-anatomy).
 The exact implementation report is archived in
 [`exact/027C-implementation-report.md`](exact/027C-implementation-report.md).
 
@@ -157,8 +157,8 @@ regions, fixes the deterministic authoring copy path, classifies every review
 visual by provenance, and separates unrestricted interactive presence
 measurement from fail-closed scripted acceptance. Use the
 [prompt record](../../prompts/027C-R1-owner-rejected-torso-presence.md),
-[decision record](../../PROMPT27C_R1_DECISION_RECORD.md), and
-[test evidence](../../TESTING.md#prompt-27c-r1-corrective-torso-and-presence-policy).
+[decision record](../../decisions/PROMPT27C_R1_DECISION_RECORD.md), and
+[test evidence](../../../TESTING.md#prompt-27c-r1-corrective-torso-and-presence-policy).
 The exact implementation report is archived in
 [`exact/027C-R1-implementation-report.md`](exact/027C-R1-implementation-report.md).
 
@@ -170,8 +170,8 @@ production art authority. Current visual acceptance remains pending and the
 fresh-current-art Prompt 27B foot-endpoint regression remains explicitly
 reported. Use the
 [prompt record](../../prompts/VF-01-visual-truth-debugger.md),
-[decision record](../../VF01_DECISION_RECORD.md), and
-[test evidence](../../TESTING.md#vf-01-visual-truth-debugger-and-capture-bundles).
+[decision record](../../../VF01_DECISION_RECORD.md), and
+[test evidence](../../../TESTING.md#vf-01-visual-truth-debugger-and-capture-bundles).
 The exact implementation report is archived in
 [`exact/VF-01-implementation-report.md`](exact/VF-01-implementation-report.md).
 
@@ -189,8 +189,8 @@ closed-footwear coverage explicitly suppresses only covered base-foot pixels.
 Manual visual acceptance remains pending.
 Use the
 [prompt record](../../prompts/VF-02-authoritative-rig-to-art-registration.md),
-[decision record](../../VF02_DECISION_RECORD.md), and
-[test evidence](../../TESTING.md#vf-02-authoritative-registration).
+[decision record](../../../VF02_DECISION_RECORD.md), and
+[test evidence](../../../TESTING.md#vf-02-authoritative-registration).
 The exact implementation report is archived in
 [`exact/VF-02-implementation-report.md`](exact/VF-02-implementation-report.md).
 
@@ -203,7 +203,7 @@ immutability; routes eye/eyebrow/hair child-follow through production
 registration; and exports schema-4 F1/F4 evidence. Manual visual acceptance
 remains pending. Use the
 [prompt record](../../prompts/VF-03-typed-modular-component-graph.md),
-[decision record](../../VF03_DECISION_RECORD.md), and
-[test evidence](../../TESTING.md#vf-03-typed-component-graph).
+[decision record](../../../VF03_DECISION_RECORD.md), and
+[test evidence](../../../TESTING.md#vf-03-typed-component-graph).
 The exact implementation report is archived in
 [`exact/VF-03-implementation-report.md`](exact/VF-03-implementation-report.md).

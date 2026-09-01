@@ -217,7 +217,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = male_page_id,
         .stable_name = "p27c_male_base_anatomy_atlas",
-        .asset_path = "art/p27c_male_base_anatomy_atlas.png",
+        .asset_path = "art/male_base_anatomy_atlas.png",
         .sampling = .nearest,
         .expected_width = 1600,
         .expected_height = 983,
@@ -225,7 +225,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = female_page_id,
         .stable_name = "p27c_female_base_anatomy_atlas",
-        .asset_path = "art/p27c_female_base_anatomy_atlas.png",
+        .asset_path = "art/female_base_anatomy_atlas.png",
         .sampling = .nearest,
         .expected_width = 1599,
         .expected_height = 984,
@@ -233,7 +233,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = component_page_id,
         .stable_name = "p27c_anatomy_components_atlas",
-        .asset_path = "art/p27c_anatomy_components_atlas.png",
+        .asset_path = "art/anatomy_components_atlas.png",
         .sampling = .nearest,
         .expected_width = 1792,
         .expected_height = 1024,

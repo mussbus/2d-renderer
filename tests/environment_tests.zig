@@ -10,7 +10,7 @@ const environment_art = @import("environment_art");
 const environment_theme = @import("environment_theme");
 const environment_demo = @import("environment_demo");
 
-test "Prompt 26 art pack contains both complete nearest-sampled original themes" {
+test "environment art pack contains both complete nearest-sampled themes" {
     var definition = try environment_art.Definition.init(std.testing.allocator);
     defer definition.deinit();
     try definition.validateComplete();
@@ -19,7 +19,7 @@ test "Prompt 26 art pack contains both complete nearest-sampled original themes"
     try std.testing.expectEqual(environment_art.binding_count, definition.art.bindings.len);
     for (definition.art.pages) |page| {
         try std.testing.expectEqual(art_pack.SamplingPolicy.nearest, page.sampling);
-        try std.testing.expect(std.mem.startsWith(u8, page.asset_path.slice(), "art/p26_"));
+        try std.testing.expect(std.mem.startsWith(u8, page.asset_path.slice(), "art/environment_"));
         try std.testing.expect(std.mem.indexOf(u8, page.asset_path.slice(), "reference") == null);
         try std.testing.expectEqual(@as(u32, 1024), page.expected_width);
         try std.testing.expectEqual(@as(u32, 1024), page.expected_height);

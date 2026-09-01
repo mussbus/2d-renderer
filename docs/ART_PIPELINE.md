@@ -12,7 +12,12 @@ installed PNG
   -> existing unified sprite/mesh queue
 ```
 
-`src/graphics/art_pack.zig` owns style-independent presentation definitions. `src/scene/art_asset_catalog.zig` owns the concrete Prompt 23 page, region, binding, and definition inputs. `src/graphics/image_decode.zig` owns PNG decoding and decoded CPU pixels. `GpuDemo` owns the corresponding SDL GPU textures and samplers. `src/scene/art_asset_demo.zig` consumes the production catalog as focused technical evidence; it is not a second renderer and does not replace character, anatomy, equipment, animation, physics, interaction, camera, sprite-batch, or deformable-mesh systems.
+`src/graphics/art_pack.zig` owns style-independent presentation definitions.
+`src/scene/art_asset_catalog.zig` owns the concrete technical page, region,
+binding, and definition inputs. `src/graphics/image_decode.zig` owns PNG decoding
+and decoded CPU pixels. The production `Renderer` owns the corresponding SDL GPU
+textures and samplers. `tests/support/art_pipeline_fixture.zig` consumes the
+catalog only for focused integration coverage; it is not a runtime scenario.
 
 The runtime consumes 2D images, stable region IDs, semantic/view bindings, authored dimensions, and pivots. It does not care whether an offline source was a human drawing, an image editor, a procedural tool, or a future 3D-to-2D authoring tool. A future exporter must emit the same validated definition data. Atlas coordinates are derived presentation data and are never gameplay identity.
 
@@ -61,8 +66,8 @@ The existing sprite batch and unified sprite/mesh range construction remain auth
 The build installs:
 
 ```text
-zig-out/bin/art/p23_mechanical_atlas.png
-zig-out/bin/art/p23_energy_atlas.png
+zig-out/bin/art/mechanical_atlas.png
+zig-out/bin/art/energy_atlas.png
 ```
 
 Runtime paths are resolved from `SDL_GetBasePath()`, so the process working directory is irrelevant. Both 256×256 RGBA atlases are original project technical pixel art with transparent backgrounds and four nontrivial regions each. Both pages request nearest filtering. Definition tests also construct a future smooth pack whose second page requests linear filtering, proving that filtering is pack policy rather than a renderer-wide assumption.
@@ -126,13 +131,18 @@ After art-pack, GPU page, mesh topology, and render-queue initialization:
 - no texture or sampler is created or destroyed;
 - no ordinary submission allocates.
 
-The 240-frame route asserts these invariants:
+The permanent focused test asserts these invariants:
 
 ```powershell
-& '.\.deps\zig-0.16.0\zig.exe' build run -- --demo art-assets --frames 240
+& '.\.deps\zig-0.16.0\zig.exe' build test-art -j1
 ```
 
-It resolves eight semantic bindings during initialization and displays six rigid sprites plus one deformable mesh across both real pages. The final deterministic frame contains six sprite ranges/draws, one mesh range/draw, 448 uploaded instance bytes, two retained nearest-sampled image-backed pages, zero fixed-buffer movement, zero post-stabilization queue allocations, and zero steady-state GPU-resource creation.
+The retired `art-assets` sandbox route is preserved as the test-only
+`tests/support/art_pipeline_fixture.zig`. It resolves eight semantic bindings
+and submits six rigid sprites plus one deformable mesh across both real pages,
+while the focused suite protects exact decode and post-stabilization allocation
+behavior. Physical renderer execution remains covered by `gpu-smoke` and
+`run-engine-smoke`.
 
 The focused non-GPU suite is:
 
@@ -158,9 +168,9 @@ Semantic strings are resolved once while `Presentation` is initialized. Each fra
 
 The production wardrobe adds:
 
-- `assets/art/p25_wardrobe_upper_atlas.png`;
-- `assets/art/p25_wardrobe_layers_atlas.png`;
-- `assets/art/p25_wardrobe_lower_atlas.png`.
+- `assets/art/wardrobe_upper_atlas.png`;
+- `assets/art/wardrobe_layers_atlas.png`;
+- `assets/art/wardrobe_lower_atlas.png`.
 
 Each 1536 by 1024 RGBA8 page contains 12 logical components with paired 256-pixel side/front cells. The 36 component semantics resolve to 72 distinct regions. The pages contain original fantasy wardrobe cutouts produced for this project; extracted reference frames and contact sheets remain reference-only and are not decoded by the application.
 
@@ -184,8 +194,8 @@ See `WARDROBE.md` for ordinary garment/view authoring,
 Prompt 26 extends the same immutable art-pack boundary with
 `AssetKind.environment`. Two original 1024 by 1024 RGBA atlases are installed:
 
-- `art/p26_violet_crystal_ruin_atlas.png`;
-- `art/p26_neutral_debug_atlas.png`.
+- `art/environment_violet_crystal_ruin_atlas.png`;
+- `art/environment_neutral_debug_atlas.png`.
 
 Each page contains fixed far-backdrop, midground, terrain, foreground,
 decorative-ledge, accent, and opaque-white surface regions. Sampling is
@@ -222,9 +232,9 @@ steady state.
 
 Prompt 27C installs:
 
-- `art/p27c_male_base_anatomy_atlas.png`;
-- `art/p27c_female_base_anatomy_atlas.png`;
-- `art/p27c_anatomy_components_atlas.png`.
+- `art/male_base_anatomy_atlas.png`;
+- `art/female_base_anatomy_atlas.png`;
+- `art/anatomy_components_atlas.png`.
 
 The source script recreates each page deterministically from its preserved
 Prompt 25 predecessor, then applies bounded silhouette edits for shoulder
@@ -253,12 +263,12 @@ pages from their Prompt 25A predecessors. Its approved edit bounds are:
 
 The authoring script edits the decoded 32-bit bitmap directly. It does not
 round untouched straight-alpha pixels through a full-page graphics surface.
-`audit_p27c_r1_torso.ps1` compares the complete output pages with the
+`audit_anatomy_torso.ps1` compares the complete output pages with the
 predecessors, requires zero changes outside the four rectangles, checks
 one-component torso alpha, checks transparent RGB, and runs four controlled
 negative fixtures. The accepted component atlas remains byte-identical to
 Prompt 27C.
 
 The standalone ImageGen torso in
-`assets/art/source/p27c_candidates/male_torso_imagegen_candidate_v1_rejected.png`
+`assets/history/art/rejected/male_torso_imagegen_candidate_v1_rejected.png`
 is review-only and never enters this production path.

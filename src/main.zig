@@ -92,8 +92,6 @@ fn parseOptions(arguments: []const []const u8) !Options {
                 options.demo = .side_scroller;
             } else if (std.mem.eql(u8, arguments[index], "foundation")) {
                 options.demo = .foundation;
-            } else if (std.mem.eql(u8, arguments[index], "art-assets")) {
-                options.demo = .art_assets;
             } else if (std.mem.eql(u8, arguments[index], "wardrobe")) {
                 options.demo = .wardrobe;
             } else if (std.mem.eql(u8, arguments[index], "visual-quality")) {
@@ -105,7 +103,7 @@ fn parseOptions(arguments: []const []const u8) !Options {
             } else if (std.mem.eql(u8, arguments[index], "sprites")) {
                 options.demo = .sprites;
             } else {
-                std.log.err("unknown demo: {s}; supported: sprites, controller, handshake-ik, integrated, playground, modular-body, equipment, mesh-attachments, side-scroller, foundation, art-assets, wardrobe, visual-quality, anatomy-quality, environment", .{arguments[index]});
+                std.log.err("unknown demo: {s}; supported: sprites, controller, handshake-ik, integrated, playground, modular-body, equipment, mesh-attachments, side-scroller, foundation, wardrobe, visual-quality, anatomy-quality, environment", .{arguments[index]});
                 return error.UnknownDemo;
             }
         } else if (std.mem.eql(u8, argument, "--scripted-input")) {
@@ -131,7 +129,7 @@ fn parseOptions(arguments: []const []const u8) !Options {
         } else if (std.mem.eql(u8, argument, "--capture-manual-bundle")) {
             options.capture_manual_bundle = true;
         } else {
-            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|controller|handshake-ik|integrated|playground|modular-body|equipment|mesh-attachments|side-scroller|foundation|art-assets|wardrobe|visual-quality|anatomy-quality|environment>, --scripted-input, --debug-visualization, --interactive, --registration-proof-case <body-front|body-side-left|body-side-right|equipped-front|equipped-side-left|equipped-side-right>, --component-proof-case <eye-eyebrow|scalp-hair|extra-arm|continuous|intentional-gap|front|side-left|side-right|disabled|continuous-front|intentional-gap-front|continuous-side-left|continuous-side-right|intentional-gap-side-left|intentional-gap-side-right|two-modules>, --capture-manual-bundle", .{argument});
+            std.log.err("unknown argument: {s}; supported: --gpu-smoke, --frames <count>, --demo <sprites|controller|handshake-ik|integrated|playground|modular-body|equipment|mesh-attachments|side-scroller|foundation|wardrobe|visual-quality|anatomy-quality|environment>, --scripted-input, --debug-visualization, --interactive, --registration-proof-case <body-front|body-side-left|body-side-right|equipped-front|equipped-side-left|equipped-side-right>, --component-proof-case <eye-eyebrow|scalp-hair|extra-arm|continuous|intentional-gap|front|side-left|side-right|disabled|continuous-front|intentional-gap-front|continuous-side-left|continuous-side-right|intentional-gap-side-left|intentional-gap-side-right|two-modules>, --capture-manual-bundle", .{argument});
             return error.UnknownArgument;
         }
     }
@@ -178,7 +176,6 @@ fn parseOptions(arguments: []const []const u8) !Options {
     }
     if (options.demo == .side_scroller and (!options.scripted_input or options.interactive)) return error.SideScrollerRequiresScriptedInput;
     if (options.demo == .side_scroller and options.maximum_frames != 1100) return error.SideScrollerScriptRequiresExactFrameCount;
-    if (options.demo == .art_assets and options.maximum_frames != 240) return error.ArtAssetDemoRequiresExactFrameCount;
     if (options.demo == .wardrobe and options.interactive == options.scripted_input) return error.WardrobeRequiresExactlyOneInputMode;
     if (options.demo == .wardrobe and options.scripted_input and options.maximum_frames != 600) return error.WardrobeScriptRequiresExactFrameCount;
     if (options.demo == .visual_quality and

@@ -12,18 +12,18 @@
   projection; combined fixed-root handshake, traversal, theme, outfit, reset,
   resource, and visual acceptance.
 - Major runtime files:
-  [`../../src/scene/visual_foundation.zig`](../../src/scene/visual_foundation.zig),
-  [`../../src/interaction/interaction.zig`](../../src/interaction/interaction.zig),
-  [`../../src/interaction/interaction_system.zig`](../../src/interaction/interaction_system.zig),
-  [`../../src/interaction/handshake.zig`](../../src/interaction/handshake.zig),
-  [`../../src/scene/presentation_pose.zig`](../../src/scene/presentation_pose.zig),
+  [`../../../src/scene/visual_foundation.zig`](../../../src/scene/visual_foundation.zig),
+  [`../../../src/interaction/interaction.zig`](../../../src/interaction/interaction.zig),
+  [`../../../src/interaction/interaction_system.zig`](../../../src/interaction/interaction_system.zig),
+  [`../../../src/interaction/handshake.zig`](../../../src/interaction/handshake.zig),
+  [`../../../src/scene/presentation_pose.zig`](../../../src/scene/presentation_pose.zig),
   and
-  [`../../src/scene/wardrobe_presentation.zig`](../../src/scene/wardrobe_presentation.zig).
+  [`../../../src/scene/wardrobe_presentation.zig`](../../../src/scene/wardrobe_presentation.zig).
 - Major test/documentation files:
-  [`../../tests/visual_foundation_tests.zig`](../../tests/visual_foundation_tests.zig),
-  [`../ARCHITECTURE.md`](../ARCHITECTURE.md),
-  [`../INTERACTIONS.md`](../INTERACTIONS.md), and
-  [`../PROMPT27_DECISION_RECORD.md`](../PROMPT27_DECISION_RECORD.md).
+  [`../../../tests/visual_foundation_tests.zig`](../../../tests/visual_foundation_tests.zig),
+  [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md),
+  [`../../INTERACTIONS.md`](../../INTERACTIONS.md), and
+  [`../decisions/PROMPT27_DECISION_RECORD.md`](../decisions/PROMPT27_DECISION_RECORD.md).
 - Tests/evidence: `test-visual-foundation` passes 3/3. The 2,100-frame real
   D3D12/DXIL route completes three data-declared side-view handshakes across
   the required outfits and both themes, writes nine captures under

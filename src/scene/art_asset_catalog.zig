@@ -21,7 +21,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = mechanical_page_id,
         .stable_name = "mechanical_atlas",
-        .asset_path = "art/p23_mechanical_atlas.png",
+        .asset_path = "art/mechanical_atlas.png",
         .sampling = .nearest,
         .expected_width = 256,
         .expected_height = 256,
@@ -29,7 +29,7 @@ pub const page_inputs = [_]art_pack.TexturePageInput{
     .{
         .id = energy_page_id,
         .stable_name = "energy_atlas",
-        .asset_path = "art/p23_energy_atlas.png",
+        .asset_path = "art/energy_atlas.png",
         .sampling = .nearest,
         .expected_width = 256,
         .expected_height = 256,

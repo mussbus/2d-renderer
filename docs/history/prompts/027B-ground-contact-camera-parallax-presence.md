@@ -2,7 +2,7 @@
 
 - Status: **automated and evidence-integrity complete; owner review pending**.
 - Source:
-  [`../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../../prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md).
+  [`../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md`](../source-prompts/Prompts_27A_27H_Reopened_Visual_Foundation.md).
 - Baseline: Prompt 27A state on
   `0e29e0cbf9644a4284ab791c2bed6dcc366acabf`.
 - Objective delivered: one fail-closed measurement chain spanning supporting
@@ -31,7 +31,7 @@
   Prompt 27A and Prompt 27B owner/manual visual acceptance remain
   `[PENDING OWNER REVIEW]`.
 - Decision record:
-  [`../PROMPT27B_DECISION_RECORD.md`](../PROMPT27B_DECISION_RECORD.md).
+  [`../decisions/PROMPT27B_DECISION_RECORD.md`](../decisions/PROMPT27B_DECISION_RECORD.md).
 - Tests:
-  [`../TESTING.md#prompt-27b-contact-framing-parallax-and-presence`](../TESTING.md#prompt-27b-contact-framing-parallax-and-presence).
+  [`../../TESTING.md#prompt-27b-contact-framing-parallax-and-presence`](../../TESTING.md#prompt-27b-contact-framing-parallax-and-presence).
 - Scope boundary: Prompt 27C and Prompt 28 were not started.

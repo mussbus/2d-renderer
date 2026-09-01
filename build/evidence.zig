@@ -11,9 +11,9 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
-    p27c_art_audit: *std.Build.Step.Run,
-    p27c_r1_torso_audit: *std.Build.Step.Run,
-    p25d_goldens: *std.Build.Step.Run,
+    anatomy_art_audit: *std.Build.Step.Run,
+    anatomy_torso_audit: *std.Build.Step.Run,
+    visual_geometry_goldens: *std.Build.Step.Run,
     human_base_export_compile: *std.Build.Step.Compile,
     history: *std.Build.Step,
     history_check: *std.Build.Step,
@@ -189,7 +189,7 @@ pub fn register(options: Options) Registration {
     const run_visual_geometry_report = b.addRunArtifact(visual_geometry_report_exe);
     const visual_geometry_report_step = b.step(
         "visual-geometry-report",
-        "Write Prompt 25D human and machine production-acceptance reports",
+        "Write visual-geometry human and machine production-acceptance reports",
     );
     visual_geometry_report_step.dependOn(&run_visual_geometry_report.step);
     const anatomy_quality_report_module = b.createModule(.{
@@ -214,11 +214,11 @@ pub fn register(options: Options) Registration {
     const run_anatomy_quality_report = b.addRunArtifact(anatomy_quality_report_exe);
     if (b.args) |args| run_anatomy_quality_report.addArgs(args);
     const anatomy_quality_report_step = b.step(
-        "p27c-anatomy-report",
-        "Write Prompt 27C anatomy-silhouette, proportion, and continuity evidence",
+        "anatomy-quality-report",
+        "Write anatomy-silhouette, proportion, and continuity evidence",
     );
     anatomy_quality_report_step.dependOn(&run_anatomy_quality_report.step);
-    const p27c_art_audit = b.addSystemCommand(&.{
+    const anatomy_art_audit = b.addSystemCommand(&.{
         "pwsh",
         "-NoProfile",
         "-NonInteractive",
@@ -226,9 +226,9 @@ pub fn register(options: Options) Registration {
         "Bypass",
         "-File",
     });
-    p27c_art_audit.addFileArg(b.path("tools/audit_p27c_art.ps1"));
-    p27c_art_audit.setName("audit Prompt 27C production anatomy pages");
-    const p27c_r1_torso_audit = b.addSystemCommand(&.{
+    anatomy_art_audit.addFileArg(b.path("tools/audit_anatomy_art.ps1"));
+    anatomy_art_audit.setName("audit current production anatomy pages");
+    const anatomy_torso_audit = b.addSystemCommand(&.{
         "pwsh",
         "-NoProfile",
         "-NonInteractive",
@@ -236,18 +236,18 @@ pub fn register(options: Options) Registration {
         "Bypass",
         "-File",
     });
-    p27c_r1_torso_audit.addFileArg(
-        b.path("tools/audit_p27c_r1_torso.ps1"),
+    anatomy_torso_audit.addFileArg(
+        b.path("tools/audit_anatomy_torso.ps1"),
     );
-    p27c_r1_torso_audit.setName(
-        "audit Prompt 27C-R1 torso correction bounds and fixtures",
+    anatomy_torso_audit.setName(
+        "audit anatomy torso correction bounds and fixtures",
     );
-    const p27c_r1_torso_audit_step = b.step(
-        "audit-p27c-r1-torso",
-        "Audit Prompt 27C-R1 torso pixels, alpha, continuity, and fixtures",
+    const anatomy_torso_audit_step = b.step(
+        "audit-anatomy-torso",
+        "Audit anatomy torso pixels, alpha, continuity, and fixtures",
     );
-    p27c_r1_torso_audit_step.dependOn(&p27c_art_audit.step);
-    p27c_r1_torso_audit_step.dependOn(&p27c_r1_torso_audit.step);
+    anatomy_torso_audit_step.dependOn(&anatomy_art_audit.step);
+    anatomy_torso_audit_step.dependOn(&anatomy_torso_audit.step);
     const p27c_r1_review_package = b.addSystemCommand(&.{
         "pwsh",
         "-NoProfile",
@@ -267,9 +267,9 @@ pub fn register(options: Options) Registration {
         "Build the Prompt 27C-R1 provenance and owner-review package",
     );
     p27c_r1_review_step.dependOn(&p27c_r1_review_package.step);
-    options.visual_geometry_test_step.dependOn(&p27c_art_audit.step);
-    options.visual_geometry_test_step.dependOn(&p27c_r1_torso_audit.step);
-    const verify_p25d_goldens = b.addSystemCommand(&.{
+    options.visual_geometry_test_step.dependOn(&anatomy_art_audit.step);
+    options.visual_geometry_test_step.dependOn(&anatomy_torso_audit.step);
+    const verify_visual_geometry_goldens = b.addSystemCommand(&.{
         "pwsh",
         "-NoProfile",
         "-NonInteractive",
@@ -277,13 +277,13 @@ pub fn register(options: Options) Registration {
         "Bypass",
         "-File",
     });
-    verify_p25d_goldens.addFileArg(b.path("tools/check_p25d_goldens.ps1"));
-    verify_p25d_goldens.setName("verify approved Prompt 25D D3D12 goldens");
-    const p25d_golden_step = b.step(
-        "check-p25d-goldens",
-        "Verify approved Prompt 25D D3D12/DXIL capture hashes",
+    verify_visual_geometry_goldens.addFileArg(b.path("tools/check_visual_geometry_goldens.ps1"));
+    verify_visual_geometry_goldens.setName("verify approved visual-geometry D3D12 goldens");
+    const visual_geometry_golden_step = b.step(
+        "check-visual-geometry-goldens",
+        "Verify approved visual-geometry D3D12/DXIL capture hashes",
     );
-    p25d_golden_step.dependOn(&verify_p25d_goldens.step);
+    visual_geometry_golden_step.dependOn(&verify_visual_geometry_goldens.step);
     const p27a_review_package = b.addSystemCommand(&.{
         "pwsh",
         "-NoProfile",
@@ -384,9 +384,9 @@ pub fn register(options: Options) Registration {
     visual_acceptance.dependOn(&foundation_coherence_report_exe.step);
 
     return .{
-        .p27c_art_audit = p27c_art_audit,
-        .p27c_r1_torso_audit = p27c_r1_torso_audit,
-        .p25d_goldens = verify_p25d_goldens,
+        .anatomy_art_audit = anatomy_art_audit,
+        .anatomy_torso_audit = anatomy_torso_audit,
+        .visual_geometry_goldens = verify_visual_geometry_goldens,
         .human_base_export_compile = human_base_export,
         .history = history,
         .history_check = history_check,

@@ -309,9 +309,9 @@ finally {
 }
 
 $assets = @(
-    'assets/art/p27c_male_base_anatomy_atlas.png',
-    'assets/art/p27c_female_base_anatomy_atlas.png',
-    'assets/art/p27c_anatomy_components_atlas.png'
+    'assets/art/male_base_anatomy_atlas.png',
+    'assets/art/female_base_anatomy_atlas.png',
+    'assets/art/anatomy_components_atlas.png'
 ) | ForEach-Object {
     $path = Join-Path (Split-Path -Parent $PSScriptRoot) $_
     [pscustomobject]@{

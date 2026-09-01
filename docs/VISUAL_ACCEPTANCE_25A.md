@@ -11,7 +11,7 @@ The acceptance route is:
 
 ```powershell
 $env:SDL_GPU_DRIVER = 'direct3d12'
-& '.\zig-out\bin\skeletal_gpu_demo.exe' --frames 600 --demo visual-quality --scripted-input
+& '.\zig-out\bin\engine_sandbox.exe' --frames 600 --demo visual-quality --scripted-input
 ```
 
 It writes eleven 640 by 480 P6 captures from the same prepared global

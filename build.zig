@@ -40,16 +40,16 @@ pub fn build(b: *std.Build) void {
     const dxv = ".deps/dxc-1.9.2602.24/bin/x64/dxv.exe";
     const shader_source = "assets/shaders/sprite.hlsl";
     const mesh_shader_source = "assets/shaders/deformable_mesh.hlsl";
-    const mechanical_art_atlas = "assets/art/p23_mechanical_atlas.png";
-    const energy_art_atlas = "assets/art/p23_energy_atlas.png";
-    const male_character_atlas = "assets/art/p27c_male_base_anatomy_atlas.png";
-    const female_character_atlas = "assets/art/p27c_female_base_anatomy_atlas.png";
-    const character_component_atlas = "assets/art/p27c_anatomy_components_atlas.png";
-    const wardrobe_upper_atlas = "assets/art/p25_wardrobe_upper_atlas.png";
-    const wardrobe_layers_atlas = "assets/art/p25_wardrobe_layers_atlas.png";
-    const wardrobe_lower_atlas = "assets/art/p25_wardrobe_lower_atlas.png";
-    const violet_environment_atlas = "assets/art/p26_violet_crystal_ruin_atlas.png";
-    const debug_environment_atlas = "assets/art/p26_neutral_debug_atlas.png";
+    const mechanical_art_atlas = "assets/art/mechanical_atlas.png";
+    const energy_art_atlas = "assets/art/energy_atlas.png";
+    const male_character_atlas = "assets/art/male_base_anatomy_atlas.png";
+    const female_character_atlas = "assets/art/female_base_anatomy_atlas.png";
+    const character_component_atlas = "assets/art/anatomy_components_atlas.png";
+    const wardrobe_upper_atlas = "assets/art/wardrobe_upper_atlas.png";
+    const wardrobe_layers_atlas = "assets/art/wardrobe_layers_atlas.png";
+    const wardrobe_lower_atlas = "assets/art/wardrobe_lower_atlas.png";
+    const violet_environment_atlas = "assets/art/environment_violet_crystal_ruin_atlas.png";
+    const debug_environment_atlas = "assets/art/environment_neutral_debug_atlas.png";
 
     for ([_][]const u8{
         sdl_library,
@@ -121,16 +121,16 @@ pub fn build(b: *std.Build) void {
     const install_vertex_shader = b.addInstallFileWithDir(vertex_shader.output, .bin, "shaders/sprite_vs.dxil");
     const install_fragment_shader = b.addInstallFileWithDir(fragment_shader.output, .bin, "shaders/sprite_ps.dxil");
     const install_mesh_vertex_shader = b.addInstallFileWithDir(mesh_vertex_shader.output, .bin, "shaders/deformable_mesh_vs.dxil");
-    const install_mechanical_art_atlas = b.addInstallFileWithDir(b.path(mechanical_art_atlas), .bin, "art/p23_mechanical_atlas.png");
-    const install_energy_art_atlas = b.addInstallFileWithDir(b.path(energy_art_atlas), .bin, "art/p23_energy_atlas.png");
-    const install_male_character_atlas = b.addInstallFileWithDir(b.path(male_character_atlas), .bin, "art/p27c_male_base_anatomy_atlas.png");
-    const install_female_character_atlas = b.addInstallFileWithDir(b.path(female_character_atlas), .bin, "art/p27c_female_base_anatomy_atlas.png");
-    const install_character_component_atlas = b.addInstallFileWithDir(b.path(character_component_atlas), .bin, "art/p27c_anatomy_components_atlas.png");
-    const install_wardrobe_upper_atlas = b.addInstallFileWithDir(b.path(wardrobe_upper_atlas), .bin, "art/p25_wardrobe_upper_atlas.png");
-    const install_wardrobe_layers_atlas = b.addInstallFileWithDir(b.path(wardrobe_layers_atlas), .bin, "art/p25_wardrobe_layers_atlas.png");
-    const install_wardrobe_lower_atlas = b.addInstallFileWithDir(b.path(wardrobe_lower_atlas), .bin, "art/p25_wardrobe_lower_atlas.png");
-    const install_violet_environment_atlas = b.addInstallFileWithDir(b.path(violet_environment_atlas), .bin, "art/p26_violet_crystal_ruin_atlas.png");
-    const install_debug_environment_atlas = b.addInstallFileWithDir(b.path(debug_environment_atlas), .bin, "art/p26_neutral_debug_atlas.png");
+    const install_mechanical_art_atlas = b.addInstallFileWithDir(b.path(mechanical_art_atlas), .bin, "art/mechanical_atlas.png");
+    const install_energy_art_atlas = b.addInstallFileWithDir(b.path(energy_art_atlas), .bin, "art/energy_atlas.png");
+    const install_male_character_atlas = b.addInstallFileWithDir(b.path(male_character_atlas), .bin, "art/male_base_anatomy_atlas.png");
+    const install_female_character_atlas = b.addInstallFileWithDir(b.path(female_character_atlas), .bin, "art/female_base_anatomy_atlas.png");
+    const install_character_component_atlas = b.addInstallFileWithDir(b.path(character_component_atlas), .bin, "art/anatomy_components_atlas.png");
+    const install_wardrobe_upper_atlas = b.addInstallFileWithDir(b.path(wardrobe_upper_atlas), .bin, "art/wardrobe_upper_atlas.png");
+    const install_wardrobe_layers_atlas = b.addInstallFileWithDir(b.path(wardrobe_layers_atlas), .bin, "art/wardrobe_layers_atlas.png");
+    const install_wardrobe_lower_atlas = b.addInstallFileWithDir(b.path(wardrobe_lower_atlas), .bin, "art/wardrobe_lower_atlas.png");
+    const install_violet_environment_atlas = b.addInstallFileWithDir(b.path(violet_environment_atlas), .bin, "art/environment_violet_crystal_ruin_atlas.png");
+    const install_debug_environment_atlas = b.addInstallFileWithDir(b.path(debug_environment_atlas), .bin, "art/environment_neutral_debug_atlas.png");
     b.getInstallStep().dependOn(&install_sdl.step);
     b.getInstallStep().dependOn(&install_vertex_shader.step);
     b.getInstallStep().dependOn(&install_fragment_shader.step);
