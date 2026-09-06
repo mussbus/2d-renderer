@@ -1,6 +1,28 @@
 # Engine Lab EL1: persistent hub corrective pass
 
-Status: persistent-hub corrective implementation; validation results and the owner gate are recorded below.
+Status: ACCEPTED for EL1. Owner visual and architectural acceptance was confirmed
+on 2026-09-06 for implementation commit 7b3eb3a4b90093656167dc65082b62fa6378c963.
+
+## Owner acceptance
+
+On 2026-09-06 the owner confirmed that EL1 met its defined acceptance gate and
+authorized its merge. The owner reported these manual checks passed:
+
+- [PASS] Ordinary traversal through the foundation area and its stations.
+- [PASS] Developer navigation within the persistent hub.
+- [PASS] Whole-hub reset.
+- [PASS] Interactive controls.
+- [PASS] Camera behavior.
+- [PASS] Physical gamepad input.
+
+This owner-reported acceptance closes the manual review limitations recorded during
+the automated corrective pass. Its automated test, native rendering, allocation and
+lifetime evidence remains unchanged below. Acceptance applies to the implemented EL1
+hub and its documented provisional actor; canonical-generated character integration
+and other deferred systems are outside this gate.
+
+EL1 is closed to additional feature work. Future Engine Lab work belongs on a
+separately scoped EL2 branch/worktree created from master after EL1 is merged.
 
 ## Authority and starting audit
 
@@ -224,7 +246,7 @@ change is included. Runtime assets and DLLs install next to zig-out/bin/engine_l
 & '.\.deps\zig-0.16.0\zig.exe' build run-engine-lab -j1 --global-cache-dir '.zig-cache\el1-global' -- --smoke
 ```
 
-Owner review: confirm direct startup and readable controls, walk right into the
+Repeatable review procedure: confirm direct startup and readable controls, walk right into the
 central platform to see blocking, then jump across it and continue to the second
 station and right wall. Walk/jump back. Inspect facing, animation, gravity, camera
 follow, collider outlines (F3), and both station histories continuing over time.
@@ -232,12 +254,12 @@ Use P and confirm the tick/hash stays fixed; T must advance exactly one tick; P
 resumes. F1/F2 must reposition the same actor without clearing station state or
 hub time. R must return the starting actor/camera/seed/station state and running
 clock, without recreating the renderer. Escape must produce the balanced shutdown
-marker. A physical gamepad review remains owner work.
+marker. The owner confirmed that the physical gamepad checks passed on 2026-09-06.
 
-Owner visual AND architectural acceptance is PENDING. In particular, review the
-provisional specialized actor composition alongside static F-backed stations. This
-corrective pass does not claim the future canonical-generated runtime actor, the
-full future hub, a gameplay vertical slice, or generalized recording/replay.
+Owner visual AND architectural acceptance is ACCEPTED for EL1 as of 2026-09-06,
+including its provisional specialized actor composition alongside static F-backed
+stations. Acceptance does not claim the future canonical-generated runtime actor,
+the full future hub, a gameplay vertical slice, or generalized recording/replay.
 
 ## Scope boundary
 
@@ -274,11 +296,11 @@ The desktop input API exposes brief key taps without a held-key operation. Taps
 exercised action controls and a jump/landing visual during an earlier inspection,
 but did not establish sustained manual keyboard traversal. Physical walking,
 platform crossing, facing, gravity/collision and continuous camera tracking are
-therefore automated controller/native-smoke evidence, with sustained interactive
-keyboard travel and physical gamepad review still due from the owner using the
-procedure above. No screenshot or automated test is called owner acceptance. This
-is the validation limitation permitted by the corrective prompt; it is not hidden
-as a manual pass.
+therefore automated controller/native-smoke evidence in the original corrective
+report. The owner's 2026-09-06 confirmation supplies the completed manual traversal,
+controls, camera, navigation, reset and gamepad acceptance. This preserves the
+distinction between the agent's original automated evidence and the owner's later
+manual checks; the original tool limitation is no longer an open EL1 acceptance gate.
 
 ## Corrective validation history
 
@@ -404,10 +426,12 @@ git --no-optional-locks -c safe.directory='C:/Users/Chad/Documents/2d Renderer-e
 git --no-optional-locks -c safe.directory='C:/Users/Chad/Documents/2d Renderer-engine-lab-el1' -c core.safecrlf=false diff --cached cb60fc9a9b24ba7d69578ffc721948e9b00de8fd
 ```
 
-There is no unresolved source/test/build failure. The only validation deviation is
-the explicitly reported limitation on sustained manual keyboard input; owner
-visual/architectural acceptance and physical gamepad review remain outstanding.
-EL2 was not started. Nothing was fetched, pulled, merged, pushed, rebased, amended,
+There is no unresolved source/test/build failure. The owner's 2026-09-06 acceptance
+closes the original manual-input review limitation and the visual, architectural
+and physical gamepad gates for EL1.
+
+At the end of the corrective implementation pass, EL2 had not been started.
+Nothing was fetched, pulled, merged, pushed, rebased, amended,
 reset, cleaned or stashed in this corrective pass. No owner file, index, branch or
 HEAD was modified. Only the requested feature-worktree correction is committed;
 no worktree or branch is removed and no other roadmap lane is begun.
