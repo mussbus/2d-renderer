@@ -78,7 +78,7 @@ pub const CommandBuffer = struct {
             const glyph = labelGlyph(toUpper(raw));
             for (0..5) |row| {
                 for (0..3) |column| {
-                    const bit: u4 = @intCast(row * 3 + column);
+                    const bit: u4 = @intCast(row * 3 + (2 - column));
                     if (glyph & (@as(u16, 1) << bit) == 0) continue;
                     try buffer.append(.{
                         .world_position = .{
@@ -139,17 +139,45 @@ fn glyphRows(a: u3, b: u3, c: u3, d: u3, e: u3) u16 {
 fn labelGlyph(value: u8) u16 {
     return switch (value) {
         'A' => glyphRows(0b010, 0b101, 0b111, 0b101, 0b101),
+        'B' => glyphRows(0b110, 0b101, 0b110, 0b101, 0b110),
         'C' => glyphRows(0b011, 0b100, 0b100, 0b100, 0b011),
         'D' => glyphRows(0b110, 0b101, 0b101, 0b101, 0b110),
         'E' => glyphRows(0b111, 0b100, 0b110, 0b100, 0b111),
+        'F' => glyphRows(0b111, 0b100, 0b110, 0b100, 0b100),
         'G' => glyphRows(0b011, 0b100, 0b101, 0b101, 0b011),
+        'H' => glyphRows(0b101, 0b101, 0b111, 0b101, 0b101),
         'I' => glyphRows(0b111, 0b010, 0b010, 0b010, 0b111),
+        'J' => glyphRows(0b001, 0b001, 0b001, 0b101, 0b010),
+        'K' => glyphRows(0b101, 0b101, 0b110, 0b101, 0b101),
         'L' => glyphRows(0b100, 0b100, 0b100, 0b100, 0b111),
+        'M' => glyphRows(0b101, 0b111, 0b111, 0b101, 0b101),
         'N' => glyphRows(0b101, 0b111, 0b111, 0b111, 0b101),
         'O' => glyphRows(0b010, 0b101, 0b101, 0b101, 0b010),
         'P' => glyphRows(0b110, 0b101, 0b110, 0b100, 0b100),
+        'Q' => glyphRows(0b010, 0b101, 0b101, 0b111, 0b011),
+        'R' => glyphRows(0b110, 0b101, 0b110, 0b101, 0b101),
+        'S' => glyphRows(0b011, 0b100, 0b010, 0b001, 0b110),
         'T' => glyphRows(0b111, 0b010, 0b010, 0b010, 0b010),
+        'U' => glyphRows(0b101, 0b101, 0b101, 0b101, 0b111),
         'V' => glyphRows(0b101, 0b101, 0b101, 0b101, 0b010),
+        'W' => glyphRows(0b101, 0b101, 0b111, 0b111, 0b101),
+        'X' => glyphRows(0b101, 0b101, 0b010, 0b101, 0b101),
+        'Y' => glyphRows(0b101, 0b101, 0b010, 0b010, 0b010),
+        'Z' => glyphRows(0b111, 0b001, 0b010, 0b100, 0b111),
+        '0' => glyphRows(0b111, 0b101, 0b101, 0b101, 0b111),
+        '1' => glyphRows(0b010, 0b110, 0b010, 0b010, 0b111),
+        '2' => glyphRows(0b110, 0b001, 0b010, 0b100, 0b111),
+        '3' => glyphRows(0b110, 0b001, 0b010, 0b001, 0b110),
+        '4' => glyphRows(0b101, 0b101, 0b111, 0b001, 0b001),
+        '5' => glyphRows(0b111, 0b100, 0b110, 0b001, 0b110),
+        '6' => glyphRows(0b011, 0b100, 0b110, 0b101, 0b010),
+        '7' => glyphRows(0b111, 0b001, 0b010, 0b010, 0b010),
+        '8' => glyphRows(0b010, 0b101, 0b010, 0b101, 0b010),
+        '9' => glyphRows(0b010, 0b101, 0b011, 0b001, 0b110),
+        '/' => glyphRows(0b001, 0b001, 0b010, 0b100, 0b100),
+        '-' => glyphRows(0, 0, 0b111, 0, 0),
+        '.' => glyphRows(0, 0, 0, 0, 0b010),
+        ':' => glyphRows(0, 0b010, 0, 0b010, 0),
         ' ', '_' => 0,
         else => glyphRows(0b111, 0b001, 0b010, 0, 0b010),
     };

@@ -1601,3 +1601,30 @@ are zero. `_0084–_0090` are preserved invalid-JSON diagnostic candidates;
 they are not completion evidence. Bundle finalization now parses generated
 state and manifest JSON before rename. Manual visual acceptance is
 `[PENDING OWNER REVIEW]`.
+
+## Engine Lab EL1
+
+`zig build engine-lab -j1` builds/installs the independent persistent hub without
+building the sandbox. `zig build test-engine-lab -j1` runs 16 headless tests of
+actual controller movement/collision, concurrent station state, destination travel,
+reset, frame-schedule checkpoints, input suppression, rendering extraction and
+allocation/lifetime safety. These also run in `test`, `check` and `verify`;
+`check` compiles the independent executable.
+
+`zig build run-engine-lab -j1 -- --verify` runs the actual hub for 1440 fixed ticks
+under 60 Hz and mixed frame schedules, using the same bounded movement/jump fixture.
+Both stations must be reached, continue updating, and match logical checkpoints.
+This is test input, with no general recording, replay or restore format.
+`zig build run-engine-lab -j1 -- --smoke` checks 180 native D3D12 frames, production
+actor movement/jump/collision, two destination shortcuts, pause/step/reset, pixel
+readback, allocation counters and balanced resources/fences.
+
+For interactive review, run `zig build run-engine-lab -j1`. A/D or arrows move;
+Space jumps (gamepad stick/south are also mapped). Walk to the central raised
+platform, jump across it, and reach the second installation. Confirm camera
+tracking, facing and animation. F1/F2 move the same actor to station destinations;
+P pauses/resumes, T advances one paused tick, R reconstructs the complete seeded
+hub, F3 toggles diagnostics, and Escape exits. Both station states remain live
+through ordinary movement and destination travel. Review the exact evidence and
+remaining owner visual/architectural gate in the
+[EL1 report](implementation/engine_lab_el1.md).

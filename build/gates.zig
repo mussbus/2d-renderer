@@ -22,6 +22,7 @@ pub fn register(options: Options) void {
     test_step.dependOn(&options.engine.run_secondary_motion.step);
     test_step.dependOn(&options.engine.run_deterministic.step);
     test_step.dependOn(&options.engine.run_engine_composition.step);
+    test_step.dependOn(&options.engine.run_engine_lab.step);
     test_step.dependOn(&options.engine.run_renderer_boundary.step);
     test_step.dependOn(&options.content.run_image_decode.step);
     test_step.dependOn(&options.engine.run_foundation_primitives.step);
@@ -58,6 +59,7 @@ pub fn register(options: Options) void {
     );
     check_step.dependOn(&options.apps.demo.step);
     check_step.dependOn(&options.apps.engine_smoke.step);
+    check_step.dependOn(&options.apps.engine_lab.step);
     check_step.dependOn(&format.step);
     check_step.dependOn(test_step);
     check_step.dependOn(&repository_audit.step);

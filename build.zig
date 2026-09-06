@@ -153,7 +153,11 @@ pub fn build(b: *std.Build) void {
         .sdl_include = sdl_include,
         .sdl_library_dir = sdl_library_dir,
     });
-    const apps = apps_build.register(.{ .b = b, .modules = &modules });
+    const apps = apps_build.register(.{
+        .b = b,
+        .modules = &modules,
+        .runtime_steps = &.{ &install_sdl.step, &install_vertex_shader.step, &install_fragment_shader.step, &install_mesh_vertex_shader.step },
+    });
     const engine_tests = tests_engine_build.register(.{
         .b = b,
         .target = target,

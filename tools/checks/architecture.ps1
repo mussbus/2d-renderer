@@ -336,6 +336,54 @@ if (-not $engineBuild.Contains('"test-world"') -or -not $gatesBuild.Contains('ru
     Add-Failure 'World-time focused world tests must remain registered in the fast engine aggregate.'
 }
 
+# EL1 hub protects production direction and real transitive build imports.
+$labDirectory = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'src/app/engine_lab')) + [IO.Path]::DirectorySeparatorChar
+foreach ($file in $productionFiles) {
+    $source = Get-Content -Raw -LiteralPath $file.FullName
+    $inLab = $file.FullName.StartsWith($labDirectory, [StringComparison]::OrdinalIgnoreCase)
+    if (-not $inLab -and [regex]::IsMatch($source, '@import\s*\(\s*"[^"]*(engine_lab|engine-lab)[^"]*"')) {
+        Add-Failure "EL1 dependency violation: production source imports Engine Lab: $($file.FullName)."
+    }
+    if ($inLab -and [regex]::IsMatch($source, '@import\s*\(\s*"[^"]*(demo_application|engine_smoke|_demo|evidence|canonical_human|canonical_geometry)[^"]*"')) {
+        Add-Failure "EL1 independent source imports an application, evidence or canonical-human module: $($file.FullName)."
+    }
+}
+$moduleEdges = @{}
+foreach ($edge in [regex]::Matches($modulesBuild, '(?<from>\w+_module)\.addImport\("[^"]+",\s*(?<to>\w+_module)\)')) {
+    $from = $edge.Groups['from'].Value
+    if (-not $moduleEdges.ContainsKey($from)) { $moduleEdges[$from] = [Collections.Generic.List[string]]::new() }
+    $moduleEdges[$from].Add($edge.Groups['to'].Value)
+    if ($from -notmatch '^engine_lab' -and $edge.Groups['to'].Value -match '^engine_lab') {
+        Add-Failure "EL1 reverse build dependency from '$from'."
+    }
+}
+foreach ($root in @('engine_lab_entry_module', 'engine_lab_test_module', 'engine_lab_verification_module')) {
+    $visited = [Collections.Generic.HashSet[string]]::new()
+    $pending = [Collections.Generic.Queue[string]]::new()
+    $pending.Enqueue($root)
+    while ($pending.Count -gt 0) {
+        $name = $pending.Dequeue()
+        if (-not $visited.Add($name)) { continue }
+        if ($name -match '(^demo_|_demo_module$|engine_smoke|evidence|canonical_human|canonical_geometry|foundation_playground|visual_foundation)') {
+            Add-Failure "EL1 transitive boundary violation: '$root' reaches '$name'."
+        }
+        if ($root -in @('engine_lab_test_module', 'engine_lab_verification_module') -and $name -match '^(sdl|sdl_input|sdl_gpu_renderer)_module$') {
+            Add-Failure "EL1 headless test graph reaches SDL through '$name'."
+        }
+        if ($moduleEdges.ContainsKey($name)) {
+            foreach ($next in $moduleEdges[$name]) { $pending.Enqueue($next) }
+        }
+    }
+    Write-Host "EL1 dependency closure: $root; modules=$($visited.Count)"
+}
+if (-not $appsBuild.Contains('"engine-lab"') -or
+    -not $appsBuild.Contains('"run-engine-lab"') -or
+    -not $engineBuild.Contains('"test-engine-lab"') -or
+    -not $gatesBuild.Contains('run_engine_lab') -or
+    -not $gatesBuild.Contains('options.apps.engine_lab.step')) {
+    Add-Failure 'EL1 independent application or aggregate validation registration is missing.'
+}
+
 if ($failed) {
     exit 1
 }

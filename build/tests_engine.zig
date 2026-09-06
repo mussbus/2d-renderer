@@ -11,6 +11,7 @@ pub const Options = struct {
 pub const Registration = struct {
     run_secondary_motion: *std.Build.Step.Run,
     run_engine_composition: *std.Build.Step.Run,
+    run_engine_lab: *std.Build.Step.Run,
     run_deterministic: *std.Build.Step.Run,
     run_renderer_boundary: *std.Build.Step.Run,
     run_foundation_primitives: *std.Build.Step.Run,
@@ -37,6 +38,14 @@ pub fn register(options: Options) Registration {
     const target = options.target;
     const optimize = options.optimize;
     const modules = options.modules;
+
+    const engine_lab_tests = addEngineTest(b, .{
+        .name = "engine-lab-tests",
+        .root_module = modules.engine_lab_test_module,
+    });
+    const run_engine_lab_tests = b.addRunArtifact(engine_lab_tests);
+    const engine_lab_test_step = b.step("test-engine-lab", "Run headless Engine Lab hub, actor, collision, navigation, reset and determinism contracts");
+    engine_lab_test_step.dependOn(&run_engine_lab_tests.step);
 
     const engine_composition_tests = addEngineTest(b, .{
         .name = "engine-composition-tests",
@@ -214,6 +223,7 @@ pub fn register(options: Options) Registration {
     return .{
         .run_secondary_motion = run_secondary_motion_tests,
         .run_engine_composition = run_engine_composition_tests,
+        .run_engine_lab = run_engine_lab_tests,
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,
         .run_foundation_primitives = run_foundation_primitive_tests,
