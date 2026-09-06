@@ -74,6 +74,31 @@ new major domain or top-level aggregate, and ordinary additions do not require
 new checks in `tools/check_repository.ps1` or new prose here unless policy or
 gate semantics actually change.
 
+### World-time foundation
+
+`zig build test-world -j1` runs 21 headless declarations (20 behavioral tests
+and their import root) from `tests/world/test_world.zig`. The test root imports
+only the production `world` module, whose implementation uses `std` and local
+leaves. There is no SDL linkage, wall-clock access, network, sleep, application,
+physics, or animation dependency. The target is included in `test`, `check`,
+`test-full`, and `verify` through the fast engine aggregate.
+
+Coverage includes exact rational tick accumulation, fractional carry, partition
+independence, zero progression and numeric zero rate, arbitrary day cycles,
+rollover, exhaustion with atomic failure, copied continuation snapshots,
+independent clocks, rate versus cycle semantics, and a complete headless
+progression-to-day/time-snapshot vertical slice. Boundary arithmetic is also
+exercised with `test-world -Doptimize=ReleaseSafe` and
+`test-world -Doptimize=ReleaseFast`. Only approximate float convenience views
+use a rounding tolerance; authoritative time comparisons are exact integers.
+
+For world-time changes, run the focused target in all three modes, `check`,
+`test-full`, and the normal `build` gate. The static architecture audit allows
+only downward engine dependencies to foundation and excludes clock,
+application, and backend access; no unused foundation edge is required.
+Read the [world-time implementation report](implementation/world_time_foundation.md)
+for units, continuation behavior, validation evidence, and owner-review decisions.
+
 ### Independent engine composition proof
 
 `zig build engine-smoke -j1` builds the permanent small second application.

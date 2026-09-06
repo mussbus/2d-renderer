@@ -277,6 +277,30 @@ if ([regex]::IsMatch($engineCompositionTests, '@import\s*\(\s*"(demo_application
     Add-Failure 'F4D CPU proof imports demo/application scenario authority.'
 }
 
+# World-time uses std and local leaves; any engine dependency must point down to F.
+$worldDirectory = Join-Path $repositoryRoot 'src/world'
+$worldImports = @('std', 'foundation', 'time.zig')
+foreach ($file in @(Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath $worldDirectory)) {
+    $source = Get-Content -Raw -LiteralPath $file.FullName
+    foreach ($match in [regex]::Matches($source, '@import\s*\(\s*"(?<module>[^"]+)"\s*\)')) {
+        if ($match.Groups['module'].Value -notin $worldImports) {
+            Add-Failure "World-time dependency violation: '$($file.Name)' imports '$($match.Groups['module'].Value)'."
+        }
+    }
+    if ([regex]::IsMatch($source, '@cImport|std\.(time|Io|os|Random)\b|std\.crypto\.random\b|(?m)^var\s')) {
+        Add-Failure "World-time headless determinism violation in '$($file.Name)'."
+    }
+}
+$worldEdges = @([regex]::Matches($modulesBuild, '\bworld_module\.addImport\(\s*"(?<module>[^"]+)"'))
+foreach ($edge in $worldEdges) {
+    if ($edge.Groups['module'].Value -ne 'foundation') {
+        Add-Failure 'World-time engine dependencies may only point down to foundation.'
+    }
+}
+if (-not $engineBuild.Contains('"test-world"') -or -not $gatesBuild.Contains('run_world')) {
+    Add-Failure 'World-time focused world tests must remain registered in the fast engine aggregate.'
+}
+
 if ($failed) {
     exit 1
 }
