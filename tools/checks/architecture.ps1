@@ -277,6 +277,34 @@ if ([regex]::IsMatch($engineCompositionTests, '@import\s*\(\s*"(demo_application
     Add-Failure 'F4D CPU proof imports demo/application scenario authority.'
 }
 
+# PSM01 stays dimension-neutral and headless, including its transitive core.
+$motionCoreImports = @{
+    'src/physics/secondary_motion.zig' = @('std', 'fixed_step', 'spring')
+    'src/physics/spring.zig' = @('std')
+    'src/physics/fixed_step.zig' = @('std')
+}
+foreach ($relative in $motionCoreImports.Keys) {
+    $source = Read-RepositoryFile $relative
+    foreach ($match in [regex]::Matches($source, '@import\s*\(\s*"(?<module>[^"]+)"\s*\)')) {
+        if ($match.Groups['module'].Value -notin $motionCoreImports[$relative]) {
+            Add-Failure "PSM01 headless boundary violation: '$relative' imports '$($match.Groups['module'].Value)'."
+        }
+    }
+}
+$motionCore = Read-RepositoryFile 'src/physics/secondary_motion.zig'
+if ([regex]::IsMatch($motionCore, 'std\.(heap|time|Io|Random|posix)\b|(?m)^var\s')) {
+    Add-Failure 'PSM01 core must not acquire ambient allocation, time, IO, randomness or mutable global state.'
+}
+foreach ($match in [regex]::Matches($modulesBuild, '(?m)^\s*secondary_motion_module\.addImport\(\s*"(?<module>[^"]+)"')) {
+    if ($match.Groups['module'].Value -notin @('fixed_step', 'spring')) {
+        Add-Failure 'PSM01 build registration injects a dependency outside the scalar physics core.'
+    }
+}
+if (-not $engineBuild.Contains('"test-psm01"') -or
+    -not $gatesBuild.Contains('test_step.dependOn(&options.engine.run_secondary_motion.step)')) {
+    Add-Failure 'PSM01 focused proof must remain registered in the fast engine gate.'
+}
+
 if ($failed) {
     exit 1
 }

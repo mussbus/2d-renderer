@@ -9,6 +9,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
+    run_secondary_motion: *std.Build.Step.Run,
     run_engine_composition: *std.Build.Step.Run,
     run_deterministic: *std.Build.Step.Run,
     run_renderer_boundary: *std.Build.Step.Run,
@@ -47,6 +48,16 @@ pub fn register(options: Options) Registration {
     );
     engine_composition_test_step.dependOn(&run_engine_composition_tests.step);
 
+    const secondary_motion_tests = addEngineTest(b, .{
+        .name = "psm01-secondary-motion-tests",
+        .root_module = modules.secondary_motion_test_module,
+    });
+    const run_secondary_motion_tests = b.addRunArtifact(secondary_motion_tests);
+    const secondary_motion_step = b.step(
+        "test-psm01",
+        "Run headless scalar driver-following, energy, lifecycle and fixed-clock proofs",
+    );
+    secondary_motion_step.dependOn(&run_secondary_motion_tests.step);
     const camera_tests = addEngineTest(b, .{
         .name = "camera-tests",
         .root_module = modules.camera_test_module,
@@ -182,6 +193,7 @@ pub fn register(options: Options) Registration {
     integration_test_step.dependOn(&run_integration_tests.step);
 
     return .{
+        .run_secondary_motion = run_secondary_motion_tests,
         .run_engine_composition = run_engine_composition_tests,
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,

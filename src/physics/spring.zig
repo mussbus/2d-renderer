@@ -83,12 +83,25 @@ pub const State = struct {
     /// a = -stiffness * (offset - target) - damping * velocity,
     /// then velocity += a * dt and offset += velocity * dt.
     pub fn step(state: *State, configuration: Configuration, fixed_dt: f32) Error!void {
+        try state.stepWithAcceleration(configuration, fixed_dt, 0);
+    }
+
+    /// The same unit-mass integrator with explicit acceleration in channel
+    /// units/s^2. A zero input retains the legacy arithmetic sequence.
+    pub fn stepWithAcceleration(
+        state: *State,
+        configuration: Configuration,
+        fixed_dt: f32,
+        external_acceleration: f32,
+    ) Error!void {
         try configuration.validate(fixed_dt);
+        if (!std.math.isFinite(external_acceleration)) return error.NonFiniteSpringState;
         const values = [_]f32{ state.offset, state.velocity, state.target_offset };
         for (values) |value| if (!std.math.isFinite(value)) return error.NonFiniteSpringState;
 
-        const acceleration = -configuration.stiffness * (state.offset - state.target_offset) -
+        var acceleration = -configuration.stiffness * (state.offset - state.target_offset) -
             configuration.damping * state.velocity;
+        if (external_acceleration != 0) acceleration += external_acceleration;
         if (!std.math.isFinite(acceleration)) return error.NonFiniteSpringState;
         const velocity = state.velocity + acceleration * fixed_dt;
         if (!std.math.isFinite(velocity)) return error.NonFiniteSpringState;

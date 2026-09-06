@@ -41,6 +41,18 @@ process exit code, while avoiding the server-listener timeouts observed on the
 Windows reference machine during long aggregate gates. Gate membership,
 assertions, filtering, and focused target names are unchanged.
 
+
+### PSM01 generic secondary-motion proof
+
+Run `zig build test-psm01 -j1` for the independent headless scalar solver,
+driver timing, lifecycle, constraint-energy and replay proofs. This test root
+imports only the production secondary_motion, fixed_step and spring modules.
+It is also included in `test`, `check`, `test-full` and `verify`. Existing
+animation and attachment-secondary regressions remain in test-deterministic.
+The [PSM01 contract and measured evidence](implementation/psm01_secondary_motion.md)
+documents the 240 Hz driver tick, two fixed spring integration stages, profile
+envelope, comparison tolerances, preserved legacy samples and owner boundary.
+
 ### Change-based gate guidance
 
 | Change | Required aggregate gates | Add focused routes |
