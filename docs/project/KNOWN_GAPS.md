@@ -74,3 +74,20 @@ cancellation, rollback, and reset.
 This is deliberately not a general paired-pose or prop-interaction framework.
 Future multi-contact, relative-root, world-anchor, back/three-quarter, or
 cinematic behavior remains out of scope until real content requires it.
+
+## RR1 replay integration boundary
+
+The [RR1 V1 substrate](../architecture/deterministic_record_replay_v1.md)
+supports one headless production-controller client. Arbitrary character,
+animation, interaction, equipment, specialized scene and sandbox state is not
+replay-integrated. RuntimeScene publication and snapshot acquisition currently
+allocate; RR1 retains one immutable initial snapshot and does not claim an
+allocation-free dynamic F publication route.
+
+A future Engine Lab or gameplay client must define its bootstrap envelope,
+versioned semantic channels, accepted external-event policy and complete
+deterministic contributors, then call the core from its existing tick boundary.
+It must explicitly handle scene publication and update its protocol identity
+when algorithms change. V1 disk encoding is durable; simulation under unknown
+future versions fails closed. Save-game UX, rewind, migration, networking and
+whole-engine replay require separate work.

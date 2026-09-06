@@ -254,3 +254,17 @@ submissions, each bound to the exported projected module chain. Final trace,
 F1, JSON, summary, and validation consume those same request records. The
 technical arm uses the existing atlas, global queue, D3D12 renderer, and
 resource ownership; no graph-only or overlay-only renderer exists.
+
+## RR1 record/replay ownership
+
+| Boundary | Authority |
+| --- | --- |
+| Canonical V1 sessions, channel descriptors, recorder, player, validation and checkpoints | [record_replay/root.zig](../../src/record_replay/root.zig), importing foundation only |
+| CharacterIntent/event encoding and supported headless composition | [record_replay_proof.zig](../../src/app/record_replay_proof.zig), an external production-core client |
+| Focused CPU proof and malformed-data tests | [record_replay_tests.zig](../../tests/record_replay_tests.zig), registered by the engine test helper and included in the fast gate |
+
+The [V1 contract](../architecture/deterministic_record_replay_v1.md) preserves
+physical input -> application actions -> semantic tick intent. Playback replaces
+only the last boundary. The proof retains a static RuntimeScene snapshot;
+its existing controller owns movement. Dynamic F scene publication, arbitrary
+specialized scenes and whole-engine replay remain outside this integration.

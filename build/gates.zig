@@ -19,6 +19,7 @@ pub fn register(options: Options) void {
         "test",
         "Run the fast engine-contract CPU suite without SDL or a GPU",
     );
+    test_step.dependOn(&options.engine.run_record_replay.step);
     test_step.dependOn(&options.engine.run_deterministic.step);
     test_step.dependOn(&options.engine.run_engine_composition.step);
     test_step.dependOn(&options.engine.run_renderer_boundary.step);

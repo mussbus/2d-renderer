@@ -9,6 +9,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
+    run_record_replay: *std.Build.Step.Run,
     run_engine_composition: *std.Build.Step.Run,
     run_deterministic: *std.Build.Step.Run,
     run_renderer_boundary: *std.Build.Step.Run,
@@ -36,6 +37,13 @@ pub fn register(options: Options) Registration {
     const optimize = options.optimize;
     const modules = options.modules;
 
+    const record_replay_tests = addEngineTest(b, .{
+        .name = "record-replay-tests",
+        .root_module = modules.record_replay_test_module,
+    });
+    const run_record_replay = b.addRunArtifact(record_replay_tests);
+    b.step("test-record-replay", "Run headless deterministic V1 record/replay contracts and production proof")
+        .dependOn(&run_record_replay.step);
     const engine_composition_tests = addEngineTest(b, .{
         .name = "engine-composition-tests",
         .root_module = modules.engine_composition_test_module,
@@ -182,6 +190,7 @@ pub fn register(options: Options) Registration {
     integration_test_step.dependOn(&run_integration_tests.step);
 
     return .{
+        .run_record_replay = run_record_replay,
         .run_engine_composition = run_engine_composition_tests,
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,

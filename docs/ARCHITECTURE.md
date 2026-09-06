@@ -909,3 +909,23 @@ with the current front/side/reflected transform. Gap pixels are observation
 data derived from the captured camera, never placement authority. Inactive
 modules retain immutable definition data but produce no active projected
 members and no queue submissions.
+
+## RR1 deterministic record/replay
+
+The normative [V1 record/replay contract](architecture/deterministic_record_replay_v1.md)
+defines the headless foundation and durable encoding. The reusable core in
+`src/record_replay/root.zig` depends only on foundation and the standard
+library. It owns versioned session identity, bounded canonical command/event
+storage, encoding/validation, checkpoint aggregation and a player which
+latches first divergence. The external client in
+`src/app/record_replay_proof.zig` uses the existing production controller,
+collision world, CharacterIntent and fixed 240 Hz contract with one immutable
+RuntimeScene anchor. It does not reopen scene-core publication authority.
+
+Commands/events apply before tick N; checkpoints observe the state after it.
+Initial envelope and recreated deterministic state must match before playback.
+Generic scene identity alone does not cover specialized character state.
+Only this proof's complete controller state, gameplay properties and immutable
+bootstrap/scene/collision/derivation state are covered. The current sandbox,
+animation, interaction, equipment and other scenes remain outside RR1 replay.
+See the [RR1 implementation record](implementation/rr1_record_replay.md).

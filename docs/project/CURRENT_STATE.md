@@ -408,3 +408,21 @@ first satisfy their recorded prerequisites. Prompt 27A, Prompt 27B, Prompt
 27C-R1, VF-01, VF-02, and VF-03 owner/manual visual acceptance remains
 `[PENDING OWNER REVIEW]` as a separate presentation matter. No post-F4 track
 has begun through this administrative update.
+
+## RR1 deterministic record/replay foundation
+
+RR1 adds a reusable headless core and a production-controller proof from the
+accepted F4 base. Format/protocol/derivation framing are V1, at exactly 240 Hz.
+Initial schema 1/version 1 is canonical spawn X; command 1/version 1 encodes
+CharacterIntent; event 1/version 1 assigns accepted maximum movement speed.
+Every tick has a post-step checkpoint. The proof hashes all 20 production
+controller State fields, all four gameplay properties, controller configuration
+and spawn data, root seed/derivation key, collision world, and its immutable
+RuntimeScene anchor's semantic identity/lifecycle/enabled/transform state.
+
+The [architecture contract](../architecture/deterministic_record_replay_v1.md)
+specifies durable bytes and fail-closed compatibility; the
+[implementation record](../implementation/rr1_record_replay.md) records actual
+validation and remaining boundaries. RR1 does not add a gameplay vertical
+slice or integrate all sandbox systems. Earlier F4 administrative and visual
+acceptance records above retain their milestone-time meaning.

@@ -74,6 +74,27 @@ new major domain or top-level aggregate, and ordinary additions do not require
 new checks in `tools/check_repository.ps1` or new prose here unless policy or
 gate semantics actually change.
 
+### RR1 deterministic record/replay
+
+`zig build test-record-replay -j1` runs 30 CPU-only contracts, including
+independent V1 byte/hash/key goldens, malformed/corrupt/truncated artifacts,
+phase/tick/capacity failures, initial/seed/protocol mismatches, writer failure,
+first-divergence diagnostics, pending-edge capture, full controller-field
+digest coverage, allocation-attempt guards and initialization cleanup.
+
+The proof records 480 authoritative ticks and reloads/replays all 480
+checkpoints. Three 160-tick recordings with frame groups 1, 7 and 1 must be
+byte-identical. Exact final controller state is compared in the allocation
+proof. Playback takes no live input or frame delta. These tests import no SDL
+or GPU module. They are part of `test`, hence `check`, `test-full` and
+`verify`; focused ReleaseSafe and ReleaseFast runs exercise the same tests.
+
+RR1 acceptance runs the focused gate, `check`, `test-full`, `verify`,
+ReleaseSafe and ReleaseFast default builds, and focused tests in both release
+modes. Physical GPU gates are not required for this CPU-only change.
+See the [V1 contract](architecture/deterministic_record_replay_v1.md) and
+[implementation evidence](implementation/rr1_record_replay.md).
+
 ### Independent engine composition proof
 
 `zig build engine-smoke -j1` builds the permanent small second application.
