@@ -42,7 +42,7 @@ pub fn register(options: Options) Registration {
         .root_module = modules.engine_lab_test_module,
     });
     const run_engine_lab_tests = b.addRunArtifact(engine_lab_tests);
-    const engine_lab_test_step = b.step("test-engine-lab", "Run headless Engine Lab lifecycle, reset, input, allocation and determinism contracts");
+    const engine_lab_test_step = b.step("test-engine-lab", "Run headless Engine Lab hub, actor, collision, navigation, reset and determinism contracts");
     engine_lab_test_step.dependOn(&run_engine_lab_tests.step);
 
     const engine_composition_tests = addEngineTest(b, .{

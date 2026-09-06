@@ -9,8 +9,9 @@ scenarios.
 
 ## Engine Lab
 
-Engine Lab is an independent integration application with a production-backed
-Overview and a repeatable Fixed-Step Lab. Build/run with
+Engine Lab opens one persistent 2D hub with a controlled production actor,
+collision, a following camera, and two coexisting diagnostic stations. Walk and
+jump between stations, or use F1/F2 destination shortcuts. Build/run with
 `zig build run-engine-lab -j1`; test with `zig build test-engine-lab -j1`.
 See the [EL1 implementation and review guide](docs/implementation/engine_lab_el1.md)
 for controls, deterministic checkpoints, ownership and validation evidence.

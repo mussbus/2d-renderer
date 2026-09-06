@@ -277,7 +277,7 @@ if ([regex]::IsMatch($engineCompositionTests, '@import\s*\(\s*"(demo_application
     Add-Failure 'F4D CPU proof imports demo/application scenario authority.'
 }
 
-# EL1 protects source and transitive build direction, including injected imports.
+# EL1 hub protects production direction and real transitive build imports.
 $labDirectory = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'src/app/engine_lab')) + [IO.Path]::DirectorySeparatorChar
 foreach ($file in $productionFiles) {
     $source = Get-Content -Raw -LiteralPath $file.FullName
@@ -298,7 +298,7 @@ foreach ($edge in [regex]::Matches($modulesBuild, '(?<from>\w+_module)\.addImpor
         Add-Failure "EL1 reverse build dependency from '$from'."
     }
 }
-foreach ($root in @('engine_lab_entry_module', 'engine_lab_test_module')) {
+foreach ($root in @('engine_lab_entry_module', 'engine_lab_test_module', 'engine_lab_verification_module')) {
     $visited = [Collections.Generic.HashSet[string]]::new()
     $pending = [Collections.Generic.Queue[string]]::new()
     $pending.Enqueue($root)
@@ -308,7 +308,7 @@ foreach ($root in @('engine_lab_entry_module', 'engine_lab_test_module')) {
         if ($name -match '(^demo_|_demo_module$|engine_smoke|evidence|canonical_human|canonical_geometry|foundation_playground|visual_foundation)') {
             Add-Failure "EL1 transitive boundary violation: '$root' reaches '$name'."
         }
-        if ($root -eq 'engine_lab_test_module' -and $name -match '^(sdl|sdl_input|sdl_gpu_renderer)_module$') {
+        if ($root -in @('engine_lab_test_module', 'engine_lab_verification_module') -and $name -match '^(sdl|sdl_input|sdl_gpu_renderer)_module$') {
             Add-Failure "EL1 headless test graph reaches SDL through '$name'."
         }
         if ($moduleEdges.ContainsKey($name)) {

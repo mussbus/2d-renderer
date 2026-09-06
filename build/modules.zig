@@ -952,7 +952,7 @@ pub fn register(options: Options) Catalog {
     sdl_gpu_renderer_module.addImport("diagnostics", diagnostics_module);
     sdl_gpu_renderer_module.addImport("frame_capture", frame_capture_module);
     const engine_lab_module = b.createModule(.{
-        .root_source_file = b.path("src/app/engine_lab/labs.zig"),
+        .root_source_file = b.path("src/app/engine_lab/hub.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -961,18 +961,34 @@ pub fn register(options: Options) Catalog {
     engine_lab_module.addImport("fixed_step", fixed_step_module);
     engine_lab_module.addImport("spring", spring_module);
     engine_lab_module.addImport("math", math_module);
+    engine_lab_module.addImport("collider", collider_module);
+    engine_lab_module.addImport("collision_world", collision_world_module);
+    engine_lab_module.addImport("character", character_module);
+    engine_lab_module.addImport("humanoid", humanoid_module);
+    engine_lab_module.addImport("authored_clips", authored_clips_module);
+    engine_lab_module.addImport("character_intent", character_intent_module);
+    engine_lab_module.addImport("camera2d", camera2d_module);
+    const engine_lab_verification_module = b.createModule(.{
+        .root_source_file = b.path("src/app/engine_lab/verification.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    engine_lab_verification_module.addImport("engine_lab", engine_lab_module);
     const engine_lab_actions_module = b.createModule(.{
         .root_source_file = b.path("src/app/engine_lab/actions.zig"),
         .target = target,
         .optimize = optimize,
     });
     engine_lab_actions_module.addImport("physical_input", physical_input_module);
+    engine_lab_actions_module.addImport("engine_lab", engine_lab_module);
     const engine_lab_view_module = b.createModule(.{
         .root_source_file = b.path("src/app/engine_lab/view.zig"),
         .target = target,
         .optimize = optimize,
     });
     engine_lab_view_module.addImport("engine_lab", engine_lab_module);
+    engine_lab_view_module.addImport("fixed_step", fixed_step_module);
+    engine_lab_view_module.addImport("collider", collider_module);
     engine_lab_view_module.addImport("debug_draw", debug_draw_module);
     engine_lab_view_module.addImport("math", math_module);
     engine_lab_view_module.addImport("sprite_batch", sprite_batch_module);
@@ -990,6 +1006,7 @@ pub fn register(options: Options) Catalog {
         .search_strategy = .paths_first,
     });
     engine_lab_entry_module.addImport("engine_lab", engine_lab_module);
+    engine_lab_entry_module.addImport("engine_lab_verification", engine_lab_verification_module);
     engine_lab_entry_module.addImport("engine_lab_actions", engine_lab_actions_module);
     engine_lab_entry_module.addImport("engine_lab_view", engine_lab_view_module);
     engine_lab_entry_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
@@ -1003,6 +1020,9 @@ pub fn register(options: Options) Catalog {
         .optimize = optimize,
     });
     engine_lab_test_module.addImport("engine_lab", engine_lab_module);
+    engine_lab_test_module.addImport("engine_lab_verification", engine_lab_verification_module);
+    engine_lab_test_module.addImport("collider", collider_module);
+    engine_lab_test_module.addImport("physical_input", physical_input_module);
     engine_lab_test_module.addImport("engine_lab_actions", engine_lab_actions_module);
     engine_lab_test_module.addImport("engine_lab_view", engine_lab_view_module);
     engine_lab_test_module.addImport("render_queue", render_queue_module);

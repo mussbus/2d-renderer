@@ -44,7 +44,7 @@ pub fn register(options: Options) Registration {
     run_engine_lab.setName("run independent Engine Lab");
     run_engine_lab.step.dependOn(engine_lab_step);
     if (b.args) |args| run_engine_lab.addArgs(args);
-    const run_engine_lab_step = b.step("run-engine-lab", "Run Engine Lab; --list, --lab ID, --seed HEX, --verify or --smoke");
+    const run_engine_lab_step = b.step("run-engine-lab", "Run the persistent Engine Lab hub; --help, --seed HEX, --verify or --smoke");
     run_engine_lab_step.dependOn(&run_engine_lab.step);
 
     const installed_demo = b.getInstallPath(.bin, demo.out_filename);

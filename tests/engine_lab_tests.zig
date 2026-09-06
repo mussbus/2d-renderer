@@ -1,240 +1,280 @@
 const std = @import("std");
-const labs = @import("engine_lab");
+const hub_module = @import("engine_lab");
+const verification = @import("engine_lab_verification");
 const actions = @import("engine_lab_actions");
 const view_module = @import("engine_lab_view");
 const queue_module = @import("render_queue");
+const collider = @import("collider");
 
-fn seed() !labs.Seed {
-    return labs.Seed.parseLowerHex(labs.default_seed);
+fn seed() !hub_module.Seed {
+    return hub_module.Seed.parseLowerHex(hub_module.default_seed);
+}
+fn close(hub: *hub_module.Hub) void {
+    hub.deinit() catch |err| hub_module.cleanupFailure(err);
+}
+fn movement(axis: f32) hub_module.Intent {
+    var value = hub_module.neutral_intent;
+    value.move_axis = axis;
+    return value;
 }
 
-fn close(host: *labs.Host) void {
-    host.deinit() catch |err| std.debug.panic("test cleanup: {s}", .{@errorName(err)});
+test "direct construction owns one running hub with actor and both spatial installations" {
+    var hub = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&hub);
+    try std.testing.expect(!hub.clock.paused);
+    try std.testing.expectEqual(@as(u64, 0), hub.tick);
+    try std.testing.expect(hub.actor.controllerSnapshot() != null);
+    try std.testing.expect(hub.actor.worldPosition().approxEqAbs(hub_module.spawn, 1e-6)); // Below a display pixel and f32 metre arithmetic noise.
+    try std.testing.expect(hub.installations.roots[0].world.x < hub.installations.roots[1].world.x);
+    var snapshot = try hub.installations.scene.acquireSnapshot(.{ .tick = 0, .fixed_delta_seconds = 1.0 / 240.0, .interpolation_alpha = 0 });
+    defer snapshot.deinit();
+    try std.testing.expectEqual(@as(usize, 8), snapshot.view().entityCount());
+    for (hub.installations.anchors, 0..) |anchors, station| for (anchors, 0..) |anchor, mass| {
+        try std.testing.expect(snapshot.view().resolve(anchor.id) != null);
+        // 1e-6 m covers f32 parent-plus-child addition, far below a pixel.
+        try std.testing.expectApproxEqAbs(hub_module.station_x[station] + (@as(f32, @floatFromInt(mass)) - 1) * 0.8, anchor.world.x, 1e-6);
+        try std.testing.expectApproxEqAbs(@as(f32, 2.6), anchor.world.y, 1e-6);
+    };
 }
 
-test "registry preserves public order, unique IDs, descriptions and lookup" {
-    try std.testing.expectEqual(@as(usize, 2), labs.registry.len);
-    try std.testing.expectEqualStrings("integration-overview", labs.registry[0].id);
-    try std.testing.expectEqualStrings("determinism-fixed-step", labs.registry[1].id);
-    for (labs.registry, 0..) |definition, index| {
-        try std.testing.expectEqual(index, try labs.findDefinition(definition.id));
-        try std.testing.expect(definition.name.len > 0 and definition.description.len > 0);
-        for (labs.registry[0..index]) |previous| {
-            try std.testing.expect(!std.mem.eql(u8, previous.id, definition.id));
-            try std.testing.expect(previous.kind != definition.kind);
-        }
-    }
-    try std.testing.expectError(error.UnknownLab, labs.findDefinition("absent"));
+test "initial logical fingerprint repeats and the seed changes real station state" {
+    var first = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&first);
+    var second = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&second);
+    try std.testing.expect((try first.fingerprint()).eql(try second.fingerprint()));
+    var changed_seed = try seed();
+    changed_seed.bytes[0] ^= 1;
+    var changed = try hub_module.Hub.init(std.testing.allocator, changed_seed);
+    defer close(&changed);
+    try std.testing.expect(!(try first.fingerprint()).eql(try changed.fingerprint()));
 }
 
-const Log = struct {
-    events: [8]labs.LifecycleEvent = undefined,
-    kinds: [8]labs.Kind = undefined,
-    count: usize = 0,
-    fn record(context: *anyopaque, event: labs.LifecycleEvent, kind: labs.Kind) void {
-        const self: *Log = @ptrCast(@alignCast(context));
-        std.debug.assert(self.count < self.events.len);
-        self.events[self.count] = event;
-        self.kinds[self.count] = kind;
-        self.count += 1;
-    }
-};
-
-test "real sessions initialize, shut down, reset and switch in order" {
-    var log = Log{};
-    var host = try labs.Host.init(.{ .allocator = std.testing.allocator }, 0, try seed(), .{
-        .context = &log,
-        .notify = Log.record,
-    });
-    defer close(&host);
-    try host.switchTo(1);
-    try host.reset();
-    try host.deinit();
-    try std.testing.expectEqualSlices(labs.LifecycleEvent, &.{
-        .initialized, .shutdown, .initialized, .shutdown, .initialized, .shutdown,
-    }, log.events[0..log.count]);
-    try std.testing.expectEqualSlices(labs.Kind, &.{
-        .integration, .integration, .determinism, .determinism, .determinism, .determinism,
-    }, log.kinds[0..log.count]);
-    try std.testing.expect(host.active == null);
-}
-
-test "reset reconstructs initial fingerprint, history, pending input and clock" {
-    var host = try labs.Host.init(.{ .allocator = std.testing.allocator }, 0, try seed(), null);
-    defer close(&host);
-    const initial = try host.active.?.fingerprint();
-    host.clock.setPaused(false);
-    host.pending_impulse = true;
-    for (0..65) |_| try host.advanceFrame(1.0 / 60.0);
-    try std.testing.expect(!(try host.active.?.fingerprint()).eql(initial));
-    try std.testing.expect(host.active.?.history_count > 0);
-    host.pending_impulse = true;
-    try host.reset();
-    try std.testing.expect((try host.active.?.fingerprint()).eql(initial));
-    try std.testing.expectEqual(@as(u64, 0), host.active.?.tick);
-    try std.testing.expectEqual(@as(usize, 0), host.active.?.history_count);
-    try std.testing.expectEqual(@as(usize, 1), host.active.?.checkpoint_count);
-    try std.testing.expect(host.clock.paused and !host.pending_impulse);
-    try std.testing.expectEqual(@as(f64, 0), host.clock.accumulator);
-    try std.testing.expectEqual(@as(f64, 0), host.clock.lifetime_discarded_time);
-}
-
-test "switch round trip isolates lab configuration and state" {
-    var host = try labs.Host.init(.{ .allocator = std.testing.allocator }, 0, try seed(), null);
-    defer close(&host);
-    const initial = try host.active.?.fingerprint();
-    host.clock.setPaused(false);
-    try host.advanceFrame(1.0 / 60.0);
-    try host.switchTo(1);
-    try std.testing.expect(!(try host.active.?.fingerprint()).eql(initial));
-    host.clock.setPaused(false);
-    for (0..120) |_| try host.advanceFrame(1.0 / 60.0);
-    try host.switchTo(0);
-    try std.testing.expect((try host.active.?.fingerprint()).eql(initial));
-    try std.testing.expectEqual(@as(usize, 0), host.active.?.history_count);
-}
-
-test "seed participates in initial state and repeated mixed-frame checkpoint proof" {
-    const original_seed = try seed();
-    const checkpoints = try labs.verifyRepeat(.{ .allocator = std.testing.allocator }, original_seed);
-    for (checkpoints, labs.checkpoint_ticks, 0..) |checkpoint, tick, index| {
+test "actual hub schedule reaches both stations with jumps landings collision and equal checkpoints" {
+    const result = try verification.verify(std.testing.allocator, try seed());
+    try std.testing.expect(result.jumps >= 2 and result.landings >= 2 and result.wall_contacts > 0);
+    for (result.checkpoints, verification.checkpoint_ticks, 0..) |checkpoint, tick, index| {
         try std.testing.expectEqual(tick, checkpoint.tick);
-        if (index != 0) try std.testing.expect(!checkpoint.digest.eql(checkpoints[index - 1].digest));
-    }
-    var other_seed = original_seed;
-    other_seed.bytes[0] ^= 1;
-    var host = try labs.Host.init(.{ .allocator = std.testing.allocator }, 1, other_seed, null);
-    defer close(&host);
-    try std.testing.expect(!(try host.active.?.fingerprint()).eql(checkpoints[0].digest));
-}
-
-test "scene hierarchy read view supplies resolved anchors and stable F identities" {
-    var host = try labs.Host.init(.{ .allocator = std.testing.allocator }, 0, try seed(), null);
-    defer close(&host);
-    const anchors = &host.active.?.anchors;
-    // 1e-6 m accommodates f32 addition of parent 2.8 and local -0.4, far below a pixel.
-    for (anchors.anchors, 0..) |anchor, index| {
-        try std.testing.expectApproxEqAbs(@as(f32, 2.4), anchor.world.y, 1e-6);
-        try std.testing.expectApproxEqAbs((@as(f32, @floatFromInt(index)) - 1) * 1.8, anchor.world.x, 1e-6);
-        try std.testing.expect(!anchor.id.eql(anchors.root.id));
+        if (index > 0) try std.testing.expect(!checkpoint.digest.eql(result.checkpoints[index - 1].digest));
     }
 }
 
-test "pause single-step completion and interpolation preserve simulation authority" {
-    var host = try labs.Host.init(.{ .allocator = std.testing.allocator }, 1, try seed(), null);
-    defer close(&host);
-    try host.advanceFrame(0.05);
-    try std.testing.expectEqual(@as(u64, 0), host.active.?.tick);
-    host.clock.requestSingleStep();
-    try host.advanceFrame(0.05);
-    try std.testing.expectEqual(@as(u64, 1), host.active.?.tick);
-    const digest = try host.active.?.fingerprint();
-    _ = try host.active.?.offsets(0.0);
-    _ = try host.active.?.offsets(0.75);
-    try std.testing.expect((try host.active.?.fingerprint()).eql(digest));
-    host.clock.setPaused(false);
-    while (!host.active.?.complete()) try host.advanceFrame(1.0 / 60.0);
-    try std.testing.expectEqual(@as(u64, 960), host.active.?.tick);
-    try std.testing.expect(host.clock.paused);
-    host.clock.requestSingleStep();
-    try host.advanceFrame(1.0);
-    try std.testing.expectEqual(@as(u64, 960), host.active.?.tick);
+test "production horizontal controller collides with both enclosing walls and owns facing" {
+    var hub = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&hub);
+    for (0..120) |_| try hub.advanceFrame(1.0 / 60.0, movement(-1));
+    var controller = hub.actor.controllerSnapshot().?;
+    // 1e-4 m matches the production contact epsilon, well below a rendered pixel.
+    try std.testing.expectApproxEqAbs(@as(f32, -7.7), controller.state.position.x, 1e-4);
+    try std.testing.expect(controller.state.grounded and controller.state.facing == .left);
+    try std.testing.expect(hub.wall_contacts > 0);
+    try std.testing.expect(!(try hub.world.containsPenetrationBeyond(try collider.characterBounds(controller.state.position, controller.configuration.collider_half_extents), 1e-4)));
+    try hub.navigate(.springs);
+    for (0..120) |_| try hub.advanceFrame(1.0 / 60.0, movement(1));
+    controller = hub.actor.controllerSnapshot().?;
+    try std.testing.expectApproxEqAbs(@as(f32, 7.7), controller.state.position.x, 1e-4);
+    try std.testing.expect(controller.state.facing == .right);
+    try std.testing.expectApproxEqAbs(@as(f32, 5), hub.camera.center.x, 1e-6); // Exact configured camera boundary.
 }
 
-test "manual impulse changes overview but is excluded from deterministic experiment" {
-    var left = try labs.Host.init(.{ .allocator = std.testing.allocator }, 0, try seed(), null);
-    defer close(&left);
-    var right = try labs.Host.init(.{ .allocator = std.testing.allocator }, 0, try seed(), null);
-    defer close(&right);
-    try left.active.?.fixedUpdate(true);
-    try right.active.?.fixedUpdate(false);
-    try std.testing.expect(!(try left.active.?.fingerprint()).eql(try right.active.?.fingerprint()));
-    try left.switchTo(1);
-    try right.switchTo(1);
-    try left.active.?.fixedUpdate(true);
-    try right.active.?.fixedUpdate(false);
-    try std.testing.expect((try left.active.?.fingerprint()).eql(try right.active.?.fingerprint()));
+test "gravity lands the production actor on the raised platform" {
+    var hub = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&hub);
+    // Use the supported destination staging command to set up a drop, then only
+    // production fixed-step gravity/contact determines the landing and animation.
+    try hub.actor.stageControlledTransform(.{ .x = 0, .y = 3.6 }, .right);
+    var airborne = false;
+    for (0..120) |_| {
+        try hub.advanceFrame(1.0 / 60.0, hub_module.neutral_intent);
+        airborne = airborne or !hub.actor.controllerSnapshot().?.state.grounded;
+    }
+    const state = hub.actor.controllerSnapshot().?.state;
+    try std.testing.expect(airborne and hub.landings > 0);
+    try std.testing.expectEqual(@as(?u16, 4), state.supporting_collider);
+    try std.testing.expectApproxEqAbs(@as(f32, 1.65), state.position.y, 1e-4); // Platform 0.6 m + collider half-height 1.05 m, production contact epsilon.
+    try std.testing.expect(hub.actor.animationState() == .idle);
 }
 
-test "input edges and focus/reset suppression do not replay held controls" {
-    var mapper = actions.Mapper{};
-    try std.testing.expect(mapper.sample(.{ .keyboard = .{ .r = true } }).reset);
-    try std.testing.expect(!mapper.sample(.{ .keyboard = .{ .r = true } }).reset);
-    mapper.suppressHeld(.{ .keyboard = .{ .r = true, .space = true } });
-    const held = mapper.sample(.{ .keyboard = .{ .r = true, .space = true } });
-    try std.testing.expect(!held.reset and !held.impulse);
-    _ = mapper.sample(.{});
-    try std.testing.expect(mapper.sample(.{ .keyboard = .{ .space = true } }).impulse);
-    _ = mapper.sample(.{ .keyboard = .{ .p = true }, .focus_lost = true });
-    try std.testing.expect(!mapper.sample(.{ .keyboard = .{ .p = true } }).pause);
-    try std.testing.expect(mapper.sample(.{ .keyboard_focused = false, .window_close_requested = true }).exit);
+test "both stations keep evolving when the actor moves away" {
+    var hub = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&hub);
+    const initial = hub.stations;
+    for (0..120) |_| try hub.advanceFrame(1.0 / 60.0, movement(-1));
+    for (hub.stations, initial) |station, before| {
+        try std.testing.expectEqual(hub.tick, station.updates);
+        try std.testing.expect(station.history_count > 0);
+        try std.testing.expect(station.springs[0].offset != before.springs[0].offset);
+    }
 }
 
-test "steady fixed/render updates allocate nothing and submit one instanced range" {
+test "developer navigation preserves station state resources and the fixed clock" {
     var allocator = std.testing.FailingAllocator.init(std.testing.allocator, .{});
-    var host = try labs.Host.init(.{ .allocator = allocator.allocator() }, 1, try seed(), null);
-    defer close(&host);
+    var hub = try hub_module.Hub.init(allocator.allocator(), try seed());
+    defer close(&hub);
+    for (0..30) |_| try hub.advanceFrame(1.0 / 60.0, movement(1));
+    const stations = hub.stations;
+    const tick = hub.tick;
+    const clock = hub.clock;
+    const actor_id = hub.actor.id();
+    const collision_storage = hub.world.colliders.ptr;
+    const attachments = hub.definition.attachments.ptr;
+    allocator.fail_index = allocator.alloc_index;
+    allocator.resize_fail_index = allocator.resize_index;
+    try hub.navigate(.springs);
+    try std.testing.expect(std.meta.eql(stations, hub.stations));
+    try std.testing.expect(std.meta.eql(clock, hub.clock));
+    try std.testing.expectEqual(tick, hub.tick);
+    try std.testing.expectEqual(actor_id, hub.actor.id());
+    try std.testing.expect(collision_storage == hub.world.colliders.ptr and attachments == hub.definition.attachments.ptr);
+    try std.testing.expect(!allocator.has_induced_failure);
+    try std.testing.expectApproxEqAbs(hub_module.destination_x[1], hub.actor.worldPosition().x, 1e-6); // Exact destination constant.
+    try std.testing.expect(hub.visited[0] and hub.visited[1]);
+    try hub.navigate(.hierarchy);
+    try std.testing.expect(std.meta.eql(stations, hub.stations));
+}
+
+test "whole hub reset restores actor camera stations clock seed and transients" {
+    var hub = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&hub);
+    const initial = try hub.fingerprint();
+    const camera = hub.camera;
+    for (0..30) |_| try hub.advanceFrame(1.0 / 60.0, movement(1));
+    try hub.navigate(.springs);
+    hub.clock.setPaused(true);
+    hub.clock.requestSingleStep();
+    hub.pending.jump_pressed = true;
+    hub.diagnostics_enabled = true;
+    try hub.reset();
+    try std.testing.expect((try hub.fingerprint()).eql(initial));
+    try std.testing.expect(std.meta.eql(camera, hub.camera));
+    try std.testing.expect(std.meta.eql(hub_module.neutral_intent, hub.pending));
+    try std.testing.expect(!hub.clock.paused and !hub.clock.single_step_pending);
+    try std.testing.expectEqual(@as(f64, 0), hub.clock.accumulator);
+    try std.testing.expectEqual(@as(u32, 0), hub.navigation_count);
+    try std.testing.expect(!hub.diagnostics_enabled);
+    for (hub.stations) |station| try std.testing.expectEqual(@as(usize, 0), station.history_count);
+}
+
+test "pause and single step consume one pending jump edge without replay" {
+    var hub = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&hub);
+    hub.clock.setPaused(true);
+    var jump = hub_module.neutral_intent;
+    jump.jump_pressed = true;
+    jump.jump_held = true;
+    try hub.advanceFrame(0.05, jump);
+    try std.testing.expectEqual(@as(u64, 0), hub.tick);
+    hub.clock.requestSingleStep();
+    try hub.advanceFrame(0.05, hub_module.neutral_intent);
+    try std.testing.expectEqual(@as(u64, 1), hub.tick);
+    try std.testing.expectEqual(@as(u32, 1), hub.jumps);
+    hub.clock.requestSingleStep();
+    try hub.advanceFrame(0.05, hub_module.neutral_intent);
+    try std.testing.expectEqual(@as(u64, 2), hub.tick);
+    try std.testing.expectEqual(@as(u32, 1), hub.jumps);
+    try std.testing.expect(!hub.pending.jump_pressed);
+}
+
+test "render extraction camera diagnostics and interpolation do not change logical state" {
+    var hub = try hub_module.Hub.init(std.testing.allocator, try seed());
+    defer close(&hub);
+    var view = try view_module.View.init(std.testing.allocator);
+    defer view.deinit();
+    var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, 2048, 1792, 256, 2);
+    defer queue.deinit();
+    try hub.advanceFrame(1.0 / 60.0, movement(1));
+    const before = try hub.fingerprint();
+    _ = try hub.renderedActorPosition();
+    try view.render(&hub, &queue);
+    const prepared = queue.prepare();
+    try std.testing.expectEqual(@as(usize, 3), prepared.ranges.len);
+    try std.testing.expectEqual(@as(usize, 15), view.actor_queue.prepare().sprites.len);
+    hub.diagnostics_enabled = true;
+    try hub.camera.setCenter(.{ .x = 0, .y = 2.1 });
+    try view.render(&hub, &queue);
+    try std.testing.expect((try hub.fingerprint()).eql(before));
+}
+
+test "steady hub simulation render and navigation allocate nothing after warmup" {
+    var allocator = std.testing.FailingAllocator.init(std.testing.allocator, .{});
+    var hub = try hub_module.Hub.init(allocator.allocator(), try seed());
+    defer close(&hub);
+    var view = try view_module.View.init(allocator.allocator());
+    defer view.deinit();
     var queue = try queue_module.UnifiedRenderQueue.init(allocator.allocator(), 2048, 1792, 256, 2);
     defer queue.deinit();
     queue.markStabilized();
     allocator.fail_index = allocator.alloc_index;
     allocator.resize_fail_index = allocator.resize_index;
-    var view = view_module.View{};
-    host.clock.setPaused(false);
-    for (0..240) |_| {
-        try host.advanceFrame(1.0 / 60.0);
-        try view.render(&host, &queue);
-        const prepared = queue.prepare();
-        try std.testing.expectEqual(@as(usize, 1), prepared.ranges.len);
-        try std.testing.expect(prepared.sprites.len > labs.mass_count);
-        try std.testing.expect(prepared.sprites.len <= 1792);
+    hub.diagnostics_enabled = true;
+    for (0..360) |frame| {
+        try hub.advanceFrame(1.0 / 60.0, verification.inputAt(hub.tick));
+        try view.render(&hub, &queue);
+        try std.testing.expect(queue.prepare().sprites.len <= 1792);
+        if (frame == 180) try hub.navigate(.springs);
     }
     try std.testing.expect(!allocator.has_induced_failure);
     try std.testing.expectEqual(@as(u64, 0), queue.lifetime_metrics.cpu_allocations_after_stabilization);
 }
 
-test "invalid selection and allocation failure retain the old active session" {
+test "failed whole hub reconstruction leaves the current world live" {
     var allocator = std.testing.FailingAllocator.init(std.testing.allocator, .{});
-    var host = try labs.Host.init(.{ .allocator = allocator.allocator() }, 0, try seed(), null);
-    defer close(&host);
-    const initial = try host.active.?.fingerprint();
-    try std.testing.expectError(error.UnknownLab, host.switchTo(200));
-    try std.testing.expect((try host.active.?.fingerprint()).eql(initial));
+    var hub = try hub_module.Hub.init(allocator.allocator(), try seed());
+    defer close(&hub);
+    try hub.advanceFrame(1.0 / 60.0, movement(1));
+    const before = try hub.fingerprint();
     allocator.fail_index = allocator.alloc_index;
-    try std.testing.expectError(error.OutOfMemory, host.switchTo(1));
-    try std.testing.expect((try host.active.?.fingerprint()).eql(initial));
+    if (hub.reset()) |_| {
+        return error.ExpectedAllocationFailure;
+    } else |_| {
+        try std.testing.expect(allocator.has_induced_failure);
+    }
+    try std.testing.expect(allocator.has_induced_failure);
+    try std.testing.expect((try hub.fingerprint()).eql(before));
 }
 
-test "all partial construction allocation failures clean up acquired resources" {
-    // Exercise every allocation boundary, including scene cloning and snapshots.
-    var fail_index: usize = 0;
-    while (fail_index < 2000) : (fail_index += 1) {
-        var allocator = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = fail_index });
-        var host = labs.Host.init(.{ .allocator = allocator.allocator() }, 0, try seed(), null) catch |err| {
+test "every partial hub construction allocation failure releases acquired resources" {
+    var index: usize = 0;
+    while (index < 2000) : (index += 1) {
+        var allocator = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = index });
+        var hub = hub_module.Hub.init(allocator.allocator(), try seed()) catch {
             try std.testing.expect(allocator.has_induced_failure);
-            try std.testing.expect(err == error.OutOfMemory or err == error.AllocationFailure);
             try std.testing.expectEqual(allocator.allocated_bytes, allocator.freed_bytes);
             continue;
         };
-        try host.deinit();
+        try hub.deinit();
         try std.testing.expectEqual(allocator.allocated_bytes, allocator.freed_bytes);
         return;
     }
-    return error.AllocationFailureTestDidNotReachSuccessfulConstruction;
+    return error.AllocationBoundaryProofDidNotComplete;
 }
 
-test "short key taps survive key-down and key-up within one render frame" {
+test "reset suppression and focus loss clear keyboard gamepad and action history" {
     var mapper = actions.Mapper{};
-    mapper.capturePress(.{ .p = true });
-    try std.testing.expect(mapper.sample(.{}).pause);
-    try std.testing.expect(!mapper.sample(.{}).pause);
+    const held: @import("physical_input").RawInputState = .{ .keyboard = .{ .d = true, .space = true, .p = true }, .gamepad_left_x = @as(f32, 1), .gamepad_button_south = true };
+    const first = mapper.sample(held);
+    try std.testing.expect(first.intent.move_axis == 1 and first.intent.jump_pressed and first.pause);
+    mapper.suppressHeld(held);
+    const blocked = mapper.sample(held);
+    try std.testing.expect(blocked.intent.move_axis == 0 and !blocked.intent.jump_pressed and !blocked.pause);
+    _ = mapper.sample(.{});
+    try std.testing.expect(mapper.sample(held).intent.jump_pressed);
+    _ = mapper.sample(.{ .keyboard = .{ .r = true }, .focus_lost = true });
+    try std.testing.expect(!mapper.sample(.{ .keyboard = .{ .r = true } }).reset);
+    try std.testing.expect(mapper.sample(.{ .keyboard_focused = false, .window_close_requested = true }).exit);
+}
+
+test "short physical taps survive a frame and navigation maps destinations" {
+    var mapper = actions.Mapper{};
+    mapper.capturePress(.{ .space = true });
+    const jump = mapper.sample(.{}).intent;
+    try std.testing.expect(jump.jump_pressed and jump.jump_released and !jump.jump_held);
+    try std.testing.expect(!mapper.sample(.{}).intent.jump_pressed);
+    mapper.capturePress(.{ .f2 = true });
+    try std.testing.expectEqual(@as(?hub_module.Destination, .springs), mapper.sample(.{}).destination);
     mapper.capturePress(.{ .escape = true });
     try std.testing.expect(mapper.sample(.{}).exit);
-    mapper.capturePress(.{ .space = true });
-    mapper.suppressHeld(.{});
-    try std.testing.expect(!mapper.sample(.{}).impulse);
 }
-
 test "production diagnostic glyphs have readable orientation and distinct digits" {
     const debug = @import("debug_draw");
     var commands = debug.CommandBuffer{};
