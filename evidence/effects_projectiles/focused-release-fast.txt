@@ -1,54 +1,59 @@
-1/49 projectile_tests.test.projectiles deterministic identities, capacity rejection and no ID consumption...OK
-2/49 projectile_tests.test.projectiles fixed-step semi-implicit motion and acceleration...OK
-3/49 projectile_tests.test.projectiles disabled state freezes motion and lifetime then expires exactly...OK
-4/49 projectile_tests.test.projectiles explicit removal emits one value and rejects stale identity...OK
-5/49 projectile_tests.test.projectiles masks filter both directions before earliest-hit selection...OK
-6/49 projectile_tests.test.projectiles transitive near-equal hit ties ignore enumeration order...OK
-7/49 projectile_tests.test.projectiles continue hit reports once per collider and spends remaining travel...OK
-8/49 projectile_tests.test.projectiles bounded bounce prevents same-tick collision loops...OK
-9/49 projectile_tests.test.projectiles deflection relaunch changes owner, position and lifetime explicitly...OK
-10/49 projectile_tests.test.projectiles event overflow rolls back commands and entire tick...OK
-11/49 projectile_tests.test.projectiles invalid collision result rolls back earlier projectile updates...OK
-12/49 projectile_tests.test.projectiles ordered repeated runs and copied snapshots cannot mutate authority...OK
-13/49 projectile_tests.test.projectiles allocation failures clean every partial initialization...OK
-14/49 projectile_tests.test.projectiles fixed F UUID vector and definition ownership...OK
-15/49 projectile_tests.test.projectiles query failure on later item and hit overflow publish nothing...OK
-16/49 projectile_tests.test.projectiles zero-time opposing contacts terminate at configured bound...OK
-17/49 projectile_tests.test.projectiles exact equal-hit tie uses collider ID and preserves metadata...OK
-18/49 deflection_tests.test.deflection publishes coherent owner affiliation filter velocity and copied before-after state...OK
-19/49 deflection_tests.test.deflection event capacity and invalid input publish no partial transfer...OK
-20/49 deflection_tests.test.deflection transfers both filter directions and exposes new state to next query...OK
-21/49 deflection_tests.test.deflection and lifecycle boundary ordering repeat across reset with identical event logs...OK
-22/49 deflection_tests.test.automatic bounce supplies before-after state while retaining ownership affiliation and filters...OK
-23/49 deflection_tests.test.deflection absent fields preserve state and explicit optionals clear affiliation and owner...OK
-24/49 effect_tests.test.effects burst, spread bounds and seed determinism...OK
-25/49 effect_tests.test.effects continuous fixed-point rate and emitter duration are exact...OK
-26/49 effect_tests.test.effects particle lifetime, emitter drain and exact retirement...OK
-27/49 effect_tests.test.effects gravity drag and angular motion...OK
-28/49 effect_tests.test.effects size opacity color and render interpolation are read only...OK
-29/49 effect_tests.test.effects particle drop and emitter rejection are explicit bounded policies...OK
-30/49 effect_tests.test.effects stop drains, clear removes and reset reproduces seed...OK
-31/49 effect_tests.test.effects streams and extraction order independent of spawn ordering...OK
-32/49 effect_tests.test.effects moving an emitter never drags existing world-space particles...OK
-33/49 effect_tests.test.effects reject invalid inputs without creating runtime state...OK
-34/49 effect_tests.test.effects allocation failures clean every partial initialization...OK
-35/49 effect_tests.test.effects independently calculated version-one UUID and Xoshiro sample vectors...OK
-36/49 effect_tests.test.effects dropped particles consume their samples and freed capacity resumes deterministically...OK
-37/49 composition_tests.test.composition launch distance-trail and expiration mapping...OK
-38/49 composition_tests.test.composition impact uses contact location and retires trail tracking...OK
-39/49 composition_tests.test.composition saturation and arbitrary render reads cannot affect projectile simulation...OK
-40/49 composition_tests.test.composition trail samples are bounded and reset reproduces mappings...OK
-41/49 composition_tests.test.composition distance remainder survives many subspacing steps...OK
-42/49 proof_tests.test.proof true segment sweep catches thin walls, diagonal hits and shape extent...OK
-43/49 proof_tests.test.proof bounce conserves remaining travel without repeated separating hits...OK
-44/49 proof_tests.test.proof same-seed replay and arbitrary render submissions preserve gameplay...OK
-45/49 proof_tests.test.proof update reset spawn deflect and extraction allocate nothing after initialization...OK
-46/49 proof_tests.test.proof composed initialization cleans every allocation failure...OK
-47/49 proof_tests.test.core public facades expose only an opaque const ownership context...OK
-48/49 proof_tests.test.proof real sweep excludes overlapping new source and hits former source after transfer...OK
-49/49 proof_tests.test.proof ownership scenario repeats and presentation cannot change redirected simulation...OK
-All 49 tests passed.
+1/54 projectile_tests.test.projectiles deterministic identities, capacity rejection and no ID consumption...OK
+2/54 projectile_tests.test.projectiles fixed-step semi-implicit motion and acceleration...OK
+3/54 projectile_tests.test.projectiles disabled state freezes motion and lifetime then expires exactly...OK
+4/54 projectile_tests.test.projectiles explicit removal emits one value and rejects stale identity...OK
+5/54 projectile_tests.test.projectiles masks filter both directions before earliest-hit selection...OK
+6/54 projectile_tests.test.projectiles transitive near-equal hit ties ignore enumeration order...OK
+7/54 projectile_tests.test.projectiles continue hit reports once per collider and spends remaining travel...OK
+8/54 projectile_tests.test.projectiles bounded bounce prevents same-tick collision loops...OK
+9/54 projectile_tests.test.projectiles deflection relaunch changes owner, position and lifetime explicitly...OK
+10/54 projectile_tests.test.projectiles event overflow rolls back commands and entire tick...OK
+11/54 projectile_tests.test.projectiles invalid collision result rolls back earlier projectile updates...OK
+12/54 projectile_tests.test.projectiles ordered repeated runs and copied snapshots cannot mutate authority...OK
+13/54 projectile_tests.test.projectiles allocation failures clean every partial initialization...OK
+14/54 projectile_tests.test.projectiles fixed F UUID vector and definition ownership...OK
+15/54 projectile_tests.test.projectiles query failure on later item and hit overflow publish nothing...OK
+16/54 projectile_tests.test.projectiles zero-time opposing contacts terminate at configured bound...OK
+17/54 projectile_tests.test.projectiles exact equal-hit tie uses collider ID and preserves metadata...OK
+18/54 deflection_tests.test.deflection publishes coherent owner affiliation filter velocity and copied before-after state...OK
+19/54 deflection_tests.test.deflection event capacity and invalid input publish no partial transfer...OK
+20/54 deflection_tests.test.deflection transfers both filter directions and exposes new state to next query...OK
+21/54 deflection_tests.test.deflection and lifecycle boundary ordering repeat across reset with identical event logs...OK
+22/54 deflection_tests.test.automatic bounce supplies before-after state while retaining ownership affiliation and filters...OK
+23/54 deflection_tests.test.deflection absent fields preserve state and explicit optionals clear affiliation and owner...OK
+24/54 effect_tests.test.effects burst, spread bounds and seed determinism...OK
+25/54 effect_tests.test.effects continuous fixed-point rate and emitter duration are exact...OK
+26/54 effect_tests.test.effects particle lifetime, emitter drain and exact retirement...OK
+27/54 effect_tests.test.effects gravity drag and angular motion...OK
+28/54 effect_tests.test.effects size opacity color and render interpolation are read only...OK
+29/54 effect_tests.test.effects particle drop and emitter rejection are explicit bounded policies...OK
+30/54 effect_tests.test.effects stop drains, clear removes and reset reproduces seed...OK
+31/54 effect_tests.test.effects streams and extraction order independent of spawn ordering...OK
+32/54 effect_tests.test.effects moving an emitter never drags existing world-space particles...OK
+33/54 effect_tests.test.effects reject invalid inputs without creating runtime state...OK
+34/54 effect_tests.test.effects allocation failures clean every partial initialization...OK
+35/54 effect_tests.test.effects independently calculated version-one UUID and Xoshiro sample vectors...OK
+36/54 effect_tests.test.effects dropped particles consume their samples and freed capacity resumes deterministically...OK
+37/54 effect_tests.test.effects four-tick appearance reaches exact endpoints before unchanged retirement...OK
+38/54 effect_tests.test.effects two-tick appearance starts constant then progresses monotonically to its endpoint...OK
+39/54 effect_tests.test.effects one-tick appearance uses alpha through its only live interval...OK
+40/54 effect_tests.test.effects appearance extraction preserves state allocation metrics and future random emissions...OK
+41/54 effect_tests.test.effects corrected appearance instances and field hashes repeat across identical runs...OK
+42/54 composition_tests.test.composition launch distance-trail and expiration mapping...OK
+43/54 composition_tests.test.composition impact uses contact location and retires trail tracking...OK
+44/54 composition_tests.test.composition saturation and arbitrary render reads cannot affect projectile simulation...OK
+45/54 composition_tests.test.composition trail samples are bounded and reset reproduces mappings...OK
+46/54 composition_tests.test.composition distance remainder survives many subspacing steps...OK
+47/54 proof_tests.test.proof true segment sweep catches thin walls, diagonal hits and shape extent...OK
+48/54 proof_tests.test.proof bounce conserves remaining travel without repeated separating hits...OK
+49/54 proof_tests.test.proof same-seed replay and arbitrary render submissions preserve gameplay...OK
+50/54 proof_tests.test.proof update reset spawn deflect and extraction allocate nothing after initialization...OK
+51/54 proof_tests.test.proof composed initialization cleans every allocation failure...OK
+52/54 proof_tests.test.core public facades expose only an opaque const ownership context...OK
+53/54 proof_tests.test.proof real sweep excludes overlapping new source and hits former source after transfer...OK
+54/54 proof_tests.test.proof ownership scenario repeats and presentation cannot change redirected simulation...OK
+All 54 tests passed.
 Build Summary: 3/3 steps succeeded
 test-effects-projectiles success
-+- run test effects-projectiles-tests success 73ms
-   +- compile test effects-projectiles-tests ReleaseFast native success 12s MaxRSS:373M
++- run test effects-projectiles-tests success 71ms
+   +- compile test effects-projectiles-tests ReleaseFast native success 12s MaxRSS:380M

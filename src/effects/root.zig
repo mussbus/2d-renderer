@@ -253,6 +253,8 @@ pub const System = struct {
     }
     /// Caller owns output. Alpha interpolates completed states for rendering
     /// only; output is ordered by effect UUID then particle ordinal.
+    /// Appearance spans live ages 0..lifetime-1, with alpha spanning the only
+    /// interval of a one-tick particle. Exact endpoints preserve configured values.
     pub fn extract(self: *const System, output: []RenderInstance, alpha: f32) Error![]const RenderInstance {
         if (!unit(alpha)) return error.InvalidInterpolation;
         const s = self.storage();
@@ -262,17 +264,17 @@ pub const System = struct {
             for (s.particles[0..s.particle_count]) |particle| {
                 if (!particle.effect_id.eql(value.snapshot.effect_id)) continue;
                 const def = particle.definition;
-                const age: f32 = if (particle.age_ticks == 0) 0 else @as(f32, @floatFromInt(particle.age_ticks - 1)) + alpha;
-                const t = age / @as(f32, @floatFromInt(def.particle_lifetime_ticks));
+                const visible_age: f32 = if (particle.age_ticks == 0) 0 else @as(f32, @floatFromInt(particle.age_ticks - 1)) + alpha;
+                const t = if (def.particle_lifetime_ticks == 1) alpha else std.math.clamp(visible_age / @as(f32, @floatFromInt(def.particle_lifetime_ticks - 1)), 0, 1);
                 var color: [4]f32 = undefined;
-                for (0..3) |channel| color[channel] = math.interpolation.lerpScalar(def.start_color[channel], def.end_color[channel], t) catch return error.InvalidInterpolation;
-                color[3] = math.interpolation.lerpScalar(def.start_opacity, def.end_opacity, t) catch return error.InvalidInterpolation;
+                for (0..3) |channel| color[channel] = if (t == 0) def.start_color[channel] else if (t == 1) def.end_color[channel] else math.interpolation.lerpScalar(def.start_color[channel], def.end_color[channel], t) catch return error.InvalidInterpolation;
+                color[3] = if (t == 0) def.start_opacity else if (t == 1) def.end_opacity else math.interpolation.lerpScalar(def.start_opacity, def.end_opacity, t) catch return error.InvalidInterpolation;
                 output[count] = .{
                     .effect_id = particle.effect_id,
                     .ordinal = particle.ordinal,
                     .position = math.interpolation.lerpVec2(particle.previous_position, particle.position, alpha) catch return error.InvalidInterpolation,
                     .rotation = math.interpolation.lerpScalar(particle.previous_rotation, particle.rotation, alpha) catch return error.InvalidInterpolation,
-                    .size = math.interpolation.lerpVec2(def.start_size, def.end_size, t) catch return error.InvalidInterpolation,
+                    .size = if (t == 0) def.start_size else if (t == 1) def.end_size else math.interpolation.lerpVec2(def.start_size, def.end_size, t) catch return error.InvalidInterpolation,
                     .color = color,
                     .sprite = def.sprite,
                     .layer = def.layer,

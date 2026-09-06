@@ -18,8 +18,8 @@ install success
 +- install assets/art/environment_violet_crystal_ruin_atlas.png to art/environment_violet_crystal_ruin_atlas.png cached
 +- install assets/art/environment_neutral_debug_atlas.png to art/environment_neutral_debug_atlas.png cached
 +- install engine_sandbox success
-|  +- compile exe engine_sandbox ReleaseFast native cached 60ms MaxRSS:21M
+|  +- compile exe engine_sandbox ReleaseFast native cached 67ms MaxRSS:21M
 +- install engine_smoke success
-|  +- compile exe engine_smoke ReleaseFast native cached 56ms MaxRSS:20M
+|  +- compile exe engine_smoke ReleaseFast native cached 52ms MaxRSS:20M
 +- install effects_projectiles success
-   +- compile exe effects_projectiles ReleaseFast native success 10s MaxRSS:329M
+   +- compile exe effects_projectiles ReleaseFast native success 9s MaxRSS:327M

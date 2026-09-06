@@ -1,5 +1,5 @@
 Build Summary: 24/24 steps succeeded
-install cached
+install success
 +- install .deps/SDL3-3.4.10/lib/x64/SDL3.dll to SDL3.dll cached
 +- install generated to shaders/sprite_vs.dxil cached
 |  +- compile vertex shader VSMain (vs_6_0) cached
@@ -18,8 +18,8 @@ install cached
 +- install assets/art/environment_violet_crystal_ruin_atlas.png to art/environment_violet_crystal_ruin_atlas.png cached
 +- install assets/art/environment_neutral_debug_atlas.png to art/environment_neutral_debug_atlas.png cached
 +- install engine_sandbox cached
-|  +- compile exe engine_sandbox Debug native cached 53ms MaxRSS:21M
+|  +- compile exe engine_sandbox Debug native cached 65ms MaxRSS:21M
 +- install engine_smoke cached
-|  +- compile exe engine_smoke Debug native cached 49ms MaxRSS:20M
-+- install effects_projectiles cached
-   +- compile exe effects_projectiles Debug native cached 49ms MaxRSS:20M
+|  +- compile exe engine_smoke Debug native cached 48ms MaxRSS:20M
++- install effects_projectiles success
+   +- compile exe effects_projectiles Debug native success 2s MaxRSS:303M

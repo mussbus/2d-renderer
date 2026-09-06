@@ -67,7 +67,7 @@ info: GPU readback format=R8G8B8A8_UNORM width=640 height=480 row_pitch=2560; ro
 info: GPU smoke passed through shared production SpriteBatch: outside={ 13, 25, 51, 255 }, interior A={ 255, 0, 0, 255 }, interior B={ 255, 255, 0, 255 }, expected A={ 255, 0, 0, 255 }, expected B={ 255, 255, 0, 255 }, tolerance=1, SDL_DrawGPUIndexedPrimitives instances=2 draw_calls=1
 Build Summary: 26/26 steps succeeded
 gpu-smoke success
-+- run D3D12/DXIL draw and readback smoke test success 11s
++- run D3D12/DXIL draw and readback smoke test success 8s
    +- install success
       +- install .deps/SDL3-3.4.10/lib/x64/SDL3.dll to SDL3.dll cached
       +- install generated to shaders/sprite_vs.dxil success
@@ -87,8 +87,8 @@ gpu-smoke success
       +- install assets/art/environment_violet_crystal_ruin_atlas.png to art/environment_violet_crystal_ruin_atlas.png cached
       +- install assets/art/environment_neutral_debug_atlas.png to art/environment_neutral_debug_atlas.png cached
       +- install engine_sandbox success
-      |  +- compile exe engine_sandbox Debug native cached 59ms MaxRSS:21M
+      |  +- compile exe engine_sandbox Debug native cached 52ms MaxRSS:21M
       +- install engine_smoke success
-      |  +- compile exe engine_smoke Debug native cached 54ms MaxRSS:20M
+      |  +- compile exe engine_smoke Debug native cached 48ms MaxRSS:20M
       +- install effects_projectiles success
-         +- compile exe effects_projectiles Debug native cached 52ms MaxRSS:20M
+         +- compile exe effects_projectiles Debug native cached 48ms MaxRSS:20M

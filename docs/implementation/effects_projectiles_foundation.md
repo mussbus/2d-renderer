@@ -1,8 +1,10 @@
 # Generic Effects and Projectiles Foundation
 
-Status: corrective follow-up implemented and all required automated gates passed.
-Owner visual, manual-input and API review remain pending. Original validation
-is preserved separately as historical evidence.
+Status: owner-review appearance endpoint correction implemented; all required
+automated validation passed. This corrective commit returns for owner review.
+The owner accepted the architecture, projectile/deflection/query contracts,
+composition, renderer boundary, wiring and deferred PHY adapter.
+The sole merge blocker identified was particle appearance missing its endpoints.
 
 
 ## Corrective architecture alignment
@@ -345,9 +347,10 @@ there is no floating-point rate drift. Emitter duration includes exactly that
 many emission ticks. A particle spawned at tick T retires at T+lifetime_ticks.
 Stopped/exhausted emitters retain identity until their particles drain.
 Velocity uses semi-implicit acceleration followed by stable simple drag
-`v = (v + acceleration*dt) / (1 + drag*dt)`. Linear size/color/opacity and render
-position/rotation use the existing math.interpolation helpers. Extraction orders
-by effect UUID and ordinal and interpolates completed states only.
+`v = (v + acceleration*dt) / (1 + drag*dt)`. Appearance uses the existing linear
+helpers between exact endpoints. Position/rotation retain their existing
+completed-state interpolation. Extraction orders by effect UUID and ordinal. Appearance now spans
+the renderable particle lifetime as specified in the endpoint correction below.
 
 Randomness uses F Seed128 and deriveKey with fixed generator/algorithm UUIDs,
 version 1.0.0, effect ID and emitter ID. The first big-endian u64 of that key
@@ -508,7 +511,8 @@ No changes to root build.zig, main.zig, tests/test_all.zig, shared physics,
 foundation, scene_core, graphics, shaders, canonical human/HM08/MPFB assets or
 animation sources. The integration wiring is kept separately reviewable from
 domain source/tests/evidence. Apply the complete lane before acceptance testing.
-No merge or push is part of this feature.
+The four-commit feature was subsequently pushed with explicit owner authorization.
+This endpoint-correction pass neither pushes nor merges.
 
 ## Deferred integrations and owner decisions
 
@@ -524,9 +528,9 @@ No merge or push is part of this feature.
 - Future 3D presentation: reuse lifecycle/event principles through a separately
   approved 3D spatial/extraction adapter. The current Vec2 simulation is explicit;
   the accepted 2D renderer received no 3D feature.
-- Owner review: API names, ordering/overflow policies, one-emitter effect scope,
-  visual proof and the future PHY adapter should be reviewed before integration.
-  Automated validation does not confer owner acceptance.
+- Owner review: the latest request accepts the architecture and existing contracts.
+  The appearance endpoint correction and regenerated evidence return for owner
+  review; automated validation does not confer acceptance of this follow-up.
 
 ## Original validation environment and resolved findings (historical)
 
@@ -647,7 +651,13 @@ No unresolved automated validation failure remains. Keyboard interactions are
 implemented and their scene operations have headless tests; manual input and
 owner visual/API acceptance remain review work, not an automated acceptance claim.
 
-## Corrective validation and evidence
+## Prior architecture-correction validation (historical)
+
+The following measurements and inventory describe commit
+`3a6609e32d6f332a978aa689e830f1dd03279ab1`, before endpoint correction.
+Current evidence links are regenerated for the endpoint pass; the old current
+records remain in that Git commit. Both historical evidence directories below
+remain byte-identical. The current endpoint results appear after this section.
 
 All required correction gates returned exit code zero. The 49 focused tests
 include the original 41 tests plus six deflection tests and two
@@ -824,3 +834,178 @@ visual/manual controls, bounded response/overflow policies, and the deferred PHY
 adapter synchronization. No future roadmap phase or deferred gameplay system
 is marked complete. The final commit identifiers and clean branch status are
 reported in the delivery response; the branch stops at owner review.
+
+## Owner-review particle appearance endpoint correction
+
+The owner accepted the architecture, projectile contracts, deflection behavior,
+collision-query boundary, optional composition bridge, renderer boundary, build
+registration and deferred production PHY adapter. This pass addresses only the
+remaining appearance endpoint merge blocker; it completes no roadmap phase.
+
+Preflight verified a clean dedicated feature at
+`3a6609e32d6f332a978aa689e830f1dd03279ab1`, matching local tracking and the live
+remote branch, exactly four commits ahead and zero behind accepted foundation
+`cb60fc9a9b24ba7d69578ffc721948e9b00de8fd`. Original master was clean at
+`1dc13b47ab18b04649eb0854b103fcb05850f3a1`, rather than the requested foundation.
+Work stopped before edits; the owner explicitly authorized proceeding while
+preserving that current original master. The feature was not rebased or updated.
+Zig reported exactly 0.16.0 before edits.
+
+For lifetime L > 1, visible_age is zero at age_ticks == 0; otherwise it is
+`age_ticks - 1 + alpha`. Size, opacity and RGB all use
+`t = clamp(visible_age / (L - 1), 0, 1)`. Age-zero appearance stays at start
+values for all alpha. The final live state, age_ticks == L - 1 at alpha == 1,
+reaches t == 1. For L == 1, t is alpha through the sole renderable interval.
+Configured start/end values are returned directly at t == 0/1 so endpoint
+rounding cannot miss their exact stored f32 values. Intermediate values use
+the existing linear interpolation helpers.
+
+Authoritative retirement is unchanged: a particle born at tick T is removed
+on fixed step T + L; no retiring-particle storage or additional live state is
+introduced. Position and rotation retain their existing completed-state
+interpolation. Only presentation size, opacity and RGB change. Particle motion,
+emission order, RNG consumption/streams, identities, capacity policies, emitter
+retirement, particle counts, projectile behavior and the proof scene are unchanged.
+
+Five focused tests cover exact four-tick endpoints (including floating-point
+cancellation cases), monotonic two-tick keyframes, one-tick alpha interpolation,
+read-only extraction with unchanged future random emissions and no allocation,
+and repeated identical render instances with SHA256 over explicit fields.
+The existing age-two interpolation assertion intentionally changes to the
+accepted two-thirds visible-span value; its other assertions remain intact.
+The new tests were run against the unchanged implementation first: 51 passed,
+zero skipped and the three endpoint cases failed. No unrelated assertion or
+golden identity/RNG vector was weakened.
+
+### Endpoint validation and current evidence
+
+All 54 effects/projectiles tests pass in Debug, ReleaseSafe and ReleaseFast.
+The original 49 tests remain enabled; the only existing expectation changes are
+the four explicitly approved age-two appearance values. Existing identity/RNG
+goldens, collision/deflection assertions, allocation-failure cleanup and
+steady-state allocation checks are preserved. The five new tests include a
+failing-allocator extraction/continuation case and 55 render observations per
+repeated run, hashing explicitly serialized fields without struct padding.
+
+| Lifetime | Renderable appearance policy | Exact retirement |
+|---|---|---|
+| Four ticks | Age zero stays at start. Final live age 3, alpha 1 reaches configured end. | Fourth fixed step |
+| Two ticks | Age zero stays at start. At live age 1, alpha traverses monotonic quarter-keyframes from start to end. | Second fixed step |
+| One tick | At age zero, alpha 0 / 0.5 / 1 returns start / midpoint / end; quarter-keyframes also checked. | First fixed step |
+
+| Exact validation command from this worktree | Exit | Observed result |
+|---|---|---|
+| `.\.deps\zig-0.16.0\zig.exe fmt src/effects/root.zig tests/effects/effect_tests.zig` | 0 | no output |
+| `.\.deps\zig-0.16.0\zig.exe build test-effects-projectiles -j1 --summary all` | 0 | 3/3 steps succeeded; 54 reported test executions |
+| `.\.deps\zig-0.16.0\zig.exe build test-effects-projectiles -Doptimize=ReleaseSafe -j1 --summary all` | 0 | 3/3 steps succeeded; 54 reported test executions |
+| `.\.deps\zig-0.16.0\zig.exe build test-effects-projectiles -Doptimize=ReleaseFast -j1 --summary all` | 0 | 3/3 steps succeeded; 54 reported test executions |
+| `.\.deps\zig-0.16.0\zig.exe build -j1 --summary all` | 0 | 24/24 steps succeeded |
+| `.\.deps\zig-0.16.0\zig.exe build -Doptimize=ReleaseSafe -j1 --summary all` | 0 | 24/24 steps succeeded |
+| `.\.deps\zig-0.16.0\zig.exe build -Doptimize=ReleaseFast -j1 --summary all` | 0 | 24/24 steps succeeded |
+| `.\.deps\zig-0.16.0\zig.exe build verify -j1 --summary all` | 0 | 92/92 steps succeeded; 725 reported test executions |
+| `.\.deps\zig-0.16.0\zig.exe build test check -j1 --summary all` | 0 | 28/28 steps succeeded; 438 reported test executions |
+| `.\.deps\zig-0.16.0\zig.exe build gpu-smoke -j1 --summary all` | 0 | 26/26 steps succeeded |
+| `.\.deps\zig-0.16.0\zig.exe build effects-projectiles-smoke -j1 --summary all` | 0 | 26/26 steps succeeded |
+| `python tools/effects_projectiles_review.py --output evidence/effects_projectiles` | 0 | EFFECTS_PROJECTILES_REVIEW_OK frames=4 lossless_rgb=true |
+| `.\.deps\zig-0.16.0\zig.exe build effects-projectiles-smoke -j1 --summary all` | 0 | 26/26 steps succeeded |
+| `python tools/effects_projectiles_review.py --compare evidence/effects_projectiles` | 0 | EFFECTS_PROJECTILES_REVIEW_OK frames=4 lossless_rgb=true |
+| `.\.deps\zig-0.16.0\zig.exe fmt --check build.zig build.zig.zon build src tests` | 0 | no output |
+| `pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/check_documentation.ps1` | 0 | documentation audit PASS |
+| `git -c safe.directory=C:/Users/Chad/Documents/effects-projectiles-e1 -c core.safecrlf=false diff --check` | 0 | no output |
+
+The regression-before command was
+`.\.deps\zig-0.16.0\zig.exe build test-effects-projectiles -j1 --summary all`.
+It returned exit code 1 against unchanged production code: 51 passed, zero
+skipped and exactly three endpoint cases failed. This expected red run and the
+passing correction runs are recorded separately in
+[current validation.json](../../evidence/effects_projectiles/validation.json).
+
+Current physical proof output:
+
+```text
+info: EFFECTS_PROJECTILES_DEFLECTION transfers=1 former_source_hits=1 new_source_hits=0
+info: EFFECTS_PROJECTILES_PROOF frames=180 ticks=720 collisions=4 deflections=2 expirations=3 peak_projectiles=5 peak_emitters=213 peak_particles=352 trail_samples=544 peak_sprites=363 peak_draws=1 dropped_particles=0 dropped_effects=0 steady_allocations=0 simulation_ns=288211500 wall_ns=1470958700
+info: EFFECTS_PROJECTILES_PROOF_OK backend=direct3d12 created=23 released=23 fences_acquired=185 fences_released=185
+```
+
+The first corrected proof was encoded through the unchanged review utility.
+A second physical proof reproduced all four GPU RGBA hashes and all four PNG
+byte streams. Only appearance values differ from the starting commit: the proof
+scenario, motion, emission, particle counts, projectiles and ownership behavior
+are unchanged. Current captures change because size/opacity/RGB reach their
+configured endpoints over the renderable lifetime, not because a scenario or
+expected image hash was edited.
+
+| Tick | Changed pixels | GPU RGBA SHA256 | PNG SHA256 |
+|---|---|---|---|
+| 120 | 5257 | `3660ef0e0bc8b212335172fd033804b43da376ac8ee268498719fa42d5683345` | `09d54cc43d85e12be5ffaade7fca6469dc742974caffe023713b779cdc935c08` |
+| 176 | 5071 | `7e60692dbe805a65020c92bf99a76d4c2cae6dd1286a47b924798c7734eccfeb` | `03383c0dffb89a7fec3989ac6f48ee214e09d56519608a1c2296319f18fae009` |
+| 212 | 4978 | `6fd8c23d19838324393999dd76b2bac289ef257e04c1bbdebf91fddce4854108` | `a7cdf24ef397f5ea0f2bf2f3c1c06fefa71e977ca2326d3899d0966b9527fa3f` |
+| 256 | 4717 | `5d09bc30095eb635f5f80628f905094f3b3d872a9fb11190720fcc09924c04e7` | `3e60c78b51a2d04519b491de5c9443b7182ea37dc26fab50d971211458e35766` |
+
+Raw current logs: [verify](../../evidence/effects_projectiles/verify.txt),
+[test/check](../../evidence/effects_projectiles/check.txt),
+[GPU smoke](../../evidence/effects_projectiles/gpu-smoke.txt),
+[proof](../../evidence/effects_projectiles/proof.txt),
+[repeat comparison](../../evidence/effects_projectiles/review.txt).
+Timing is a local Debug observation. Pixel identity is scoped to the reference
+machine; allocator counters exclude SDL/driver internals. The production PHY
+adapter and all other previously deferred systems remain deferred.
+
+### Endpoint preservation and exact file scope
+
+Of the 948 original-master preflight files, 939 remain byte-identical.
+The separate active Record / Replay task began an owner-authorized RR1 merge
+during validation. Its changed and added paths are recorded in current validation.json
+and were verified against that task read-only. This effects task made no writes
+to the original worktree and did not revert, stage or commit its concurrent work.
+Whole-master byte identity and continued master cleanliness are therefore not claimed.
+All 16 files under history/initial and history/precorrection remain byte-identical.
+All feature files outside the allowed effects/test/report/current-evidence paths
+match their starting bytes. The code before/after effect extraction is unchanged,
+including authoritative state, motion, emissions, retirement and RNG. Position
+and rotation extraction expressions match the starting source exactly.
+
+Production/test/documentation changes:
+
+- `src/effects/root.zig`: appearance normalization and exact endpoint selection only.
+- `tests/effects/effect_tests.zig`: five regression tests and the accepted four-value expectation correction.
+- `docs/implementation/effects_projectiles_foundation.md`: contract, owner decision, validation and evidence provenance.
+
+Current generated evidence files refreshed (no historical destination written):
+
+- `evidence/effects_projectiles/build-debug.txt`.
+- `evidence/effects_projectiles/build-release-fast.txt`.
+- `evidence/effects_projectiles/build-release-safe.txt`.
+- `evidence/effects_projectiles/check.txt`.
+- `evidence/effects_projectiles/focused-debug.txt`.
+- `evidence/effects_projectiles/focused-release-fast.txt`.
+- `evidence/effects_projectiles/focused-release-safe.txt`.
+- `evidence/effects_projectiles/format.txt`.
+- `evidence/effects_projectiles/gpu-smoke.txt`.
+- `evidence/effects_projectiles/proof-first.txt`.
+- `evidence/effects_projectiles/proof.txt`.
+- `evidence/effects_projectiles/review-generation.txt`.
+- `evidence/effects_projectiles/review.txt`.
+- `evidence/effects_projectiles/tick_120.png`.
+- `evidence/effects_projectiles/tick_176.png`.
+- `evidence/effects_projectiles/tick_212.png`.
+- `evidence/effects_projectiles/tick_256.png`.
+- `evidence/effects_projectiles/validation.json`.
+- `evidence/effects_projectiles/verify.txt`.
+
+Files created, renamed or removed: none. Only existing current evidence is
+regenerated. Formatting output can remain byte-identical when empty.
+All 15 feature source/test/tool files were audited with zero TODO, FIXME,
+unreachable, placeholder/stub or skipped-test markers. Source review found no
+unfinished bodies or success substitutes. No test was disabled or weakened;
+the midpoint expectation change is the explicit owner-approved contract fix.
+
+Projectile, deflection and collision contracts, optional composition, proof
+scene, build wiring, dependencies, foundation/physics/graphics/scene-core,
+canonical-human/HM08/MPFB, morphology, Model Lab and animation are untouched.
+One new corrective commit follows the existing four; its SHA is reported in
+the delivery response and Git history. This pass performs no push, merge, reset,
+clean, rebase, amend, squash, dependency update, deletion or destructive action.
+No automated failure remains. Stop at owner review with the feature worktree
+clean and the new corrective commit unpushed.

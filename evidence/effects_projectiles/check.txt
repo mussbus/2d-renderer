@@ -1,19 +1,89 @@
-1/3 image_decode_tests.test.PNG metadata catches unsupported layouts zero dimensions overflow and upload limits...OK
-2/3 image_decode_tests.test.WIC decodes production PNG alpha and classifies missing corrupt and unsupported files...OK
-3/3 image_decode_tests.test.PNG decode allocation failure leaves the fixed allocator unchanged...OK
+documentation audit PASS: 46 required files, 42 Markdown files, 94 local Markdown targets
+Repository hygiene passed for 374 implementation and policy files.
+Current architecture policy passed: F2C and F4C1-F4E authority/dependency boundaries are intact.
+Repository check passed: current architecture, build registration, and hygiene invariants are satisfied.
+1/3 engine_composition_tests.test.second client composes RuntimeScene identity transform lifecycle and render data without demo authority...OK
+2/3 engine_composition_tests.test.character bindings synchronize two specialized runtimes through F without a demo application...OK
+3/3 engine_composition_tests.test.production interaction coordinates F-bound characters without scenario fixtures...OK
 All 3 tests passed.
-1/5 test_scene_core_registry_internal.test_0...OK
-2/5 registry_tests.test.registry allocates resolves destroys reuses and rejects stale handles...OK
-3/5 registry_tests.test.registry rejects invalid and duplicate persistent identities...OK
-4/5 registry_tests.test.registry logical growth preserves handles and reports bounded capacity...OK
-5/5 registry_tests.test.generation exhaustion retires instead of wrapping...OK
-All 5 tests passed.
-1/5 scene_binding_boundary_tests.test.physical input maps to application actions and physics intent without content in platform state...OK
-2/5 scene_binding_boundary_tests.test.application action mapping preserves focus blocking scripted parity and evidence ownership...OK
-3/5 scene_binding_boundary_tests.test.bounded binding contains legacy identity and rolls back failed persistent creation...OK
-4/5 scene_binding_boundary_tests.test.binding publication keeps snapshots immutable and enabled cache transactional...OK
-5/5 scene_binding_boundary_tests.test.integrated route uses F transform lifecycle snapshot and preserves identity on reset...OK
-All 5 tests passed.
+1/22 test_scene_core_runtime.test_0...OK
+2/22 public_surface_tests.test.supported scene_core root hides F-owned mutable runtime storage...OK
+3/22 runtime_scene_tests.test.Level assembly resolves deterministic hierarchy and preserves exact large origin...OK
+4/22 runtime_scene_tests.test.failed exact source resolution is atomic and a later valid activation succeeds...OK
+5/22 runtime_scene_tests.test.dirty propagation updates only affected branches and old snapshots remain immutable...OK
+6/22 runtime_scene_tests.test.reparent modes preserve the requested space and reject cycles transactionally...OK
+7/22 runtime_scene_tests.test.world affine preserves negative scale and hierarchy-generated shear...OK
+8/22 runtime_scene_tests.test.removal policies reject children by default and orphan or cascade explicitly...OK
+9/22 runtime_scene_tests.test.multiple Levels coexist and unload invalidates only owned and host-scoped entities...OK
+10/22 runtime_scene_tests.test.Level-hosted gameplay promotion rejects atomically before changing spatial basis...OK
+11/22 runtime_scene_tests.test.supported gameplay promotion preserves hierarchy local transform and world affine...OK
+12/22 runtime_scene_tests.test.already-persistent promotion has a dedicated diagnostic and publishes nothing...OK
+13/22 runtime_scene_tests.test.persistent-below-Level-owned promotion failure wins before rebase and is atomic...OK
+14/22 runtime_scene_tests.test.promotion authority remains gameplay-only for every transient class...OK
+15/22 runtime_scene_tests.test.world-persistent anchors survive Level unload and cannot be parented below Level ownership...OK
+16/22 runtime_scene_tests.test.nested prefab expansion derives identities applies overrides and isolates reused placements...OK
+17/22 runtime_scene_tests.test.missing nested prefab resolution rolls back every candidate entity...OK
+18/22 runtime_scene_tests.test.runtime owns authored slices and neutral mock consumers share one published identity...OK
+19/22 runtime_scene_tests.test.two-phase publication rolls back core and prepared extension tables together...OK
+20/22 runtime_scene_tests.test.snapshot leases are bounded and release permits later acquisition...OK
+21/22 runtime_scene_tests.test.runtime failures map to stable machine-readable F diagnostics...OK
+22/22 runtime_scene_tests.test.publication reports authorized growth and capacity failure remains atomic...OK
+All 22 tests passed.
+1/54 projectile_tests.test.projectiles deterministic identities, capacity rejection and no ID consumption...OK
+2/54 projectile_tests.test.projectiles fixed-step semi-implicit motion and acceleration...OK
+3/54 projectile_tests.test.projectiles disabled state freezes motion and lifetime then expires exactly...OK
+4/54 projectile_tests.test.projectiles explicit removal emits one value and rejects stale identity...OK
+5/54 projectile_tests.test.projectiles masks filter both directions before earliest-hit selection...OK
+6/54 projectile_tests.test.projectiles transitive near-equal hit ties ignore enumeration order...OK
+7/54 projectile_tests.test.projectiles continue hit reports once per collider and spends remaining travel...OK
+8/54 projectile_tests.test.projectiles bounded bounce prevents same-tick collision loops...OK
+9/54 projectile_tests.test.projectiles deflection relaunch changes owner, position and lifetime explicitly...OK
+10/54 projectile_tests.test.projectiles event overflow rolls back commands and entire tick...OK
+11/54 projectile_tests.test.projectiles invalid collision result rolls back earlier projectile updates...OK
+12/54 projectile_tests.test.projectiles ordered repeated runs and copied snapshots cannot mutate authority...OK
+13/54 projectile_tests.test.projectiles allocation failures clean every partial initialization...OK
+14/54 projectile_tests.test.projectiles fixed F UUID vector and definition ownership...OK
+15/54 projectile_tests.test.projectiles query failure on later item and hit overflow publish nothing...OK
+16/54 projectile_tests.test.projectiles zero-time opposing contacts terminate at configured bound...OK
+17/54 projectile_tests.test.projectiles exact equal-hit tie uses collider ID and preserves metadata...OK
+18/54 deflection_tests.test.deflection publishes coherent owner affiliation filter velocity and copied before-after state...OK
+19/54 deflection_tests.test.deflection event capacity and invalid input publish no partial transfer...OK
+20/54 deflection_tests.test.deflection transfers both filter directions and exposes new state to next query...OK
+21/54 deflection_tests.test.deflection and lifecycle boundary ordering repeat across reset with identical event logs...OK
+22/54 deflection_tests.test.automatic bounce supplies before-after state while retaining ownership affiliation and filters...OK
+23/54 deflection_tests.test.deflection absent fields preserve state and explicit optionals clear affiliation and owner...OK
+24/54 effect_tests.test.effects burst, spread bounds and seed determinism...OK
+25/54 effect_tests.test.effects continuous fixed-point rate and emitter duration are exact...OK
+26/54 effect_tests.test.effects particle lifetime, emitter drain and exact retirement...OK
+27/54 effect_tests.test.effects gravity drag and angular motion...OK
+28/54 effect_tests.test.effects size opacity color and render interpolation are read only...OK
+29/54 effect_tests.test.effects particle drop and emitter rejection are explicit bounded policies...OK
+30/54 effect_tests.test.effects stop drains, clear removes and reset reproduces seed...OK
+31/54 effect_tests.test.effects streams and extraction order independent of spawn ordering...OK
+32/54 effect_tests.test.effects moving an emitter never drags existing world-space particles...OK
+33/54 effect_tests.test.effects reject invalid inputs without creating runtime state...OK
+34/54 effect_tests.test.effects allocation failures clean every partial initialization...OK
+35/54 effect_tests.test.effects independently calculated version-one UUID and Xoshiro sample vectors...OK
+36/54 effect_tests.test.effects dropped particles consume their samples and freed capacity resumes deterministically...OK
+37/54 effect_tests.test.effects four-tick appearance reaches exact endpoints before unchanged retirement...OK
+38/54 effect_tests.test.effects two-tick appearance starts constant then progresses monotonically to its endpoint...OK
+39/54 effect_tests.test.effects one-tick appearance uses alpha through its only live interval...OK
+40/54 effect_tests.test.effects appearance extraction preserves state allocation metrics and future random emissions...OK
+41/54 effect_tests.test.effects corrected appearance instances and field hashes repeat across identical runs...OK
+42/54 composition_tests.test.composition launch distance-trail and expiration mapping...OK
+43/54 composition_tests.test.composition impact uses contact location and retires trail tracking...OK
+44/54 composition_tests.test.composition saturation and arbitrary render reads cannot affect projectile simulation...OK
+45/54 composition_tests.test.composition trail samples are bounded and reset reproduces mappings...OK
+46/54 composition_tests.test.composition distance remainder survives many subspacing steps...OK
+47/54 proof_tests.test.proof true segment sweep catches thin walls, diagonal hits and shape extent...OK
+48/54 proof_tests.test.proof bounce conserves remaining travel without repeated separating hits...OK
+49/54 proof_tests.test.proof same-seed replay and arbitrary render submissions preserve gameplay...OK
+50/54 proof_tests.test.proof update reset spawn deflect and extraction allocate nothing after initialization...OK
+51/54 proof_tests.test.proof composed initialization cleans every allocation failure...OK
+52/54 proof_tests.test.core public facades expose only an opaque const ownership context...OK
+53/54 proof_tests.test.proof real sweep excludes overlapping new source and hits former source after transfer...OK
+54/54 proof_tests.test.proof ownership scenario repeats and presentation cannot change redirected simulation...OK
+All 54 tests passed.
 1/277 test_all.test_0...OK
 2/277 test_all.test.every initialization stage round-trips through its command-line name...OK
 3/277 test_all.test.fault injection fails exactly after the selected acquisition stage...OK
@@ -313,88 +383,26 @@ OK
 276/277 character_presentation_tests.test.view transition clears long-hair spring state without allocation or cross-character mutation...OK
 277/277 character_presentation_tests.test.Q input cycles presentation only and art submission remains bounded in both views...OK
 All 277 tests passed.
-1/49 projectile_tests.test.projectiles deterministic identities, capacity rejection and no ID consumption...OK
-2/49 projectile_tests.test.projectiles fixed-step semi-implicit motion and acceleration...OK
-3/49 projectile_tests.test.projectiles disabled state freezes motion and lifetime then expires exactly...OK
-4/49 projectile_tests.test.projectiles explicit removal emits one value and rejects stale identity...OK
-5/49 projectile_tests.test.projectiles masks filter both directions before earliest-hit selection...OK
-6/49 projectile_tests.test.projectiles transitive near-equal hit ties ignore enumeration order...OK
-7/49 projectile_tests.test.projectiles continue hit reports once per collider and spends remaining travel...OK
-8/49 projectile_tests.test.projectiles bounded bounce prevents same-tick collision loops...OK
-9/49 projectile_tests.test.projectiles deflection relaunch changes owner, position and lifetime explicitly...OK
-10/49 projectile_tests.test.projectiles event overflow rolls back commands and entire tick...OK
-11/49 projectile_tests.test.projectiles invalid collision result rolls back earlier projectile updates...OK
-12/49 projectile_tests.test.projectiles ordered repeated runs and copied snapshots cannot mutate authority...OK
-13/49 projectile_tests.test.projectiles allocation failures clean every partial initialization...OK
-14/49 projectile_tests.test.projectiles fixed F UUID vector and definition ownership...OK
-15/49 projectile_tests.test.projectiles query failure on later item and hit overflow publish nothing...OK
-16/49 projectile_tests.test.projectiles zero-time opposing contacts terminate at configured bound...OK
-17/49 projectile_tests.test.projectiles exact equal-hit tie uses collider ID and preserves metadata...OK
-18/49 deflection_tests.test.deflection publishes coherent owner affiliation filter velocity and copied before-after state...OK
-19/49 deflection_tests.test.deflection event capacity and invalid input publish no partial transfer...OK
-20/49 deflection_tests.test.deflection transfers both filter directions and exposes new state to next query...OK
-21/49 deflection_tests.test.deflection and lifecycle boundary ordering repeat across reset with identical event logs...OK
-22/49 deflection_tests.test.automatic bounce supplies before-after state while retaining ownership affiliation and filters...OK
-23/49 deflection_tests.test.deflection absent fields preserve state and explicit optionals clear affiliation and owner...OK
-24/49 effect_tests.test.effects burst, spread bounds and seed determinism...OK
-25/49 effect_tests.test.effects continuous fixed-point rate and emitter duration are exact...OK
-26/49 effect_tests.test.effects particle lifetime, emitter drain and exact retirement...OK
-27/49 effect_tests.test.effects gravity drag and angular motion...OK
-28/49 effect_tests.test.effects size opacity color and render interpolation are read only...OK
-29/49 effect_tests.test.effects particle drop and emitter rejection are explicit bounded policies...OK
-30/49 effect_tests.test.effects stop drains, clear removes and reset reproduces seed...OK
-31/49 effect_tests.test.effects streams and extraction order independent of spawn ordering...OK
-32/49 effect_tests.test.effects moving an emitter never drags existing world-space particles...OK
-33/49 effect_tests.test.effects reject invalid inputs without creating runtime state...OK
-34/49 effect_tests.test.effects allocation failures clean every partial initialization...OK
-35/49 effect_tests.test.effects independently calculated version-one UUID and Xoshiro sample vectors...OK
-36/49 effect_tests.test.effects dropped particles consume their samples and freed capacity resumes deterministically...OK
-37/49 composition_tests.test.composition launch distance-trail and expiration mapping...OK
-38/49 composition_tests.test.composition impact uses contact location and retires trail tracking...OK
-39/49 composition_tests.test.composition saturation and arbitrary render reads cannot affect projectile simulation...OK
-40/49 composition_tests.test.composition trail samples are bounded and reset reproduces mappings...OK
-41/49 composition_tests.test.composition distance remainder survives many subspacing steps...OK
-42/49 proof_tests.test.proof true segment sweep catches thin walls, diagonal hits and shape extent...OK
-43/49 proof_tests.test.proof bounce conserves remaining travel without repeated separating hits...OK
-44/49 proof_tests.test.proof same-seed replay and arbitrary render submissions preserve gameplay...OK
-45/49 proof_tests.test.proof update reset spawn deflect and extraction allocate nothing after initialization...OK
-46/49 proof_tests.test.proof composed initialization cleans every allocation failure...OK
-47/49 proof_tests.test.core public facades expose only an opaque const ownership context...OK
-48/49 proof_tests.test.proof real sweep excludes overlapping new source and hits former source after transfer...OK
-49/49 proof_tests.test.proof ownership scenario repeats and presentation cannot change redirected simulation...OK
-All 49 tests passed.
-1/27 test_foundation_primitives.test_0...OK
-2/27 identity_tests.test.persistent IDs are strong canonical RFC 9562 UUID values...OK
-3/27 identity_tests.test.UUIDv5 matches the RFC vector and field derivation is unambiguous...OK
-4/27 identity_tests.test.UUIDv7 consumes only explicit clock and entropy inputs...OK
-5/27 identity_tests.test.namespace and persistent ID duplicates are rejected...OK
-6/27 identity_tests.test.version kinds parse canonical semantic triples without interchangeability...OK
-7/27 identity_tests.test.EntityHandle is a non-persistent strongly typed value only...OK
-8/27 identity_tests.test.asset refs pin kind version and content hash...OK
-9/27 identity_tests.test.dependency closure hashes are order-independent and class-isolated...OK
-10/27 identity_tests.test.dependency duplicate mismatch and cycle failures are explicit...OK
-11/27 spatial_tests.test.finite validation and quaternion canonical tolerance boundaries are explicit...OK
-12/27 spatial_tests.test.shared spatial convention conforms to protected canonical math...OK
-13/27 spatial_tests.test.scale rotate translate and parent times local semantics are explicit...OK
-14/27 spatial_tests.test.shared XY transforms conform to the current Transform2D route...OK
-15/27 spatial_tests.test.affine inverse round trips and rejects singular values...OK
-16/27 spatial_tests.test.decomposition has canonical negative scale behavior and rejects shear...OK
-17/27 spatial_tests.test.affine composition preserves shear without pretending it is local TRS...OK
-18/27 canonical_data_tests.test.canonical JSON primitives use UTF-8 escaping shortest f32 and no newline...OK
-19/27 canonical_data_tests.test.canonical object and record order ignore insertion order while semantic arrays preserve it...OK
-20/27 canonical_data_tests.test.canonical data rejects duplicate keys and uses versioned hash domains...OK
-21/27 canonical_data_tests.test.canonical UUID hash and version encodings are lowercase and stable...OK
-22/27 canonical_data_tests.test.foundation f32 text conforms to protected canonical model serialization...OK
-23/27 canonical_data_tests.test.protected canonical-model fixture bytes and hash remain unchanged...OK
-24/27 canonical_data_tests.test.protected canonical-geometry fixture bytes and hash remain unchanged...OK
-25/27 determinism_tests.test.seed and key derivation are stable keyed and domain-separated...OK
-26/27 determinism_tests.test.scene time uses normalized explicit rational sub-ticks...OK
-27/27 determinism_tests.test.diagnostics sort identically across insertion permutations...OK
-All 27 tests passed.
-1/3 engine_composition_tests.test.second client composes RuntimeScene identity transform lifecycle and render data without demo authority...OK
-2/3 engine_composition_tests.test.character bindings synchronize two specialized runtimes through F without a demo application...OK
-3/3 engine_composition_tests.test.production interaction coordinates F-bound characters without scenario fixtures...OK
+1/5 scene_binding_boundary_tests.test.physical input maps to application actions and physics intent without content in platform state...OK
+2/5 scene_binding_boundary_tests.test.application action mapping preserves focus blocking scripted parity and evidence ownership...OK
+3/5 scene_binding_boundary_tests.test.bounded binding contains legacy identity and rolls back failed persistent creation...OK
+4/5 scene_binding_boundary_tests.test.binding publication keeps snapshots immutable and enabled cache transactional...OK
+5/5 scene_binding_boundary_tests.test.integrated route uses F transform lifecycle snapshot and preserves identity on reset...OK
+All 5 tests passed.
+1/3 image_decode_tests.test.PNG metadata catches unsupported layouts zero dimensions overflow and upload limits...OK
+2/3 image_decode_tests.test.WIC decodes production PNG alpha and classifies missing corrupt and unsupported files...OK
+3/3 image_decode_tests.test.PNG decode allocation failure leaves the fixed allocator unchanged...OK
 All 3 tests passed.
+1/3 renderer_boundary_tests.test.capture result is copied data with explicit caller lifetime...OK
+2/3 renderer_boundary_tests.test.capture result rejects mismatched dimensions...OK
+3/3 renderer_boundary_tests.test.capture result rejects a row beyond the copied frame...OK
+All 3 tests passed.
+1/5 test_scene_core_registry_internal.test_0...OK
+2/5 registry_tests.test.registry allocates resolves destroys reuses and rejects stale handles...OK
+3/5 registry_tests.test.registry rejects invalid and duplicate persistent identities...OK
+4/5 registry_tests.test.registry logical growth preserves handles and reports bounded capacity...OK
+5/5 registry_tests.test.generation exhaustion retires instead of wrapping...OK
+All 5 tests passed.
 1/39 test_scene_core_authored.test_0...OK
 2/39 definition_tests.test.F2B definitions contain authored identities and no runtime handles...OK
 3/39 definition_tests.test.schema UUIDs are permanent distinct document-family identities...OK
@@ -435,64 +443,61 @@ All 3 tests passed.
 38/39 validation_tests.test.reusable street-lamp prefab remains separate from two placed instances...OK
 39/39 validation_tests.test.tag capacity and deterministic provenance validation fail closed...OK
 All 39 tests passed.
-1/22 test_scene_core_runtime.test_0...OK
-2/22 public_surface_tests.test.supported scene_core root hides F-owned mutable runtime storage...OK
-3/22 runtime_scene_tests.test.Level assembly resolves deterministic hierarchy and preserves exact large origin...OK
-4/22 runtime_scene_tests.test.failed exact source resolution is atomic and a later valid activation succeeds...OK
-5/22 runtime_scene_tests.test.dirty propagation updates only affected branches and old snapshots remain immutable...OK
-6/22 runtime_scene_tests.test.reparent modes preserve the requested space and reject cycles transactionally...OK
-7/22 runtime_scene_tests.test.world affine preserves negative scale and hierarchy-generated shear...OK
-8/22 runtime_scene_tests.test.removal policies reject children by default and orphan or cascade explicitly...OK
-9/22 runtime_scene_tests.test.multiple Levels coexist and unload invalidates only owned and host-scoped entities...OK
-10/22 runtime_scene_tests.test.Level-hosted gameplay promotion rejects atomically before changing spatial basis...OK
-11/22 runtime_scene_tests.test.supported gameplay promotion preserves hierarchy local transform and world affine...OK
-12/22 runtime_scene_tests.test.already-persistent promotion has a dedicated diagnostic and publishes nothing...OK
-13/22 runtime_scene_tests.test.persistent-below-Level-owned promotion failure wins before rebase and is atomic...OK
-14/22 runtime_scene_tests.test.promotion authority remains gameplay-only for every transient class...OK
-15/22 runtime_scene_tests.test.world-persistent anchors survive Level unload and cannot be parented below Level ownership...OK
-16/22 runtime_scene_tests.test.nested prefab expansion derives identities applies overrides and isolates reused placements...OK
-17/22 runtime_scene_tests.test.missing nested prefab resolution rolls back every candidate entity...OK
-18/22 runtime_scene_tests.test.runtime owns authored slices and neutral mock consumers share one published identity...OK
-19/22 runtime_scene_tests.test.two-phase publication rolls back core and prepared extension tables together...OK
-20/22 runtime_scene_tests.test.snapshot leases are bounded and release permits later acquisition...OK
-21/22 runtime_scene_tests.test.runtime failures map to stable machine-readable F diagnostics...OK
-22/22 runtime_scene_tests.test.publication reports authorized growth and capacity failure remains atomic...OK
-All 22 tests passed.
-1/3 renderer_boundary_tests.test.capture result is copied data with explicit caller lifetime...OK
-2/3 renderer_boundary_tests.test.capture result rejects mismatched dimensions...OK
-3/3 renderer_boundary_tests.test.capture result rejects a row beyond the copied frame...OK
-All 3 tests passed.
-documentation audit PASS: 46 required files, 42 Markdown files, 94 local Markdown targets
-Repository hygiene passed for 374 implementation and policy files.
-Current architecture policy passed: F2C and F4C1-F4E authority/dependency boundaries are intact.
-Repository check passed: current architecture, build registration, and hygiene invariants are satisfied.
+1/27 test_foundation_primitives.test_0...OK
+2/27 identity_tests.test.persistent IDs are strong canonical RFC 9562 UUID values...OK
+3/27 identity_tests.test.UUIDv5 matches the RFC vector and field derivation is unambiguous...OK
+4/27 identity_tests.test.UUIDv7 consumes only explicit clock and entropy inputs...OK
+5/27 identity_tests.test.namespace and persistent ID duplicates are rejected...OK
+6/27 identity_tests.test.version kinds parse canonical semantic triples without interchangeability...OK
+7/27 identity_tests.test.EntityHandle is a non-persistent strongly typed value only...OK
+8/27 identity_tests.test.asset refs pin kind version and content hash...OK
+9/27 identity_tests.test.dependency closure hashes are order-independent and class-isolated...OK
+10/27 identity_tests.test.dependency duplicate mismatch and cycle failures are explicit...OK
+11/27 spatial_tests.test.finite validation and quaternion canonical tolerance boundaries are explicit...OK
+12/27 spatial_tests.test.shared spatial convention conforms to protected canonical math...OK
+13/27 spatial_tests.test.scale rotate translate and parent times local semantics are explicit...OK
+14/27 spatial_tests.test.shared XY transforms conform to the current Transform2D route...OK
+15/27 spatial_tests.test.affine inverse round trips and rejects singular values...OK
+16/27 spatial_tests.test.decomposition has canonical negative scale behavior and rejects shear...OK
+17/27 spatial_tests.test.affine composition preserves shear without pretending it is local TRS...OK
+18/27 canonical_data_tests.test.canonical JSON primitives use UTF-8 escaping shortest f32 and no newline...OK
+19/27 canonical_data_tests.test.canonical object and record order ignore insertion order while semantic arrays preserve it...OK
+20/27 canonical_data_tests.test.canonical data rejects duplicate keys and uses versioned hash domains...OK
+21/27 canonical_data_tests.test.canonical UUID hash and version encodings are lowercase and stable...OK
+22/27 canonical_data_tests.test.foundation f32 text conforms to protected canonical model serialization...OK
+23/27 canonical_data_tests.test.protected canonical-model fixture bytes and hash remain unchanged...OK
+24/27 canonical_data_tests.test.protected canonical-geometry fixture bytes and hash remain unchanged...OK
+25/27 determinism_tests.test.seed and key derivation are stable keyed and domain-separated...OK
+26/27 determinism_tests.test.scene time uses normalized explicit rational sub-ticks...OK
+27/27 determinism_tests.test.diagnostics sort identically across insertion permutations...OK
+All 27 tests passed.
 Build Summary: 28/28 steps succeeded
 test success
 +- run test effects-projectiles-tests success 1s
-|  +- compile test effects-projectiles-tests Debug native cached 21s MaxRSS:35M
-+- run test deterministic-tests success 21s
-|  +- compile test deterministic-tests Debug native cached 65ms MaxRSS:35M
-+- run test engine-composition-tests success 110ms
-|  +- compile test engine-composition-tests Debug native cached 56ms MaxRSS:35M
-+- run test renderer-boundary-tests success 14ms
-|  +- compile test renderer-boundary-tests Debug native cached 53ms MaxRSS:35M
-+- run test image-decode-tests success 46ms
-|  +- compile test image-decode-tests Debug native cached 90ms MaxRSS:35M
-+- run test foundation-primitive-tests success 23ms
-|  +- compile test foundation-primitive-tests Debug native cached 56ms MaxRSS:35M
-+- run test scene-binding-boundary-tests success 28ms
-|  +- compile test scene-binding-boundary-tests Debug native cached 70ms MaxRSS:35M
-+- run test scene-core-authored-tests success 17ms
-|  +- compile test scene-core-authored-tests Debug native cached 54ms MaxRSS:35M
-+- run test scene-core-runtime-tests success 22ms
-|  +- compile test scene-core-runtime-tests Debug native cached 54ms MaxRSS:35M
-+- run test scene-core-registry-internal-tests success 24ms
-   +- compile test scene-core-registry-internal-tests Debug native cached 90ms MaxRSS:35M
+|  +- compile test effects-projectiles-tests Debug native cached 48ms MaxRSS:20M
++- run test deterministic-tests success 20s
+|  +- compile test deterministic-tests Debug native cached 48ms MaxRSS:20M
++- run test engine-composition-tests success 81ms
+|  +- compile test engine-composition-tests Debug native cached 47ms MaxRSS:20M
++- run test renderer-boundary-tests success 13ms
+|  +- compile test renderer-boundary-tests Debug native cached 46ms MaxRSS:20M
++- run test image-decode-tests success 37ms
+|  +- compile test image-decode-tests Debug native cached 46ms MaxRSS:20M
++- run test foundation-primitive-tests success 22ms
+|  +- compile test foundation-primitive-tests Debug native cached 45ms MaxRSS:20M
++- run test scene-binding-boundary-tests success 25ms
+|  +- compile test scene-binding-boundary-tests Debug native cached 46ms MaxRSS:20M
++- run test scene-core-authored-tests success 16ms
+|  +- compile test scene-core-authored-tests Debug native cached 45ms MaxRSS:20M
++- run test scene-core-runtime-tests success 20ms
+|  +- compile test scene-core-runtime-tests Debug native cached 74ms MaxRSS:20M
++- run test scene-core-registry-internal-tests success 26ms
+   +- compile test scene-core-registry-internal-tests Debug native cached 44ms MaxRSS:20M
 check success
-+- compile exe effects_projectiles Debug native cached 54ms MaxRSS:35M
-+- compile exe engine_sandbox Debug native cached 1s MaxRSS:36M
-+- compile exe engine_smoke Debug native cached 53ms MaxRSS:35M
-+- verify Zig formatting success 127ms
++- compile exe effects_projectiles Debug native cached 111ms MaxRSS:20M
++- compile exe engine_sandbox Debug native cached 4s MaxRSS:21M
++- compile exe engine_smoke Debug native cached 49ms MaxRSS:20M
++- verify Zig formatting success 121ms
 +- test (+10 more reused dependencies)
-+- audit current repository architecture and hygiene success 5s
-+- audit required documentation structure and local links success 1s
++- audit current repository architecture and hygiene success 4s
++- audit required documentation structure and local links success 748ms
