@@ -1,3 +1,6 @@
+//! Deterministic 2D bounded transient projectiles in metres at the accepted fixed tick.
+//! Physics owns reusable integration/collision mechanisms; this narrow kinematic
+//! consumer awaits a production PHY sweep/body adapter and is not a rigid-body solver.
 const std = @import("std");
 const math = @import("math");
 const foundation = @import("foundation");
@@ -5,12 +8,14 @@ const fixed_step = @import("fixed_step");
 const collider = @import("collider");
 pub const collision = @import("collision_query.zig");
 pub const Id = foundation.identity.EntityId;
+pub const Affiliation = collision.Affiliation;
 pub const dt: f32 = @floatCast(fixed_step.fixed_dt_seconds);
 pub const Response = enum { despawn, continue_travel, bounce };
 pub const Definition = struct {
     acceleration: math.Vec2 = .zero,
     lifetime_ticks: u32 = 240,
     half_extents: math.Vec2 = .zero,
+    /// Initial filters copied into runtime state at spawn.
     layer: u32 = 1,
     mask: u32 = std.math.maxInt(u32),
     response: Response = .despawn,
@@ -30,11 +35,15 @@ pub const Spawn = struct {
     position: math.Vec2,
     velocity: math.Vec2,
     source: ?Id = null,
+    affiliation: ?Affiliation = null,
     enabled: bool = true,
 };
 pub const Snapshot = struct {
     id: Id,
     source: ?Id,
+    affiliation: ?Affiliation,
+    layer: u32,
+    mask: u32,
     definition: Definition,
     previous_position: math.Vec2,
     position: math.Vec2,
@@ -48,6 +57,9 @@ pub const Event = struct {
     tick: u64,
     kind: EventKind,
     projectile: Snapshot,
+    /// Present for every deflected event (external command or automatic bounce).
+    /// projectile is the copied after-state; this is the copied before-state.
+    before_deflection: ?Snapshot = null,
     from: math.Vec2,
     hit: ?collision.Hit = null,
     incoming_velocity: math.Vec2,
@@ -58,6 +70,9 @@ pub const Deflect = struct {
     velocity: math.Vec2,
     /// Null leaves ownership unchanged; a populated optional can also clear it.
     source: ?struct { value: ?Id } = null,
+    affiliation: ?struct { value: ?Affiliation } = null,
+    layer: ?u32 = null,
+    mask: ?u32 = null,
     position: ?math.Vec2 = null,
     restart_lifetime: bool = false,
 };
@@ -92,6 +107,8 @@ const State = struct {
 };
 /// Unique owner. Snapshots are copied values. Events borrow a const batch
 /// valid until the next command, step, reset or clearEvents call.
+/// Single-thread owner: commands publish synchronously between fixed ticks.
+/// Queries cannot reenter or mutate the system; concurrent access is unsupported.
 pub const System = struct {
     opaque_context: *const anyopaque,
     fn storage(self: *const System) *State {
@@ -162,8 +179,8 @@ pub const System = struct {
         var key: [8]u8 = undefined;
         std.mem.writeInt(u64, &key, s.next_id, .big);
         const id = foundation.identity.uuidV5Fields(Id, s.namespace, &.{ "p.projectile.v1", &key }) catch return error.InvalidIdentity;
-        const item = Snapshot{ .id = id, .source = request.source, .definition = request.definition, .previous_position = request.position, .position = request.position, .velocity = request.velocity, .enabled = request.enabled };
-        try emit(s, .spawned, item, item.position, null, item.velocity, 0);
+        const item = Snapshot{ .id = id, .source = request.source, .affiliation = request.affiliation, .layer = request.definition.layer, .mask = request.definition.mask, .definition = request.definition, .previous_position = request.position, .position = request.position, .velocity = request.velocity, .enabled = request.enabled };
+        try emit(s, .spawned, item, item.position, null, item.velocity, 0, null);
         s.items[s.count] = item;
         s.count += 1;
         s.next_id += 1;
@@ -173,7 +190,7 @@ pub const System = struct {
         const s = self.storage();
         const index = try find(s, id);
         const item = s.items[index];
-        try emit(s, .removed, item, item.position, null, item.velocity, 0);
+        try emit(s, .removed, item, item.position, null, item.velocity, 0, null);
         erase(s, index);
     }
     pub fn setEnabled(self: *System, id: Id, enabled: bool) Error!void {
@@ -181,6 +198,8 @@ pub const System = struct {
         self.storage().items[index].enabled = enabled;
         self.storage().items[index].previous_position = self.storage().items[index].position;
     }
+    /// Atomically publish velocity/owner/affiliation/filter and optional relaunch
+    /// changes with one event at the current completed tick. Failure changes none.
     pub fn deflect(self: *System, id: Id, command: Deflect) Error!void {
         if (!command.velocity.isFinite()) return error.InvalidDeflection;
         if (command.position) |position| if (!position.isFinite()) return error.InvalidDeflection;
@@ -188,15 +207,19 @@ pub const System = struct {
         const s = self.storage();
         const index = try find(s, id);
         var item = s.items[index];
+        const before = item;
         const incoming = item.velocity;
         item.velocity = command.velocity;
         if (command.source) |source| item.source = source.value;
+        if (command.affiliation) |affiliation| item.affiliation = affiliation.value;
+        if (command.layer) |layer| item.layer = layer;
+        if (command.mask) |mask| item.mask = mask;
         if (command.position) |position| {
             item.position = position;
             item.previous_position = position;
         }
         if (command.restart_lifetime) item.age_ticks = 0;
-        try emit(s, .deflected, item, item.position, null, incoming, 0);
+        try emit(s, .deflected, item, item.position, null, incoming, 0, before);
         s.items[index] = item;
     }
     /// Transactional fixed tick. Query failures, nonfinite arithmetic and event
@@ -228,7 +251,7 @@ pub const System = struct {
             }
             item.age_ticks += 1;
             if (item.age_ticks >= item.definition.lifetime_ticks) {
-                try emit(&staged, .expired, item, item.position, null, item.velocity, 1);
+                try emit(&staged, .expired, item, item.position, null, item.velocity, 1, null);
                 erase(&staged, index);
                 continue;
             }
@@ -256,7 +279,7 @@ fn advance(s: *State, item: *Snapshot, query: ?collision.Query) Error!bool {
         if (query) |q| {
             var storage: [collision.maximum_hits]collision.Hit = undefined;
             var hits = collision.Hits{ .storage = &storage };
-            const sweep = collision.Sweep{ .from = from, .to = to, .half_extents = item.definition.half_extents, .layer = item.definition.layer, .mask = item.definition.mask, .source = item.source, .excluded = excluded[0..excluded_count] };
+            const sweep = collision.Sweep{ .from = from, .to = to, .half_extents = item.definition.half_extents, .layer = item.layer, .mask = item.mask, .source = item.source, .affiliation = item.affiliation, .excluded = excluded[0..excluded_count] };
             try q.collect(q.context, sweep, &hits);
             if (hits.count > storage.len) return error.HitCapacity;
             hit = try collision.earliest(sweep, storage[0..hits.count]);
@@ -265,9 +288,9 @@ fn advance(s: *State, item: *Snapshot, query: ?collision.Query) Error!bool {
         item.position = from.add(to.sub(from).scale(fraction));
         elapsed += remaining * fraction;
         if (from.x != item.position.x or from.y != item.position.y)
-            try emit(s, .moved, item.*, from, null, item.velocity, elapsed);
+            try emit(s, .moved, item.*, from, null, item.velocity, elapsed, null);
         const contact = hit orelse return true;
-        try emit(s, .collided, item.*, from, contact, item.velocity, elapsed);
+        try emit(s, .collided, item.*, from, contact, item.velocity, elapsed, null);
         remaining *= 1 - fraction;
         switch (item.definition.response) {
             .despawn => return false,
@@ -276,22 +299,23 @@ fn advance(s: *State, item: *Snapshot, query: ?collision.Query) Error!bool {
                 excluded_count += 1;
             },
             .bounce => {
+                const before = item.*;
                 const incoming = item.velocity;
                 const normal = contact.normal.normalizeSafe(1e-6) catch return error.InvalidHit;
                 item.velocity = incoming.sub(normal.scale(2 * incoming.dot(normal))).scale(item.definition.restitution);
                 if (!item.velocity.isFinite()) return error.NonFiniteMotion;
-                try emit(s, .deflected, item.*, item.position, contact, incoming, elapsed);
+                try emit(s, .deflected, item.*, item.position, contact, incoming, elapsed, before);
             },
         }
         if (remaining == 0) return true;
     }
-    try emit(s, .collision_limit, item.*, item.position, null, item.velocity, elapsed);
+    try emit(s, .collision_limit, item.*, item.position, null, item.velocity, elapsed, null);
     return true;
 }
-fn emit(s: *State, kind: EventKind, item: Snapshot, from: math.Vec2, hit: ?collision.Hit, incoming: math.Vec2, fraction: f32) Error!void {
+fn emit(s: *State, kind: EventKind, item: Snapshot, from: math.Vec2, hit: ?collision.Hit, incoming: math.Vec2, fraction: f32, before: ?Snapshot) Error!void {
     if (s.event_count == s.events.len) return error.EventCapacity;
     if (s.next_event == std.math.maxInt(u64)) return error.IdentityExhausted;
-    s.events[s.event_count] = .{ .sequence = s.next_event, .tick = s.tick, .kind = kind, .projectile = item, .from = from, .hit = hit, .incoming_velocity = incoming, .step_fraction = fraction };
+    s.events[s.event_count] = .{ .sequence = s.next_event, .tick = s.tick, .kind = kind, .projectile = item, .before_deflection = before, .from = from, .hit = hit, .incoming_velocity = incoming, .step_fraction = fraction };
     s.event_count += 1;
     s.next_event += 1;
 }

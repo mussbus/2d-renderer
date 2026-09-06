@@ -20,7 +20,10 @@ pub fn request(position: math.Vec2, size: math.Vec2, rotation: f32, color: [4]f3
 }
 pub fn submit(scene: *const scene_module.Scene, queue: *queue_module.UnifiedRenderQueue, alpha: f32, debug: bool) !void {
     const tint = [4]f32{ 1, 1, 1, 1 };
-    for (scene.world.colliders) |target| _ = try queue.submitSprite(try request(target.bounds.center(), target.bounds.size(), 0, .{ 0.5, 0.5, 0.5, 1 }, 4, -1));
+    for (scene.world.colliders) |target| {
+        if (target.id >= 4 and scene.ownership_projectile == null) continue;
+        _ = try queue.submitSprite(try request(target.bounds.center(), target.bounds.size(), 0, .{ 0.5, 0.5, 0.5, 1 }, if (target.id == 4) 1 else if (target.id == 5) 2 else 4, -1));
+    }
     // Four lane labels use compact colored bars, keeping the proof independent
     // of fonts, UI frameworks and character assets.
     for ([_]f32{ 3.6, 2.5, 1.2, 0.4 }, [_]u32{ 1, 3, 2, 4 }) |y, token| {

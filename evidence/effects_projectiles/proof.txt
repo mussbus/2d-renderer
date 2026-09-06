@@ -1,0 +1,40 @@
+info: available SDL GPU driver: direct3d12
+info: available SDL GPU driver: vulkan
+info: actual SDL GPU driver: direct3d12
+info: generated shader format DXIL agrees with SDL_GPU_SHADERFORMAT_DXIL
+info: grew authoritative GPU instance/upload slots: requested=1792 capacity=2048 bytes_per_slot=131072
+info: Effects/projectiles: Space pause, period step, R same seed, N next seed, P spawn, D deflect, F1 debug, Esc quit. Blue expires; green bounces; red impacts; yellow passes through; bottom lane transfers A to B and returns to A.
+info: EFFECTS_PROJECTILES_DEFLECTION transfers=1 former_source_hits=1 new_source_hits=0
+info: EFFECTS_PROJECTILES_PROOF frames=180 ticks=720 collisions=4 deflections=2 expirations=3 peak_projectiles=5 peak_emitters=213 peak_particles=352 trail_samples=544 peak_sprites=363 peak_draws=1 dropped_particles=0 dropped_effects=0 steady_allocations=0 simulation_ns=296474600 wall_ns=1468805200
+info: EFFECTS_PROJECTILES_CAPTURE tick=120 changed_pixels=5267 rgba_sha256=ada3e299a3da0e955fa16bacda33c2fa7d127e2302a61a18a3b4fcd3a1218972
+info: EFFECTS_PROJECTILES_CAPTURE tick=176 changed_pixels=5082 rgba_sha256=6ad9f0a7dacabdaa47aee4c87716e2121dcbc274fe157ced25f1e1db533057bf
+info: EFFECTS_PROJECTILES_CAPTURE tick=212 changed_pixels=4998 rgba_sha256=e72a45be951d569424a0ba2beda90f71d0b1df5eead0d0f9ae298158117a4596
+info: EFFECTS_PROJECTILES_CAPTURE tick=256 changed_pixels=4731 rgba_sha256=8f46b9a6ce9c75f0c0e6a72b5be6073e6700dc5fc985d4054b1af69dfa6fc797
+info: EFFECTS_PROJECTILES_PROOF_OK backend=direct3d12 created=23 released=23 fences_acquired=185 fences_released=185
+Build Summary: 26/26 steps succeeded
+effects-projectiles-smoke success
++- run C:\Users\Chad\Documents\effects-projectiles-e1\zig-out\bin\effects_projectiles.exe success 3s
+   +- install cached
+      +- install .deps/SDL3-3.4.10/lib/x64/SDL3.dll to SDL3.dll cached
+      +- install generated to shaders/sprite_vs.dxil cached
+      |  +- compile vertex shader VSMain (vs_6_0) cached
+      +- install generated to shaders/sprite_ps.dxil cached
+      |  +- compile fragment shader PSMain (ps_6_0) cached
+      +- install generated to shaders/deformable_mesh_vs.dxil cached
+      |  +- compile vertex shader VSMain (vs_6_0) cached
+      +- install assets/art/mechanical_atlas.png to art/mechanical_atlas.png cached
+      +- install assets/art/energy_atlas.png to art/energy_atlas.png cached
+      +- install assets/art/male_base_anatomy_atlas.png to art/male_base_anatomy_atlas.png cached
+      +- install assets/art/female_base_anatomy_atlas.png to art/female_base_anatomy_atlas.png cached
+      +- install assets/art/anatomy_components_atlas.png to art/anatomy_components_atlas.png cached
+      +- install assets/art/wardrobe_upper_atlas.png to art/wardrobe_upper_atlas.png cached
+      +- install assets/art/wardrobe_layers_atlas.png to art/wardrobe_layers_atlas.png cached
+      +- install assets/art/wardrobe_lower_atlas.png to art/wardrobe_lower_atlas.png cached
+      +- install assets/art/environment_violet_crystal_ruin_atlas.png to art/environment_violet_crystal_ruin_atlas.png cached
+      +- install assets/art/environment_neutral_debug_atlas.png to art/environment_neutral_debug_atlas.png cached
+      +- install engine_sandbox cached
+      |  +- compile exe engine_sandbox Debug native cached 57ms MaxRSS:21M
+      +- install engine_smoke cached
+      |  +- compile exe engine_smoke Debug native cached 53ms MaxRSS:20M
+      +- install effects_projectiles cached
+         +- compile exe effects_projectiles Debug native cached 52ms MaxRSS:20M

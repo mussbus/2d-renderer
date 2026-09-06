@@ -1,9 +1,13 @@
+//! Consumer-owned 2D transient-projectile query port, not a physics world or solver.
 const std = @import("std");
 const math = @import("math");
 const collider = @import("collider");
 const foundation = @import("foundation");
 
 pub const Error = error{ QueryFailed, HitCapacity, InvalidHit };
+/// Projectile-local opaque metadata. All u64 tokens are valid; null means absent.
+/// The host assigns meaning and maps affiliation to collision filters.
+pub const Affiliation = enum(u64) { _ };
 pub const maximum_hits = 64;
 pub const maximum_iterations = 8;
 /// Transitive ordering: floor(TOI * 1,000,000), then native collider ID.
@@ -16,6 +20,7 @@ pub const Sweep = struct {
     layer: u32,
     mask: u32,
     source: ?foundation.identity.EntityId,
+    affiliation: ?Affiliation = null,
     excluded: []const collider.ColliderId,
 };
 pub const Hit = struct {

@@ -1,0 +1,237 @@
+{
+  "feature": "Generic Effects and Projectiles Foundation",
+  "status": "automated correction validation passed; owner review pending",
+  "worktree": "C:\\Users\\Chad\\Documents\\effects-projectiles-e1",
+  "previous_branch": "feature/e1-effects-projectiles",
+  "branch": "feature/effects-projectiles-foundation",
+  "foundation_baseline": "cb60fc9a9b24ba7d69578ffc721948e9b00de8fd",
+  "original_domain_commit": "b39931a1d36ffd8839f5c34ed436bc68a4016117",
+  "precorrection_head": "2833d4e857b0023d64a298338f705a6a009178fa",
+  "history_policy": "Existing commits unchanged; corrective commits appended. Final commit identifiers are in Git history and delivery report, avoiding a self-referential evidence hash.",
+  "prechange_verification": {
+    "name": "prechange-verify",
+    "head": "2833d4e857b0023d64a298338f705a6a009178fa",
+    "command": ".\\.deps\\zig-0.16.0\\zig.exe build verify -j1 --summary all",
+    "exit_code": 0,
+    "elapsed_seconds": 628.9109274,
+    "build_summary": "92/92 steps succeeded",
+    "reported_test_executions": 712
+  },
+  "validation_commands": [
+    {
+      "name": "format",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe fmt build/apps.zig build/gates.zig build/modules.zig build/tests_engine.zig src/projectiles src/effects src/app/effects_projectiles.zig src/app/effects_projectiles_scene.zig src/app/effects_projectiles_view.zig tests/effects",
+      "exit_code": 0,
+      "elapsed_seconds": 0.033,
+      "reported_test_executions": 0
+    },
+    {
+      "name": "debug-build",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 0.289,
+      "reported_test_executions": 0,
+      "build_summary": "24/24 steps succeeded"
+    },
+    {
+      "name": "release-safe",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -Doptimize=ReleaseSafe -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 11.377,
+      "reported_test_executions": 0,
+      "build_summary": "24/24 steps succeeded"
+    },
+    {
+      "name": "release-safe-tests",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -Doptimize=ReleaseSafe -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 11.877,
+      "reported_test_executions": 49,
+      "build_summary": "3/3 steps succeeded"
+    },
+    {
+      "name": "release-fast",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -Doptimize=ReleaseFast -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 10.866,
+      "reported_test_executions": 0,
+      "build_summary": "24/24 steps succeeded"
+    },
+    {
+      "name": "release-fast-tests",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -Doptimize=ReleaseFast -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 12.939,
+      "reported_test_executions": 49,
+      "build_summary": "3/3 steps succeeded"
+    },
+    {
+      "name": "verify-final",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build verify -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 609.514,
+      "reported_test_executions": 720,
+      "build_summary": "92/92 steps succeeded"
+    },
+    {
+      "name": "test-check-final",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test check -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 36.283,
+      "reported_test_executions": 433,
+      "build_summary": "28/28 steps succeeded"
+    },
+    {
+      "name": "gpu-smoke",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build gpu-smoke -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 11.873,
+      "reported_test_executions": 0,
+      "build_summary": "26/26 steps succeeded"
+    },
+    {
+      "name": "proof-final",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build effects-projectiles-smoke -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 3.517,
+      "reported_test_executions": 0,
+      "build_summary": "26/26 steps succeeded"
+    },
+    {
+      "name": "review-repeat",
+      "command": "python tools/effects_projectiles_review.py --compare evidence/effects_projectiles",
+      "exit_code": 0,
+      "elapsed_seconds": 0.097,
+      "reported_test_executions": 0
+    }
+  ],
+  "focused_debug": {
+    "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -j1 --summary all",
+    "exit_code": 0,
+    "build_summary": "3/3 steps succeeded",
+    "reported_test_executions": 49
+  },
+  "generation_command": {
+    "command": "python tools/effects_projectiles_review.py --output evidence/effects_projectiles",
+    "exit_code": 0
+  },
+  "repeat_rgba_matches": true,
+  "repeat_png_comparison_passed": true,
+  "captures": [
+    {
+      "tick": 120,
+      "changed_pixels": 5267,
+      "rgba_sha256": "ada3e299a3da0e955fa16bacda33c2fa7d127e2302a61a18a3b4fcd3a1218972",
+      "png_sha256": "b9af80be26d949992d190f7c478a98a2cf46a87bc5bdcce49e336abbbf4c9204"
+    },
+    {
+      "tick": 176,
+      "changed_pixels": 5082,
+      "rgba_sha256": "6ad9f0a7dacabdaa47aee4c87716e2121dcbc274fe157ced25f1e1db533057bf",
+      "png_sha256": "966d73e194fb561fe5303c36101dd38ef673e42eff6f9d24d6c628d8a9d0ae25"
+    },
+    {
+      "tick": 212,
+      "changed_pixels": 4998,
+      "rgba_sha256": "e72a45be951d569424a0ba2beda90f71d0b1df5eead0d0f9ae298158117a4596",
+      "png_sha256": "cae09a628fa343f9a12da48144c4f372d1aea4d3339454138a388f37269a35ed"
+    },
+    {
+      "tick": 256,
+      "changed_pixels": 4731,
+      "rgba_sha256": "8f46b9a6ce9c75f0c0e6a72b5be6073e6700dc5fc985d4054b1af69dfa6fc797",
+      "png_sha256": "b73325500eca2e97ff784cb1b259ce4e7b84e36140c5b2332b117cac95d0f090"
+    }
+  ],
+  "proof_lines": [
+    "info: EFFECTS_PROJECTILES_DEFLECTION transfers=1 former_source_hits=1 new_source_hits=0",
+    "info: EFFECTS_PROJECTILES_PROOF frames=180 ticks=720 collisions=4 deflections=2 expirations=3 peak_projectiles=5 peak_emitters=213 peak_particles=352 trail_samples=544 peak_sprites=363 peak_draws=1 dropped_particles=0 dropped_effects=0 steady_allocations=0 simulation_ns=296474600 wall_ns=1468805200",
+    "info: EFFECTS_PROJECTILES_PROOF_OK backend=direct3d12 created=23 released=23 fences_acquired=185 fences_released=185"
+  ],
+  "source_sha256": {
+    "build/apps.zig": "f6e29e5ee0014f162ce108c84156ac8beb348252d7c6b7e533a4c5487cf2abf4",
+    "build/gates.zig": "aacb8400b321d3d8e7e62bb57dced48acb978ba6797a9f9e4f2a8eb6c2f19131",
+    "build/modules.zig": "a18dceaa38b6138bd3a28b73b60130c3527a17645ef49f035efa8449943d91c9",
+    "build/tests_engine.zig": "2f12c96c7a3a2b54cb7d3d49195b94c8da449c9c3bb0cd09534d3a5c7a7a2be5",
+    "src/app/effects_projectiles.zig": "7d0bb0f10800dd2d8fd63b1ca3fa35d3176d25411b7bef937a1995f06aba9d46",
+    "src/app/effects_projectiles_scene.zig": "ff59ec7255dcd8541bc02d06ccf57782e71977ed710871e4c69af8a03bb3399f",
+    "src/app/effects_projectiles_view.zig": "5c9551bf1ae384910d50926423ef2904d6c534fb0a17bbbd1117af7fb5f823d4",
+    "src/effect_composition/projectile_effects.zig": "7246cfc67f03092500d64a93a4c97f224f51f782705460fcf6c7cf7a0ee6873d",
+    "src/effects/root.zig": "ce895b18ba1d1cd1e54d3938ed5115374634f813efbd273b333ab051d3e9618f",
+    "src/projectiles/collision_query.zig": "3407fe2fa2460a265f4b7b4613b16461b97f14b4cfa961134c079143c4904166",
+    "src/projectiles/root.zig": "0fda92d99b25a6e630ba865aeb739d825af67b3bb68f50458ca241599c3a2a45",
+    "tests/effects/composition_tests.zig": "3f2708fae77be116fd07031731fd9226f8e34f4b6ab0065c03931811ed42ba40",
+    "tests/effects/deflection_tests.zig": "9c05800770268dc6607930c81211ef6b9ce1c7ffb4854b44989c1d0fd245e0ab",
+    "tests/effects/effect_tests.zig": "3dd812a23012f08bd1264574c68140801441c3a6b03e17c021ef88c21b98b878",
+    "tests/effects/projectile_tests.zig": "e9e34822bbdbb8702a2dd5842d391997883b09d79d01ca634ca5f83cbf138b4d",
+    "tests/effects/proof_tests.zig": "390f4946e9f7c340f0b6121bdc80306a37991b6d435bc61a2f3377170825dd51",
+    "tests/effects/root.zig": "9c4630cf5e90c7ddbe4b201ad97584f78dc8fbce83129982a14c6053d1e228b0",
+    "tests/effects/support.zig": "cb2f3d14b36f5e0d3c07e499ab3c6f41f4a9053a80c8cc0cbf3b42e3448e9aae",
+    "tools/effects_projectiles_review.py": "4000e70ca11d997dd5c62b39e80c42024c31305ffa6b941542333d2c1ec68c2c"
+  },
+  "preservation_and_audit": {
+    "original_tracked_files": 931,
+    "original_byte_mismatches": [],
+    "unchanged_baseline_files_in_feature": 927,
+    "feature_baseline_byte_mismatches": [],
+    "archived_initial_evidence_files": 13,
+    "historical_byte_mismatches": [],
+    "effects_implementation_identical_except_three_documentation_lines": true,
+    "original_core_test_files_and_composition_implementation_byte_identical": [
+      "src/effect_composition/projectile_effects.zig",
+      "tests/effects/composition_tests.zig",
+      "tests/effects/projectile_tests.zig",
+      "tests/effects/effect_tests.zig"
+    ],
+    "audited_feature_source_files": 15,
+    "audit": {
+      "TODO": [],
+      "FIXME": [],
+      "unreachable": [],
+      "stub_or_placeholder": [],
+      "disabled_or_skipped_test": [],
+      "active_preliminary_naming": []
+    }
+  },
+  "evidence_change_reason": "New fifth proof lane adds source A/B colliders and ownership/filter-changing redirected projectile plus composed effects. The original four-case scenario assertions and original core ID/RNG goldens are unchanged. Names and markers are descriptive. Initial evidence is preserved byte-for-byte under history/initial.",
+  "limitations": [
+    "Production runtime is 2D.",
+    "Scenario query adapter only; production PHY sweep/body adapter deferred.",
+    "Projectile-local opaque affiliation token; host owns meaning and filter mapping.",
+    "Current effects are deterministic CPU particle/emitters.",
+    "Reference-machine repeat pixels only, no cross-driver or cross-machine guarantee.",
+    "Allocator counters exclude SDL/driver internal allocation.",
+    "No owner visual/manual-input/API acceptance is claimed."
+  ],
+  "final_documentation_and_format_audit": {
+    "commands": [
+      {
+        "command": ".\\.deps\\zig-0.16.0\\zig.exe version",
+        "exit_code": 0,
+        "elapsed_seconds": 0.035,
+        "output": "0.16.0"
+      },
+      {
+        "command": ".\\.deps\\zig-0.16.0\\zig.exe fmt --check build.zig build.zig.zon build src tests",
+        "exit_code": 0,
+        "elapsed_seconds": 0.137,
+        "output": ""
+      },
+      {
+        "command": "pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/check_documentation.ps1",
+        "exit_code": 0,
+        "elapsed_seconds": 0.788,
+        "output": "documentation audit PASS: 46 required files, 42 Markdown files, 94 local Markdown targets"
+      },
+      {
+        "command": "git -c safe.directory=C:/Users/Chad/Documents/effects-projectiles-e1 -c core.safecrlf=false diff HEAD --check",
+        "exit_code": 0,
+        "elapsed_seconds": 0.117,
+        "output": ""
+      }
+    ],
+    "implementation_report_local_links": 30,
+    "broken_links": [],
+    "source_hashes_still_match": true
+  }
+}

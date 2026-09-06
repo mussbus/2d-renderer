@@ -1,3 +1,6 @@
+//! Deterministic 2D CPU particle/emitter portion of the effects vocabulary.
+//! fixed_step supplies only shared timing; art_pack supplies only AtlasRegionId.
+//! No collision, projectile, renderer, SDL or GPU resource ownership lives here.
 const std = @import("std");
 const foundation = @import("foundation");
 const math = @import("math");

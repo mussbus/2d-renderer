@@ -74,6 +74,7 @@ test "proof update reset spawn deflect and extraction allocate nothing after ini
     defer scene.deinit();
     const initial = allocator.allocations;
     allocator.fail_index = allocator.alloc_index;
+    try scene.resetWithOwnershipProof(scene_module.seed, true);
     allocator.resize_fail_index = allocator.resize_index;
     for (0..720) |_| try scene.step(true);
     try scene.reset(scene_module.seed, true);
@@ -101,5 +102,63 @@ test "core public facades expose only an opaque const ownership context" {
             try std.testing.expect(pointer.is_const);
             try std.testing.expect(pointer.child == anyopaque);
         }
+    }
+}
+
+test "proof real sweep excludes overlapping new source and hits former source after transfer" {
+    var scene = try scene_module.Scene.init(t.allocator, false);
+    defer scene.deinit();
+    scene.projectiles.reset();
+    const id = try scene.projectiles.spawn(.{ .definition = .{ .layer = 4, .mask = 8 }, .position = .{ .x = 1.5, .y = -0.65 }, .velocity = .{ .x = 6, .y = 0 }, .source = scene_module.source_a, .affiliation = scene_module.affiliation_a });
+    try scene.projectiles.deflect(id, .{ .velocity = .{ .x = -960, .y = 0 }, .source = .{ .value = scene_module.source_b }, .affiliation = .{ .value = scene_module.affiliation_b }, .layer = 8, .mask = 4 });
+    scene.projectiles.clearEvents();
+    try scene.projectiles.step(.{ .context = &scene.world, .collect = scene_module.collectTargets });
+    try std.testing.expectEqual(@as(usize, 2), scene.projectiles.events().len);
+    const event = scene.projectiles.events()[1];
+    try std.testing.expectEqual(p.EventKind.collided, event.kind);
+    try std.testing.expectEqual(@as(u16, 4), event.hit.?.collider_id);
+    try std.testing.expect(event.hit.?.entity_id.?.eql(scene_module.source_a));
+    try std.testing.expect(event.projectile.source.?.eql(scene_module.source_b));
+    try std.testing.expectEqual(@as(usize, 0), scene.projectiles.count());
+}
+test "proof ownership scenario repeats and presentation cannot change redirected simulation" {
+    var a = try scene_module.Scene.init(t.allocator, true);
+    defer a.deinit();
+    var b = try scene_module.Scene.init(t.allocator, false);
+    defer b.deinit();
+    var queue = try queue_module.UnifiedRenderQueue.init(t.allocator, 2048, 1792, 256, 1);
+    defer queue.deinit();
+    var first: [1500]e.RenderInstance = undefined;
+    var first_count: usize = 0;
+    for (0..2) |run| {
+        try a.resetWithOwnershipProof(scene_module.seed, true);
+        try b.resetWithOwnershipProof(scene_module.seed, false);
+        for (0..480) |tick| {
+            try a.step(true);
+            try b.step(false);
+            var pa: [32]p.Snapshot = undefined;
+            var pb: [32]p.Snapshot = undefined;
+            try std.testing.expectEqualDeep(try a.projectiles.copySnapshots(&pa), try b.projectiles.copySnapshots(&pb));
+            try std.testing.expectEqualDeep(a.statistics, b.statistics);
+            if (tick % 4 == 0) {
+                queue.beginFrame();
+                try view.submit(&a, &queue, 0.7, true);
+                _ = queue.prepare();
+            }
+            if (tick == 255) {
+                if (run == 0) first_count = (try a.effects.extract(&first, 1)).len else {
+                    var second: [1500]e.RenderInstance = undefined;
+                    try std.testing.expectEqualDeep(first[0..first_count], try a.effects.extract(&second, 1));
+                }
+            }
+        }
+        try std.testing.expectEqual(@as(u64, 4), a.statistics.collisions);
+        try std.testing.expectEqual(@as(u64, 2), a.statistics.deflections);
+        try std.testing.expectEqual(@as(u64, 3), a.statistics.expirations);
+        try std.testing.expectEqual(@as(u64, 1), a.statistics.ownership_transfers);
+        try std.testing.expectEqual(@as(u64, 1), a.statistics.former_source_hits);
+        try std.testing.expectEqual(@as(u64, 0), a.statistics.new_source_hits);
+        try std.testing.expectEqual(@as(u64, 0), a.effects.metrics().dropped_particles);
+        try std.testing.expectEqual(@as(u64, 0), a.bridge.metrics.dropped_effects);
     }
 }

@@ -1,0 +1,9 @@
+{
+  "name": "prechange-verify",
+  "head": "2833d4e857b0023d64a298338f705a6a009178fa",
+  "command": ".\\.deps\\zig-0.16.0\\zig.exe build verify -j1 --summary all",
+  "exit_code": 0,
+  "elapsed_seconds": 628.9109274,
+  "build_summary": "92/92 steps succeeded",
+  "reported_test_executions": 712
+}

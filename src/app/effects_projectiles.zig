@@ -13,11 +13,12 @@ pub fn main(init: std.process.Init) !void {
     }
     if (capture and !smoke) return error.CaptureRequiresSmoke;
     var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
-    defer if (debug_allocator.deinit() == .leak) @panic("E1 proof allocator leak");
+    defer if (debug_allocator.deinit() == .leak) @panic("Effects/projectiles proof allocator leak");
     var tracking = std.testing.FailingAllocator.init(debug_allocator.allocator(), .{});
     const allocator = tracking.allocator();
     var scene = try scene_module.Scene.init(allocator, true);
     defer scene.deinit();
+    try scene.resetWithOwnershipProof(scene_module.seed, true);
     var renderer = try renderer_module.Renderer.init(allocator, smoke, null);
     var renderer_live = true;
     defer if (renderer_live) renderer.deinit();
@@ -40,7 +41,7 @@ pub fn main(init: std.process.Init) !void {
     var window: ?*c.SDL_Window = null;
     const started = c.SDL_GetTicksNS();
     var simulation_ns: u64 = 0;
-    std.log.info("E1: Space pause, period step, R same seed, N next seed, P spawn, D deflect, F1 debug, Esc quit. Blue expires; green bounces; red impacts; yellow passes through.", .{});
+    std.log.info("Effects/projectiles: Space pause, period step, R same seed, N next seed, P spawn, D deflect, F1 debug, Esc quit. Blue expires; green bounces; red impacts; yellow passes through; bottom lane transfers A to B and returns to A.", .{});
     while (running and (!smoke or frames < 180)) {
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event)) {
@@ -58,16 +59,16 @@ pub fn main(init: std.process.Init) !void {
                         c.SDL_SCANCODE_SPACE => clock.setPaused(!clock.paused),
                         c.SDL_SCANCODE_PERIOD => clock.requestSingleStep(),
                         c.SDL_SCANCODE_R => {
-                            try scene.reset(current_seed, true);
+                            try scene.resetWithOwnershipProof(current_seed, true);
                             clock = try fixed_step.Clock.init(.{});
                         },
                         c.SDL_SCANCODE_N => {
                             current_seed.bytes[0] +%= 1;
-                            try scene.reset(current_seed, true);
+                            try scene.resetWithOwnershipProof(current_seed, true);
                             clock = try fixed_step.Clock.init(.{});
                         },
                         c.SDL_SCANCODE_P => scene.spawnExtra() catch |err| switch (err) {
-                            error.CapacityExceeded, error.EventCapacity => std.log.warn("E1 projectile request rejected: {s}", .{@errorName(err)}),
+                            error.CapacityExceeded, error.EventCapacity => std.log.warn("Effects/projectiles projectile request rejected: {s}", .{@errorName(err)}),
                             else => return err,
                         },
                         c.SDL_SCANCODE_D => try scene.deflectFirst(),
@@ -93,9 +94,9 @@ pub fn main(init: std.process.Init) !void {
         peak_draws = @max(peak_draws, queue.frame_metrics.sprite_draws);
         if (frames % 60 == 0) {
             var title_buffer: [256]u8 = undefined;
-            const title = try std.fmt.bufPrintZ(&title_buffer, "E1 | tick {d} | projectiles {d} emitters {d} particles {d} | Space pause . step R reset N seed P spawn D deflect F1 debug", .{ scene.projectiles.tick(), scene.projectiles.count(), scene.effects.emitterCount(), scene.effects.particleCount() });
+            const title = try std.fmt.bufPrintZ(&title_buffer, "Effects/projectiles | tick {d} | projectiles {d} emitters {d} particles {d} | Space pause . step R reset N seed P spawn D deflect F1 debug", .{ scene.projectiles.tick(), scene.projectiles.count(), scene.effects.emitterCount(), scene.effects.particleCount() });
             if (window) |handle| if (!c.SDL_SetWindowTitle(handle, title)) {
-                std.log.err("SDL_SetWindowTitle(E1): {s}", .{c.SDL_GetError()});
+                std.log.err("SDL_SetWindowTitle(Effects/projectiles): {s}", .{c.SDL_GetError()});
                 return error.WindowTitleFailure;
             };
         }
@@ -109,7 +110,9 @@ pub fn main(init: std.process.Init) !void {
         return error.SteadyStateAllocationGrowth;
     if (smoke and (scene.statistics.collisions < 3 or scene.statistics.deflections < 1 or scene.statistics.expirations < 3 or
         scene.statistics.peak_projectiles < 4 or scene.bridge.metrics.trail_samples == 0 or peak_draws != 1 or peak_sprites < 20)) return error.MissingProofBehavior;
-    std.log.info("E1_PROOF frames={d} ticks={d} collisions={d} deflections={d} expirations={d} peak_projectiles={d} peak_emitters={d} peak_particles={d} trail_samples={d} peak_sprites={d} peak_draws={d} dropped_particles={d} dropped_effects={d} steady_allocations={d} simulation_ns={d} wall_ns={d}", .{
+    if (smoke and (scene.statistics.ownership_transfers != 1 or scene.statistics.former_source_hits != 1 or scene.statistics.new_source_hits != 0)) return error.MissingOwnershipProof;
+    std.log.info("EFFECTS_PROJECTILES_DEFLECTION transfers={d} former_source_hits={d} new_source_hits={d}", .{ scene.statistics.ownership_transfers, scene.statistics.former_source_hits, scene.statistics.new_source_hits });
+    std.log.info("EFFECTS_PROJECTILES_PROOF frames={d} ticks={d} collisions={d} deflections={d} expirations={d} peak_projectiles={d} peak_emitters={d} peak_particles={d} trail_samples={d} peak_sprites={d} peak_draws={d} dropped_particles={d} dropped_effects={d} steady_allocations={d} simulation_ns={d} wall_ns={d}", .{
         frames,                                scene.projectiles.tick(),                   scene.statistics.collisions,        scene.statistics.deflections, scene.statistics.expirations, scene.statistics.peak_projectiles,
         scene.effects.metrics().peak_emitters, scene.effects.metrics().peak_particles,     scene.bridge.metrics.trail_samples, peak_sprites,                 peak_draws,                   scene.effects.metrics().dropped_particles,
         scene.bridge.metrics.dropped_effects,  tracking.allocations - initial_allocations, simulation_ns,                      elapsed_ns,
@@ -117,9 +120,9 @@ pub fn main(init: std.process.Init) !void {
     // Explicit acceptance readback is outside the steady-state render loop.
     // CapturedFrame and PPM output own bounded temporary CPU allocations.
     if (capture) {
-        try std.Io.Dir.cwd().createDirPath(init.io, ".zig-cache/e1-captures");
+        try std.Io.Dir.cwd().createDirPath(init.io, ".zig-cache/effects-projectiles-captures");
         for ([_]u32{ 120, 176, 212, 256 }) |tick| {
-            try scene.reset(scene_module.seed, true);
+            try scene.resetWithOwnershipProof(scene_module.seed, true);
             for (0..tick) |_| try scene.step(true);
             queue.beginFrame();
             try view.submit(&scene, queue, 1, true);
@@ -137,15 +140,15 @@ pub fn main(init: std.process.Init) !void {
             }
             if (changed < 100) return error.EmptyProofReadback;
             var path_buffer: [96]u8 = undefined;
-            const path = try std.fmt.bufPrint(&path_buffer, ".zig-cache/e1-captures/tick_{d}.ppm", .{tick});
+            const path = try std.fmt.bufPrint(&path_buffer, ".zig-cache/effects-projectiles-captures/tick_{d}.ppm", .{tick});
             try std.Io.Dir.cwd().writeFile(init.io, .{ .sub_path = path, .data = ppm });
             var digest: [32]u8 = undefined;
             std.crypto.hash.sha2.Sha256.hash(pixels.bytes(), &digest, .{});
-            std.log.info("E1_CAPTURE tick={d} changed_pixels={d} rgba_sha256={x}", .{ tick, changed, digest });
+            std.log.info("EFFECTS_PROJECTILES_CAPTURE tick={d} changed_pixels={d} rgba_sha256={x}", .{ tick, changed, digest });
         }
     }
     const final = renderer.deinitWithMetrics();
     renderer_live = false;
     if (final.gpu_resource_creations != final.gpu_resource_releases or final.fence_acquisitions != final.fence_releases) return error.GpuResourceLeak;
-    std.log.info("E1_PROOF_OK backend=direct3d12 created={d} released={d} fences_acquired={d} fences_released={d}", .{ final.gpu_resource_creations, final.gpu_resource_releases, final.fence_acquisitions, final.fence_releases });
+    std.log.info("EFFECTS_PROJECTILES_PROOF_OK backend=direct3d12 created={d} released={d} fences_acquired={d} fences_released={d}", .{ final.gpu_resource_creations, final.gpu_resource_releases, final.fence_acquisitions, final.fence_releases });
 }
