@@ -25,6 +25,7 @@ pub fn register(options: Options) void {
     test_step.dependOn(&options.engine.run_renderer_boundary.step);
     test_step.dependOn(&options.content.run_image_decode.step);
     test_step.dependOn(&options.engine.run_foundation_primitives.step);
+    test_step.dependOn(&options.engine.run_world.step);
     test_step.dependOn(&options.engine.run_scene_binding_boundary.step);
     test_step.dependOn(&options.engine.run_scene_core_authored.step);
     test_step.dependOn(&options.engine.run_scene_core_runtime.step);

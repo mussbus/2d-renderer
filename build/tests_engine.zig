@@ -14,6 +14,7 @@ pub const Registration = struct {
     run_deterministic: *std.Build.Step.Run,
     run_renderer_boundary: *std.Build.Step.Run,
     run_foundation_primitives: *std.Build.Step.Run,
+    run_world: *std.Build.Step.Run,
     run_scene_binding_boundary: *std.Build.Step.Run,
     run_scene_core_authored: *std.Build.Step.Run,
     run_scene_core_runtime: *std.Build.Step.Run,
@@ -58,6 +59,24 @@ pub fn register(options: Options) Registration {
         "Run headless secondary-motion solver, authored rate response and offline trace proofs",
     );
     secondary_motion_step.dependOn(&run_secondary_motion_tests.step);
+
+    const world_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/world/test_world.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    world_test_module.addImport("world", modules.world_module);
+    const world_tests = addEngineTest(b, .{
+        .name = "world-tests",
+        .root_module = world_test_module,
+    });
+    const run_world_tests = b.addRunArtifact(world_tests);
+    const world_test_step = b.step(
+        "test-world",
+        "Run headless world-time accumulation and exact continuation contracts",
+    );
+    world_test_step.dependOn(&run_world_tests.step);
+
     const camera_tests = addEngineTest(b, .{
         .name = "camera-tests",
         .root_module = modules.camera_test_module,
@@ -198,6 +217,7 @@ pub fn register(options: Options) Registration {
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,
         .run_foundation_primitives = run_foundation_primitive_tests,
+        .run_world = run_world_tests,
         .run_scene_binding_boundary = run_scene_binding_boundary_tests,
         .run_scene_core_authored = run_scene_core_authored_tests,
         .run_scene_core_runtime = run_scene_core_runtime_tests,

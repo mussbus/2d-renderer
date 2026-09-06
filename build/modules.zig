@@ -17,6 +17,7 @@ pub const Catalog = struct {
     engine_smoke_client_module: *std.Build.Module,
     engine_composition_test_module: *std.Build.Module,
     foundation_module: *std.Build.Module,
+    world_module: *std.Build.Module,
     scene_core_module: *std.Build.Module,
     canonical_model_core_test_module: *std.Build.Module,
     canonical_model_phase_c_test_module: *std.Build.Module,
@@ -106,6 +107,11 @@ pub fn register(options: Options) Catalog {
 
     const foundation_module = b.createModule(.{
         .root_source_file = b.path("src/foundation/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const world_module = b.createModule(.{
+        .root_source_file = b.path("src/world/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1453,6 +1459,7 @@ pub fn register(options: Options) Catalog {
         .engine_smoke_client_module = engine_smoke_client_module,
         .engine_composition_test_module = engine_composition_test_module,
         .foundation_module = foundation_module,
+        .world_module = world_module,
         .scene_core_module = scene_core_module,
         .canonical_model_core_test_module = canonical_model_core_test_module,
         .canonical_model_phase_c_test_module = canonical_model_phase_c_test_module,
