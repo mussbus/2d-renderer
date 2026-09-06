@@ -34,6 +34,50 @@ are separate from the specific visual issues that Prompt 27D–27H may address.
 | Component graph has a bounded direct-production migration | VF-03 is the runtime inspection authority, but standard core limb/root components still use labeled compatibility adapters and the technical optional modules are not generalized animation/IK content. | VF-03-R1 fail-closes active optional-arm graph visuals against final production submissions and renders the explicit projected chain in front/side views. Standard two-arm behavior is unchanged. | Future editor/export or arbitrary-topology animation milestone after explicit authorization. | No | Yes |
 | No bounded gameplay loop | The repository demonstrates integrated production systems, not a beginning-to-completion game slice. | Prompt 27 foundation supports traversal, jumps, dash, themes, outfits, and three handshakes with reset. | Phase 5 vertical slice after explicit authorization. | No | No |
 
+## Effects and Projectiles integration boundary
+
+The [owner-accepted foundation](../implementation/effects_projectiles_foundation.md)
+provides currently 2D projectile and effects cores with a standalone visual
+proof. PHY, Engine Lab, RR1, world/environment, 3D presentation and
+gameplay-specific integration remain deferred. Acceptance of this parallel
+foundation does not renumber or complete M03, M04, Phase D, Phase L or any
+editor milestone.
+
+## Windows working-byte reproducibility
+
+**Observed baseline defect; durable fix deferred.** Fresh Windows worktrees can
+materialize format-sensitive Zig files and immutable historical text artifacts
+with working bytes that fail existing validation. At master baseline
+`c6892c324ba59f8317886005fe977efce7ac1546`, a fresh detached checkout failed
+formatting for 265 Zig paths and 12 historical hashes; the long-lived master
+worktree passed both checks. The resolved Effects/Projectiles integration
+failed for 275 Zig paths and the same 12 historical artifacts. The merge did
+not cause or fix this condition.
+
+The integration used an owner-authorized, uncommitted local byte-materialization
+workaround: 279 checked Zig paths came from their exact resolved index blobs,
+and the 12 failing historical files came from untouched master bytes verified
+against existing expected SHA-256 values. All 20 protected hashes passed after
+copying. Full `verify` then exposed byte-sensitive content tests and inventory
+mismatches in seven historical families. A further 102 inputs required the
+same local workaround: 99 historical text files, the accepted geometry authority
+JSON, the human structural report and one parser fixture. Every master copy
+matched its raw index blob and every source family matched the existing manifest.
+Their working bytes were materialized without changing tracked content or
+weakening tests; content policy, affected tests and the full gate were rerun.
+Git's cached file sizes also required a metadata refresh with identical existing
+index entries; no staged mode/blob/path or merge-tree content changed.
+The copied working bytes are not tracked feature changes.
+
+A durable repository-wide decision about `.gitattributes` and historical-hash
+semantics remains future work. Existing evidence includes both CRLF and mixed
+newline byte forms, so blanket normalization is not an established remedy.
+No attributes, expected hashes or historical evidence were rewritten for this
+integration. Until that decision is implemented and validated, a fresh checkout
+cannot be assumed to reproduce these gates without explicitly authorized local
+byte materialization. See the
+[integration validation record](../implementation/effects_projectiles_foundation.md).
+
 ## Art-quality status
 
 The historical Prompt 25D character art remains accepted at its stored

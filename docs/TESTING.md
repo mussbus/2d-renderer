@@ -60,6 +60,33 @@ contracts, synthetic calibration and offline/runtime proof at
 bindings remain outside acceptance. Offline proof uses ordered fixed arrays
 and the same production solver; no renderer, animation object or batch exporter.
 
+### Effects and Projectiles Foundation
+
+`zig build test-effects-projectiles -j1` runs 54 headless projectile, deflection,
+particle, composition and standalone-proof tests. It is included exactly once
+in the fast engine aggregate, and therefore in `test`, `check`, `test-full`
+and `verify`. Run the focused target in Debug, ReleaseSafe and ReleaseFast.
+The combined focused invocation with `test-record-replay`, `test-psm01`,
+`test-world` and `test-engine-lab` passed 15/15 steps and 181 tests per mode
+for the accepted integration.
+
+`zig build effects-projectiles -j1` builds the standalone application;
+`zig build run-effects-projectiles -j1` runs it. The separate physical route
+`zig build effects-projectiles-smoke -j1` exercises the existing SDL3 GPU
+D3D12 renderer and four captures. Compare them with the accepted evidence using
+`python tools/effects_projectiles_review.py --compare evidence/effects_projectiles`.
+These routes do not integrate effects/projectiles into PHY, Engine Lab, RR1,
+world/environment, 3D presentation or gameplay-specific clients. Both cores
+and the standalone visual proof are currently 2D.
+
+The [owner acceptance and measured aggregate counts](implementation/effects_projectiles_foundation.md)
+record the integration commit and exact validation boundary. The
+[Windows working-byte reproducibility defect](project/KNOWN_GAPS.md#windows-working-byte-reproducibility)
+can make fresh checkouts fail formatting and protected historical hashes even
+when committed content matches an accepted tree. This integration used a local
+uncommitted workaround; it did not change formatting policy, `.gitattributes`,
+expected hashes or historical evidence.
+
 ### Change-based gate guidance
 
 | Change | Required aggregate gates | Add focused routes |
@@ -81,7 +108,8 @@ tests belong in `build/tests_content.zig`; report executables and historical
 reproduction belong in `build/evidence.zig`; top-level aggregate semantics
 belong in `build/gates.zig`. Root `build.zig` composes these domains and owns
 target/platform, pinned dependencies, shaders, installed runtime assets, and
-the major dependency DAG. `build/apps.zig` owns both application artifacts,
+the major dependency DAG. `build/apps.zig` owns the four application artifacts
+(`engine_sandbox`, `engine_smoke`, `engine_lab`, and `effects_projectiles`),
 their run routes, and GPU smoke. Registration is
 explicit; directory scanning is prohibited.
 

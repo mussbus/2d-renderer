@@ -1,5 +1,92 @@
 # Generic Effects and Projectiles Foundation
 
+## Owner acceptance and integration (2026-09-06)
+
+Status: **OWNER ACCEPTED** at feature commit
+`c0421e5182b9adb5fece7fb38520c9181bf8b038`, integrated through the true merge
+`493549cfc31b3d768b680f7284b6bd7fae517c7a` on
+`integration/effects-projectiles-foundation`.
+The first parent is master baseline
+`c6892c324ba59f8317886005fe977efce7ac1546`; the second parent is the accepted
+feature commit. Master itself was not advanced by this integration.
+
+This is an owner-authorized parallel foundation pulled forward from later
+roadmap work. It does not renumber or complete M03, M04, Phase D, Phase L,
+or any editor milestone. Projectile and effects cores are currently **2D**;
+the visual proof remains a standalone application. PHY, Engine Lab, RR1,
+world/environment, 3D presentation and gameplay-specific integration remain
+deferred. Existing foundation registrations are preserved; their presence
+does not imply that they consume Effects/Projectiles.
+
+### Integration validation
+
+The resolved merge tree was
+`78dba02a881fd18b9ee49e2fa27bfa48bb44d1b0` before and after local byte
+materialization, and is the committed merge tree. Only four additive build
+conflicts were resolved: `build/apps.zig`, `build/gates.zig`,
+`build/modules.zig`, and `build/tests_engine.zig`. All 51 feature additions,
+including accepted source, tests and evidence, matched the feature blobs at
+merge time. No working-byte repair was staged.
+
+The exact Zig 0.16.0 formatting check and documentation checker returned 0.
+Each aggregate below ran with `-j1 --summary all`; counts are successful test
+executions reported by that invocation, including repeated declarations across
+separate suite roots.
+
+| Gate | Exit | Steps | Reported successful tests |
+| --- | --- | --- | --- |
+| `check` | 0 | 37/37 | 565 |
+| `test-full` | 0 | 50/50 | 662 |
+| `verify` | 0 | 101/101 | 852 |
+
+Earlier validation of this same resolved source passed the combined focused
+Effects/Projectiles, RR1, PSM01, World Time and Engine Lab gates in Debug,
+ReleaseSafe and ReleaseFast: 15/15 steps and 181 tests per mode (54, 50, 40,
+21 and 16 respectively). One transient compiler library-read failure in the
+first ReleaseSafe attempt passed on an identical retry. Default application
+builds passed 24/24 steps in all three modes. GPU smoke and the standalone
+Effects/Projectiles proof each passed 26/26 steps. Four captured PNGs matched
+the accepted images exactly at ticks 120, 176, 212 and 256. Engine Lab headless
+verification and its 180-frame GPU smoke passed. These measurements retain
+the standalone proof boundary and do not claim new cross-system integration.
+
+### Local validation reproducibility workaround
+
+Fresh Windows checkout bytes failed existing formatting and immutable-history
+hash gates at both the master baseline and the integration, while the untouched
+long-lived master copies passed. This pre-existing condition was neither caused
+nor fixed by the merge. The owner authorized an uncommitted local workaround:
+279 checked Zig paths were materialized from exact resolved index blobs (275
+changed byte form); 12 failing historical artifacts were copied in binary mode
+from the original master only after matching their existing SHA-256 values.
+All 20 historical hashes then passed. The first `verify` run also exposed
+line-ending-sensitive content tests and seven historical-family byte-count
+mismatches. The complete diagnosis identified 102 additional inputs: 99
+historical text files in those families, the accepted geometry authority JSON,
+the human structural report and one parser fixture. Every trusted master copy
+exactly matched the existing raw index blob, and all seven source inventories
+matched the unchanged history manifest. The authority JSON also matched its
+test-pinned SHA-256. Materializing those exact working bytes addressed this
+same baseline condition without changing Git content. The content policy,
+affected focused tests and full `verify` were rerun; the focused invocation
+passed 37/37 steps and 121 tests. The original failure log is retained. No test,
+assertion, expected hash or manifest was changed. Git's stale size metadata
+was refreshed using identical existing index entries, preserving every mode/blob/path and
+the resolved tree. Source semantics, historical contents and expected hashes
+were not changed. Diagnostics are local ignored output under
+`.tmp/integration-validation/finalization`; they are not committed evidence.
+
+The baseline defect and deferred repository-wide decision about `.gitattributes`
+and historical-hash semantics are tracked in
+[Known Gaps](../project/KNOWN_GAPS.md#windows-working-byte-reproducibility).
+No repository normalization, attribute policy or hash-policy change is part
+of this acceptance.
+
+## Historical feature implementation and owner-review record
+
+The following feature-time record retains its original review status and
+measurements for provenance. The acceptance above is the current disposition.
+
 Status: owner-review appearance endpoint correction implemented; all required
 automated validation passed. This corrective commit returns for owner review.
 The owner accepted the architecture, projectile/deflection/query contracts,

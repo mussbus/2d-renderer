@@ -48,6 +48,19 @@ Acceptance excludes final anatomical tuning and production bindings. It does
 not accept the whole PHY track, begin PSM02 or baking, migrate current 2D
 consumers, or change M03/M04 status or ordering.
 
+## Accepted parallel Effects and Projectiles Foundation
+
+The owner accepted `c0421e5182b9adb5fece7fb38520c9181bf8b038`, integrated through
+merge `493549cfc31b3d768b680f7284b6bd7fae517c7a`. This owner-authorized parallel
+foundation was pulled forward from later effects/projectile work; it does not
+renumber or complete M03, M04, Phase D, Phase L or any editor milestone.
+
+The projectile and effects cores are currently 2D and the visual proof is
+standalone. PHY, Engine Lab, RR1, world/environment, 3D presentation and
+gameplay-specific integration require future dedicated work. Acceptance does
+not start those tasks or change their prerequisite gates. See the
+[implementation record](../implementation/effects_projectiles_foundation.md).
+
 ## Product target
 
 The present project target is:

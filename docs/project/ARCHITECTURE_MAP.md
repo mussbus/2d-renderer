@@ -12,6 +12,25 @@ This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
 modules and their current authority boundaries.
 
+## Accepted parallel Effects and Projectiles ownership
+
+Owner-accepted feature `c0421e5182b9adb5fece7fb38520c9181bf8b038` was integrated
+through merge `493549cfc31b3d768b680f7284b6bd7fae517c7a`. This is a parallel
+foundation pulled forward from later roadmap work; it does not renumber or
+complete M03, M04, Phase D, Phase L or any editor milestone.
+
+| Module | Authority and boundary |
+| --- | --- |
+| [`projectiles`](../../src/projectiles/root.zig) | Deterministic 2D transient identity, lifecycle, commands, deflection and state; consumes a client-supplied [collision query](../../src/projectiles/collision_query.zig), with no effects or presentation ownership |
+| [`effects`](../../src/effects/root.zig) | Independent deterministic 2D CPU emitters and particles; no projectile, physics-body, SDL or GPU ownership |
+| [`projectile_effects`](../../src/effect_composition/projectile_effects.zig) | Optional one-way projectile-event to effects composition |
+| [Standalone scene](../../src/app/effects_projectiles_scene.zig), [view](../../src/app/effects_projectiles_view.zig) and [application](../../src/app/effects_projectiles.zig) | Scenario/query composition, translation of copied values into existing graphics requests, and SDL3 GPU renderer lifetime respectively |
+
+The visual proof remains standalone. PHY, Engine Lab, RR1, world/environment,
+3D presentation and gameplay-specific integration are deferred; existing
+registrations do not imply adoption. See the
+[accepted implementation and validation record](../implementation/effects_projectiles_foundation.md).
+
 ## Integrated production flow
 
 ```text

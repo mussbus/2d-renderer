@@ -146,6 +146,21 @@ of the whole PHY track. Final anatomical tuning and production bindings are
 outside acceptance. Existing 2D consumers remain current. No PSM02, binding
 migration, baking work or change to M03/M04 status follows from acceptance.
 
+## Accepted parallel Effects and Projectiles Foundation
+
+The owner accepted feature commit `c0421e5182b9adb5fece7fb38520c9181bf8b038`.
+It is integrated through merge `493549cfc31b3d768b680f7284b6bd7fae517c7a`
+on `integration/effects-projectiles-foundation`; master was not advanced.
+The [implementation record](../implementation/effects_projectiles_foundation.md)
+contains measured integration gates and preserved feature-time evidence.
+
+This owner-authorized parallel foundation was pulled forward from later roadmap
+work. It neither renumbers nor completes M03, M04, Phase D, Phase L or any
+editor milestone. Both cores are currently 2D, and the visual proof is standalone.
+PHY, Engine Lab, RR1, world/environment, 3D presentation and gameplay-specific
+integration remain deferred. PSM01, World Time, Engine Lab and RR1 retain their
+existing registrations and authority boundaries.
+
 ## Post-F4 track readiness
 
 Immediately architecture-ready for dedicated implementation requests:
