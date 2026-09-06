@@ -30,14 +30,14 @@ pub fn register(options: Options) Registration {
 
     const effects_projectiles = b.addExecutable(.{ .name = "effects_projectiles", .root_module = modules.effects_projectiles_entry_module });
     b.installArtifact(effects_projectiles);
-    b.step("effects-projectiles", "Build the independent E1 effects and projectiles proof").dependOn(&effects_projectiles.step);
-    const run_e1 = b.addSystemCommand(&.{b.getInstallPath(.bin, effects_projectiles.out_filename)});
-    run_e1.step.dependOn(b.getInstallStep());
-    if (b.args) |args| run_e1.addArgs(args);
-    b.step("run-effects-projectiles", "Run the E1 proof: Space pause, period step, R reset, N seed, P spawn, D deflect, F1 debug").dependOn(&run_e1.step);
-    const smoke_e1 = b.addSystemCommand(&.{ b.getInstallPath(.bin, effects_projectiles.out_filename), "--smoke", "--capture" });
-    smoke_e1.step.dependOn(b.getInstallStep());
-    b.step("effects-projectiles-smoke", "Run real D3D12 E1 proof, allocation checks and four readbacks").dependOn(&smoke_e1.step);
+    b.step("effects-projectiles", "Build the independent effects and projectiles proof").dependOn(&effects_projectiles.step);
+    const run_effects_projectiles = b.addSystemCommand(&.{b.getInstallPath(.bin, effects_projectiles.out_filename)});
+    run_effects_projectiles.step.dependOn(b.getInstallStep());
+    if (b.args) |args| run_effects_projectiles.addArgs(args);
+    b.step("run-effects-projectiles", "Run the Effects/projectiles proof: Space pause, period step, R reset, N seed, P spawn, D deflect, F1 debug").dependOn(&run_effects_projectiles.step);
+    const smoke_effects_projectiles = b.addSystemCommand(&.{ b.getInstallPath(.bin, effects_projectiles.out_filename), "--smoke", "--capture" });
+    smoke_effects_projectiles.step.dependOn(b.getInstallStep());
+    b.step("effects-projectiles-smoke", "Run real D3D12 Effects/projectiles proof, allocation checks and four readbacks").dependOn(&smoke_effects_projectiles.step);
 
     const installed_demo = b.getInstallPath(.bin, demo.out_filename);
     const run_demo = b.addSystemCommand(&.{installed_demo});

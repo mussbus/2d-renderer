@@ -9,7 +9,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
-    run_e1: *std.Build.Step.Run,
+    run_effects_projectiles: *std.Build.Step.Run,
     run_engine_composition: *std.Build.Step.Run,
     run_deterministic: *std.Build.Step.Run,
     run_renderer_boundary: *std.Build.Step.Run,
@@ -37,9 +37,9 @@ pub fn register(options: Options) Registration {
     const optimize = options.optimize;
     const modules = options.modules;
 
-    const e1_tests = addEngineTest(b, .{ .name = "e1-tests", .root_module = modules.e1_test_module });
-    const run_e1 = b.addRunArtifact(e1_tests);
-    b.step("test-effects-projectiles", "Run E1 headless projectile, effect and composition contracts").dependOn(&run_e1.step);
+    const effects_projectiles_tests = addEngineTest(b, .{ .name = "effects-projectiles-tests", .root_module = modules.effects_projectiles_test_module });
+    const run_effects_projectiles = b.addRunArtifact(effects_projectiles_tests);
+    b.step("test-effects-projectiles", "Run Effects/projectiles headless projectile, effect and composition contracts").dependOn(&run_effects_projectiles.step);
 
     const engine_composition_tests = addEngineTest(b, .{
         .name = "engine-composition-tests",
@@ -187,7 +187,7 @@ pub fn register(options: Options) Registration {
     integration_test_step.dependOn(&run_integration_tests.step);
 
     return .{
-        .run_e1 = run_e1,
+        .run_effects_projectiles = run_effects_projectiles,
         .run_engine_composition = run_engine_composition_tests,
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,

@@ -13,7 +13,7 @@ pub const Catalog = struct {
     projectile_effects_module: *std.Build.Module,
     projectiles_module: *std.Build.Module,
     effects_module: *std.Build.Module,
-    e1_test_module: *std.Build.Module,
+    effects_projectiles_test_module: *std.Build.Module,
     demo_entry_module: *std.Build.Module,
     engine_smoke_entry_module: *std.Build.Module,
     engine_smoke_client_module: *std.Build.Module,
@@ -993,15 +993,15 @@ pub fn register(options: Options) Catalog {
     effects_projectiles_entry_module.addImport("effects_projectiles_view", effects_projectiles_view_module);
     effects_projectiles_entry_module.addImport("fixed_step", fixed_step_module);
     effects_projectiles_entry_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
-    const e1_test_module = b.createModule(.{ .root_source_file = b.path("tests/effects/root.zig"), .target = target, .optimize = optimize });
-    e1_test_module.addImport("effects_projectiles_scene", effects_projectiles_scene_module);
-    e1_test_module.addImport("effects_projectiles_view", effects_projectiles_view_module);
-    e1_test_module.addImport("render_queue", render_queue_module);
-    e1_test_module.addImport("projectile_effects", projectile_effects_module);
-    e1_test_module.addImport("foundation", foundation_module);
-    e1_test_module.addImport("math", math_module);
-    e1_test_module.addImport("projectiles", projectiles_module);
-    e1_test_module.addImport("effects", effects_module);
+    const effects_projectiles_test_module = b.createModule(.{ .root_source_file = b.path("tests/effects/root.zig"), .target = target, .optimize = optimize });
+    effects_projectiles_test_module.addImport("effects_projectiles_scene", effects_projectiles_scene_module);
+    effects_projectiles_test_module.addImport("effects_projectiles_view", effects_projectiles_view_module);
+    effects_projectiles_test_module.addImport("render_queue", render_queue_module);
+    effects_projectiles_test_module.addImport("projectile_effects", projectile_effects_module);
+    effects_projectiles_test_module.addImport("foundation", foundation_module);
+    effects_projectiles_test_module.addImport("math", math_module);
+    effects_projectiles_test_module.addImport("projectiles", projectiles_module);
+    effects_projectiles_test_module.addImport("effects", effects_module);
     const engine_smoke_client_module = b.createModule(.{
         .root_source_file = b.path("src/app/engine_smoke_client.zig"),
         .target = target,
@@ -1476,7 +1476,7 @@ pub fn register(options: Options) Catalog {
         .projectile_effects_module = projectile_effects_module,
         .projectiles_module = projectiles_module,
         .effects_module = effects_module,
-        .e1_test_module = e1_test_module,
+        .effects_projectiles_test_module = effects_projectiles_test_module,
         .demo_entry_module = demo_entry_module,
         .engine_smoke_entry_module = engine_smoke_entry_module,
         .engine_smoke_client_module = engine_smoke_client_module,
