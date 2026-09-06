@@ -1,0 +1,46 @@
+1/41 projectile_tests.test.projectiles deterministic identities, capacity rejection and no ID consumption...OK
+2/41 projectile_tests.test.projectiles fixed-step semi-implicit motion and acceleration...OK
+3/41 projectile_tests.test.projectiles disabled state freezes motion and lifetime then expires exactly...OK
+4/41 projectile_tests.test.projectiles explicit removal emits one value and rejects stale identity...OK
+5/41 projectile_tests.test.projectiles masks filter both directions before earliest-hit selection...OK
+6/41 projectile_tests.test.projectiles transitive near-equal hit ties ignore enumeration order...OK
+7/41 projectile_tests.test.projectiles continue hit reports once per collider and spends remaining travel...OK
+8/41 projectile_tests.test.projectiles bounded bounce prevents same-tick collision loops...OK
+9/41 projectile_tests.test.projectiles deflection relaunch changes owner, position and lifetime explicitly...OK
+10/41 projectile_tests.test.projectiles event overflow rolls back commands and entire tick...OK
+11/41 projectile_tests.test.projectiles invalid collision result rolls back earlier projectile updates...OK
+12/41 projectile_tests.test.projectiles ordered repeated runs and copied snapshots cannot mutate authority...OK
+13/41 projectile_tests.test.projectiles allocation failures clean every partial initialization...OK
+14/41 projectile_tests.test.projectiles fixed F UUID vector and definition ownership...OK
+15/41 projectile_tests.test.projectiles query failure on later item and hit overflow publish nothing...OK
+16/41 projectile_tests.test.projectiles zero-time opposing contacts terminate at configured bound...OK
+17/41 projectile_tests.test.projectiles exact equal-hit tie uses collider ID and preserves metadata...OK
+18/41 effect_tests.test.effects burst, spread bounds and seed determinism...OK
+19/41 effect_tests.test.effects continuous fixed-point rate and emitter duration are exact...OK
+20/41 effect_tests.test.effects particle lifetime, emitter drain and exact retirement...OK
+21/41 effect_tests.test.effects gravity drag and angular motion...OK
+22/41 effect_tests.test.effects size opacity color and render interpolation are read only...OK
+23/41 effect_tests.test.effects particle drop and emitter rejection are explicit bounded policies...OK
+24/41 effect_tests.test.effects stop drains, clear removes and reset reproduces seed...OK
+25/41 effect_tests.test.effects streams and extraction order independent of spawn ordering...OK
+26/41 effect_tests.test.effects moving an emitter never drags existing world-space particles...OK
+27/41 effect_tests.test.effects reject invalid inputs without creating runtime state...OK
+28/41 effect_tests.test.effects allocation failures clean every partial initialization...OK
+29/41 effect_tests.test.effects independently calculated version-one UUID and Xoshiro sample vectors...OK
+30/41 effect_tests.test.effects dropped particles consume their samples and freed capacity resumes deterministically...OK
+31/41 composition_tests.test.composition launch distance-trail and expiration mapping...OK
+32/41 composition_tests.test.composition impact uses contact location and retires trail tracking...OK
+33/41 composition_tests.test.composition saturation and arbitrary render reads cannot affect projectile simulation...OK
+34/41 composition_tests.test.composition trail samples are bounded and reset reproduces mappings...OK
+35/41 composition_tests.test.composition distance remainder survives many subspacing steps...OK
+36/41 proof_tests.test.proof true segment sweep catches thin walls, diagonal hits and shape extent...OK
+37/41 proof_tests.test.proof bounce conserves remaining travel without repeated separating hits...OK
+38/41 proof_tests.test.proof same-seed replay and arbitrary render submissions preserve gameplay...OK
+39/41 proof_tests.test.proof update reset spawn deflect and extraction allocate nothing after initialization...OK
+40/41 proof_tests.test.proof composed initialization cleans every allocation failure...OK
+41/41 proof_tests.test.core public facades expose only an opaque const ownership context...OK
+All 41 tests passed.
+Build Summary: 3/3 steps succeeded
+test-effects-projectiles success
++- run test e1-tests success 125ms
+   +- compile test e1-tests ReleaseSafe native success 15s MaxRSS:343M

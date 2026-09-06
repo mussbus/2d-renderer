@@ -1,0 +1,184 @@
+{
+  "status": "automated validation passed; pending owner review",
+  "branch": "feature/e1-effects-projectiles",
+  "baseline": "cb60fc9a9b24ba7d69578ffc721948e9b00de8fd",
+  "compiler": "0.16.0",
+  "commands": [
+    {
+      "name": "verify-final",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build verify -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 1051.9346142,
+      "build_summary": "92/92 steps succeeded",
+      "reported_test_executions": 712
+    },
+    {
+      "name": "debug-build",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 3.33365,
+      "build_summary": "24/24 steps succeeded",
+      "reported_test_executions": 0
+    },
+    {
+      "name": "release-safe",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -Doptimize=ReleaseSafe -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 85.1691008,
+      "build_summary": "24/24 steps succeeded",
+      "reported_test_executions": 0
+    },
+    {
+      "name": "release-safe-tests",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -Doptimize=ReleaseSafe -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 16.2991635,
+      "build_summary": "3/3 steps succeeded",
+      "reported_test_executions": 41
+    },
+    {
+      "name": "release-fast",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -Doptimize=ReleaseFast -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 108.3198656,
+      "build_summary": "24/24 steps succeeded",
+      "reported_test_executions": 0
+    },
+    {
+      "name": "release-fast-tests",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -Doptimize=ReleaseFast -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 18.4673614,
+      "build_summary": "3/3 steps succeeded",
+      "reported_test_executions": 41
+    },
+    {
+      "name": "gpu-smoke",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build gpu-smoke -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 12.8603498,
+      "build_summary": "26/26 steps succeeded",
+      "reported_test_executions": 0
+    },
+    {
+      "name": "proof-final",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build effects-projectiles-smoke -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 3.7170479,
+      "build_summary": "26/26 steps succeeded",
+      "reported_test_executions": 0
+    },
+    {
+      "name": "repeat-readbacks",
+      "command": "python tools/effects_projectiles_review.py --compare evidence/e1",
+      "exit_code": 0,
+      "result": "E1_REVIEW_OK frames=4 lossless_rgb=true"
+    },
+    {
+      "name": "test-check-final",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test check -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 36.7388563,
+      "build_summary": "28/28 steps succeeded",
+      "reported_test_executions": 425
+    }
+  ],
+  "verify": {
+    "steps_succeeded": 92,
+    "steps_total": 92,
+    "reported_test_suites": 37,
+    "reported_test_executions": 712,
+    "test_counts_are_executions_not_deduplicated_unique_contracts": true
+  },
+  "focused_tests": {
+    "Debug": 41,
+    "ReleaseSafe": 41,
+    "ReleaseFast": 41
+  },
+  "proof_metrics": "E1_PROOF frames=180 ticks=720 collisions=3 deflections=1 expirations=3 peak_projectiles=4 peak_emitters=171 peak_particles=291 trail_samples=445 peak_sprites=300 peak_draws=1 dropped_particles=0 dropped_effects=0 steady_allocations=0 simulation_ns=298206800 wall_ns=1469253600",
+  "gpu_resource_balance": "E1_PROOF_OK backend=direct3d12 created=23 released=23 fences_acquired=185 fences_released=185",
+  "captures": [
+    {
+      "tick": 120,
+      "changed_pixels": 4115,
+      "rgba_sha256": "5f2246ace3c2bb6f87f31b39360c863ceebd333173aaf748358fb3971712dbda",
+      "png_sha256": "d3a4ad472127aeff0f3f16c41514508b55983c1f794e651737d93a688f60478e"
+    },
+    {
+      "tick": 176,
+      "changed_pixels": 3921,
+      "rgba_sha256": "eeef3b1c014ff6c98bda37b2d5ddfa0165c838961748cfca4fd51b1f2a76641a",
+      "png_sha256": "47b83a5af72de7546137de24d99b857898001fc25e3bd21d926fbfc7eb99dd6e"
+    },
+    {
+      "tick": 212,
+      "changed_pixels": 3810,
+      "rgba_sha256": "e03e03ca87dd4108c14c0f0f006af9ce534d9f7d3fb7890d2c2e030980e46402",
+      "png_sha256": "ce3cda10b2fc11e22024d2cd81d5421b4ab327ca53696a38ac3a0fa8282bc999"
+    },
+    {
+      "tick": 256,
+      "changed_pixels": 3458,
+      "rgba_sha256": "86441c2ed47790e638d28b2ad64b8c6e8c18903cddd885267679b7a868a25e0f",
+      "png_sha256": "3e12bcbfe0d8952639c5f3e3c18bb0caf01402df7001617041dbb11ab076c243"
+    }
+  ],
+  "preservation": {
+    "original_path": "C:\\Users\\Chad\\Documents\\2d Renderer",
+    "original_branch": "master",
+    "original_head": "cb60fc9a9b24ba7d69578ffc721948e9b00de8fd",
+    "original_status": "clean",
+    "baseline_files_byte_identical_to_original": 927,
+    "protected_files_byte_identical_to_original": 456,
+    "shared_files": [
+      "build/apps.zig",
+      "build/gates.zig",
+      "build/modules.zig",
+      "build/tests_engine.zig"
+    ],
+    "final_original_verification": "clean at recorded master baseline; all non-wiring baseline files byte-identical",
+    "index_metadata_refreshed_entries": 927,
+    "content_changes_staged_by_index_refresh": 0
+  },
+  "no_placeholder_audit": {
+    "source_files_scanned": 14,
+    "TODO": 0,
+    "FIXME": 0,
+    "unfinished_or_skipped": 0,
+    "prohibited_API": 0,
+    "existing_tests_modified": 0
+  },
+  "source_sha256": {
+    "src/projectiles/collision_query.zig": "ba588cc5bb14604a641ee1b2c9e33f9791cccc62afadc94843f153fb4bc7435a",
+    "src/projectiles/root.zig": "9613d51c5ed7fe1b4c07de511d17bfdc6669b6e951a863442f804de56b600ddf",
+    "src/effects/root.zig": "9de383413773727e8d67dbbbfd4f2e1f7ce61ec4edec8d7204dba4ebe15d6c33",
+    "src/effect_composition/projectile_effects.zig": "7246cfc67f03092500d64a93a4c97f224f51f782705460fcf6c7cf7a0ee6873d",
+    "src/app/effects_projectiles.zig": "914efe0be8a806916714ea5bd69198fca431b38fc3266b4bd6089b5301282288",
+    "src/app/effects_projectiles_scene.zig": "bb092651e1e6af37ad55ad6f65891354038f85298fa9482fef5c0e2f52d69490",
+    "src/app/effects_projectiles_view.zig": "a6f21150e71741d5ec81b5b13dbfea934fa1c5ebc82eb2d15b6b603512fe9550",
+    "tests/effects/composition_tests.zig": "3f2708fae77be116fd07031731fd9226f8e34f4b6ab0065c03931811ed42ba40",
+    "tests/effects/effect_tests.zig": "3dd812a23012f08bd1264574c68140801441c3a6b03e17c021ef88c21b98b878",
+    "tests/effects/projectile_tests.zig": "e9e34822bbdbb8702a2dd5842d391997883b09d79d01ca634ca5f83cbf138b4d",
+    "tests/effects/proof_tests.zig": "2dfec5f1703c53619954787338082f16c86801b0b93d66d86021ecee205d2bc9",
+    "tests/effects/root.zig": "85a76b43bde7e4433ceb513f31f0096487f782184efdc80a3a93ad9ef463ef9d",
+    "tests/effects/support.zig": "242905c0b3bd2320f069fe359be576c1ba8654d909af908827ec28701516ca9d",
+    "tools/effects_projectiles_review.py": "29fc4c639abfac7f2a4c37c95e4dbda3a4da5f68d651c94e777ee47b5afb8d62",
+    "build/apps.zig": "ca7fd10dd923e5fdc3e7e8c3806971d1e965c64bdfb8c7add4fabb99db11ccec",
+    "build/gates.zig": "c47499adddb12f858dec1c6a20d138eaf26c364ac46666d8ada528bc5d73fa49",
+    "build/modules.zig": "df62d5fbdcbe401db1e7a20e360a6b9c76eeec8c9bdc0b1a9f298588d13d9080",
+    "build/tests_engine.zig": "8370d99ad9c4de9682d32e5e4fbf85f0557c21c67a4f5951082e30856e3185c4"
+  },
+  "resolved_initial_verify_failure": {
+    "exit_code": 1,
+    "cause": "Git checkout CRLF conversion changed formatting, pinned archival hashes and canonical fixture byte expectations",
+    "resolution": "Restored isolated checkout bytes only after baseline-content and pinned-hash checks; no checker or expected-hash edits",
+    "final_verify_exit_code": 0
+  },
+  "limits": [
+    "Owner visual/API acceptance pending",
+    "Production PHY arbitrary-segment adapter deferred",
+    "Cross-platform floating point and GPU pixel identity not promised",
+    "SDL/driver internal allocations not measured",
+    "Full effect assets and runtime restore serialization deferred"
+  ]
+}

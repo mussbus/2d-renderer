@@ -1,0 +1,39 @@
+info: available SDL GPU driver: direct3d12
+info: available SDL GPU driver: vulkan
+info: actual SDL GPU driver: direct3d12
+info: generated shader format DXIL agrees with SDL_GPU_SHADERFORMAT_DXIL
+info: grew authoritative GPU instance/upload slots: requested=1792 capacity=2048 bytes_per_slot=131072
+info: E1: Space pause, period step, R same seed, N next seed, P spawn, D deflect, F1 debug, Esc quit. Blue expires; green bounces; red impacts; yellow passes through.
+info: E1_PROOF frames=180 ticks=720 collisions=3 deflections=1 expirations=3 peak_projectiles=4 peak_emitters=171 peak_particles=291 trail_samples=445 peak_sprites=300 peak_draws=1 dropped_particles=0 dropped_effects=0 steady_allocations=0 simulation_ns=298206800 wall_ns=1469253600
+info: E1_CAPTURE tick=120 changed_pixels=4115 rgba_sha256=5f2246ace3c2bb6f87f31b39360c863ceebd333173aaf748358fb3971712dbda
+info: E1_CAPTURE tick=176 changed_pixels=3921 rgba_sha256=eeef3b1c014ff6c98bda37b2d5ddfa0165c838961748cfca4fd51b1f2a76641a
+info: E1_CAPTURE tick=212 changed_pixels=3810 rgba_sha256=e03e03ca87dd4108c14c0f0f006af9ce534d9f7d3fb7890d2c2e030980e46402
+info: E1_CAPTURE tick=256 changed_pixels=3458 rgba_sha256=86441c2ed47790e638d28b2ad64b8c6e8c18903cddd885267679b7a868a25e0f
+info: E1_PROOF_OK backend=direct3d12 created=23 released=23 fences_acquired=185 fences_released=185
+Build Summary: 26/26 steps succeeded
+effects-projectiles-smoke success
++- run C:\Users\Chad\Documents\effects-projectiles-e1\zig-out\bin\effects_projectiles.exe success 3s
+   +- install cached
+      +- install .deps/SDL3-3.4.10/lib/x64/SDL3.dll to SDL3.dll cached
+      +- install generated to shaders/sprite_vs.dxil cached
+      |  +- compile vertex shader VSMain (vs_6_0) cached
+      +- install generated to shaders/sprite_ps.dxil cached
+      |  +- compile fragment shader PSMain (ps_6_0) cached
+      +- install generated to shaders/deformable_mesh_vs.dxil cached
+      |  +- compile vertex shader VSMain (vs_6_0) cached
+      +- install assets/art/mechanical_atlas.png to art/mechanical_atlas.png cached
+      +- install assets/art/energy_atlas.png to art/energy_atlas.png cached
+      +- install assets/art/male_base_anatomy_atlas.png to art/male_base_anatomy_atlas.png cached
+      +- install assets/art/female_base_anatomy_atlas.png to art/female_base_anatomy_atlas.png cached
+      +- install assets/art/anatomy_components_atlas.png to art/anatomy_components_atlas.png cached
+      +- install assets/art/wardrobe_upper_atlas.png to art/wardrobe_upper_atlas.png cached
+      +- install assets/art/wardrobe_layers_atlas.png to art/wardrobe_layers_atlas.png cached
+      +- install assets/art/wardrobe_lower_atlas.png to art/wardrobe_lower_atlas.png cached
+      +- install assets/art/environment_violet_crystal_ruin_atlas.png to art/environment_violet_crystal_ruin_atlas.png cached
+      +- install assets/art/environment_neutral_debug_atlas.png to art/environment_neutral_debug_atlas.png cached
+      +- install engine_sandbox cached
+      |  +- compile exe engine_sandbox Debug native cached 83ms MaxRSS:21M
+      +- install engine_smoke cached
+      |  +- compile exe engine_smoke Debug native cached 82ms MaxRSS:20M
+      +- install effects_projectiles cached
+         +- compile exe effects_projectiles Debug native cached 82ms MaxRSS:20M

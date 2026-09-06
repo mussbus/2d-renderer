@@ -1,0 +1,1002 @@
+1/41 projectile_tests.test.projectiles deterministic identities, capacity rejection and no ID consumption...OK
+2/41 projectile_tests.test.projectiles fixed-step semi-implicit motion and acceleration...OK
+3/41 projectile_tests.test.projectiles disabled state freezes motion and lifetime then expires exactly...OK
+4/41 projectile_tests.test.projectiles explicit removal emits one value and rejects stale identity...OK
+5/41 projectile_tests.test.projectiles masks filter both directions before earliest-hit selection...OK
+6/41 projectile_tests.test.projectiles transitive near-equal hit ties ignore enumeration order...OK
+7/41 projectile_tests.test.projectiles continue hit reports once per collider and spends remaining travel...OK
+8/41 projectile_tests.test.projectiles bounded bounce prevents same-tick collision loops...OK
+9/41 projectile_tests.test.projectiles deflection relaunch changes owner, position and lifetime explicitly...OK
+10/41 projectile_tests.test.projectiles event overflow rolls back commands and entire tick...OK
+11/41 projectile_tests.test.projectiles invalid collision result rolls back earlier projectile updates...OK
+12/41 projectile_tests.test.projectiles ordered repeated runs and copied snapshots cannot mutate authority...OK
+13/41 projectile_tests.test.projectiles allocation failures clean every partial initialization...OK
+14/41 projectile_tests.test.projectiles fixed F UUID vector and definition ownership...OK
+15/41 projectile_tests.test.projectiles query failure on later item and hit overflow publish nothing...OK
+16/41 projectile_tests.test.projectiles zero-time opposing contacts terminate at configured bound...OK
+17/41 projectile_tests.test.projectiles exact equal-hit tie uses collider ID and preserves metadata...OK
+18/41 effect_tests.test.effects burst, spread bounds and seed determinism...OK
+19/41 effect_tests.test.effects continuous fixed-point rate and emitter duration are exact...OK
+20/41 effect_tests.test.effects particle lifetime, emitter drain and exact retirement...OK
+21/41 effect_tests.test.effects gravity drag and angular motion...OK
+22/41 effect_tests.test.effects size opacity color and render interpolation are read only...OK
+23/41 effect_tests.test.effects particle drop and emitter rejection are explicit bounded policies...OK
+24/41 effect_tests.test.effects stop drains, clear removes and reset reproduces seed...OK
+25/41 effect_tests.test.effects streams and extraction order independent of spawn ordering...OK
+26/41 effect_tests.test.effects moving an emitter never drags existing world-space particles...OK
+27/41 effect_tests.test.effects reject invalid inputs without creating runtime state...OK
+28/41 effect_tests.test.effects allocation failures clean every partial initialization...OK
+29/41 effect_tests.test.effects independently calculated version-one UUID and Xoshiro sample vectors...OK
+30/41 effect_tests.test.effects dropped particles consume their samples and freed capacity resumes deterministically...OK
+31/41 composition_tests.test.composition launch distance-trail and expiration mapping...OK
+32/41 composition_tests.test.composition impact uses contact location and retires trail tracking...OK
+33/41 composition_tests.test.composition saturation and arbitrary render reads cannot affect projectile simulation...OK
+34/41 composition_tests.test.composition trail samples are bounded and reset reproduces mappings...OK
+35/41 composition_tests.test.composition distance remainder survives many subspacing steps...OK
+36/41 proof_tests.test.proof true segment sweep catches thin walls, diagonal hits and shape extent...OK
+37/41 proof_tests.test.proof bounce conserves remaining travel without repeated separating hits...OK
+38/41 proof_tests.test.proof same-seed replay and arbitrary render submissions preserve gameplay...OK
+39/41 proof_tests.test.proof update reset spawn deflect and extraction allocate nothing after initialization...OK
+40/41 proof_tests.test.proof composed initialization cleans every allocation failure...OK
+41/41 proof_tests.test.core public facades expose only an opaque const ownership context...OK
+All 41 tests passed.
+1/3 renderer_boundary_tests.test.capture result is copied data with explicit caller lifetime...OK
+2/3 renderer_boundary_tests.test.capture result rejects mismatched dimensions...OK
+3/3 renderer_boundary_tests.test.capture result rejects a row beyond the copied frame...OK
+All 3 tests passed.
+1/22 test_scene_core_runtime.test_0...OK
+2/22 public_surface_tests.test.supported scene_core root hides F-owned mutable runtime storage...OK
+3/22 runtime_scene_tests.test.Level assembly resolves deterministic hierarchy and preserves exact large origin...OK
+4/22 runtime_scene_tests.test.failed exact source resolution is atomic and a later valid activation succeeds...OK
+5/22 runtime_scene_tests.test.dirty propagation updates only affected branches and old snapshots remain immutable...OK
+6/22 runtime_scene_tests.test.reparent modes preserve the requested space and reject cycles transactionally...OK
+7/22 runtime_scene_tests.test.world affine preserves negative scale and hierarchy-generated shear...OK
+8/22 runtime_scene_tests.test.removal policies reject children by default and orphan or cascade explicitly...OK
+9/22 runtime_scene_tests.test.multiple Levels coexist and unload invalidates only owned and host-scoped entities...OK
+10/22 runtime_scene_tests.test.Level-hosted gameplay promotion rejects atomically before changing spatial basis...OK
+11/22 runtime_scene_tests.test.supported gameplay promotion preserves hierarchy local transform and world affine...OK
+12/22 runtime_scene_tests.test.already-persistent promotion has a dedicated diagnostic and publishes nothing...OK
+13/22 runtime_scene_tests.test.persistent-below-Level-owned promotion failure wins before rebase and is atomic...OK
+14/22 runtime_scene_tests.test.promotion authority remains gameplay-only for every transient class...OK
+15/22 runtime_scene_tests.test.world-persistent anchors survive Level unload and cannot be parented below Level ownership...OK
+16/22 runtime_scene_tests.test.nested prefab expansion derives identities applies overrides and isolates reused placements...OK
+17/22 runtime_scene_tests.test.missing nested prefab resolution rolls back every candidate entity...OK
+18/22 runtime_scene_tests.test.runtime owns authored slices and neutral mock consumers share one published identity...OK
+19/22 runtime_scene_tests.test.two-phase publication rolls back core and prepared extension tables together...OK
+20/22 runtime_scene_tests.test.snapshot leases are bounded and release permits later acquisition...OK
+21/22 runtime_scene_tests.test.runtime failures map to stable machine-readable F diagnostics...OK
+22/22 runtime_scene_tests.test.publication reports authorized growth and capacity failure remains atomic...OK
+All 22 tests passed.
+1/27 test_foundation_primitives.test_0...OK
+2/27 identity_tests.test.persistent IDs are strong canonical RFC 9562 UUID values...OK
+3/27 identity_tests.test.UUIDv5 matches the RFC vector and field derivation is unambiguous...OK
+4/27 identity_tests.test.UUIDv7 consumes only explicit clock and entropy inputs...OK
+5/27 identity_tests.test.namespace and persistent ID duplicates are rejected...OK
+6/27 identity_tests.test.version kinds parse canonical semantic triples without interchangeability...OK
+7/27 identity_tests.test.EntityHandle is a non-persistent strongly typed value only...OK
+8/27 identity_tests.test.asset refs pin kind version and content hash...OK
+9/27 identity_tests.test.dependency closure hashes are order-independent and class-isolated...OK
+10/27 identity_tests.test.dependency duplicate mismatch and cycle failures are explicit...OK
+11/27 spatial_tests.test.finite validation and quaternion canonical tolerance boundaries are explicit...OK
+12/27 spatial_tests.test.shared spatial convention conforms to protected canonical math...OK
+13/27 spatial_tests.test.scale rotate translate and parent times local semantics are explicit...OK
+14/27 spatial_tests.test.shared XY transforms conform to the current Transform2D route...OK
+15/27 spatial_tests.test.affine inverse round trips and rejects singular values...OK
+16/27 spatial_tests.test.decomposition has canonical negative scale behavior and rejects shear...OK
+17/27 spatial_tests.test.affine composition preserves shear without pretending it is local TRS...OK
+18/27 canonical_data_tests.test.canonical JSON primitives use UTF-8 escaping shortest f32 and no newline...OK
+19/27 canonical_data_tests.test.canonical object and record order ignore insertion order while semantic arrays preserve it...OK
+20/27 canonical_data_tests.test.canonical data rejects duplicate keys and uses versioned hash domains...OK
+21/27 canonical_data_tests.test.canonical UUID hash and version encodings are lowercase and stable...OK
+22/27 canonical_data_tests.test.foundation f32 text conforms to protected canonical model serialization...OK
+23/27 canonical_data_tests.test.protected canonical-model fixture bytes and hash remain unchanged...OK
+24/27 canonical_data_tests.test.protected canonical-geometry fixture bytes and hash remain unchanged...OK
+25/27 determinism_tests.test.seed and key derivation are stable keyed and domain-separated...OK
+26/27 determinism_tests.test.scene time uses normalized explicit rational sub-ticks...OK
+27/27 determinism_tests.test.diagnostics sort identically across insertion permutations...OK
+All 27 tests passed.
+1/3 image_decode_tests.test.PNG metadata catches unsupported layouts zero dimensions overflow and upload limits...OK
+2/3 image_decode_tests.test.WIC decodes production PNG alpha and classifies missing corrupt and unsupported files...OK
+3/3 image_decode_tests.test.PNG decode allocation failure leaves the fixed allocator unchanged...OK
+All 3 tests passed.
+1/39 test_scene_core_authored.test_0...OK
+2/39 definition_tests.test.F2B definitions contain authored identities and no runtime handles...OK
+3/39 definition_tests.test.schema UUIDs are permanent distinct document-family identities...OK
+4/39 definition_tests.test.tag grammar and enabled inheritance are bounded and deterministic...OK
+5/39 definition_tests.test.camera contract accepts only neutral perspective or orthographic geometry...OK
+6/39 definition_tests.test.volume shape is a typed asset boundary in entity-local metres...OK
+7/39 definition_tests.test.prefab child identity derives from stable node path rather than array order...OK
+8/39 definition_tests.test.level origins are exact world millimetres while placements remain local metres...OK
+9/39 definition_tests.test.layer systems remain typed and owned by their subsystem namespaces...OK
+10/39 definition_tests.test.visibility intent stays distinct from enabled intent...OK
+11/39 extension_tests.test.extension namespace requires a governed track prefix...OK
+12/39 extension_tests.test.descriptor registration freezes in deterministic type and version order...OK
+13/39 extension_tests.test.unknown optional extensions preserve canonical bytes while required extensions fail...OK
+14/39 extension_tests.test.extension limits reject record and payload overflow...OK
+15/39 extension_tests.test.extension payloads must already be canonical and descriptor dependency reports are checked...OK
+16/39 extension_tests.test.duplicate and ambiguous descriptor version routes fail before freeze...OK
+17/39 extension_tests.test.descriptor validates declared direct dependency class before any future compilation...OK
+18/39 extension_tests.test.registration order cannot change the frozen descriptor sequence...OK
+19/39 serialization_tests.test.level canonical round trip materializes defaults and preserves unknown optional payload...OK
+20/39 serialization_tests.test.canonical level bytes and hash ignore input entity and tag order...OK
+21/39 serialization_tests.test.prefab and world canonical documents round trip without duplicating prefab data...OK
+22/39 serialization_tests.test.pre-acceptance level migration preserves IDs and reports every non-exact translation...OK
+23/39 serialization_tests.test.strict parser rejects unknown and duplicate fields and unsupported schema versions...OK
+24/39 serialization_tests.test.camera presentation fields remain outside the strict F camera schema...OK
+25/39 serialization_tests.test.supported current patch input may omit defaults and canonical output materializes them...OK
+26/39 serialization_tests.test.empty level canonical bytes and versioned domain hash match the reviewed golden...OK
+27/39 serialization_tests.test.representative populated level canonical bytes length hash and unordered inputs are fixed...OK
+28/39 validation_tests.test.hierarchy order is parent first with EntityId sibling ties...OK
+29/39 validation_tests.test.hierarchy rejects self missing and cyclic parents...OK
+30/39 validation_tests.test.effective enabled state and lifecycle order follow the accepted parent rules...OK
+31/39 validation_tests.test.synthetic catalog enforces one exact revision and kind per AssetId...OK
+32/39 validation_tests.test.level validation allows declared world anchors and rejects arbitrary cross-level parents...OK
+33/39 validation_tests.test.world definition composes multiple exact levels and only authored persistent entities...OK
+34/39 validation_tests.test.prefab nesting cycles and invalid override targets fail deterministically...OK
+35/39 validation_tests.test.presentation reference requires optional-presentation dependency classification...OK
+36/39 validation_tests.test.scene diagnostics preserve stable codes and deterministic sort order...OK
+37/39 validation_tests.test.extension dependency reports must be present in the owning asset header...OK
+38/39 validation_tests.test.reusable street-lamp prefab remains separate from two placed instances...OK
+39/39 validation_tests.test.tag capacity and deterministic provenance validation fail closed...OK
+All 39 tests passed.
+1/277 test_all.test_0...OK
+2/277 test_all.test.every initialization stage round-trips through its command-line name...OK
+3/277 test_all.test.fault injection fails exactly after the selected acquisition stage...OK
+4/277 test_all.test.GPU instance layout is exact and contains only transferred scalar data...OK
+5/277 test_all.test.hand-computed transform cases cover pivots rotation scale translation and degeneracy...OK
+6/277 test_all.test.submission rejects non-finite transforms invalid UV tint page and unsigned layers...OK
+7/277 test_all.test.draw-order ranges are checked lexicographically without packing overflow...OK
+8/277 test_all.test.stable equal-key ordering and deterministic reverse sorting...OK
+9/277 test_all.test.capacity growth preserves submissions and byte arithmetic rejects overflow...OK
+10/277 test_all.test.allocation failure is meaningful...OK
+11/277 test_all.test.empty one thousand and page-boundary batches report actual metrics...OK
+12/277 math_tests.test.Vec2 arithmetic normalization and finite validation are explicit...OK
+13/277 math_tests.test.identity translation scale and point versus direction use hand-computed values...OK
+14/277 math_tests.test.positive and negative ninety-degree rotations match the CCW convention...OK
+15/277 math_tests.test.component order and parent-child order are independently hand computed...OK
+16/277 math_tests.test.four-level hierarchy includes every ancestor exactly once...OK
+17/277 math_tests.test.zero scale and very small finite transforms stay finite...OK
+18/277 math_tests.test.angle wrapping and shortest interpolation cross zero in both directions...OK
+19/277 math_tests.test.component interpolation does not interpolate matrix elements...OK
+20/277 math_tests.test.non-finite rejection and approximate equality distinguish tolerance boundaries...OK
+21/277 camera_tests.test.default camera preserves the original 640 by 480 presentation...OK
+22/277 camera_tests.test.drawable height scales pixel density linearly and preserves vertical world span...camera_scaling_evidence viewport=640x480 ppm=82.000000 vertical_span_m=5.853658700 horizontal_span_m=7.804878000 center=[0.000000,1.646341] reference_height_m=1.000000 reference_height_px=82.000
+camera_scaling_evidence viewport=1280x720 ppm=123.000000 vertical_span_m=5.853658700 horizontal_span_m=10.406504000 center=[0.000000,1.646341] reference_height_m=1.000000 reference_height_px=123.000
+camera_scaling_evidence viewport=1920x1080 ppm=184.500000 vertical_span_m=5.853658700 horizontal_span_m=10.406504000 center=[0.000000,1.646341] reference_height_m=1.000000 reference_height_px=184.500
+camera_scaling_evidence viewport=2560x1440 ppm=246.000000 vertical_span_m=5.853658700 horizontal_span_m=10.406504000 center=[0.000000,1.646341] reference_height_m=1.000000 reference_height_px=246.000
+camera_scaling_evidence viewport=3840x2160 ppm=369.000000 vertical_span_m=5.853658700 horizontal_span_m=10.406504000 center=[0.000000,1.646341] reference_height_m=1.000000 reference_height_px=369.000
+OK
+23/277 camera_tests.test.same aspect ratios preserve both world extents and width changes only horizontal visibility...camera_aspect_evidence height=1080 vertical_span_m=5.853658700 widths=[960,1920,2560] horizontal_spans_m=[5.203252000,10.406504000,13.875339000]
+OK
+24/277 camera_tests.test.resized camera keeps uniform axes and inverse-compatible transforms...OK
+25/277 camera_tests.test.resize round trip derives from reference without drift or center movement...OK
+26/277 camera_tests.test.positive world Y maps upward in presentation and clip space...OK
+27/277 camera_tests.test.zero and invalid camera state is rejected transactionally...OK
+28/277 camera_tests.test.parallax factors produce hand-derived relative camera displacement...OK
+29/277 camera_tests.test.resize changes presentation without changing authoritative simulation...OK
+30/277 camera_tests.test.camera follow cannot change controller physics...OK
+31/277 camera_tests.test.repeated horizontal camera updates are bit deterministic...OK
+32/277 camera_tests.test.camera uniform is the exact GPU clip contract...OK
+33/277 skeleton_tests.test.valid humanoid definition has stable semantics sockets order and no per-bone allocation...OK
+34/277 skeleton_tests.test.invalid parent self-parent cycles roots and semantics are rejected transactionally...[default] (warn): skeleton bone validation: bone=5 name=left_forearm parent=99 bone_count=16
+[default] (warn): skeleton bone validation: self-parent bone=5 name=left_forearm
+[default] (warn): skeleton hierarchy cycle: unresolved bone=4 name=left_upper_arm parent=5
+[default] (warn): skeleton hierarchy cycle: unresolved bone=4 name=left_upper_arm parent=5
+[default] (warn): skeleton bone validation: multiple roots first=0 second=3 name=head
+[default] (warn): skeleton bone validation: duplicate semantic=pelvis at bone=3 name=head
+[default] (warn): skeleton bone validation: bone=3 name=head semantic=255 is invalid
+[default] (warn): skeleton bone validation: missing required semantic=15
+OK
+35/277 skeleton_tests.test.authored count name and ordering policies are enforced...[default] (warn): skeleton bone validation: bone=3 invalid name length=0
+[default] (warn): skeleton bone validation: duplicate name=torso bone=3
+[default] (warn): skeleton socket validation: missing required semantic=3
+OK
+36/277 skeleton_tests.test.non-finite rest and malformed sockets fail before publication...[default] (warn): skeleton bone validation: non-finite rest transform at bone=8 name=right_forearm
+[default] (warn): skeleton socket validation: socket=0 name=left_hand parent=99 bone_count=16
+[default] (warn): skeleton socket validation: duplicate semantic=left_hand socket=1 name=right_hand
+OK
+37/277 skeleton_tests.test.humanoid allocation fault stages clean up transactionally and allow a later clean instance...OK
+38/277 skeleton_tests.test.rest pose hierarchy and sockets match independent world positions...OK
+39/277 skeleton_tests.test.pose restoration repeated evaluation and character transforms are independent...OK
+40/277 skeleton_tests.test.two poses share one immutable definition without sharing mutable state...OK
+41/277 skeleton_tests.test.pose length and definition mismatch are rejected before indexing...[default] (warn): pose compatibility: expected bone_count=16, local_count=15, world_count=16
+OK
+42/277 skeleton_tests.test.definition outlives poses and invalid bone access is checked...OK
+43/277 skeleton_tests.test.socket evaluation includes multiple rotated and scaled ancestors...OK
+44/277 skeleton_tests.test.attachments follow hierarchy preserve pivots layers page and pose immutability...OK
+45/277 skeleton_tests.test.attachment validation retains texture-page and parent checks...OK
+46/277 skeleton_tests.test.pose socket and attachment submission allocate zero bytes after initialization...OK
+47/277 appearance_tests.test.generalized definition keeps canonical rig invariant and assigns stable custom ids...OK
+48/277 appearance_tests.test.zero visuals and variable counts initialize submit and clean up without a special path...OK
+49/277 appearance_tests.test.multiple visuals share one data-defined attachment point and visual hierarchy is bounded...OK
+50/277 appearance_tests.test.invalid duplicate dangling and cyclic definitions fail transactionally...OK
+51/277 appearance_tests.test.appearance and module mutable state are instance-owned and resettable...OK
+52/277 appearance_tests.test.custom attachment and module visuals mirror with the canonical character root...OK
+53/277 appearance_tests.test.extended visuals preserve deterministic input order for equal draw layers...OK
+54/277 appearance_tests.test.appearance evaluation and mutation allocate zero bytes after initialization...OK
+55/277 anatomy_tests.test.morphology interpolates exactly and override precedence reset and preset isolation are deterministic...OK
+56/277 anatomy_tests.test.morphology rejects invalid user values and invalid preset ranges...OK
+57/277 anatomy_tests.test.repeated adult modules and conventional presets are compositional data...OK
+58/277 anatomy_tests.test.hierarchical anatomy rejects dangling parents and cycles...OK
+59/277 anatomy_tests.test.faces and hair are per-head groups with independently addressable features...OK
+60/277 anatomy_tests.test.two facial configurations use shared modular data and derive distinct independent visuals...OK
+61/277 anatomy_tests.test.presentation switching changes visuals without changing anatomy topology...OK
+62/277 anatomy_tests.test.module articulation morphology and presentation leave canonical controller animation interaction and IK state unchanged...OK
+63/277 anatomy_tests.test.characters share immutable presets but own independent anatomy runtime state...OK
+64/277 anatomy_tests.test.modular body evidence route is deterministic and allocation free after initialization...OK
+65/277 component_graph_tests.test.compiled graph exposes typed eye brow hair module and intentional gap proofs...OK
+66/277 component_graph_tests.test.continuous and intentional gap contracts keep world-metre separation fail closed...OK
+67/277 component_graph_tests.test.eye deformation moves its eyebrow child and topology remains immutable...OK
+68/277 component_graph_tests.test.front side-left and side-right projections retain graph and module sources...OK
+69/277 component_graph_tests.test.typed component inputs fail closed across invalid topology contracts...OK
+70/277 component_graph_tests.test.compiled graph rejects missing module members unsupported front and child-follow drift...OK
+71/277 equipment_tests.test.equipment definition registration validates duplicates missing references and future identifiers...OK
+72/277 equipment_tests.test.one garment expands deterministically to two and four arms with bounded required matching...OK
+73/277 equipment_tests.test.transactional loadout layering replacement coverage reset effects and character isolation...OK
+74/277 equipment_tests.test.definition-sorted visual and effect views do not depend on equip request order...OK
+75/277 equipment_tests.test.equipment is allocation-free after initialization and preserves canonical sockets and facing reflection...OK
+76/277 character_properties_tests.test.attribute definitions modifiers and base overrides reject invalid data...OK
+77/277 character_properties_tests.test.resolution uses deterministic additive then multiplicative stacking and clamps bounds...OK
+78/277 character_properties_tests.test.capabilities count independent sources and removal preserves remaining grants...OK
+79/277 character_properties_tests.test.equipment lifecycle resolves modifiers grants replacement reset and appearance-independent state...OK
+80/277 character_properties_tests.test.resolved equipment properties drive movement jump double jump and dash through the controller...OK
+81/277 character_properties_tests.test.dash collides with walls and default resolved controller path is regression-equivalent...OK
+82/277 character_properties_tests.test.property resolution performs no allocation growth...OK
+83/277 deformation_tests.test.breathing validates configuration and samples neutral extrema reset and repeated cycles...OK
+84/277 deformation_tests.test.independent breathing states keep phase rate and amplitude character local...OK
+85/277 deformation_tests.test.resolved deformation composes global morphology breathing and per visual response once...OK
+86/277 deformation_tests.test.topology generated clothing follows exact bound instances with isolated overrides and rigid opt out...OK
+87/277 deformation_tests.test.breathing and morph changes preserve physics controller canonical IK and declared effects...OK
+88/277 deformation_tests.test.interaction event timing is invariant across breathing configurations...OK
+89/277 deformation_tests.test.fixed tick breathing is deterministic across render frame grouping...OK
+90/277 deformation_tests.test.steady state breathing morphing and loadout changes do not grow character storage...OK
+91/277 mesh_attachment_tests.test.mesh definition validates finite vertices UVs topology indices capacities and degeneracy...OK
+92/277 mesh_attachment_tests.test.mesh ownership and partial allocation failure cleanup are explicit...OK
+93/277 mesh_attachment_tests.test.persistent topology catalog owns one immutable copy and cleans partial initialization...OK
+94/277 mesh_attachment_tests.test.GPU mesh records match the shader contract and weighted deformation is bounded...OK
+95/277 mesh_attachment_tests.test.unified queue interleaves semantic sprite and mesh order and batches compatible repeated meshes honestly...OK
+96/277 mesh_attachment_tests.test.topology-expanded equipment owns independent mesh state per binding and character...OK
+97/277 mesh_attachment_tests.test.queue capacities and allocation failure are deterministic...OK
+98/277 animation_tests.test.clip validation rejects malformed identifiers duration tracks keys events and layer data transactionally...OK
+99/277 animation_tests.test.component sampling has explicit boundaries modes shortest rotation and source preservation...OK
+100/277 animation_tests.test.step and smooth interpolation use hand-derived weights...OK
+101/277 animation_tests.test.loop advance and event traversal cover exact boundaries multiple wraps capacity and speed policy...OK
+102/277 animation_tests.test.one-shot sampling holds its final pose and final events fire once...OK
+103/277 animation_tests.test.component pose blending covers endpoints midpoint shortest angle validation and input immutability...OK
+104/277 animation_tests.test.authored clips validate timelines meaningful poses and physics-root separation...OK
+105/277 animation_tests.test.animator transitions events interruption policy one-shot fallback replay and independent players...OK
+106/277 animation_tests.test.zero-duration transition enters destination immediately and resets its playback...OK
+107/277 animation_tests.test.animator event overflow preserves partial output and leaves playback uncommitted...OK
+108/277 animation_tests.test.state-machine validation rejects missing initial duplicate state missing clip fallback and invalid transition...OK
+109/277 animation_tests.test.animation initialization fault stages clean transactionally and steady updates allocate zero...OK
+110/277 controller_tests.test.fixed update rate is exactly 240 Hz...OK
+111/277 controller_tests.test.input snapshots merge keyboard and gamepad and expose deterministic edges...OK
+112/277 controller_tests.test.pending input preserves zero-tick edges and consumes each edge once...OK
+113/277 controller_tests.test.fixed-step clock covers zero one multiple clamped discarded paused and reset frames...OK
+114/277 controller_tests.test.fixed-step low frame rate and discarded-time schedules account real and simulated time...OK
+115/277 controller_tests.test.collision world rejects invalid definitions and injection cleans allocations...OK
+116/277 controller_tests.test.swept collision catches walls floor ceiling and ignores platform undersides while moving down...OK
+117/277 controller_tests.test.equal collision faces and initial support use stable collider IDs independent of input order...OK
+118/277 controller_tests.test.maximum-speed diagonal exact corner remains finite stable and lands once...OK
+119/277 controller_tests.test.controller accelerates decelerates clamps speed and updates facing...OK
+120/277 controller_tests.test.falling lands exactly once and remains stable without penetration...OK
+121/277 controller_tests.test.held jump does not repeat and early release produces a lower apex...OK
+122/277 controller_tests.test.coyote jump succeeds on its final tick expires afterward and cannot repeat...OK
+123/277 controller_tests.test.buffered jump is consumed once on landing and reset clears timers...OK
+124/277 controller_tests.test.different render schedules produce equivalent fixed-step state...OK
+125/277 controller_tests.test.controller runtime advances animator once per 240 Hz tick without hot-path allocation...OK
+126/277 controller_tests.test.controller initialization fault stages are recoverable...OK
+127/277 controller_tests.test.scripted input reaches every controller milestone through the real fixed-step pipeline...OK
+128/277 controller_tests.test.render interpolation is midpoint-only and reset synchronizes snapshots...OK
+129/277 controller_tests.test.ground rest is stable for 600 complete simulation ticks...OK
+130/277 controller_tests.test.air control ceiling wall and platform contacts retain correct classification...OK
+131/277 controller_tests.test.timer expiration held-input and post-apex release boundaries are exact...OK
+132/277 controller_tests.test.malformed physics configuration and state are rejected...OK
+133/277 controller_tests.test.runtime reset clears rising falling buffered and transition state without reallocation...OK
+134/277 secondary_motion_tests.test.spring rejects invalid configuration and non-finite state...OK
+135/277 secondary_motion_tests.test.neutral spring is exact and signed disturbances return toward zero...OK
+136/277 secondary_motion_tests.test.spring impulse remains finite bounded and converges over long stress...OK
+137/277 secondary_motion_tests.test.spring repeated run and reset replay are deterministic...OK
+138/277 secondary_motion_tests.test.landing impulse mapping is finite monotonic thresholded and clamped...OK
+139/277 secondary_motion_tests.test.hard landing has greater bounded compression than moderate landing...OK
+140/277 secondary_motion_tests.test.one landing event is consumed once and reset clears every response...OK
+141/277 secondary_motion_tests.test.non-landing collision ticks cannot create landing compression...OK
+142/277 secondary_motion_tests.test.walk amplitude uses speed magnitude and clamps at full speed...OK
+143/277 secondary_motion_tests.test.authored contact phases alternate and each loop returns exactly neutral...OK
+144/277 secondary_motion_tests.test.walk bounce has no accumulated drift over one ten and one thousand loops...OK
+145/277 secondary_motion_tests.test.walk bounce blends in and out while airborne state suppresses output...OK
+146/277 secondary_motion_tests.test.secondary head lag follows acceleration direction and remains bounded...OK
+147/277 secondary_motion_tests.test.secondary reset teleport synchronization and disable avoid stale spikes...OK
+148/277 secondary_motion_tests.test.procedural states remain independent per character...OK
+149/277 secondary_motion_tests.test.pose composition applies visual root and head once and disabled pose stays authored...OK
+150/277 secondary_motion_tests.test.combined authored and procedural compression respects visual floor guard...OK
+151/277 secondary_motion_tests.test.fixed ticks are deterministic across small large and mixed render groupings...OK
+152/277 secondary_motion_tests.test.procedural enabled and disabled controller replays preserve authoritative physics...OK
+153/277 secondary_motion_tests.test.procedural hot paths report zero allocations...OK
+154/277 attachment_secondary_motion_tests.test.bounded attachment definition validates rest layout finite values and stable extremes...OK
+155/277 attachment_secondary_motion_tests.test.rest acceleration sustained reversal stop jump fall landing facing and reset are deterministic...OK
+156/277 attachment_secondary_motion_tests.test.shared immutable definition gives independent states deterministic replay and long-run convergence...OK
+157/277 attachment_secondary_motion_tests.test.equipment and hair instances own lifecycle state independently and preserve grouped rendering...OK
+158/277 attachment_secondary_motion_tests.test.visual secondary motion leaves controller physics and interaction authority invariant...OK
+159/277 attachment_secondary_motion_tests.test.scripted modular attachment demonstration completes with stable resources...OK
+160/277 multi_character_tests.test.entity IDs are deterministic unique non-null and overflow checked...OK
+161/277 multi_character_tests.test.characters share immutable definitions while pose animator and procedural state stay independent...OK
+162/277 multi_character_tests.test.four adversarial character states remain isolated when one character resets...OK
+163/277 multi_character_tests.test.destroying one instance leaves the other and shared immutable data valid...OK
+164/277 multi_character_tests.test.facing overrides and single-character reset do not cross character ownership...OK
+165/277 multi_character_tests.test.controlled character state steps and resets independently per instance...OK
+166/277 multi_character_tests.test.failed second-character allocation leaves the first valid and permits retry...OK
+167/277 multi_character_tests.test.global actor ordering is reversible stable and interleaves equal-layer characters...OK
+168/277 multi_character_tests.test.cross-character hand and forearm overrides provide partial anatomical interleaving...OK
+169/277 multi_character_tests.test.override precedence clearing validation and bounded capacity are explicit...OK
+170/277 multi_character_tests.test.horizontal reflection preserves anatomical sockets through rotated ancestors and double mirror...OK
+171/277 multi_character_tests.test.reflected attachment decomposition retains negative scale with no culling dependency...OK
+172/277 multi_character_tests.test.visual facing leaves equivalent physics and collider dimensions unchanged...OK
+173/277 multi_character_tests.test.two page-zero characters produce one range exact count and no character-specific batch...OK
+174/277 multi_character_tests.test.single and whole-scene reset restore only requested character state...OK
+175/277 multi_character_tests.test.passive second character preserves the controlled scripted physics result...OK
+176/277 multi_character_tests.test.draw-order mutations leave animation procedural pose and physics state invariant...OK
+177/277 runtime_authority_tests.test.character and interaction supported roots hide protected mutable state...OK
+178/277 runtime_authority_tests.test.character commands publish read-only views and detached value snapshots...OK
+179/277 runtime_authority_tests.test.interaction lifecycle authority publishes const observations only...OK
+180/277 interaction_tests.test.authored handshake creates one immutable paired definition...OK
+181/277 interaction_tests.test.paired runtime starts samples and completes from one shared tick clock...OK
+182/277 interaction_tests.test.interaction definition rejects invalid roles durations events counts and finite configuration...OK
+183/277 interaction_tests.test.lifecycle transitions and authored event tick boundaries are explicit...OK
+184/277 interaction_tests.test.eligibility enforces identity locks grounding distance vertical bounds state and facing...OK
+185/277 interaction_tests.test.candidate ranking is alignment first then distance then stable entity id independent of order...OK
+186/277 interaction_tests.test.interact edge is buffered across zero steps consumed once and requires a new press...OK
+187/277 interaction_tests.test.pause freezes the shared clock single-step advances one tick and reset cancels ownership...OK
+188/277 interaction_tests.test.transactional start rolls back every reservation and animator fault stage...OK
+189/277 interaction_tests.test.contact layering is partial owned and preserves unrelated overrides through release and completion...OK
+190/277 interaction_tests.test.cancellation before and after contact restores only owned state and is idempotent...OK
+191/277 interaction_tests.test.override capacity failure at contact cancels safely without clearing prior handles...OK
+192/277 interaction_tests.test.four-slot pool reports overflow before locking a fifth pair...OK
+193/277 interaction_tests.test.interaction IDs issue maximum u32 once and never wrap...OK
+194/277 interaction_tests.test.AB ownership blocks C to B while AB and CD remain independent...OK
+195/277 interaction_tests.test.mirrored arrangement preserves roles timing anatomy and socket separation...OK
+196/277 interaction_tests.test.zero one and multi-substep render schedules produce identical paired results...OK
+197/277 interaction_tests.test.interaction sampling and socket measurement leave authoritative controller physics unchanged...OK
+198/277 ik_tests.test.two bone validation rejects invalid lengths and non finite inputs while zero distance is safe...OK
+199/277 ik_tests.test.analytical interior straight and diagonal solves preserve exact segment geometry...OK
+200/277 ik_tests.test.configured near and far boundaries clamp without stretch or non finite output...OK
+201/277 ik_tests.test.opposite bend signs produce opposite elbows and the same endpoint...OK
+202/277 ik_tests.test.mirrored analytical target mirrors elbow and preserves target error...OK
+203/277 ik_tests.test.near extension and moving targets retain configured elbow side and bounded angles...OK
+204/277 ik_tests.test.repeated analytical solve is bit deterministic...OK
+205/277 ik_tests.test.right arm binding validates stable indices hierarchy socket and immutable lengths...OK
+206/277 ik_tests.test.arm application weight zero preserves authored pose full weight reaches and half is intermediate...OK
+207/277 ik_tests.test.IK rotation blending follows the shortest path across pi...OK
+208/277 ik_tests.test.shared midpoint is symmetric and A then B equals B then A...OK
+209/277 ik_tests.test.interaction IK weight is authoritative bounded and phase driven...OK
+210/277 ik_tests.test.nominal and perturbed handshakes converge both hands on one shared target...OK
+211/277 ik_tests.test.mirrored handshake retains anatomy timing and equivalent IK error...OK
+212/277 ik_tests.test.render grouping including zero substep frames cannot change IK state...OK
+213/277 ik_tests.test.IK enabled and disabled preserve interaction timing and controlled physics...OK
+214/277 ik_tests.test.cancellation at approach blend contact and release clears all IK state...OK
+215/277 ik_tests.test.completion scene reset and character reset clear IK without disturbing unrelated characters...OK
+216/277 ik_tests.test.active participant reset clears its pair while unrelated reset leaves another pair active...OK
+217/277 ik_tests.test.simultaneous interactions own independent shared targets and cleanup...OK
+218/277 ik_tests.test.completion of one pair cannot clear a later independent pair constraint...OK
+219/277 ik_tests.test.unreachable character target clamps arm without root or physics mutation...OK
+220/277 foot_planting_tests.test.ground query hits floor platform exact maximum and exact surface deterministically...OK
+221/277 foot_planting_tests.test.ground query rejects no hit beyond range below surface and negative or non finite input...OK
+222/277 foot_planting_tests.test.ground query accepts slight height and uses stable collider id tie break...OK
+223/277 foot_planting_tests.test.ground query never treats side underside or ineligible top as supporting ground...OK
+224/277 foot_planting_tests.test.demo collision world marks only floor and raised platform tops query eligible...OK
+225/277 foot_planting_tests.test.left and right leg bindings use stable anatomical indices immutable rest lengths and forward bend...OK
+226/277 foot_planting_tests.test.leg binding rejects invalid hip knee ankle sole and anatomical mismatch...OK
+227/277 foot_planting_tests.test.leg IK weight zero preserves authored pose and weight one reaches each reachable sole target...OK
+228/277 foot_planting_tests.test.mirrored leg IK preserves anatomical feet and bends both knees character forward...OK
+229/277 foot_planting_tests.test.left then right and right then left leg solves are equivalent from frozen disjoint inputs...OK
+230/277 foot_planting_tests.test.contact event and valid ground acquires gradually while transition start cannot snap...OK
+231/277 foot_planting_tests.test.contact without ground beyond range or while airborne never creates a plant...OK
+232/277 foot_planting_tests.test.planted target stays world fixed repeated contact does not drift and slip is reduced...OK
+233/277 foot_planting_tests.test.stance exit blends release while jump and reset clear stale locks immediately...OK
+234/277 foot_planting_tests.test.airborne transition clears an anatomical right foot plant and requires a future fresh contact...OK
+235/277 foot_planting_tests.test.left right and character plant ownership are isolated...OK
+236/277 foot_planting_tests.test.floor platform and edge samples acquire only real vertical support at fresh heights...OK
+237/277 foot_planting_tests.test.unreachable and dual conflicting locks release without stretch non finite pose or root correction...OK
+238/277 foot_planting_tests.test.foot planting preserves controller root velocity collision timing and animator clocks through jump and landing...OK
+239/277 foot_planting_tests.test.controlled reset clears both character local foot locks without affecting another character...OK
+240/277 foot_planting_tests.test.plant acquisition release targets slip states and weights are invariant across render schedules...OK
+241/277 foot_planting_tests.test.arm IK and planted leg IK coexist on disjoint chains without moving the foot lock...OK
+242/277 foot_planting_tests.test.handshake lifecycle arm IK and character local foot locks coexist without timeline or ownership coupling...OK
+243/277 playground_tests.test.production keyboard horizontal alternatives map once and opposing controls are neutral...OK
+244/277 playground_tests.test.production action mappings emit physical transition edges without repeat or source duplication...OK
+245/277 playground_tests.test.focus loss clears keyboard holds pending presses and suppresses phantom regain edges...OK
+246/277 playground_tests.test.pending edges survive zero substeps coalesce press release and consume once across eight ticks...OK
+247/277 playground_tests.test.mapped keyboard input drives real controller movement deceleration opposition and facing...OK
+248/277 playground_tests.test.Space early release produces lower real-controller apex than held Space...OK
+249/277 playground_tests.test.raw keyboard mapping produces identical controller state under render grouping schedules...OK
+250/277 playground_tests.test.playground interaction hold requires a release and new E press and reset clears world ownership...OK
+251/277 playground_tests.test.F1 toggles leave authoritative playground simulation identical...OK
+252/277 playground_tests.test.bounded playground script uses raw mapping and completes every production milestone...OK
+253/277 playground_tests.test.playground world extends horizontally while retaining raised platforms...OK
+254/277 playground_tests.test.cave submission carries distant midground and gameplay camera factors in world metres...OK
+255/277 playground_tests.test.bounded side-scroller input crosses the extended world deterministically...OK
+256/277 art_pipeline_tests.test.art pack owns immutable copied data and resolves stable semantic ids across arbitrary views...OK
+257/277 art_pipeline_tests.test.sampling policy accepts a smooth future art page without changing renderer identity...OK
+258/277 art_pipeline_tests.test.atlas UV normalization and semantic resolution survive source declaration reordering...OK
+259/277 art_pipeline_tests.test.art metadata rejects duplicate ids names bindings and conflicting semantic names...OK
+260/277 art_pipeline_tests.test.art metadata rejects malformed paths dimensions regions geometry and references...OK
+261/277 art_pipeline_tests.test.art definition initialization exposes bounded allocation failure...OK
+262/277 art_pipeline_tests.test.focused art scene submits sprites and mesh across pages without steady-state allocation...OK
+263/277 character_presentation_tests.test.automatic presentation policy is authoritative and complete...OK
+264/277 character_presentation_tests.test.debug override and interaction authority have deterministic precedence and cleanup...OK
+265/277 character_presentation_tests.test.facing is preserved across view changes and reset restores automatic front...OK
+266/277 character_presentation_tests.test.side reflection remains single-root while front projection never reflects facing...OK
+267/277 character_presentation_tests.test.character art definitions cover both views bald buzz cut and long hair...OK
+268/277 character_presentation_tests.test.Prompt 25B production anatomy pages and regions have exact valid bounds...OK
+269/277 character_presentation_tests.test.Prompt 25D real component bindings are distinct with valid authored extents...OK
+270/277 character_presentation_tests.test.Prompt 27C component sizes and pivots follow view-specific rig spans...OK
+271/277 character_presentation_tests.test.Prompt 27C final front joins retain accepted authored geometry...OK
+272/277 character_presentation_tests.test.Prompt 25D side projection preserves one readable profile root per bilateral pair...OK
+273/277 character_presentation_tests.test.actual base anatomy resolves without a garment and garment identity cannot replace anatomy...OK
+274/277 character_presentation_tests.test.front layers are explicit stable and use anatomy-owned overlap...OK
+275/277 character_presentation_tests.test.interaction owns side view and cancellation releases both participants to front...OK
+276/277 character_presentation_tests.test.view transition clears long-hair spring state without allocation or cross-character mutation...OK
+277/277 character_presentation_tests.test.Q input cycles presentation only and art submission remains bounded in both views...OK
+All 277 tests passed.
+1/5 scene_binding_boundary_tests.test.physical input maps to application actions and physics intent without content in platform state...OK
+2/5 scene_binding_boundary_tests.test.application action mapping preserves focus blocking scripted parity and evidence ownership...OK
+3/5 scene_binding_boundary_tests.test.bounded binding contains legacy identity and rolls back failed persistent creation...OK
+4/5 scene_binding_boundary_tests.test.binding publication keeps snapshots immutable and enabled cache transactional...OK
+5/5 scene_binding_boundary_tests.test.integrated route uses F transform lifecycle snapshot and preserves identity on reset...OK
+All 5 tests passed.
+1/5 test_scene_core_registry_internal.test_0...OK
+2/5 registry_tests.test.registry allocates resolves destroys reuses and rejects stale handles...OK
+3/5 registry_tests.test.registry rejects invalid and duplicate persistent identities...OK
+4/5 registry_tests.test.registry logical growth preserves handles and reports bounded capacity...OK
+5/5 registry_tests.test.generation exhaustion retires instead of wrapping...OK
+All 5 tests passed.
+1/3 engine_composition_tests.test.second client composes RuntimeScene identity transform lifecycle and render data without demo authority...OK
+2/3 engine_composition_tests.test.character bindings synchronize two specialized runtimes through F without a demo application...OK
+3/3 engine_composition_tests.test.production interaction coordinates F-bound characters without scenario fixtures...OK
+All 3 tests passed.
+Repository hygiene passed for 373 implementation and policy files.
+Current architecture policy passed: F2C and F4C1-F4E authority/dependency boundaries are intact.
+Repository check passed: current architecture, build registration, and hygiene invariants are satisfied.
+documentation audit PASS: 46 required files, 42 Markdown files, 94 local Markdown targets
+1/4 foundation_playground_tests.test.bounded foundation script verifies world customization properties abilities interaction resize and reset...OK
+2/4 foundation_playground_tests.test.synthetic viewport changes preserve gameplay loadout capabilities and pending input edges...OK
+3/4 foundation_playground_tests.test.foundation reset restores the complete configured baseline without stale mesh or secondary state...OK
+4/4 foundation_playground_tests.test.foundation unified ordering stays deterministic and bounded across topology and loadout changes...OK
+All 4 tests passed.
+1/50 visual_foundation_tests.test.Prompt 27 bounded real-art foundation route proves presentation interaction and reset...OK
+2/50 visual_foundation_tests.test.interaction presentation data can select front without a second interaction subsystem...OK
+3/50 visual_foundation_tests.test.registration proof cases configure both production styles before simulation...OK
+4/50 visual_foundation_tests.test.component proof cases select bounded graph content and view before simulation...OK
+5/50 visual_foundation_tests.test.VF-01 truth snapshot exports typed graph ownership and connection modes...OK
+6/50 visual_foundation_tests.test.VF-03-R1 active optional arms produce graph-bound production submissions in every proof view...OK
+7/50 visual_foundation_tests.test.VF-03-R1 disabled and two-module proofs enforce zero-or-exact production counts...OK
+8/50 visual_foundation_tests.test.VF-03-R1 cross-layer validator rejects duplicate module and joint ownership defects...OK
+9/50 visual_foundation_tests.test.interaction presentation rejects suppression without both role views...OK
+10/50 visual_foundation_tests.test.Prompt 27A stop front predicate rejects side view and residual velocity...OK
+11/50 visual_foundation_tests.test.Prompt 27A rise and fall predicates reject wrong authoritative motion...OK
+12/50 visual_foundation_tests.test.Prompt 27A debug predicate fails closed without every submitted category...OK
+13/50 visual_foundation_tests.test.Prompt 27A contact cannot fire before first contact semantic...OK
+14/50 visual_foundation_tests.test.Prompt 27A cleanup rejects every retained interaction owner...OK
+15/50 visual_foundation_tests.test.Prompt 27A stable ticks reset after an invalid observation...OK
+16/50 visual_foundation_tests.test.Prompt 27A timeout fails instead of omitting a capture...OK
+17/50 visual_foundation_tests.test.Prompt 27A metadata validation rejects missing and nonfinite fields...OK
+18/50 visual_foundation_tests.test.Prompt 27A stability is independent of duplicate render observations...OK
+19/50 visual_foundation_tests.test.Prompt 27A capture commit validates order and current metadata...OK
+20/50 visual_foundation_tests.test.Prompt 27A acceptance HUD is bounded and allocation free after initialization...OK
+21/50 visual_foundation_tests.test.Prompt 27A locomotion and apex predicates reject boundary violations...OK
+22/50 visual_foundation_tests.test.Prompt 27A raised landing requires measured bilateral surface contact...OK
+23/50 visual_foundation_tests.test.Prompt 27A theme transition requires invariant root camera and fingerprint...OK
+24/50 visual_foundation_tests.test.Prompt 27A approach reach and release require their lifecycle semantics...OK
+25/50 visual_foundation_tests.test.Prompt 27B contact ruler accepts boundaries and rejects wrong sole and pivot...OK
+26/50 visual_foundation_tests.test.Prompt 27B left and right planted contacts are accepted independently...OK
+27/50 visual_foundation_tests.test.Prompt 27B surface order keeps truthful edge below characters and debug...OK
+28/50 visual_foundation_tests.test.Prompt 27B camera safe region accepts exact margins and corrects clipping...OK
+29/50 visual_foundation_tests.test.Prompt 27B camera safe region remains deterministic at resized viewport...OK
+30/50 visual_foundation_tests.test.height-relative viewport keeps Prompt 27B safe-region center invariant...OK
+31/50 visual_foundation_tests.test.Prompt 27B centered resize placement leaves bounded follow-up slack...OK
+32/50 visual_foundation_tests.test.Prompt 27B abrupt resize separates first-frame reprojection from subsequent camera motion...OK
+33/50 visual_foundation_tests.test.production scene camera retains drawable-derived scale across later frames...OK
+34/50 visual_foundation_tests.test.Prompt 27B transformed parallax rejects zero and reversed displacement...OK
+35/50 visual_foundation_tests.test.Prompt 27B presence ruler rejects minimally excessive and full overlap...OK
+36/50 visual_foundation_tests.test.Prompt 27B root-step ruler accepts controller motion and rejects teleport...OK
+37/50 visual_foundation_tests.test.Prompt 27B pre-reset fixed-tick outcome is invariant to split render schedule...OK
+38/50 visual_foundation_tests.test.Prompt 27C-R1 interactive-equivalent overlap remains measured without termination...OK
+39/50 visual_foundation_tests.test.Prompt 27C-R1 exact reported overlap is diagnostic interactively and fatal in acceptance...OK
+40/50 visual_foundation_tests.test.Prompt 27C-R1 presence interaction context follows active ownership and reset cancellation...OK
+41/50 visual_foundation_tests.test.VF-01 F1 mode order wraps deterministically...OK
+42/50 visual_foundation_tests.test.VF-01 F1 modes preserve authoritative gameplay and survive reset...OK
+43/50 visual_foundation_tests.test.VF-01 F4 edge is frame-level consumed once and held input does not repeat...OK
+44/50 visual_foundation_tests.test.VF-01 production snapshot emits every applicable stable truth category...OK
+45/50 visual_foundation_tests.test.VF-02 production front and reflected side routes use authoritative registration...OK
+46/50 visual_foundation_tests.test.VF-01 command buffer overflow fails rather than truncating...OK
+47/50 visual_foundation_tests.test.VF-01 clean and debug queue generation share one frozen production state...OK
+48/50 visual_foundation_tests.test.VF-01 incomplete bundles stay hidden and timestamp collisions advance counter...OK
+49/50 visual_foundation_tests.test.VF-01 bundle schema summary fingerprints and manifest hashes agree...OK
+50/50 visual_foundation_tests.test.VF-01 automated evidence names remain deterministic and untimestamped...OK
+All 50 tests passed.
+1/9 integration_tests.test.diagnostic history is fixed capacity and overwrites oldest snapshots deterministically...OK
+2/9 integration_tests.test.debug command storage is bounded reports overflow and allocates nothing...OK
+3/9 integration_tests.test.debug visualization on and off preserve the exact authoritative integrated result...OK
+4/9 integration_tests.test.diagnostics read every tick and never read during ticks are simulation invariant...OK
+5/9 integration_tests.test.diagnostic getters are non destructive and do not consume interaction or animator events...OK
+6/9 integration_tests.test.integrated update order delivers landing once preserves physics and evaluates IK in production order...OK
+7/9 integration_tests.test.integrated scene reset clears planted airborne pre contact and contact state...OK
+8/9 integration_tests.test.character local reset isolates an unrelated character and releases its interaction peer...OK
+9/9 integration_tests.test.integrated scenario is deterministic under three render frame grouping schedules...OK
+All 9 tests passed.
+1/13 environment_tests.test.environment art pack contains both complete nearest-sampled themes...OK
+2/13 environment_tests.test.theme catalog requires both stable theme definitions and every art reference...OK
+3/13 environment_tests.test.theme data owns presentation only and contains no collision spawn or interaction coordinates...OK
+4/13 environment_tests.test.standable surface overlay is an exact collision-authority projection...OK
+5/13 environment_tests.test.walls ceilings and decoration never acquire standable white edges...OK
+6/13 environment_tests.test.hot swapping changes only presentation theme and performs no allocation...OK
+7/13 environment_tests.test.theme switching preserves collision spawn view outfit clock input and interaction state...OK
+8/13 environment_tests.test.both themes share one world fingerprint and one derived surface fingerprint...OK
+9/13 environment_tests.test.environment submission orders terrain then white surfaces then characters and debug...OK
+10/13 environment_tests.test.theme selection changes preloaded page identity without GPU or file ownership...OK
+11/13 environment_tests.test.reset returns the visual theme to violet without changing world authority...OK
+12/13 environment_tests.test.T key creates one deterministic theme-cycle edge and survives focus filtering...OK
+13/13 environment_tests.test.scripted Prompt 26 matrix proves front side parallax swap raised-platform landing reset resize and stability...OK
+All 13 tests passed.
+1/2 stress_tests.test.one thousand complete handshakes clean every lock override and IK constraint...OK
+2/2 stress_tests.test.one hundred thousand integrated ticks remain finite bounded and repeatedly clean systems...OK
+All 2 tests passed.
+1/19 wardrobe_tests.test.Prompt 25 wardrobe definitions initialize with complete side and front bindings...OK
+2/19 wardrobe_tests.test.all production IDs resolve and every component has deterministic distinct view art...OK
+3/19 wardrobe_tests.test.Prompt 25A wardrobe regions are nonzero bounded and alpha-tight where required...OK
+4/19 wardrobe_tests.test.Prompt 25A side anatomy submission geometry remains registered at joints...OK
+5/19 wardrobe_tests.test.Prompt 25A front anatomy geometry overlaps every core limb joint...OK
+6/19 wardrobe_tests.test.Prompt 25D wardrobe pivots match alpha-derived semantic anchors...OK
+7/19 wardrobe_tests.test.Prompt 25B bilateral footwear receives mirrored submission metadata...OK
+8/19 wardrobe_tests.test.VF-02 equipped feet derive ankle and sole orientation from registered anatomy evidence...OK
+9/19 wardrobe_tests.test.VF-02 front body feet use a horizontal support-tangent point-axis contract...OK
+10/19 wardrobe_tests.test.VF-02 closed footwear suppression is deterministic and restores on unequip...OK
+11/19 wardrobe_tests.test.Prompt 25A acceptance schedule is deterministic and allocation free...OK
+12/19 wardrobe_tests.test.presets are cosmetic conflict-free recipes with reuse and a non-monolithic custom outfit...OK
+13/19 wardrobe_tests.test.repeated sleeves follow two and four arm topology while headwear preserves long hair...OK
+14/19 wardrobe_tests.test.occupancy layering coverage and semantic foot binding remain independent...OK
+15/19 wardrobe_tests.test.preset selection is transactional and preserves non-equipment character state...OK
+16/19 wardrobe_tests.test.long garment mesh and secondary state clear on replacement and reset returns empty default...OK
+17/19 wardrobe_tests.test.front and side preset cycling and submission allocate nothing after initialization...OK
+18/19 wardrobe_tests.test.O and P controls produce focus-safe outfit-cycle and pause edges...OK
+19/19 wardrobe_tests.test.Prompt 25 scene composes base anatomy and wardrobe through one bounded queue...OK
+All 19 tests passed.
+Prompt 25D goldens: 12/12 PASS (stored captures, D3D12/DXIL 640x480)
+Prompt 27C art audit passed: 3 versioned RGBA pages, exact dimensions, 28 nonempty semantic component regions, preserved predecessor hashes.
+Prompt 25B art audit passed: 28 alpha-tight, non-aliased component regions; 2 compact front torso silhouettes; curved shoulder lead-in; aspect ratio band 0.82..1.20.
+Prompt 26 environment art audit passed: 2 RGBA atlases, 6 layered regions each, alpha boundaries, and exact opaque-white surface sources.
+violet_crystal_ruin=65b11f9f49e1c1f196b06064898ecab83af608cd2adf6d01629fa39115be4058
+neutral_debug=62470ddbc1c91497237b49989927b5260bb986756c38e3eb00dc2f76bec64eb9
+Repository source audit passed for 284 files.
+Forbidden SDL high-level renderer and alternate-renderer symbols are absent.
+No unfinished markers, unreachable paths, or skipped-test markers were found in audited implementation files.
+F2C authority audit passed: mutable registry/entity storage is absent from the supported root and production code has no direct internal imports.
+F4C1 ownership audit passed: reusable definitions and factories are production-owned; scenario imports are confined to the explicit application/composition/report allowlist.
+F4C2 boundary audit passed: raw SDL GPU authority is renderer-owned; scenarios remain application-owned; evidence writes only copied capture results.
+F4C3 authority audit passed: character and interaction mutable state remains behind opaque supported facades; production code cannot reach opaque storage or use white-box test routes.
+F4C4 authority audit passed: integrated characters are F-owned runtime entities through one bounded adapter; legacy IDs remain specialized; platform input is physical-only and application actions map to domain commands.
+Every GPU acquisition family has a matching release operation.
+Exactly one authoritative indexed-instanced sprite draw site exists; legacy direct-quad markers are absent.
+GPU instance layout, integer ordering, actual metrics, and persistent-resource creation policies passed static checks.
+Prompt 26 environment audit passed: both preloaded themes use production art-pack assets, exact collision-derived walkable surface overlays, invariant gameplay authority, one global queue, bounded hot switching, and no Prompt 27 orchestration in environment ownership.
+Prompt 27 visual-foundation audit passed: real-art production composition, typed per-role interaction presentation, focused deterministic coverage, and explicit build integration are present.
+Prompt 27A evidence-integrity audit passed: state predicates, stable holds, fail-closed metadata, bounded HUD submission, D3D12 review packaging, and repeatability comparison are present.
+Prompt 27B coherence audit passed: submitted-contact identity, safe framing, measured parallax, bounded presence, controlled fixtures, semantic reporting, and independent D3D12 review are present.
+Prompt 27C anatomy-quality audit passed: versioned production art, style/view-specific silhouette rulers, controlled bad fixtures, complete matrix reporting, state-conditioned D3D12 evidence, and review packaging are present.
+Prompt 3 hierarchy audit passed: no direct body-part GPU path, pointer graph, per-bone allocation, mutable definition pose, stored attachment world pose, hot-path allocation/string lookup, or matrix interpolation.
+Prompt 4 animation audit passed: immutable packed clips, no renderer authority, no matrix interpolation, no mutable clip playback, no wall clock, no GPU creation, and allocation/string/hash-free sampling, blending, and animator update.
+Prompt 5 controller audit passed: SDL isolation, 240 Hz clock agreement, pending edges, one collision world, no input position authority, no foot-event grounding, no controller GPU path, bounded accumulation, and allocation-free hot paths.
+Prompt 6 procedural-motion audit passed: fixed-step-only bounded springs, one update/composition per tick, no duplicate physics authority, no controller/collider mutation, no GPU path, no immutable-definition mutation, and allocation-free hot paths.
+Prompt 7 multi-character audit passed: stable IDs, borrowed immutable views, independent mutable state, reflected facing, bounded overrides, global semantic ordering, one batch/draw path, and allocation-free hot paths.
+Prompt 8 paired-interaction audit passed: one shared fixed-tick clock, deduplicated paired events, stable-ID locks and candidate ranking, owned-only override cleanup, an available non-IK baseline, no physics/collision mutation, and one global draw path.
+Prompt 9 IK audit passed: analytical clamped two-bone geometry, stable arm bindings, pre-IK symmetric shared targets, deterministic weighting and bend selection, visual-pose-only application, zero hot-path allocation, no GPU resources, and no alternate draw path.
+Prompt 10 foot-planting audit passed: authoritative-world queries, stable anatomical leg bindings, frozen pre-IK targets, character-local locks, fixed-tick blending, generic solver reuse, no physics mutation, zero hot-path allocation, zero GPU resources, and the existing global draw path.
+Ground-query ownership audit passed: one controller collider array supplies support evidence with inclusive range/surface rules and stable collider-ID ties.
+Animation-event-versus-grounding audit passed: contact semantics cannot write grounding, support, root, velocity, or collider authority.
+Plant-target drift and solve-order audit passed: both feet freeze pre-IK inputs before application and locks never chase post-IK output.
+Leg-solver reuse and bone-length audit passed: both chains call the analytical generic solver and immutable rest lengths are only measured, never stretched.
+Anatomical semantic audit passed: facing changes bend direction without swapping left/right event, socket, binding, or state identity.
+Foot hot-path and GPU audit passed: queries, updates, bindings, targets, solves, and pose evaluation allocate nothing and create no GPU path.
+Analytical-solver audit passed: triangle cosines are clamped before both analytical acos operations.
+Iterative-IK audit passed: no convergence loop or iterative-solver implementation is present.
+Root/physics mutation audit passed: IK writes no root, velocity, grounding, support, or collider authority.
+Shared-target order-dependence audit passed: one symmetric pre-IK midpoint precedes both role solves.
+Immutable-data mutation audit passed: IK writes no skeleton rest, clip, or shared event definition data.
+Hot-path allocation audit passed: solve, binding use, target computation, pose application, and hierarchy reevaluation contain no allocator path.
+IK GPU-resource audit passed: IK math and coordination create no GPU resource and issue no GPU command.
+Alternate draw-path audit passed: the IK demo submits through the existing global sprite batch.
+Prompt 11 observability audit passed: diagnostics are bounded read-only scalar snapshots and event inspection is non-destructive.
+Prompt 11 debug audit passed: debug commands are bounded, allocation-free, GPU-resource-free, and share the authoritative sprite batch.
+Prompt 11 integration-order audit passed: scripted input precedes physics, animation, visual pose systems, interactions/IK, and observation.
+Prompt 12 cleanup audit passed: deterministic tests cover debug/read invariance, reset timing, 1,000 interactions, 100,000 ticks, and adversarial render schedules.
+Prompt 13 input audit passed: one polled keyboard mapping, focus resynchronization, pending-edge delivery, world-aware reset, intent-owned interaction, debug invariance, zero input GPU ownership, and raw-key scripted equivalence.
+Camera audit passed: world-metre submissions, pure camera math, height-relative uniform scaling, high-DPI drawable tracking, safe zero surfaces, deterministic follow, three-layer parallax, extended collision world, fixed smoke target, and one global draw path.
+Prompt 15 appearance audit passed: stable runtime IDs, variable visuals, bounded attachment hierarchies, optional module-local joints, character-owned mutable state, canonical-rig isolation, and allocation-free hot paths.
+Prompt 16 modular-anatomy audit passed: compositional repeated parts, bounded hierarchies, data morphs and presets, face/hair groups, presentation isolation, canonical-authority isolation, and allocation-free hot paths.
+Prompt 17 equipment audit passed: extensible typed definitions, anatomy-aware bounded expansion, transactional loadouts, independent coverage/effects, character-owned state, and the global sprite path.
+Prompt 18 deformation audit passed: fixed-tick breathing, shared instance-bound resolution, declarative visual response, gameplay isolation, bounded evidence, and allocation-free hot paths.
+Prompt 19 mesh-attachment audit passed: validated immutable topology, per-binding mutable ownership, one semantic sprite/mesh queue, persistent SDL GPU topology, bounded frame slots, shared deformation, honest metrics, and deterministic evidence.
+Prompt 21 character-property audit passed: typed finite definitions, stable-source stacking, counted capabilities, transactional character recomputation, generic controller consumption, platform-neutral dash, bounded evidence, and no renderer/allocation dependency.
+Prompt 22 foundation audit passed: one production world/controller path, modular topology and loadouts, separated visual/property branches, unified mixed rendering, resize/reset invariance, bounded evidence, and no scene-owned SDL/GPU authority.
+Prompt 23 art-pipeline audit passed: WIC PNG alpha decode, immutable stable semantics, bounded multi-page ownership, per-pack sampling, common sprite/mesh binding, installed original assets, rollback evidence, and allocation-free steady state.
+Prompt 24 character-presentation audit passed: distinct facing/view authority, fixed-tick automatic policy, interaction-owned side view, shared-pose front projection, single-root side reflection, original segmented art, explicit front layers, bounded spring reset, one global queue, and allocation/resource-free view changes.
+Prompt 24A art-boundary audit passed: production base anatomy resolves without garments, character/equipment identities remain distinct on shared pages, clothing-baked canonical names and legacy production paths are absent, and garment resolution cannot replace anatomy.
+Prompt 25 wardrobe audit passed: original paired production art, typed reusable items/presets, independent slots/layers/coverage, topology-aware bindings, transactional cycling, cosmetic effects, long-mesh reuse, focus-safe controls, unified submission, and allocation/resource-free steady state.
+Prompt 25A visual-correction audit passed: re-authored separated anatomy, view spacing, joint overlap, connector layers, alpha-tight wardrobe regions, mirrored footwear submission metadata, bounded D3D captures, and focused deterministic coverage.
+Prompt 25B art-correction audit passed: real forearm/shin assets, bounded alpha/aspect checks, deterministic bilateral submission mirroring, authoritative single-pass side projection, corrected connector order, D3D comparison captures, and unchanged unified rendering ownership.
+Placeholder/disabled-test audit passed: the audited implementation-file scan is empty.
+1/15 visual_geometry_tests.test.alpha geometry ignores transparent padding and maps visible landmarks...OK
+2/15 visual_geometry_tests.test.semantic landmarks use the production sprite transform and invert exactly...OK
+3/15 visual_geometry_tests.test.orientation control accepts aligned axes and rejects backwards axes...OK
+4/15 visual_geometry_tests.test.fit controls distinguish bounded good and undersized garment spans...OK
+5/15 visual_geometry_tests.test.joint continuity contracts retain strict distal seams and bounded root caps...OK
+6/15 visual_geometry_tests.test.joint continuity depth measures contiguous overlap rather than aliased extent...OK
+7/15 visual_geometry_tests.test.curved lower garments keep design-specific coverage without weakening the generic ruler...OK
+8/15 visual_geometry_tests.test.reports are structured and unapproved current captures cannot become goldens...OK
+9/15 visual_geometry_tests.test.Prompt 27C anatomy contracts are style and view specific...OK
+10/15 visual_geometry_tests.test.Prompt 27C controlled anatomy defects fail their intended rulers...OK
+11/15 visual_geometry_tests.test.Prompt 27C anatomy matrix fails closed when a declared case is missing...OK
+12/15 visual_geometry_tests.test.Prompt 27C frozen pre-correction production anatomy yields actionable failures...Prompt27C baseline male/front/neutral/left/torso: shoulder_slope=55.727 min=8.000 max=30.000 deg
+Prompt27C baseline male/front/neutral/left/torso: shoulder_contour_curve=0.580 min=0.008 max=0.120 ratio
+Prompt27C baseline male/front/neutral/right/torso: shoulder_slope=55.727 min=8.000 max=30.000 deg
+Prompt27C baseline male/front/neutral/right/torso: shoulder_contour_curve=0.438 min=0.008 max=0.120 ratio
+Prompt27C baseline male/front/neutral/none/pelvis: pelvis_to_torso_height_ratio=0.117 min=0.380 max=0.580 ratio
+Prompt27C baseline male/front/neutral/left/arm: arm_to_torso_length_ratio=0.934 min=0.940 max=1.180 ratio
+Prompt27C baseline male/front/neutral/right/arm: arm_to_torso_length_ratio=0.934 min=0.940 max=1.180 ratio
+Prompt27C baseline male/front/neutral/left/forearm: elbow_width_ratio=0.692 min=0.700 max=1.340 ratio
+Prompt27C baseline male/front/neutral/left/thigh: hip_root_width_ratio=0.540 min=0.640 max=1.420 ratio
+Prompt27C baseline male/front/neutral/left/foot: front_foot_toe_out=180.000 min=8.000 max=24.000 deg
+Prompt27C baseline male/front/neutral/right/forearm: elbow_width_ratio=0.692 min=0.700 max=1.340 ratio
+Prompt27C baseline male/front/neutral/right/thigh: hip_root_width_ratio=0.540 min=0.640 max=1.420 ratio
+Prompt27C baseline male/front/neutral/right/foot: front_foot_toe_out=180.000 min=8.000 max=24.000 deg
+Prompt27C baseline female/front/neutral/left/torso: shoulder_slope=53.815 min=10.000 max=34.000 deg
+Prompt27C baseline female/front/neutral/left/torso: shoulder_contour_curve=0.528 min=0.008 max=0.140 ratio
+Prompt27C baseline female/front/neutral/right/torso: shoulder_slope=52.971 min=10.000 max=34.000 deg
+Prompt27C baseline female/front/neutral/right/torso: shoulder_contour_curve=0.497 min=0.008 max=0.140 ratio
+Prompt27C baseline female/front/neutral/none/pelvis: pelvis_to_torso_height_ratio=0.151 min=0.380 max=0.600 ratio
+Prompt27C baseline female/front/neutral/left/foot: ankle_dark_transverse_edge=0.826 min=null max=0.200 ratio
+Prompt27C baseline female/front/neutral/left/foot: front_foot_toe_out=180.000 min=6.000 max=20.000 deg
+Prompt27C baseline female/front/neutral/right/foot: ankle_dark_transverse_edge=0.826 min=null max=0.200 ratio
+Prompt27C baseline female/front/neutral/right/foot: front_foot_toe_out=180.000 min=6.000 max=20.000 deg
+OK
+13/15 visual_geometry_tests.test.trace preserves semantic left and right identities independently of mirror signs...OK
+14/15 visual_geometry_tests.test.current Prompt 27C production content satisfies visual geometry...Prompt 27C focused production geometry: 196/196 PASS
+OK
+15/15 visual_geometry_tests.test.pose and morphology sweep traces production transforms without allocations after stabilization...Prompt 27C pose/morphology geometry: 6954/6954 PASS
+OK
+All 15 tests passed.
+1/10 canonical_human_identity_tests.test.Prompt 2A human_base is a valid canonical source...OK
+2/10 canonical_human_identity_tests.test.Prompt 2A identity and coordinate defaults are locked...OK
+3/10 canonical_human_identity_tests.test.Prompt 2A component tree has the approved 48 stable identities...OK
+4/10 canonical_human_identity_tests.test.Prompt 2A optional anatomy remains present with approved neutral defaults...OK
+5/10 canonical_human_identity_tests.test.Prompt 2A region and surface inventory preserves adult anatomy identities...OK
+6/10 canonical_human_identity_tests.test.Prompt 2A neutral materials keep definitions and instances separate...OK
+7/10 canonical_human_identity_tests.test.Prompt 2A human validation rejects structural drift...OK
+8/10 canonical_human_identity_tests.test.component-owned bone reference is typed and generically validated...OK
+9/10 canonical_human_identity_tests.test.component-owned bone field requires schema 1.1 or newer...OK
+10/10 canonical_human_identity_tests.test.M01 canonical golden remains byte-identical without owner field...OK
+All 10 tests passed.
+1/7 art_pipeline_tests.test.art pack owns immutable copied data and resolves stable semantic ids across arbitrary views...OK
+2/7 art_pipeline_tests.test.sampling policy accepts a smooth future art page without changing renderer identity...OK
+3/7 art_pipeline_tests.test.atlas UV normalization and semantic resolution survive source declaration reordering...OK
+4/7 art_pipeline_tests.test.art metadata rejects duplicate ids names bindings and conflicting semantic names...OK
+5/7 art_pipeline_tests.test.art metadata rejects malformed paths dimensions regions geometry and references...OK
+6/7 art_pipeline_tests.test.art definition initialization exposes bounded allocation failure...OK
+7/7 art_pipeline_tests.test.focused art scene submits sprites and mesh across pages without steady-state allocation...OK
+All 7 tests passed.
+1/6 component_graph_tests.test.compiled graph exposes typed eye brow hair module and intentional gap proofs...OK
+2/6 component_graph_tests.test.continuous and intentional gap contracts keep world-metre separation fail closed...OK
+3/6 component_graph_tests.test.eye deformation moves its eyebrow child and topology remains immutable...OK
+4/6 component_graph_tests.test.front side-left and side-right projections retain graph and module sources...OK
+5/6 component_graph_tests.test.typed component inputs fail closed across invalid topology contracts...OK
+6/6 component_graph_tests.test.compiled graph rejects missing module members unsupported front and child-follow drift...OK
+All 6 tests passed.
+1/12 canonical_geometry_foundation_tests.test.canonical geometry foundation module compiles...OK
+2/12 canonical_geometry_foundation_tests.test.public loader parses validates and normalizes synthetic file-backed geometry...OK
+3/12 canonical_geometry_foundation_tests.test.canonical serialization and identity hashes obey their separate contracts...OK
+4/12 canonical_geometry_foundation_tests.test.canonical JSON round trip is byte stable and newline free...OK
+5/12 canonical_geometry_foundation_tests.test.surface charts reject overlap and UV overlap requires an explicit shared group...OK
+6/12 canonical_geometry_foundation_tests.test.deterministic triangulation and Catmull-Clark level one preserve semantic provenance...OK
+7/12 canonical_geometry_foundation_tests.test.small closed quad surface validates and subdivides without derived boundaries...OK
+8/12 canonical_geometry_foundation_tests.test.loader safety limit is explicit and configurable...OK
+9/12 canonical_geometry_foundation_tests.test.authoring parser is strict about unknown fields and malformed JSON...OK
+10/12 canonical_geometry_foundation_tests.test.file-backed invalid fixture matrix fails closed with deterministic diagnostics...OK
+11/12 canonical_geometry_foundation_tests.test.allocator-backed diagnostics do not truncate a large deterministic failure set...OK
+12/12 canonical_geometry_foundation_tests.test.public loader returns owned diagnostics instead of accepting incompatible geometry...OK
+All 12 tests passed.
+1/22 canonical_model_phase_f_tests.test.minimal proof fixture exercises every required M01 Phase F concept...m01_p2d_valid_fixture bytes=12022 sha256=b1da6274c03d4a70de124f9ab81af8d870882c53ff759ca7d3c9e68b482d7f6d
+OK
+2/22 canonical_model_phase_f_tests.test.committed canonical golden parses normalizes and round trips exactly...OK
+3/22 canonical_model_phase_f_tests.test.file-backed explicit defaults and reordered collections share canonical identity...OK
+4/22 canonical_model_phase_f_tests.test.repeat canonical generation is byte and hash identical...OK
+5/22 canonical_model_phase_f_tests.test.material canonical-data mutation changes the source-definition hash...OK
+6/22 canonical_model_phase_f_tests.test.local-only skeleton source derives reproducible fixture global transforms...m01_p2d_global_y skeleton_root=0 pelvis=0.8 spine_01=1.2 head=1.5
+OK
+7/22 canonical_model_phase_f_tests.test.nontrivial local TRS hierarchy composes as deterministic parent times local affine...m01_p2d_affine point=(5.8561540,23.5909920,54.0000000) shear_dot=2.5000012
+OK
+8/22 canonical_model_phase_f_tests.test.morphology binding dependency and provenance trace is deterministic...m01_p2d_trace group_drives_height->derive_surface_roughness writer=body_height_bone_binding
+OK
+9/22 canonical_model_phase_f_tests.test.file-backed invalid fixture duplicate ID is rejected without unrelated diagnostics...OK
+10/22 canonical_model_phase_f_tests.test.file-backed invalid fixture missing component parent is rejected and not repaired...OK
+11/22 canonical_model_phase_f_tests.test.file-backed invalid fixture component ownership cycle is rejected...OK
+12/22 canonical_model_phase_f_tests.test.file-backed invalid fixture skeleton cycle is rejected...OK
+13/22 canonical_model_phase_f_tests.test.file-backed invalid fixture joint range ordering is rejected...OK
+14/22 canonical_model_phase_f_tests.test.file-backed invalid fixture non-finite numeric token is rejected by the parser...OK
+15/22 canonical_model_phase_f_tests.test.file-backed invalid fixture normalized coverage is rejected rather than clamped...OK
+16/22 canonical_model_phase_f_tests.test.file-backed invalid fixture morphology dependency cycle is rejected...OK
+17/22 canonical_model_phase_f_tests.test.file-backed invalid fixture conflicting authoritative morphology writers are rejected...OK
+18/22 canonical_model_phase_f_tests.test.file-backed invalid fixture socket mount relationship is rejected...OK
+19/22 canonical_model_phase_f_tests.test.file-backed invalid fixture missing semantic owner is rejected...OK
+20/22 canonical_model_phase_f_tests.test.file-backed invalid fixture wrong-type reference is rejected explicitly...OK
+21/22 canonical_model_phase_f_tests.test.file-backed invalid fixture diagnostics are identical across repeated parsing and validation...OK
+22/22 canonical_model_phase_f_tests.test.representative file-backed diagnostics identify exact source locations...m01_p3_diagnostic code=missing_reference object=component id=torso property=parent_component_id reference_type=component reference_id=missing_parent
+m01_p3_diagnostic code=coverage_out_of_range object=visibility_metadata id=invalid_coverage property=coverage reference_type=null reference_id=null
+m01_p3_diagnostic code=multiple_authoritative_writers object=morphology_binding id=root_height_b property=target reference_type=rest_bone_transform reference_id=skeleton_root
+OK
+All 22 tests passed.
+1/5 canonical_human_geometry_r4_tests.test.Prompt 2C-R4 promotes the reviewed shape-only authority...OK
+2/5 canonical_human_geometry_r4_tests.test.Prompt 2C-R4 preserves topology integrity height ground and symmetry...OK
+3/5 canonical_human_geometry_r4_tests.test.Prompt 2C-R4 evidence proves neutral shape adaptation and landmark separation...OK
+4/5 canonical_human_geometry_r4_tests.test.Prompt 2C-R4 evidence proves zero detected self intersections...OK
+5/5 canonical_human_geometry_r4_tests.test.Prompt 2C-R4 persistent owner-review package is complete...OK
+All 5 tests passed.
+1/12 canonical_human_rig_tests.test.Prompt 2B human rig validates and round-trips canonically...OK
+2/12 canonical_human_rig_tests.test.Prompt 2B manifest has the approved skeleton counts...OK
+3/12 canonical_human_rig_tests.test.Prompt 2B hierarchy preserves main chains and auxiliary twist branches...OK
+4/12 canonical_human_rig_tests.test.Prompt 2B ownership and non-bone mouth following are explicit...OK
+5/12 canonical_human_rig_tests.test.Prompt 2B local A-pose composes into a nontrivial global pose...OK
+6/12 canonical_human_rig_tests.test.Prompt 2B measurement report is deterministic and ground-referenced...PROMPT2B_MEASUREMENTS height=1.828800 shoulder=0.350000 hip=0.200000 arm_span=1.630712 torso=0.560000 leg=0.950000 upper_arm=0.310000 forearm=0.270000 thigh=0.450000 lower_leg=0.430000 hand=0.145000 foot=0.260000 head=0.308800
+OK
+7/12 canonical_human_rig_tests.test.Prompt 2B bilateral rest and derived transforms mirror across sagittal zero...OK
+8/12 canonical_human_rig_tests.test.Prompt 2B parser-backed invalid source retains the height diagnostic...OK
+9/12 canonical_human_rig_tests.test.Prompt 2B optional activation preserves shared IDs and one skeleton...OK
+10/12 canonical_human_rig_tests.test.Prompt 2B validator reports root pelvis and count defects precisely...OK
+11/12 canonical_human_rig_tests.test.Prompt 2B validator rejects malformed chains and ownership activation defects...OK
+12/12 canonical_human_rig_tests.test.Prompt 2B validator distinguishes locked geometry failures from OPEN TUNING rest edits...OK
+All 12 tests passed.
+1/3 canonical_human_geometry_refinement_tests.test.Prompt 2C-R1 is retained as historical superseded evidence after the topology reset...OK
+2/3 canonical_human_geometry_refinement_tests.test.original Prompt 2C report and visual inventory remain preserved historical evidence...OK
+3/3 canonical_human_geometry_refinement_tests.test.Prompt 2C-R1 report and high-fidelity visual inventory match the current authority...OK
+All 3 tests passed.
+1/14 canonical_model_phase_de_tests.test.normalization resolves defaults and stable-ID orders unordered collections...OK
+2/14 canonical_model_phase_de_tests.test.authored response-curve point order remains semantic...OK
+3/14 canonical_model_phase_de_tests.test.f32 serialization is shortest round-tripping and normalizes negative zero...OK
+4/14 canonical_model_phase_de_tests.test.quaternion signs and collection order share canonical bytes and source hash...m01_p2c_source_definition_sha256=2855fc11c0f8a1e5698af253c1a89eeb07483e5879556094ea4b6f29149b784b
+OK
+5/14 canonical_model_phase_de_tests.test.nontrivial canonical quaternion remains byte-identical after JSON round trip...OK
+6/14 canonical_model_phase_de_tests.test.invalid quaternion is diagnosed and never normalized or hashed...OK
+7/14 canonical_model_phase_de_tests.test.identity reference root parent and tree-cycle diagnostics are structured...OK
+8/14 canonical_model_phase_de_tests.test.skeleton root and cycle validation is explicit...OK
+9/14 canonical_model_phase_de_tests.test.non-finite ranges defaults and joint ordering fail without repair...OK
+10/14 canonical_model_phase_de_tests.test.binding schema ownership conflicts and group low-level writes are diagnosed...OK
+11/14 canonical_model_phase_de_tests.test.dependency order inputs writer and provenance traces are deterministic...OK
+12/14 canonical_model_phase_de_tests.test.dependency cycles and unresolved derived inputs are rejected...OK
+13/14 canonical_model_phase_de_tests.test.attachment semantic material and visibility validators reject invalid source...OK
+14/14 canonical_model_phase_de_tests.test.diagnostic ordering is stable across reordered invalid input...OK
+All 14 tests passed.
+1/10 canonical_human_structural_tests.test.Prompt 2D structural semantics validate and round-trip canonically...OK
+2/10 canonical_human_structural_tests.test.Prompt 2D anchor socket mount and attachment inventories are explicit...OK
+3/10 canonical_human_structural_tests.test.Prompt 2D anchor and landmark reports are deterministic mirrored and grounded...PROMPT2D_LANDMARK head_top=(0.00000,1.82880,0.00000) shoulder_left=(-0.17500,1.45000,0.00000) heel_left_y=0.00000
+OK
+4/10 canonical_human_structural_tests.test.Prompt 2D seams sites and effectors have stable structural reports...OK
+5/10 canonical_human_structural_tests.test.Prompt 2D preserves collision hooks while deferring geometry-derived proxies...OK
+6/10 canonical_human_structural_tests.test.Prompt 2D validator rejects anchor mirror ownership and ground defects...OK
+7/10 canonical_human_structural_tests.test.Prompt 2D validator rejects socket mount and attachment relationship defects...OK
+8/10 canonical_human_structural_tests.test.Prompt 2D validator rejects landmark and seam defects...OK
+9/10 canonical_human_structural_tests.test.Prompt 2D validator rejects interaction site and effector ownership defects...OK
+10/10 canonical_human_structural_tests.test.typed anchor and landmark mirrors require schema 1.1...OK
+All 10 tests passed.
+1/1 canonical_human_geometry_full_tests.test.neutral human main-body scaffold has zero non-adjacent triangle self-intersections...OK
+All 1 tests passed.
+1/15 character_presentation_tests.test.automatic presentation policy is authoritative and complete...OK
+2/15 character_presentation_tests.test.debug override and interaction authority have deterministic precedence and cleanup...OK
+3/15 character_presentation_tests.test.facing is preserved across view changes and reset restores automatic front...OK
+4/15 character_presentation_tests.test.side reflection remains single-root while front projection never reflects facing...OK
+5/15 character_presentation_tests.test.character art definitions cover both views bald buzz cut and long hair...OK
+6/15 character_presentation_tests.test.Prompt 25B production anatomy pages and regions have exact valid bounds...OK
+7/15 character_presentation_tests.test.Prompt 25D real component bindings are distinct with valid authored extents...OK
+8/15 character_presentation_tests.test.Prompt 27C component sizes and pivots follow view-specific rig spans...OK
+9/15 character_presentation_tests.test.Prompt 27C final front joins retain accepted authored geometry...OK
+10/15 character_presentation_tests.test.Prompt 25D side projection preserves one readable profile root per bilateral pair...OK
+11/15 character_presentation_tests.test.actual base anatomy resolves without a garment and garment identity cannot replace anatomy...OK
+12/15 character_presentation_tests.test.front layers are explicit stable and use anatomy-owned overlap...OK
+13/15 character_presentation_tests.test.interaction owns side view and cancellation releases both participants to front...OK
+14/15 character_presentation_tests.test.view transition clears long-hair spring state without allocation or cross-character mutation...OK
+15/15 character_presentation_tests.test.Q input cycles presentation only and art submission remains bounded in both views...OK
+All 15 tests passed.
+1/11 visual_registration_tests.test.point binding maps one atlas landmark to one projected target...OK
+2/11 visual_registration_tests.test.point-axis binding owns anchor orientation signed scale and axis evidence...OK
+3/11 visual_registration_tests.test.point-axis binding rejects missing degenerate and nonfinite axis data...OK
+4/11 visual_registration_tests.test.segment binding maps proximal and distal while thickness preserves proximal...OK
+5/11 visual_registration_tests.test.frame binding maps a nondegenerate orthogonal source and target frame...OK
+6/11 visual_registration_tests.test.source and target lookup fail closed...OK
+7/11 visual_registration_tests.test.invalid segment fixtures reject coincident nonfinite swapped and reflection data...OK
+8/11 visual_registration_tests.test.invalid frames and excessive residual fail closed...OK
+9/11 visual_registration_tests.test.front authority bypass and side semantic swaps are rejected...OK
+10/11 visual_registration_tests.test.a thickness policy that moves the proximal anchor fails closed...OK
+11/11 visual_registration_tests.test.mesh bridge registration schema is explicit...OK
+All 11 tests passed.
+1/2 canonical_human_geometry_scaffold_tests.test.current file-backed human main body preserves the accepted Prompt 2B scaffold contracts...OK
+2/2 canonical_human_geometry_scaffold_tests.test.accepted Prompt 2B scaffold evidence remains frozen as historical derived evidence...OK
+All 2 tests passed.
+1/7 canonical_model_core_tests.test.machine IDs remain distinct from display names and version kinds...OK
+2/7 canonical_model_core_tests.test.coordinate and transform contracts are explicit and local only...OK
+3/7 canonical_model_core_tests.test.quaternion canonical identity normalizes sign unit length and negative zero...OK
+4/7 canonical_model_core_tests.test.component and bone records express one optional typed parent and mirror...OK
+5/7 canonical_model_core_tests.test.representative core records preserve typed cross references...OK
+6/7 canonical_model_core_tests.test.anchors sockets and mount anchors remain structurally distinct...OK
+7/7 canonical_model_core_tests.test.all locked animator control categories are representable without solvers...OK
+All 7 tests passed.
+1/12 canonical_human_joint_control_tests.test.Prompt 2C human joints and controls validate and round-trip canonically...OK
+2/12 canonical_human_joint_control_tests.test.Prompt 2C joint inventory covers every non-root bone with typed mirrors...OK
+3/12 canonical_human_joint_control_tests.test.Prompt 2C provisional ROM profiles are finite ordered and bounded...OK
+4/12 canonical_human_joint_control_tests.test.Prompt 2C canonical joint angles are radians and survive serialization...PROMPT2C_RADIAN shoulder_hard_x_max=2.61799400 elbow_preferred_z_max=2.09439520 hip_hard_x_max=2.09439520 knee_hard_x_max=2.61799400 eye_twist_max=0.26179940 twist_swing_y_max=0.05235988
+OK
+5/12 canonical_human_joint_control_tests.test.Prompt 2C control inventory covers every approved body area...OK
+6/12 canonical_human_joint_control_tests.test.Prompt 2C neutral structural controls default to local or character space...PROMPT2C_CONTROL_SPACES local=102 character=14 world=0 target_relative=0
+OK
+7/12 canonical_human_joint_control_tests.test.Prompt 2C deterministic traces are stable-ID ordered and complete...PROMPT2C_TRACE control=hand_left_ik_target target=bone:hand_left mirror=hand_right_ik_target space=character relevant_joint=hand_left_joint provenance=owner_approved_m02_prompt_2c_manifest
+OK
+8/12 canonical_human_joint_control_tests.test.Prompt 2C optional structural control follows component activation...OK
+9/12 canonical_human_joint_control_tests.test.Prompt 2C validator distinguishes joint range and hierarchy defects...OK
+10/12 canonical_human_joint_control_tests.test.Prompt 2C validator distinguishes control drive and mirror defects...OK
+11/12 canonical_human_joint_control_tests.test.Prompt 2C parser-backed preferred-range drift retains its diagnostic...OK
+12/12 canonical_human_joint_control_tests.test.typed joint mirrors require schema 1.1 while M01 remains schema 1.0...OK
+All 12 tests passed.
+1/9 canonical_human_base_acceptance_tests.test.Prompt 2E readable human_base normalizes to the committed canonical golden...PROMPT2E_GOLDEN bytes=380208 final_byte=0x7d newline=no sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda
+OK
+2/9 canonical_human_base_acceptance_tests.test.Prompt 3 keeps authoring authoritative and evidence updates explicit...OK
+3/9 canonical_human_base_acceptance_tests.test.Prompt 2E repeats parse validate normalize serialize hash and reports five times...PROMPT2E_REPEAT iteration=1 bytes=380208 sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda report_bytes=204166
+PROMPT2E_REPEAT iteration=2 bytes=380208 sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda report_bytes=204166
+PROMPT2E_REPEAT iteration=3 bytes=380208 sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda report_bytes=204166
+PROMPT2E_REPEAT iteration=4 bytes=380208 sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda report_bytes=204166
+PROMPT2E_REPEAT iteration=5 bytes=380208 sha256=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda report_bytes=204166
+OK
+4/9 canonical_human_base_acceptance_tests.test.Prompt 2E controlled material mutation changes canonical bytes and hash...PROMPT2E_MUTATION original=b1baf0c2587e5bf511f36a8695d01ebdd7da2e28e5f0d1990af32ae3bf2c2bda mutated=ff6eb9eaa01bd936e6afbb6b6b1789ec1a9536a1edefcfc9249503ffd3c732e4
+OK
+5/9 canonical_human_base_acceptance_tests.test.Prompt 2E file-backed human invalid fixture matrix fails closed precisely...PROMPT2E_INVALID fixture=01_missing_skeleton_root code=missing_skeleton_root object=bone id=skeleton_root property=bone_id
+PROMPT2E_INVALID fixture=02_second_skeleton_root code=multiple_skeleton_roots object=skeleton id=null property=parent_bone_id
+PROMPT2E_INVALID fixture=03_wrong_pelvis_parent code=wrong_pelvis_parent object=bone id=pelvis property=parent_bone_id
+PROMPT2E_INVALID fixture=04_wrong_spine_count code=wrong_spine_count object=skeleton id=null property=spine_bone_count
+PROMPT2E_INVALID fixture=05_wrong_neck_count code=wrong_neck_count object=skeleton id=null property=neck_bone_count
+PROMPT2E_INVALID fixture=06_wrong_arm_twist_count code=wrong_arm_twist_count object=skeleton id=null property=arm_twist_bone_count
+PROMPT2E_INVALID fixture=07_wrong_leg_twist_count code=wrong_leg_twist_count object=skeleton id=null property=leg_twist_bone_count
+PROMPT2E_INVALID fixture=08_malformed_finger_chain code=malformed_finger_chain object=bone id=index_middle_left property=parent_bone_id
+PROMPT2E_INVALID fixture=09_malformed_toe_chain code=malformed_toe_chain object=bone id=toe_index_left_02 property=parent_bone_id
+PROMPT2E_INVALID fixture=10_bilateral_mirror_mismatch code=bilateral_mirror_mismatch object=bone id=upper_arm_left property=local_rest_transform
+PROMPT2E_INVALID fixture=11_foot_contact_off_ground code=foot_contact_off_ground object=anchor id=heel_contact_left_anchor property=local_transform.translation_m.y
+PROMPT2E_INVALID fixture=12_canonical_height_mismatch code=canonical_height_mismatch object=measurement id=total_height_m property=value
+PROMPT2E_INVALID fixture=13_missing_required_landmark code=missing_required_landmark object=landmark id=head_top_landmark property=landmark_id
+PROMPT2E_INVALID fixture=14_missing_required_seam code=missing_required_seam object=shared_seam id=torso_pelvis_seam property=seam_id
+PROMPT2E_INVALID fixture=15_socket_missing_anchor code=socket_anchor_mismatch object=socket id=hair_socket property=anchor_id
+PROMPT2E_INVALID fixture=16_interaction_site_missing_owner code=missing_interaction_site_owner object=interaction_site id=palm_left_site property=owner_component_id
+PROMPT2E_INVALID fixture=17_invalid_optional_module_multiplicity code=invalid_optional_module_multiplicity object=component id=penis_module_01 property=multiplicity
+OK
+6/9 canonical_human_base_acceptance_tests.test.Prompt 3 large-source diagnostic capacity fails explicitly without truncation...OK
+7/9 canonical_human_base_acceptance_tests.test.Prompt 2E structural evidence locks counts measurements modules and anatomy identities...OK
+8/9 canonical_human_base_acceptance_tests.test.Prompt 2E keeps one shared human_base and records derived-profile deferral...OK
+9/9 canonical_human_base_acceptance_tests.test.Prompt 2E preserves accepted M01 phase-F golden identity...OK
+All 9 tests passed.
+1/5 canonical_human_geometry_adoption_tests.test.HM08 adoption establishes the authorized topology-v2 element namespace...OK
+2/5 canonical_human_geometry_adoption_tests.test.HM08-derived current authority identities and structural bindings match the promoted candidate...OK
+3/5 canonical_human_geometry_adoption_tests.test.HM08-derived current authority is closed, symmetric, all-quad, and retains the qualified topology quality...OK
+4/5 canonical_human_geometry_adoption_tests.test.HM08 adoption maps every face and exposes source-derived deformation zones...OK
+5/5 canonical_human_geometry_adoption_tests.test.HM08 adoption evidence preserves provenance, semantic classifications, and five-run proof...OK
+All 5 tests passed.
+1/7 canonical_model_phase_c_tests.test.morphology parameters represent categories value domains ranges and curves...OK
+2/7 canonical_model_phase_c_tests.test.symmetry preserves linked mirrored and independent underlying parameter IDs...OK
+3/7 canonical_model_phase_c_tests.test.one structural parameter declares multiple explicit typed bindings...OK
+4/7 canonical_model_phase_c_tests.test.all binding target categories and operations remain representable...OK
+5/7 canonical_model_phase_c_tests.test.group parameters drive parameters and derived dependencies expose provenance...OK
+6/7 canonical_model_phase_c_tests.test.material definitions and instances remain separate with locked base color encoding...OK
+7/7 canonical_model_phase_c_tests.test.visibility metadata keeps existence enabled visibility coverage and representation separate...OK
+All 7 tests passed.
+1/5 canonical_human_geometry_r3_tests.test.current authority preserves the Prompt 2C-R3 accepted topology-v2 contract...OK
+2/5 canonical_human_geometry_r3_tests.test.Prompt 2C-R3 landmark evidence separates surface registration from internal offsets...OK
+3/5 canonical_human_geometry_r3_tests.test.Prompt 2C-R3 evidence preserves integrity determinism and carried receiver work...OK
+4/5 canonical_human_geometry_r3_tests.test.Prompt 2C-R3 persistent owner-review images are complete...OK
+5/5 canonical_human_geometry_r3_tests.test.Blender candidate export requires explicit authorization for position edits...OK
+All 5 tests passed.
+Prompt 27C-R1 torso audit passed: pages=2, regions=4, fixtures=4/4, unapproved_changed_pixels=0, owner_visual_acceptance=PENDING.
+Prompt 26 environment art audit passed: 2 RGBA atlases, 6 layered regions each, alpha boundaries, and exact opaque-white surface sources.
+violet_crystal_ruin=65b11f9f49e1c1f196b06064898ecab83af608cd2adf6d01629fa39115be4058
+neutral_debug=62470ddbc1c91497237b49989927b5260bb986756c38e3eb00dc2f76bec64eb9
+Build Summary: 92/92 steps succeeded
+verify success
++- check success
+|  +- compile exe effects_projectiles Debug native success 3s MaxRSS:300M
+|  +- compile exe engine_sandbox Debug native success 7s MaxRSS:611M
+|  +- compile exe engine_smoke Debug native success 3s MaxRSS:308M
+|  +- verify Zig formatting success 145ms
+|  +- test success
+|  |  +- run test e1-tests success 805ms
+|  |  |  +- compile test e1-tests Debug native success 2s MaxRSS:310M
+|  |  +- run test deterministic-tests success 21s
+|  |  |  +- compile test deterministic-tests Debug native success 7s MaxRSS:589M
+|  |  +- run test engine-composition-tests success 125ms
+|  |  |  +- compile test engine-composition-tests Debug native success 3s MaxRSS:331M
+|  |  +- run test renderer-boundary-tests success 46ms
+|  |  |  +- compile test renderer-boundary-tests Debug native success 2s MaxRSS:260M
+|  |  +- run test image-decode-tests success 89ms
+|  |  |  +- compile test image-decode-tests Debug native success 2s MaxRSS:261M
+|  |  +- run test foundation-primitive-tests success 64ms
+|  |  |  +- compile test foundation-primitive-tests Debug native success 3s MaxRSS:385M
+|  |  +- run test scene-binding-boundary-tests success 48ms
+|  |  |  +- compile test scene-binding-boundary-tests Debug native success 3s MaxRSS:354M
+|  |  +- run test scene-core-authored-tests success 57ms
+|  |  |  +- compile test scene-core-authored-tests Debug native success 2s MaxRSS:322M
+|  |  +- run test scene-core-runtime-tests success 55ms
+|  |  |  +- compile test scene-core-runtime-tests Debug native success 2s MaxRSS:304M
+|  |  +- run test scene-core-registry-internal-tests success 45ms
+|  |     +- compile test scene-core-registry-internal-tests Debug native success 3s MaxRSS:274M
+|  +- audit current repository architecture and hygiene success 4s
+|  +- audit required documentation structure and local links success 1s
++- test-full success
+|  +- check (+7 more reused dependencies)
+|  +- run test integration-tests success 1m
+|  |  +- compile test integration-tests Debug native success 5s MaxRSS:362M
+|  +- run test stress-tests success 4m
+|  |  +- compile test stress-tests Debug native success 7s MaxRSS:346M
+|  +- run test foundation-playground-tests success 23s
+|  |  +- compile test foundation-playground-tests Debug native success 3s MaxRSS:366M
+|  +- run test wardrobe-tests success 14s
+|  |  +- compile test wardrobe-tests Debug native success 7s MaxRSS:381M
+|  +- run test environment-tests success 12s
+|  |  +- compile test environment-tests Debug native success 5s MaxRSS:376M
+|  +- run test visual-foundation-tests success 1m
+|     +- compile test visual-foundation-tests Debug native success 4s MaxRSS:458M
++- test-content success
+   +- test-content-tests success
+   |  +- run test art-pipeline-tests success 77ms
+   |  |  +- compile test art-pipeline-tests Debug native success 4s MaxRSS:280M
+   |  +- run test image-decode-tests (+1 more reused dependencies)
+   |  +- run test character-presentation-tests success 749ms
+   |  |  +- compile test character-presentation-tests Debug native success 7s MaxRSS:365M
+   |  +- run test component-graph-tests success 137ms
+   |  |  +- compile test component-graph-tests Debug native success 5s MaxRSS:330M
+   |  +- run test wardrobe-tests (+1 more reused dependencies)
+   |  +- run test visual-registration-tests success 39ms
+   |  |  +- compile test visual-registration-tests Debug native success 17s MaxRSS:267M
+   |  +- run test visual-geometry-tests success 9s
+   |  |  +- compile test visual-geometry-tests Debug native success 16s MaxRSS:390M
+   |  +- run test foundation-playground-tests (+1 more reused dependencies)
+   |  +- run test environment-tests (+1 more reused dependencies)
+   |  +- run test visual-foundation-tests (+1 more reused dependencies)
+   |  +- run test canonical-model-core-tests success 34ms
+   |  |  +- compile test canonical-model-core-tests Debug native success 8s MaxRSS:267M
+   |  +- run test canonical-model-phase-c-tests success 35ms
+   |  |  +- compile test canonical-model-phase-c-tests Debug native success 10s MaxRSS:270M
+   |  +- run test canonical-model-phase-de-tests success 70ms
+   |  |  +- compile test canonical-model-phase-de-tests Debug native success 7s MaxRSS:354M
+   |  +- run test canonical-model-phase-f-tests success 129ms
+   |  |  +- compile test canonical-model-phase-f-tests Debug native success 7s MaxRSS:382M
+   |  +- run test canonical-human-identity-tests success 1s
+   |  |  +- compile test canonical-human-identity-tests Debug native success 16s MaxRSS:626M
+   |  +- run test canonical-human-rig-tests success 1s
+   |  |  +- compile test canonical-human-rig-tests Debug native success 17s MaxRSS:623M
+   |  +- run test canonical-human-joint-control-tests success 1s
+   |  |  +- compile test canonical-human-joint-control-tests Debug native success 8s MaxRSS:628M
+   |  +- run test canonical-human-structural-tests success 1s
+   |  |  +- compile test canonical-human-structural-tests Debug native success 16s MaxRSS:629M
+   |  +- run test canonical-human-base-acceptance-tests success 1s
+   |  |  +- compile test canonical-human-base-acceptance-tests Debug native success 9s MaxRSS:685M
+   |  +- run test canonical-geometry-foundation-tests success 1s
+   |  |  +- compile test canonical-geometry-foundation-tests Debug native success 18s MaxRSS:738M
+   |  +- run test canonical-human-geometry-scaffold-tests success 40s
+   |  |  +- compile test canonical-human-geometry-scaffold-tests Debug native success 17s MaxRSS:715M
+   |  +- run test canonical-human-geometry-refinement-tests success 339ms
+   |  |  +- compile test canonical-human-geometry-refinement-tests Debug native success 7s MaxRSS:261M
+   |  +- run test canonical-human-geometry-adoption-tests success 1m
+   |  |  +- compile test canonical-human-geometry-adoption-tests Debug native success 9s MaxRSS:700M
+   |  +- run test canonical-human-geometry-r3-tests success 28s
+   |  |  +- compile test canonical-human-geometry-r3-tests Debug native success 10s MaxRSS:693M
+   |  +- run test canonical-human-geometry-r4-tests success 1m
+   |  |  +- compile test canonical-human-geometry-r4-tests Debug native success 18s MaxRSS:702M
+   |  +- run test canonical-human-geometry-full-tests success 24s
+   |     +- compile test canonical-human-geometry-full-tests Debug native success 17s MaxRSS:681M
+   +- audit current environment atlas geometry success 9s
+   +- audit current production anatomy pages success 2s
+   +- audit anatomy torso correction bounds and fixtures success 9s
+   +- verify approved visual-geometry D3D12 goldens success 1s
+   +- compile exe export-human-base-evidence Debug native success 9s MaxRSS:638M
+   +- audit current canonical/content qualification and retained historical policy success 19s
