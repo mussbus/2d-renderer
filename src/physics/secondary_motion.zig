@@ -13,13 +13,15 @@ pub const Error = spring.Error || error{
     InvalidMotionSettling,
     UnstableMotionProfile,
     NonFiniteMotionInput,
+    UnsupportedMotionTimestep,
     InvalidMotionState,
     MotionNumericalOverflow,
     MotionTickOverflow,
 };
 
 /// Immutable authored unit-mass parameters; see the PSM01 contract for units.
-/// Keep one profile for an instance lifetime; reset before changing it.
+/// Rate resolution may change coefficients/gains at tick boundaries without
+/// resetting state. Keep units, limits and settling thresholds fixed.
 pub const Profile = struct {
     stiffness: f32 = 144,
     damping: f32 = 12,
@@ -78,7 +80,9 @@ pub const Profile = struct {
 };
 
 pub const DriverSample = struct {
-    /// U along one consistent axis. Angular channels must be unwrapped.
+    /// Equilibrium/base position in U along a binding-owned positive axis in
+    /// one consistent frame. Angular channels must be unwrapped.
+    /// The core differentiates this history once; no moving spring target.
     position: f32,
     /// Teleport, seek, hard cut or coordinate-frame change: restart at rest.
     discontinuity: bool = false,
@@ -86,10 +90,19 @@ pub const DriverSample = struct {
 
 pub const TickInput = struct {
     driver: DriverSample,
-    /// U/s^2 along the same axis, including optional projected gravity.
+    /// Independent U/s^2 along the same axis, e.g. projected gravity.
+    /// Excludes acceleration already represented by driver position history.
     external_acceleration: f32 = 0,
+    /// Explicit owner/offline tick duration. Only the established 240 Hz
+    /// duration is supported; never multiply this by semantic playback rate.
+    fixed_dt_seconds: f64 = fixed_step.fixed_dt_seconds,
 
     fn validate(input: TickInput) Error!void {
+        if (!std.math.isFinite(input.fixed_dt_seconds) or
+            input.fixed_dt_seconds != fixed_step.fixed_dt_seconds)
+        {
+            return error.UnsupportedMotionTimestep;
+        }
         if (!std.math.isFinite(input.driver.position) or
             !std.math.isFinite(input.external_acceleration))
         {
@@ -130,7 +143,7 @@ pub const State = struct {
     }
 
     /// Explicit delta velocity in U/s; callers convert mass-based impulses.
-    pub fn applyVelocityImpulse(state: *State, profile: Profile, delta_velocity: f32) Error!void {
+    pub fn applyVelocityDelta(state: *State, profile: Profile, delta_velocity: f32) Error!void {
         try profile.validate();
         try state.validate(profile);
         var oscillator = state.springState();

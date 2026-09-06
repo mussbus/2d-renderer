@@ -10,6 +10,7 @@ pub const Options = struct {
 
 pub const Catalog = struct {
     secondary_motion_module: *std.Build.Module,
+    secondary_motion_rate_module: *std.Build.Module,
     secondary_motion_test_module: *std.Build.Module,
     demo_entry_module: *std.Build.Module,
     engine_smoke_entry_module: *std.Build.Module,
@@ -345,12 +346,20 @@ pub fn register(options: Options) Catalog {
     });
     secondary_motion_module.addImport("fixed_step", fixed_step_module);
     secondary_motion_module.addImport("spring", spring_module);
+    const secondary_motion_rate_module = b.createModule(.{
+        .root_source_file = b.path("src/physics/secondary_motion_rate.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    secondary_motion_rate_module.addImport("secondary_motion", secondary_motion_module);
+    secondary_motion_rate_module.addImport("fixed_step", fixed_step_module);
     const secondary_motion_test_module = b.createModule(.{
         .root_source_file = b.path("tests/psm01_secondary_motion_tests.zig"),
         .target = target,
         .optimize = optimize,
     });
     secondary_motion_test_module.addImport("secondary_motion", secondary_motion_module);
+    secondary_motion_test_module.addImport("secondary_motion_rate", secondary_motion_rate_module);
     secondary_motion_test_module.addImport("fixed_step", fixed_step_module);
     secondary_motion_test_module.addImport("spring", spring_module);
     const sprite_batch_module = b.createModule(.{
@@ -1437,6 +1446,7 @@ pub fn register(options: Options) Catalog {
 
     return .{
         .secondary_motion_module = secondary_motion_module,
+        .secondary_motion_rate_module = secondary_motion_rate_module,
         .secondary_motion_test_module = secondary_motion_test_module,
         .demo_entry_module = demo_entry_module,
         .engine_smoke_entry_module = engine_smoke_entry_module,

@@ -280,6 +280,7 @@ if ([regex]::IsMatch($engineCompositionTests, '@import\s*\(\s*"(demo_application
 # PSM01 stays dimension-neutral and headless, including its transitive core.
 $motionCoreImports = @{
     'src/physics/secondary_motion.zig' = @('std', 'fixed_step', 'spring')
+    'src/physics/secondary_motion_rate.zig' = @('std', 'secondary_motion', 'fixed_step')
     'src/physics/spring.zig' = @('std')
     'src/physics/fixed_step.zig' = @('std')
 }
@@ -291,13 +292,19 @@ foreach ($relative in $motionCoreImports.Keys) {
         }
     }
 }
-$motionCore = Read-RepositoryFile 'src/physics/secondary_motion.zig'
+$motionCore = (Read-RepositoryFile 'src/physics/secondary_motion.zig') + [Environment]::NewLine +
+    (Read-RepositoryFile 'src/physics/secondary_motion_rate.zig')
 if ([regex]::IsMatch($motionCore, 'std\.(heap|time|Io|Random|posix)\b|(?m)^var\s')) {
     Add-Failure 'PSM01 core must not acquire ambient allocation, time, IO, randomness or mutable global state.'
 }
 foreach ($match in [regex]::Matches($modulesBuild, '(?m)^\s*secondary_motion_module\.addImport\(\s*"(?<module>[^"]+)"')) {
     if ($match.Groups['module'].Value -notin @('fixed_step', 'spring')) {
         Add-Failure 'PSM01 build registration injects a dependency outside the scalar physics core.'
+    }
+}
+foreach ($match in [regex]::Matches($modulesBuild, '(?m)^\s*secondary_motion_rate_module\.addImport\(\s*"(?<module>[^"]+)"')) {
+    if ($match.Groups['module'].Value -notin @('secondary_motion', 'fixed_step')) {
+        Add-Failure 'PSM01 rate resolution must depend only on scalar physics.'
     }
 }
 if (-not $engineBuild.Contains('"test-psm01"') -or

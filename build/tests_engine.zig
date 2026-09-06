@@ -55,7 +55,7 @@ pub fn register(options: Options) Registration {
     const run_secondary_motion_tests = b.addRunArtifact(secondary_motion_tests);
     const secondary_motion_step = b.step(
         "test-psm01",
-        "Run headless scalar driver-following, energy, lifecycle and fixed-clock proofs",
+        "Run headless secondary-motion solver, authored rate response and offline trace proofs",
     );
     secondary_motion_step.dependOn(&run_secondary_motion_tests.step);
     const camera_tests = addEngineTest(b, .{

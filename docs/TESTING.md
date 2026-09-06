@@ -44,14 +44,18 @@ assertions, filtering, and focused target names are unchanged.
 
 ### PSM01 generic secondary-motion proof
 
-Run `zig build test-psm01 -j1` for the independent headless scalar solver,
-driver timing, lifecycle, constraint-energy and replay proofs. This test root
-imports only the production secondary_motion, fixed_step and spring modules.
-It is also included in `test`, `check`, `test-full` and `verify`. Existing
-animation and attachment-secondary regressions remain in test-deterministic.
+Run zig build test-psm01 -j1 for 40 headless tests: the original 23 solver,
+driver timing, lifecycle, energy and replay proofs plus 17 authored rate-policy,
+validation, calibration, explicit-duration and offline/runtime trace tests.
+Repeat the focused gate with -Doptimize=ReleaseSafe and -Doptimize=ReleaseFast.
+The root imports only secondary_motion, secondary_motion_rate, fixed_step and
+spring. It is included in test, check, test-full and verify. Existing animation
+and attachment regressions remain in test-deterministic.
 The [PSM01 contract and measured evidence](implementation/psm01_secondary_motion.md)
-documents the 240 Hz driver tick, two fixed spring integration stages, profile
-envelope, comparison tolerances, preserved legacy samples and owner boundary.
+documents 240 Hz outer ticks, two internal spring integration stages, identity
+and authored rate policies, tolerances, unchanged legacy samples and the
+pending owner-review boundary. Offline proof uses ordered fixed arrays and the
+same production solver; no renderer, animation object or batch exporter.
 
 ### Change-based gate guidance
 
