@@ -53,9 +53,12 @@ spring. It is included in test, check, test-full and verify. Existing animation
 and attachment regressions remain in test-deterministic.
 The [PSM01 contract and measured evidence](implementation/psm01_secondary_motion.md)
 documents 240 Hz outer ticks, two internal spring integration stages, identity
-and authored rate policies, tolerances, unchanged legacy samples and the
-pending owner-review boundary. Offline proof uses ordered fixed arrays and the
-same production solver; no renderer, animation object or batch exporter.
+and authored rate policies, tolerances and unchanged legacy samples.
+The owner accepted the generic solver/resolver, fixed-step and determinism
+contracts, synthetic calibration and offline/runtime proof at
+43ae062867d8bda79b1ba364ad6e934c0beee8c7. Final anatomical tuning and production
+bindings remain outside acceptance. Offline proof uses ordered fixed arrays
+and the same production solver; no renderer, animation object or batch exporter.
 
 ### Change-based gate guidance
 

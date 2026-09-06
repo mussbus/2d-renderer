@@ -4,7 +4,19 @@
 
 PSM01 is the dedicated, requested first secondary-motion milestone within the
 existing architecture-ready PHY lane. It does not rename PHY or advance AN,
-M03, M04, Model Lab, or a later PSM milestone. Implementation and the required automated gates pass; owner acceptance remains pending.
+M03, M04, Model Lab, or a later PSM milestone. Implementation and the required
+automated gates pass. **PSM01 is ACCEPTED by the owner at
+43ae062867d8bda79b1ba364ad6e934c0beee8c7.**
+
+Owner acceptance covers the generic scalar solver, authored rate-response
+resolver, fixed-step and determinism contracts, synthetic calibration, and
+offline/runtime proof. It does not approve final anatomical tuning or
+production bindings. Existing 2D consumers remain current; no migration,
+PSM02, baking work or change to M03/M04 status is authorized by acceptance.
+
+This acceptance bookkeeping changes documentation only. The implementation,
+test results and milestone-time isolation/validation receipts below retain
+their original provenance; their earlier candidate status is historical.
 
 The implementation extends the existing production scalar spring and adds a
 physics-owned driver-following channel. The corrective pass adds explicit
@@ -492,16 +504,18 @@ Git worktree records and PSM01 branch are added.
 
 ## PSM01 corrective pass: authored rate response and offline proof
 
-Status: implementation candidate, PENDING OWNER REVIEW. This correction is
-authorized in the parallel post-F4 engine lane; F4 acceptance and canonical
+Status: **ACCEPTED** at 43ae062867d8bda79b1ba364ad6e934c0beee8c7, within the
+generic scope and exclusions recorded above. This correction was authorized
+in the parallel post-F4 engine lane; F4 acceptance and canonical
 M03 -> M04 ordering/status are unchanged. Existing 2D bindings remain current.
 
 Original PSM01 commit: 77bd17e806bdb61543ca2f120fc9c765f8eda0bd.
 Original base: cb60fc9a9b24ba7d69578ffc721948e9b00de8fd.
-The corrective commit is the single direct child of that original PSM01
-commit on psm01-secondary-motion. Its resolved hash and final status are
-recorded after commit in .tmp/psm01-correction/completion.md and in the owner
-response; a commit cannot embed its own hash. No original commit is amended.
+Corrective commit: 43ae062867d8bda79b1ba364ad6e934c0beee8c7, the direct child
+of the original PSM01 commit on psm01-secondary-motion. The original
+.tmp/psm01-correction/completion.md receipt records the correction-time
+candidate status. The owner's subsequent acceptance is recorded above.
+No implementation commit is amended.
 
 ### Audit of the original PSM01 implementation
 
@@ -524,7 +538,7 @@ Zig reported exactly 0.16.0 before modifications.
 | Original impulse API | Added the supplied number directly to relative velocity, then clamped it. It was an immediate delta-v in U/s, not force-time impulse. PSM01 now calls it applyVelocityDelta; legacy spring.State.applyVelocityImpulse is untouched. |
 | Original rate behavior | No playback rate entered the solver. Existing rate tests proved natural kinematics from faster sampled trajectories only. There was no authored rate-conditioned profile layer. |
 | Original offline capability | The headless step API was callable offline, but lacked an explicit duration boundary, policy input and ordered offline trace proof. These are now exercised without a production batch API. |
-| Acceptance | Original report said owner acceptance pending. This correction preserves candidate status. |
+| Acceptance | Original implementation and correction were candidates pending owner review. The owner subsequently accepted the generic scope at 43ae062867d8bda79b1ba364ad6e934c0beee8c7. |
 | Existing 2D behavior | Original PSM01 extended spring with a zero-acceleration-preserving entry point; it did not migrate 2D consumers. This correction does not edit spring, animation playback, attachment bindings or their existing tests. |
 
 The original omission mattered because natural driver acceleration alone
@@ -811,8 +825,9 @@ Limitations and deferred work:
 - Engine/framework owns schemas, validation, resolution, state, integration,
   lifecycle and generic evaluation. Future content owns actual curves,
   aesthetic tuning, semantic/anatomical bindings and asset packaging.
-- Owner review must decide acceptance and any future binding/baking work under
-  a separate request. This candidate does not grant that acceptance.
+- Owner acceptance covers the generic mechanism and proofs at 43ae062.
+  Final anatomical tuning and production bindings remain outside acceptance;
+  future binding/baking work requires a separate request.
 
 ### Correction verification commands and observed outcomes
 
@@ -864,7 +879,8 @@ claimed for this headless correction. The required CPU gates passed.
 
 The commit-time staged diff and final clean/history receipt are recorded
 below after review; the post-commit resolved hash/status are also kept in
-.tmp/psm01-correction/completion.md. The owner-review boundary stays pending.
+.tmp/psm01-correction/completion.md. Those correction-time receipts retain
+their historical candidate status; the current generic scope is accepted.
 
 ### Staged review and finalization record
 
@@ -887,4 +903,6 @@ The post-commit verify-preservation.ps1 -AfterCommit check must confirm a
 clean PSM01 worktree, direct parent 77bd17e, exactly two commits above cb60fc9,
 and unchanged clean master plus the original index/file metadata. The resolved
 commit and these observed post-commit results belong to the completion receipt
-and final owner response. PSM01 remains PENDING OWNER REVIEW.
+and final owner response. That record describes the pre-acceptance candidate;
+PSM01 is now accepted at 43ae062867d8bda79b1ba364ad6e934c0beee8c7 within the
+generic scope and exclusions recorded at the start of this document.

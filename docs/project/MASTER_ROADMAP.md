@@ -35,6 +35,19 @@ Current disposition and post-F4 readiness are recorded in
 The renderer/character phases below remain useful implementation history and
 capability inventory. They do not supersede the accepted F4 contracts.
 
+## Accepted post-F4 PSM01 milestone
+
+**PSM01 — Deterministic Secondary-Motion Foundation is ACCEPTED at
+43ae062867d8bda79b1ba364ad6e934c0beee8c7.** The owner accepts the generic
+scalar solver, authored rate-response resolver, fixed-step and determinism
+contracts, synthetic calibration, and offline/runtime proof. The
+[PSM01 record](../implementation/psm01_secondary_motion.md) supplies the scope,
+validation evidence and retained implementation provenance.
+
+Acceptance excludes final anatomical tuning and production bindings. It does
+not accept the whole PHY track, begin PSM02 or baking, migrate current 2D
+consumers, or change M03/M04 status or ordering.
+
 ## Product target
 
 The present project target is:
@@ -163,6 +176,7 @@ and its architecture gate no longer blocks post-F4 development. SEM, SAF, MAT,
 CHR, CL, OBJ, LVL, AN, INT, PHY, WRD, ENV, and IMG are architecture-ready for
 dedicated implementation requests. PFB, SCN, PG, AI, GAME, and ED retain the
 specific dependency gates recorded in [CURRENT_STATE.md](CURRENT_STATE.md).
-This status record begins none of those tracks. Current non-blocking visual
+PSM01 has the bounded generic acceptance recorded above; this status record
+authorizes no additional downstream work. Current non-blocking visual
 limitations, pending visual owner review, and future schema triggers remain
 recorded in [KNOWN_GAPS.md](KNOWN_GAPS.md).

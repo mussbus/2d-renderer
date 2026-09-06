@@ -133,6 +133,19 @@ catalog. Its visible ownership is preferable to hidden directory discovery.
 Revisit it only if future parallel-domain additions make it a meaningful
 change magnet.
 
+## Accepted post-F4 secondary-motion foundation
+
+**PSM01 is ACCEPTED by the owner at
+43ae062867d8bda79b1ba364ad6e934c0beee8c7.** Acceptance covers the generic
+scalar solver, authored rate-response resolver, fixed-step and determinism
+contracts, synthetic calibration, and offline/runtime proof. See the
+[PSM01 contract and evidence](../implementation/psm01_secondary_motion.md).
+
+This is acceptance of the bounded PSM01 milestone within PHY, not acceptance
+of the whole PHY track. Final anatomical tuning and production bindings are
+outside acceptance. Existing 2D consumers remain current. No PSM02, binding
+migration, baking work or change to M03/M04 status follows from acceptance.
+
 ## Post-F4 track readiness
 
 Immediately architecture-ready for dedicated implementation requests:
@@ -151,7 +164,7 @@ Dependency-gated:
 - **ED** — after the first authored schemas it is intended to edit are
   accepted.
 
-This status record begins none of these tracks.
+The PSM01 acceptance above records separately authorized work. This status record authorizes no additional downstream work.
 
 Status vocabulary:
 
@@ -406,5 +419,6 @@ F4 is accepted. The architecture-ready post-F4 tracks listed above may begin
 only through dedicated implementation requests; dependency-gated tracks must
 first satisfy their recorded prerequisites. Prompt 27A, Prompt 27B, Prompt
 27C-R1, VF-01, VF-02, and VF-03 owner/manual visual acceptance remains
-`[PENDING OWNER REVIEW]` as a separate presentation matter. No post-F4 track
-has begun through this administrative update.
+`[PENDING OWNER REVIEW]` as a separate presentation matter. PSM01 is accepted
+within the bounded generic scope recorded above; no further milestone or
+production binding is authorized by this acceptance bookkeeping.
