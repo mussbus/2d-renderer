@@ -19,6 +19,7 @@ pub fn register(options: Options) void {
         "test",
         "Run the fast engine-contract CPU suite without SDL or a GPU",
     );
+    test_step.dependOn(&options.engine.run_e1.step);
     test_step.dependOn(&options.engine.run_deterministic.step);
     test_step.dependOn(&options.engine.run_engine_composition.step);
     test_step.dependOn(&options.engine.run_renderer_boundary.step);
@@ -54,6 +55,7 @@ pub fn register(options: Options) void {
         "check",
         "Run the routine app compile, fast engine contracts, formatting, architecture policy, and documentation audit",
     );
+    check_step.dependOn(&options.apps.effects_projectiles.step);
     check_step.dependOn(&options.apps.demo.step);
     check_step.dependOn(&options.apps.engine_smoke.step);
     check_step.dependOn(&format.step);

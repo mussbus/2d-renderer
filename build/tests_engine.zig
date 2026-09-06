@@ -9,6 +9,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
+    run_e1: *std.Build.Step.Run,
     run_engine_composition: *std.Build.Step.Run,
     run_deterministic: *std.Build.Step.Run,
     run_renderer_boundary: *std.Build.Step.Run,
@@ -35,6 +36,10 @@ pub fn register(options: Options) Registration {
     const target = options.target;
     const optimize = options.optimize;
     const modules = options.modules;
+
+    const e1_tests = addEngineTest(b, .{ .name = "e1-tests", .root_module = modules.e1_test_module });
+    const run_e1 = b.addRunArtifact(e1_tests);
+    b.step("test-effects-projectiles", "Run E1 headless projectile, effect and composition contracts").dependOn(&run_e1.step);
 
     const engine_composition_tests = addEngineTest(b, .{
         .name = "engine-composition-tests",
@@ -182,6 +187,7 @@ pub fn register(options: Options) Registration {
     integration_test_step.dependOn(&run_integration_tests.step);
 
     return .{
+        .run_e1 = run_e1,
         .run_engine_composition = run_engine_composition_tests,
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,

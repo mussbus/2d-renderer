@@ -9,6 +9,11 @@ pub const Options = struct {
 };
 
 pub const Catalog = struct {
+    effects_projectiles_entry_module: *std.Build.Module,
+    projectile_effects_module: *std.Build.Module,
+    projectiles_module: *std.Build.Module,
+    effects_module: *std.Build.Module,
+    e1_test_module: *std.Build.Module,
     demo_entry_module: *std.Build.Module,
     engine_smoke_entry_module: *std.Build.Module,
     engine_smoke_client_module: *std.Build.Module,
@@ -949,6 +954,54 @@ pub fn register(options: Options) Catalog {
     sdl_gpu_renderer_module.addImport("image_decode", image_decode_module);
     sdl_gpu_renderer_module.addImport("diagnostics", diagnostics_module);
     sdl_gpu_renderer_module.addImport("frame_capture", frame_capture_module);
+    const projectiles_module = b.createModule(.{ .root_source_file = b.path("src/projectiles/root.zig"), .target = target, .optimize = optimize });
+    projectiles_module.addImport("foundation", foundation_module);
+    projectiles_module.addImport("math", math_module);
+    projectiles_module.addImport("fixed_step", fixed_step_module);
+    projectiles_module.addImport("collider", collider_module);
+    const effects_module = b.createModule(.{ .root_source_file = b.path("src/effects/root.zig"), .target = target, .optimize = optimize });
+    effects_module.addImport("foundation", foundation_module);
+    effects_module.addImport("math", math_module);
+    effects_module.addImport("fixed_step", fixed_step_module);
+    effects_module.addImport("art_pack", art_pack_module);
+    const projectile_effects_module = b.createModule(.{ .root_source_file = b.path("src/effect_composition/projectile_effects.zig"), .target = target, .optimize = optimize });
+    projectile_effects_module.addImport("projectiles", projectiles_module);
+    projectile_effects_module.addImport("effects", effects_module);
+    projectile_effects_module.addImport("math", math_module);
+    projectile_effects_module.addImport("foundation", foundation_module);
+    const effects_projectiles_scene_module = b.createModule(.{ .root_source_file = b.path("src/app/effects_projectiles_scene.zig"), .target = target, .optimize = optimize });
+    effects_projectiles_scene_module.addImport("projectiles", projectiles_module);
+    effects_projectiles_scene_module.addImport("effects", effects_module);
+    effects_projectiles_scene_module.addImport("projectile_effects", projectile_effects_module);
+    effects_projectiles_scene_module.addImport("foundation", foundation_module);
+    effects_projectiles_scene_module.addImport("math", math_module);
+    effects_projectiles_scene_module.addImport("collider", collider_module);
+    effects_projectiles_scene_module.addImport("collision_world", collision_world_module);
+    const effects_projectiles_view_module = b.createModule(.{ .root_source_file = b.path("src/app/effects_projectiles_view.zig"), .target = target, .optimize = optimize });
+    effects_projectiles_view_module.addImport("effects_projectiles_scene", effects_projectiles_scene_module);
+    effects_projectiles_view_module.addImport("projectiles", projectiles_module);
+    effects_projectiles_view_module.addImport("effects", effects_module);
+    effects_projectiles_view_module.addImport("math", math_module);
+    effects_projectiles_view_module.addImport("sprite_batch", sprite_batch_module);
+    effects_projectiles_view_module.addImport("render_queue", render_queue_module);
+    const effects_projectiles_entry_module = b.createModule(.{ .root_source_file = b.path("src/app/effects_projectiles.zig"), .target = target, .optimize = optimize, .link_libc = true });
+    effects_projectiles_entry_module.addIncludePath(b.path(sdl_include));
+    effects_projectiles_entry_module.addLibraryPath(b.path(sdl_library_dir));
+    effects_projectiles_entry_module.linkSystemLibrary("SDL3", .{ .preferred_link_mode = .dynamic, .search_strategy = .paths_first });
+    effects_projectiles_entry_module.addImport("sdl", sdl_module);
+    effects_projectiles_entry_module.addImport("effects_projectiles_scene", effects_projectiles_scene_module);
+    effects_projectiles_entry_module.addImport("effects_projectiles_view", effects_projectiles_view_module);
+    effects_projectiles_entry_module.addImport("fixed_step", fixed_step_module);
+    effects_projectiles_entry_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
+    const e1_test_module = b.createModule(.{ .root_source_file = b.path("tests/effects/root.zig"), .target = target, .optimize = optimize });
+    e1_test_module.addImport("effects_projectiles_scene", effects_projectiles_scene_module);
+    e1_test_module.addImport("effects_projectiles_view", effects_projectiles_view_module);
+    e1_test_module.addImport("render_queue", render_queue_module);
+    e1_test_module.addImport("projectile_effects", projectile_effects_module);
+    e1_test_module.addImport("foundation", foundation_module);
+    e1_test_module.addImport("math", math_module);
+    e1_test_module.addImport("projectiles", projectiles_module);
+    e1_test_module.addImport("effects", effects_module);
     const engine_smoke_client_module = b.createModule(.{
         .root_source_file = b.path("src/app/engine_smoke_client.zig"),
         .target = target,
@@ -1419,6 +1472,11 @@ pub fn register(options: Options) Catalog {
     camera_test_module.addImport("character_controller", character_controller_module);
 
     return .{
+        .effects_projectiles_entry_module = effects_projectiles_entry_module,
+        .projectile_effects_module = projectile_effects_module,
+        .projectiles_module = projectiles_module,
+        .effects_module = effects_module,
+        .e1_test_module = e1_test_module,
         .demo_entry_module = demo_entry_module,
         .engine_smoke_entry_module = engine_smoke_entry_module,
         .engine_smoke_client_module = engine_smoke_client_module,

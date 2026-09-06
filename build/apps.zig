@@ -7,6 +7,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
+    effects_projectiles: *std.Build.Step.Compile,
     demo: *std.Build.Step.Compile,
     engine_smoke: *std.Build.Step.Compile,
 };
@@ -26,6 +27,17 @@ pub fn register(options: Options) Registration {
         .root_module = modules.engine_smoke_entry_module,
     });
     b.installArtifact(engine_smoke);
+
+    const effects_projectiles = b.addExecutable(.{ .name = "effects_projectiles", .root_module = modules.effects_projectiles_entry_module });
+    b.installArtifact(effects_projectiles);
+    b.step("effects-projectiles", "Build the independent E1 effects and projectiles proof").dependOn(&effects_projectiles.step);
+    const run_e1 = b.addSystemCommand(&.{b.getInstallPath(.bin, effects_projectiles.out_filename)});
+    run_e1.step.dependOn(b.getInstallStep());
+    if (b.args) |args| run_e1.addArgs(args);
+    b.step("run-effects-projectiles", "Run the E1 proof: Space pause, period step, R reset, N seed, P spawn, D deflect, F1 debug").dependOn(&run_e1.step);
+    const smoke_e1 = b.addSystemCommand(&.{ b.getInstallPath(.bin, effects_projectiles.out_filename), "--smoke", "--capture" });
+    smoke_e1.step.dependOn(b.getInstallStep());
+    b.step("effects-projectiles-smoke", "Run real D3D12 E1 proof, allocation checks and four readbacks").dependOn(&smoke_e1.step);
 
     const installed_demo = b.getInstallPath(.bin, demo.out_filename);
     const run_demo = b.addSystemCommand(&.{installed_demo});
@@ -63,5 +75,5 @@ pub fn register(options: Options) Registration {
     );
     run_engine_smoke_step.dependOn(&run_engine_smoke.step);
 
-    return .{ .demo = demo, .engine_smoke = engine_smoke };
+    return .{ .demo = demo, .engine_smoke = engine_smoke, .effects_projectiles = effects_projectiles };
 }
