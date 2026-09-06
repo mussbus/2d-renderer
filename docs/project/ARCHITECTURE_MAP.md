@@ -259,12 +259,13 @@ resource ownership; no graph-only or overlay-only renderer exists.
 
 | Boundary | Authority |
 | --- | --- |
-| Canonical V1 sessions, channel descriptors, recorder, player, validation and checkpoints | [record_replay/root.zig](../../src/record_replay/root.zig), importing foundation only |
-| CharacterIntent/event encoding and supported headless composition | [record_replay_proof.zig](../../src/app/record_replay_proof.zig), an external production-core client |
-| Focused CPU proof and malformed-data tests | [record_replay_tests.zig](../../tests/record_replay_tests.zig), registered by the engine test helper and included in the fast gate |
+| Bounded V1 sessions, three streams, canonical encoding/loading, fingerprints, named markers and divergence | [record_replay/root.zig](../../src/record_replay/root.zig), importing foundation/std only |
+| CharacterIntent, causal speed changes and observed controller StepResult adapters | [record_replay_proof.zig](../../src/app/record_replay_proof.zig), a normal external client |
+| Headless proof and protocol/error/allocation tests | [record_replay_tests.zig](../../tests/record_replay_tests.zig), existing engine-test and fast-gate registration |
 
 The [V1 contract](../architecture/deterministic_record_replay_v1.md) preserves
-physical input -> application actions -> semantic tick intent. Playback replaces
-only the last boundary. The proof retains a static RuntimeScene snapshot;
-its existing controller owns movement. Dynamic F scene publication, arbitrary
-specialized scenes and whole-engine replay remain outside this integration.
+physical input -> actions -> semantic tick commands. Causal events apply before
+the existing controller step; observed events, fingerprints and names verify
+after it. The static RuntimeScene snapshot is acquired only at initialization.
+Dynamic publication and arbitrary specialized scenes remain outside RR1.
+Screenshot and JSON capture belong to future non-authoritative sidecars.

@@ -67,3 +67,9 @@ record/replay after F4 acceptance. Its scope, inspected base, implementation
 boundary and validation are recorded in
 [RR1 implementation](../../implementation/rr1_record_replay.md). This is a new
 milestone record; earlier prompt wording and evidence remain unchanged.
+
+The owner's RR1 corrective request preserves the first candidate commit and
+adds a second corrective commit: separate observed events, bounded named
+checkpoints and exact tick/batching semantics. The same implementation record
+contains the before-code audit and corrective validation; original candidate
+evidence remains explicitly historical.

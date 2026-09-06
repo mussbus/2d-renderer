@@ -912,20 +912,23 @@ members and no queue submissions.
 
 ## RR1 deterministic record/replay
 
-The normative [V1 record/replay contract](architecture/deterministic_record_replay_v1.md)
-defines the headless foundation and durable encoding. The reusable core in
-`src/record_replay/root.zig` depends only on foundation and the standard
-library. It owns versioned session identity, bounded canonical command/event
-storage, encoding/validation, checkpoint aggregation and a player which
-latches first divergence. The external client in
-`src/app/record_replay_proof.zig` uses the existing production controller,
-collision world, CharacterIntent and fixed 240 Hz contract with one immutable
-RuntimeScene anchor. It does not reopen scene-core publication authority.
+The normative [V1 contract](architecture/deterministic_record_replay_v1.md)
+defines a headless core importing only foundation and the standard library.
+Its unpublished candidate encoding is corrected before owner acceptance.
+The normal external proof client uses the existing controller, collision world,
+CharacterIntent, 240 Hz contract and one immutable RuntimeScene anchor.
 
-Commands/events apply before tick N; checkpoints observe the state after it.
-Initial envelope and recreated deterministic state must match before playback.
-Generic scene identity alone does not cover specialized character state.
-Only this proof's complete controller state, gameplay properties and immutable
-bootstrap/scene/collision/derivation state are covered. The current sandbox,
-animation, interaction, equipment and other scenes remain outside RR1 replay.
-See the [RR1 implementation record](implementation/rr1_record_replay.md).
+Each tick consumes one semantic command, applies ordered external causal
+events, steps once, verifies derived observed events, compares its mandatory
+state fingerprint, and evaluates named checkpoints before advancing.
+Observations and checkpoint names are non-causal. First mismatch diagnostics
+stop the following tick and can retain event and state failures together.
+
+The proof supports CharacterIntent, SetMaximumRunSpeed, and real StepResult
+JumpAccepted/DashStarted/Landed observations. Its complete controller state,
+gameplay properties and immutable bootstrap/scene/collision/seed state remain
+covered. Names mark jump_accepted, speed_changed and final_state.
+Tick-batch grouping independence requires the same complete tick streams;
+arbitrary physical-input or render-frame invariance is not claimed.
+Other engine systems remain unintegrated. Screenshot/JSON capture are future
+sidecar clients only. See the [implementation record](implementation/rr1_record_replay.md).

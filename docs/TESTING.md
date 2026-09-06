@@ -76,23 +76,26 @@ gate semantics actually change.
 
 ### RR1 deterministic record/replay
 
-`zig build test-record-replay -j1` runs 30 CPU-only contracts, including
-independent V1 byte/hash/key goldens, malformed/corrupt/truncated artifacts,
-phase/tick/capacity failures, initial/seed/protocol mismatches, writer failure,
-first-divergence diagnostics, pending-edge capture, full controller-field
-digest coverage, allocation-attempt guards and initialization cleanup.
+`zig build test-record-replay -j1` exercises the CPU-only corrected V1 contract:
+independent byte/hash/key goldens, dense intervals, ordered causal/observed
+streams, named-marker grammar/order/uniqueness, corruption/compatibility
+failures, combined divergence diagnostics, state coverage and bounded lifetime.
 
-The proof records 480 authoritative ticks and reloads/replays all 480
-checkpoints. Three 160-tick recordings with frame groups 1, 7 and 1 must be
-byte-identical. Exact final controller state is compared in the allocation
-proof. Playback takes no live input or frame delta. These tests import no SDL
-or GPU module. They are part of `test`, hence `check`, `test-full` and
-`verify`; focused ReleaseSafe and ReleaseFast runs exercise the same tests.
+The real production proof records and verifies 480 ticks, every observed
+event, every post-tick fingerprint, three named checkpoints and exact final
+controller state. Direct tick batches 1/7/1 produce byte-identical artifacts;
+playback invocation batches 1/7/23 produce identical state and marker counts.
+These tests make no arbitrary frame-schedule claim. A separate test gives
+unrelated live input and a clock which discards time to an outside caller,
+while playback itself consumes only recorded tick data.
 
-RR1 acceptance runs the focused gate, `check`, `test-full`, `verify`,
-ReleaseSafe and ReleaseFast default builds, and focused tests in both release
-modes. Physical GPU gates are not required for this CPU-only change.
-See the [V1 contract](architecture/deterministic_record_replay_v1.md) and
+An allocator guard covers causal injection, multiple observations, fingerprints,
+names and combined divergence without allocation/resize/remap attempts.
+Focused tests remain in `test`, `check`, `test-full` and `verify` through the
+unchanged modular build registration. Correction acceptance additionally runs
+focused ReleaseSafe/ReleaseFast tests and default builds in both release modes.
+No physical GPU gate is required. See the
+[V1 contract](architecture/deterministic_record_replay_v1.md) and
 [implementation evidence](implementation/rr1_record_replay.md).
 
 ### Independent engine composition proof

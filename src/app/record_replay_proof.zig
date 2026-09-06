@@ -8,12 +8,18 @@ const collision = @import("collision_world");
 const intent_module = @import("character_intent");
 const fixed = @import("fixed_step");
 
+pub const ControllerState = controller.State;
 pub const CharacterIntent = intent_module.CharacterIntent;
 pub const SetMaximumRunSpeed = struct { metres_per_second: f32 };
 pub const schema = replay.Identity{ .id = 1, .version = 1 };
 pub const channels = replay.Channels{
     .command = .{ .identity = schema, .maximum_size = 5, .validate_fn = validateCommand },
-    .event = .{ .identity = schema, .maximum_size = 4, .validate_fn = validateEvent },
+    .causal = .{ .identity = schema, .types = &.{.{ .identity = schema, .maximum_size = 4, .validate_fn = validateEvent }} },
+    .observed = .{ .identity = schema, .types = &.{
+        .{ .identity = .{ .id = 1, .version = 1 }, .maximum_size = 1, .validate_fn = validateJump },
+        .{ .identity = .{ .id = 2, .version = 1 }, .maximum_size = 0, .validate_fn = validateDash },
+        .{ .identity = .{ .id = 3, .version = 1 }, .maximum_size = 4, .validate_fn = validateLanding },
+    } },
 };
 
 pub fn metadata() !replay.Metadata {
@@ -27,7 +33,8 @@ pub fn metadata() !replay.Metadata {
         },
         .initial_schema = schema,
         .command = schema,
-        .event = schema,
+        .causal = schema,
+        .observed = schema,
     };
 }
 
@@ -95,6 +102,102 @@ fn validateEvent(payload: []const u8) replay.Error!void {
     _ = try decodeEvent(payload);
 }
 
+pub const ObservedEvent = union(enum) {
+    jump_accepted: controller.JumpSource,
+    dash_started,
+    landed: f32,
+};
+
+pub const Observations = struct {
+    storage: [3]replay.Event = undefined,
+    count: u8 = 0,
+
+    pub fn events(self: *const Observations) []const replay.Event {
+        return self.storage[0..self.count];
+    }
+};
+
+pub fn causalRecord(tick_number: u64, ordinal: u16, event: SetMaximumRunSpeed) !replay.Event {
+    return replay.Event.init(tick_number, ordinal, schema, &try encodeEvent(event));
+}
+
+pub fn observedRecord(tick_number: u64, ordinal: u16, event: ObservedEvent) !replay.Event {
+    return switch (event) {
+        .jump_accepted => |source| replay.Event.init(tick_number, ordinal, .{ .id = 1, .version = 1 }, &.{switch (source) {
+            .grounded => 0,
+            .coyote => 1,
+            .buffered => 2,
+            .air => 3,
+        }}),
+        .dash_started => replay.Event.init(tick_number, ordinal, .{ .id = 2, .version = 1 }, &.{}),
+        .landed => |impact| value: {
+            if (!std.math.isFinite(impact) or impact < 0) return error.InvalidPayload;
+            var bytes: [4]u8 = undefined;
+            var writer = replay.Bytes.init(&bytes);
+            try writer.float(impact);
+            break :value replay.Event.init(tick_number, ordinal, .{ .id = 3, .version = 1 }, &bytes);
+        },
+    };
+}
+
+pub fn decodeObserved(event: replay.Event) !ObservedEvent {
+    if (event.identity.version != 1) return error.UnsupportedEventSchema;
+    const payload = try event.payloadBytes();
+    switch (event.identity.id) {
+        1 => {
+            try validateJump(payload);
+            return .{ .jump_accepted = switch (payload[0]) {
+                0 => .grounded,
+                1 => .coyote,
+                2 => .buffered,
+                3 => .air,
+                else => return error.InvalidPayload,
+            } };
+        },
+        2 => {
+            try validateDash(payload);
+            return .dash_started;
+        },
+        3 => {
+            try validateLanding(payload);
+            var reader = replay.Reader{ .input = payload };
+            return .{ .landed = try reader.float() };
+        },
+        else => return error.UnknownEventType,
+    }
+}
+
+fn validateJump(payload: []const u8) replay.Error!void {
+    if (payload.len != 1 or payload[0] > 3) return error.InvalidPayload;
+}
+
+fn validateDash(payload: []const u8) replay.Error!void {
+    if (payload.len != 0) return error.InvalidPayload;
+}
+
+fn validateLanding(payload: []const u8) replay.Error!void {
+    if (payload.len != 4) return error.InvalidPayload;
+    var reader = replay.Reader{ .input = payload };
+    if (try reader.float() < 0) return error.InvalidPayload;
+}
+
+fn collectObserved(result: controller.StepResult) !Observations {
+    var events = Observations{};
+    if (result.jump_accepted) {
+        events.storage[events.count] = try observedRecord(result.simulation_tick, events.count, .{ .jump_accepted = result.jump_source orelse return error.MissingJumpSource });
+        events.count += 1;
+    }
+    if (result.dash_started) {
+        events.storage[events.count] = try observedRecord(result.simulation_tick, events.count, .dash_started);
+        events.count += 1;
+    }
+    if (result.landed) {
+        events.storage[events.count] = try observedRecord(result.simulation_tick, events.count, .{ .landed = result.landing_impact_speed });
+        events.count += 1;
+    }
+    return events;
+}
+
 const State = struct {
     scene: scene_core.runtime_scene.RuntimeScene,
     snapshot: scene_core.runtime_scene.SceneSnapshot,
@@ -115,7 +218,7 @@ pub const Proof = struct {
         const expected = try metadata();
         if (session_metadata.start_tick != 0) return error.InvalidTick;
         if (!session_metadata.initial_schema.eql(schema) or !session_metadata.command.eql(schema) or
-            !session_metadata.event.eql(schema)) return error.UnsupportedChannel;
+            !session_metadata.causal.eql(schema) or !session_metadata.observed.eql(schema)) return error.UnsupportedChannel;
         const context = session_metadata.derivation;
         if (!context.generator_id.eql(expected.derivation.generator_id) or
             !context.algorithm_id.eql(expected.derivation.algorithm_id) or
@@ -225,35 +328,38 @@ pub const Proof = struct {
         });
     }
 
-    /// The same existing production controller call is used in both modes.
-    pub fn step(self: *Proof, tick_number: u64, command: CharacterIntent, event: ?SetMaximumRunSpeed) !void {
+    /// Both recording and playback execute this existing controller call once.
+    pub fn step(self: *Proof, tick_number: u64, command: CharacterIntent, causal: []const SetMaximumRunSpeed) !Observations {
         if (tick_number != self.tick()) return error.InvalidTick;
         if (tick_number == std.math.maxInt(u64)) return error.TickOverflow;
+        if (causal.len > replay.maximum_events_per_tick) return error.OrdinalOverflow;
         _ = try encodeCommand(command);
-        if (event) |accepted| {
-            _ = try encodeEvent(accepted);
-            self.state.properties.maximum_run_speed = accepted.metres_per_second;
-        }
-        _ = try self.state.character.stepWithProperties(&self.state.world, command, self.state.properties);
+        for (causal) |accepted| _ = try encodeEvent(accepted);
+        for (causal) |accepted| self.state.properties.maximum_run_speed = accepted.metres_per_second;
+        const result = try self.state.character.stepWithProperties(&self.state.world, command, self.state.properties);
+        return collectObserved(result);
     }
 
-    pub fn recordTick(self: *Proof, session: *replay.Session, command: CharacterIntent, event: ?SetMaximumRunSpeed) !void {
+    pub fn recordTick(self: *Proof, session: *replay.Session, command: CharacterIntent, causal: []const SetMaximumRunSpeed, names: []const replay.CheckpointName) !Observations {
         const tick_number = self.tick();
         const command_bytes = try encodeCommand(command);
-        const event_bytes: ?[4]u8 = if (event) |accepted| try encodeEvent(accepted) else null;
-        // Preflight avoids advancing the controller when the recorder is already full/closed.
-        if (session.finished) return error.SessionFinished;
-        if (session.count == session.storage.len) return error.CapacityExceeded;
-        if (session.metadata.start_tick + session.count != tick_number) return error.InvalidTick;
-        try self.step(tick_number, command, event);
-        try session.append(tick_number, &command_bytes, if (event_bytes) |*bytes| bytes else null, try self.digest());
+        if (causal.len > replay.maximum_events_per_tick) return error.OrdinalOverflow;
+        var events: [replay.maximum_events_per_tick]replay.Event = undefined;
+        for (causal, 0..) |event, ordinal| events[ordinal] = try causalRecord(tick_number, @intCast(ordinal), event);
+        // Three selected StepResult flags are the adapter's proven observation bound.
+        try session.preflight(tick_number, &command_bytes, events[0..causal.len], 3, names);
+        const observed = try self.step(tick_number, command, causal);
+        try session.append(tick_number, &command_bytes, events[0..causal.len], observed.events(), try self.digest(), names);
+        return observed;
     }
 
     pub fn replayTick(self: *Proof, player: *replay.Player) !bool {
         const record = (try player.next()) orelse return false;
         const command = try decodeCommand(record.commandBytes());
-        const event = if (record.eventBytes()) |bytes| try decodeEvent(bytes) else null;
-        try self.step(record.tick, command, event);
+        var causal: [replay.maximum_events_per_tick]SetMaximumRunSpeed = undefined;
+        for (record.causal, 0..) |event, ordinal| causal[ordinal] = try decodeEvent(try event.payloadBytes());
+        const observed = try self.step(record.tick, command, causal[0..record.causal.len]);
+        try player.observe(observed.events());
         try player.verify(try self.digest());
         return true;
     }

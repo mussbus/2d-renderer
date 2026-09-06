@@ -77,17 +77,18 @@ cinematic behavior remains out of scope until real content requires it.
 
 ## RR1 replay integration boundary
 
-The [RR1 V1 substrate](../architecture/deterministic_record_replay_v1.md)
-supports one headless production-controller client. Arbitrary character,
-animation, interaction, equipment, specialized scene and sandbox state is not
-replay-integrated. RuntimeScene publication and snapshot acquisition currently
-allocate; RR1 retains one immutable initial snapshot and does not claim an
-allocation-free dynamic F publication route.
+The [RR1 V1 candidate](../architecture/deterministic_record_replay_v1.md)
+supports one headless production-controller route, separate causal/observed
+streams, mandatory per-tick fingerprints and named checkpoints.
+Arbitrary character, animation, interaction, equipment, specialized scene and
+sandbox state is not replay-integrated. RuntimeScene publication/snapshot
+acquisition still allocate; RR1 retains one immutable initial snapshot.
+No arbitrary render-frame, physical-input, cross-platform or cross-compiler
+determinism is claimed.
 
-A future Engine Lab or gameplay client must define its bootstrap envelope,
-versioned semantic channels, accepted external-event policy and complete
-deterministic contributors, then call the core from its existing tick boundary.
-It must explicitly handle scene publication and update its protocol identity
-when algorithms change. V1 disk encoding is durable; simulation under unknown
-future versions fails closed. Save-game UX, rewind, migration, networking and
-whole-engine replay require separate work.
+Future clients must provide complete versioned bootstrap/channels/contributors
+at their existing tick boundary and address dynamic scene publication.
+Screenshots and JSON inspection remain optional future sidecars, correlated
+by artifact digest, protocol, checkpoint name, completed tick and state digest.
+They must never drive replay. Save-game UX, migration, rewind, networking,
+Engine Lab integration and whole-engine replay require separate work.
