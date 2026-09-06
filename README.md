@@ -7,6 +7,14 @@ rendering. The production engine is reusable independently of the sandbox that
 hosts the larger character, interaction, environment, and visual-acceptance
 scenarios.
 
+## Engine Lab
+
+Engine Lab is an independent integration application with a production-backed
+Overview and a repeatable Fixed-Step Lab. Build/run with
+`zig build run-engine-lab -j1`; test with `zig build test-engine-lab -j1`.
+See the [EL1 implementation and review guide](docs/implementation/engine_lab_el1.md)
+for controls, deterministic checkpoints, ownership and validation evidence.
+
 ## Architecture at a glance
 
 - `src/foundation` owns stable identity, deterministic primitives, canonical

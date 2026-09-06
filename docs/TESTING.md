@@ -1557,3 +1557,13 @@ are zero. `_0084–_0090` are preserved invalid-JSON diagnostic candidates;
 they are not completion evidence. Bundle finalization now parses generated
 state and manifest JSON before rename. Manual visual acceptance is
 `[PENDING OWNER REVIEW]`.
+
+## Engine Lab EL1
+
+`zig build engine-lab -j1` builds/installs the independent application without
+building the sandbox. `zig build test-engine-lab -j1` runs its headless foundation
+tests; these also run in `test`, `check` and `verify`. `check` compiles EL1.
+`zig build run-engine-lab -j1 -- --verify` compares canonical checkpoints across
+frame schedules. `zig build run-engine-lab -j1 -- --smoke` exercises native
+D3D12 rendering, selection/reset, readback and cleanup. See the
+[EL1 report](implementation/engine_lab_el1.md) for the manual review procedure.

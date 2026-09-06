@@ -11,6 +11,8 @@ pub const Options = struct {
 pub const Catalog = struct {
     demo_entry_module: *std.Build.Module,
     engine_smoke_entry_module: *std.Build.Module,
+    engine_lab_entry_module: *std.Build.Module,
+    engine_lab_test_module: *std.Build.Module,
     engine_smoke_client_module: *std.Build.Module,
     engine_composition_test_module: *std.Build.Module,
     foundation_module: *std.Build.Module,
@@ -949,6 +951,62 @@ pub fn register(options: Options) Catalog {
     sdl_gpu_renderer_module.addImport("image_decode", image_decode_module);
     sdl_gpu_renderer_module.addImport("diagnostics", diagnostics_module);
     sdl_gpu_renderer_module.addImport("frame_capture", frame_capture_module);
+    const engine_lab_module = b.createModule(.{
+        .root_source_file = b.path("src/app/engine_lab/labs.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    engine_lab_module.addImport("foundation", foundation_module);
+    engine_lab_module.addImport("scene_core", scene_core_module);
+    engine_lab_module.addImport("fixed_step", fixed_step_module);
+    engine_lab_module.addImport("spring", spring_module);
+    engine_lab_module.addImport("math", math_module);
+    const engine_lab_actions_module = b.createModule(.{
+        .root_source_file = b.path("src/app/engine_lab/actions.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    engine_lab_actions_module.addImport("physical_input", physical_input_module);
+    const engine_lab_view_module = b.createModule(.{
+        .root_source_file = b.path("src/app/engine_lab/view.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    engine_lab_view_module.addImport("engine_lab", engine_lab_module);
+    engine_lab_view_module.addImport("debug_draw", debug_draw_module);
+    engine_lab_view_module.addImport("math", math_module);
+    engine_lab_view_module.addImport("sprite_batch", sprite_batch_module);
+    engine_lab_view_module.addImport("render_queue", render_queue_module);
+    const engine_lab_entry_module = b.createModule(.{
+        .root_source_file = b.path("src/app/engine_lab/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    engine_lab_entry_module.addIncludePath(b.path(sdl_include));
+    engine_lab_entry_module.addLibraryPath(b.path(sdl_library_dir));
+    engine_lab_entry_module.linkSystemLibrary("SDL3", .{
+        .preferred_link_mode = .dynamic,
+        .search_strategy = .paths_first,
+    });
+    engine_lab_entry_module.addImport("engine_lab", engine_lab_module);
+    engine_lab_entry_module.addImport("engine_lab_actions", engine_lab_actions_module);
+    engine_lab_entry_module.addImport("engine_lab_view", engine_lab_view_module);
+    engine_lab_entry_module.addImport("sdl_gpu_renderer", sdl_gpu_renderer_module);
+    engine_lab_entry_module.addImport("sdl_input", sdl_input_module);
+    engine_lab_entry_module.addImport("art_pack", art_pack_module);
+    engine_lab_entry_module.addImport("physical_input", physical_input_module);
+    engine_lab_entry_module.addImport("sdl", sdl_module);
+    const engine_lab_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/engine_lab_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    engine_lab_test_module.addImport("engine_lab", engine_lab_module);
+    engine_lab_test_module.addImport("engine_lab_actions", engine_lab_actions_module);
+    engine_lab_test_module.addImport("engine_lab_view", engine_lab_view_module);
+    engine_lab_test_module.addImport("render_queue", render_queue_module);
+    engine_lab_test_module.addImport("debug_draw", debug_draw_module);
     const engine_smoke_client_module = b.createModule(.{
         .root_source_file = b.path("src/app/engine_smoke_client.zig"),
         .target = target,
@@ -1421,6 +1479,8 @@ pub fn register(options: Options) Catalog {
     return .{
         .demo_entry_module = demo_entry_module,
         .engine_smoke_entry_module = engine_smoke_entry_module,
+        .engine_lab_entry_module = engine_lab_entry_module,
+        .engine_lab_test_module = engine_lab_test_module,
         .engine_smoke_client_module = engine_smoke_client_module,
         .engine_composition_test_module = engine_composition_test_module,
         .foundation_module = foundation_module,
