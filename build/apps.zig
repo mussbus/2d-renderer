@@ -8,6 +8,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
+    effects_projectiles: *std.Build.Step.Compile,
     demo: *std.Build.Step.Compile,
     engine_smoke: *std.Build.Step.Compile,
     engine_lab: *std.Build.Step.Compile,
@@ -46,6 +47,16 @@ pub fn register(options: Options) Registration {
     if (b.args) |args| run_engine_lab.addArgs(args);
     const run_engine_lab_step = b.step("run-engine-lab", "Run the persistent Engine Lab hub; --help, --seed HEX, --verify or --smoke");
     run_engine_lab_step.dependOn(&run_engine_lab.step);
+    const effects_projectiles = b.addExecutable(.{ .name = "effects_projectiles", .root_module = modules.effects_projectiles_entry_module });
+    b.installArtifact(effects_projectiles);
+    b.step("effects-projectiles", "Build the independent effects and projectiles proof").dependOn(&effects_projectiles.step);
+    const run_effects_projectiles = b.addSystemCommand(&.{b.getInstallPath(.bin, effects_projectiles.out_filename)});
+    run_effects_projectiles.step.dependOn(b.getInstallStep());
+    if (b.args) |args| run_effects_projectiles.addArgs(args);
+    b.step("run-effects-projectiles", "Run the Effects/projectiles proof: Space pause, period step, R reset, N seed, P spawn, D deflect, F1 debug").dependOn(&run_effects_projectiles.step);
+    const smoke_effects_projectiles = b.addSystemCommand(&.{ b.getInstallPath(.bin, effects_projectiles.out_filename), "--smoke", "--capture" });
+    smoke_effects_projectiles.step.dependOn(b.getInstallStep());
+    b.step("effects-projectiles-smoke", "Run real D3D12 Effects/projectiles proof, allocation checks and four readbacks").dependOn(&smoke_effects_projectiles.step);
 
     const installed_demo = b.getInstallPath(.bin, demo.out_filename);
     const run_demo = b.addSystemCommand(&.{installed_demo});
@@ -83,5 +94,5 @@ pub fn register(options: Options) Registration {
     );
     run_engine_smoke_step.dependOn(&run_engine_smoke.step);
 
-    return .{ .demo = demo, .engine_smoke = engine_smoke, .engine_lab = engine_lab };
+    return .{ .demo = demo, .engine_smoke = engine_smoke, .engine_lab = engine_lab, .effects_projectiles = effects_projectiles };
 }

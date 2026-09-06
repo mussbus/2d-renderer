@@ -1,0 +1,25 @@
+Build Summary: 24/24 steps succeeded
+install success
++- install .deps/SDL3-3.4.10/lib/x64/SDL3.dll to SDL3.dll cached
++- install generated to shaders/sprite_vs.dxil cached
+|  +- compile vertex shader VSMain (vs_6_0) cached
++- install generated to shaders/sprite_ps.dxil cached
+|  +- compile fragment shader PSMain (ps_6_0) cached
++- install generated to shaders/deformable_mesh_vs.dxil cached
+|  +- compile vertex shader VSMain (vs_6_0) cached
++- install assets/art/mechanical_atlas.png to art/mechanical_atlas.png cached
++- install assets/art/energy_atlas.png to art/energy_atlas.png cached
++- install assets/art/male_base_anatomy_atlas.png to art/male_base_anatomy_atlas.png cached
++- install assets/art/female_base_anatomy_atlas.png to art/female_base_anatomy_atlas.png cached
++- install assets/art/anatomy_components_atlas.png to art/anatomy_components_atlas.png cached
++- install assets/art/wardrobe_upper_atlas.png to art/wardrobe_upper_atlas.png cached
++- install assets/art/wardrobe_layers_atlas.png to art/wardrobe_layers_atlas.png cached
++- install assets/art/wardrobe_lower_atlas.png to art/wardrobe_lower_atlas.png cached
++- install assets/art/environment_violet_crystal_ruin_atlas.png to art/environment_violet_crystal_ruin_atlas.png cached
++- install assets/art/environment_neutral_debug_atlas.png to art/environment_neutral_debug_atlas.png cached
++- install engine_sandbox cached
+|  +- compile exe engine_sandbox Debug native cached 65ms MaxRSS:21M
++- install engine_smoke cached
+|  +- compile exe engine_smoke Debug native cached 48ms MaxRSS:20M
++- install effects_projectiles success
+   +- compile exe effects_projectiles Debug native success 2s MaxRSS:303M

@@ -1,0 +1,357 @@
+{
+  "feature": "Generic Effects and Projectiles Foundation",
+  "correction": "Particle appearance endpoints over the visible lifetime",
+  "status": "Required automated endpoint validation passed; return for owner review. One local corrective commit; no push or merge.",
+  "worktree": "C:\\Users\\Chad\\Documents\\effects-projectiles-e1",
+  "branch": "feature/effects-projectiles-foundation",
+  "starting_head": "3a6609e32d6f332a978aa689e830f1dd03279ab1",
+  "foundation_baseline": "cb60fc9a9b24ba7d69578ffc721948e9b00de8fd",
+  "owner_accepted_existing_architecture_and_contracts": true,
+  "preflight": {
+    "branch": "feature/effects-projectiles-foundation",
+    "starting_head": "3a6609e32d6f332a978aa689e830f1dd03279ab1",
+    "tracking_head": "3a6609e32d6f332a978aa689e830f1dd03279ab1",
+    "live_remote_head_verified": "3a6609e32d6f332a978aa689e830f1dd03279ab1",
+    "accepted_foundation": "cb60fc9a9b24ba7d69578ffc721948e9b00de8fd",
+    "ahead_of_foundation": 4,
+    "behind_foundation": 0,
+    "original_master_head": "1dc13b47ab18b04649eb0854b103fcb05850f3a1",
+    "master_baseline_exception": "Owner explicitly said proceed after being informed original master is clean at 1dc13b47ab18b04649eb0854b103fcb05850f3a1 rather than cb60fc9a9b24ba7d69578ffc721948e9b00de8fd. Preserve current original master; do not update or rebase feature.",
+    "original_master_tracked_files": 948,
+    "original_master_hash_inventory_sha256": "f8710f0160df89dc39fad5a408cec9d0571ce69f927c1c9032bcf9cbf27427f5"
+  },
+  "interpolation_contract": {
+    "lifetime_gt_one": "visible_age = age_ticks == 0 ? 0 : age_ticks - 1 + alpha; t = clamp(visible_age / (lifetime_ticks - 1), 0, 1)",
+    "lifetime_one": "t = alpha during the only renderable interval",
+    "endpoints": "Select configured start/end values directly at t == 0/1; one common t for size, opacity and RGB.",
+    "retirement": "Unchanged: remove on fixed step T + lifetime_ticks for birth at T.",
+    "position_rotation": "Existing completed-state expressions unchanged."
+  },
+  "regression_before_correction": {
+    "commands": [
+      {
+        "name": "regression-format",
+        "command": ".\\.deps\\zig-0.16.0\\zig.exe fmt tests/effects/effect_tests.zig",
+        "exit_code": 0,
+        "elapsed_seconds": 0.032
+      },
+      {
+        "name": "regression-before",
+        "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -j1 --summary all",
+        "exit_code": 1,
+        "elapsed_seconds": 4.868
+      }
+    ],
+    "passed": 51,
+    "failed": 3,
+    "skipped": 0,
+    "failures": [
+      "37/54 effect_tests.test.effects four-tick appearance reaches exact endpoints before unchanged retirement...expected 0.1, found 250000.12",
+      "38/54 effect_tests.test.effects two-tick appearance starts constant then progresses monotonically to its endpoint...expected 3, found 2.5",
+      "39/54 effect_tests.test.effects one-tick appearance uses alpha through its only live interval...expected 3, found 2"
+    ],
+    "raw_log_sha256": "52fa259b37e6a023b640510384fb87e157eb83facff15316058651418305f716"
+  },
+  "validation_commands": [
+    {
+      "name": "format",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe fmt src/effects/root.zig tests/effects/effect_tests.zig",
+      "exit_code": 0,
+      "elapsed_seconds": 0.041,
+      "reported_test_executions": 0
+    },
+    {
+      "name": "focused-debug",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 4.3,
+      "reported_test_executions": 54,
+      "build_summary": "3/3 steps succeeded"
+    },
+    {
+      "name": "focused-release-safe",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -Doptimize=ReleaseSafe -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 11.07,
+      "reported_test_executions": 54,
+      "build_summary": "3/3 steps succeeded"
+    },
+    {
+      "name": "focused-release-fast",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test-effects-projectiles -Doptimize=ReleaseFast -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 12.369,
+      "reported_test_executions": 54,
+      "build_summary": "3/3 steps succeeded"
+    },
+    {
+      "name": "build-debug",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 3.082,
+      "reported_test_executions": 0,
+      "build_summary": "24/24 steps succeeded"
+    },
+    {
+      "name": "build-release-safe",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -Doptimize=ReleaseSafe -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 10.923,
+      "reported_test_executions": 0,
+      "build_summary": "24/24 steps succeeded"
+    },
+    {
+      "name": "build-release-fast",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build -Doptimize=ReleaseFast -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 10.203,
+      "reported_test_executions": 0,
+      "build_summary": "24/24 steps succeeded"
+    },
+    {
+      "name": "verify",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build verify -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 585.088,
+      "reported_test_executions": 725,
+      "build_summary": "92/92 steps succeeded"
+    },
+    {
+      "name": "check",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build test check -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 27.778,
+      "reported_test_executions": 438,
+      "build_summary": "28/28 steps succeeded"
+    },
+    {
+      "name": "gpu-smoke",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build gpu-smoke -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 9.396,
+      "reported_test_executions": 0,
+      "build_summary": "26/26 steps succeeded"
+    },
+    {
+      "name": "proof-first",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build effects-projectiles-smoke -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 3.231,
+      "reported_test_executions": 0,
+      "build_summary": "26/26 steps succeeded"
+    },
+    {
+      "name": "review-generation",
+      "command": "python tools/effects_projectiles_review.py --output evidence/effects_projectiles",
+      "exit_code": 0,
+      "elapsed_seconds": 0.088,
+      "reported_test_executions": 0
+    },
+    {
+      "name": "proof",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe build effects-projectiles-smoke -j1 --summary all",
+      "exit_code": 0,
+      "elapsed_seconds": 3.134,
+      "reported_test_executions": 0,
+      "build_summary": "26/26 steps succeeded"
+    },
+    {
+      "name": "review",
+      "command": "python tools/effects_projectiles_review.py --compare evidence/effects_projectiles",
+      "exit_code": 0,
+      "elapsed_seconds": 0.094,
+      "reported_test_executions": 0
+    },
+    {
+      "name": "format-check",
+      "command": ".\\.deps\\zig-0.16.0\\zig.exe fmt --check build.zig build.zig.zon build src tests",
+      "exit_code": 0,
+      "elapsed_seconds": 0.122,
+      "reported_test_executions": 0
+    },
+    {
+      "name": "documentation",
+      "command": "pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/check_documentation.ps1",
+      "exit_code": 0,
+      "elapsed_seconds": 0.686,
+      "reported_test_executions": 0
+    },
+    {
+      "name": "diff-check",
+      "command": "git -c safe.directory=C:/Users/Chad/Documents/effects-projectiles-e1 -c core.safecrlf=false diff --check",
+      "exit_code": 0,
+      "elapsed_seconds": 0.085,
+      "reported_test_executions": 0
+    }
+  ],
+  "scope_audit": {
+    "only_effect_extraction_changed": true,
+    "position_and_rotation_expressions_unchanged": true,
+    "original_effect_tests_retained": 13,
+    "new_effect_tests": 5,
+    "unchanged_production_and_build_files": 184,
+    "historical_evidence_files_byte_identical": 16,
+    "audited_feature_files": 15,
+    "no_placeholder_audit": {
+      "TODO": [],
+      "FIXME": [],
+      "unreachable": [],
+      "placeholder_or_stub": [],
+      "disabled_or_skipped_test": []
+    }
+  },
+  "source_sha256": {
+    "build/apps.zig": "f6e29e5ee0014f162ce108c84156ac8beb348252d7c6b7e533a4c5487cf2abf4",
+    "build/gates.zig": "aacb8400b321d3d8e7e62bb57dced48acb978ba6797a9f9e4f2a8eb6c2f19131",
+    "build/modules.zig": "a18dceaa38b6138bd3a28b73b60130c3527a17645ef49f035efa8449943d91c9",
+    "build/tests_engine.zig": "2f12c96c7a3a2b54cb7d3d49195b94c8da449c9c3bb0cd09534d3a5c7a7a2be5",
+    "src/app/effects_projectiles.zig": "7d0bb0f10800dd2d8fd63b1ca3fa35d3176d25411b7bef937a1995f06aba9d46",
+    "src/app/effects_projectiles_scene.zig": "ff59ec7255dcd8541bc02d06ccf57782e71977ed710871e4c69af8a03bb3399f",
+    "src/app/effects_projectiles_view.zig": "5c9551bf1ae384910d50926423ef2904d6c534fb0a17bbbd1117af7fb5f823d4",
+    "src/effect_composition/projectile_effects.zig": "7246cfc67f03092500d64a93a4c97f224f51f782705460fcf6c7cf7a0ee6873d",
+    "src/effects/root.zig": "1f817b1875716570ebe728cc7bd25f8dda100081df847bf0ac51aac709513308",
+    "src/projectiles/collision_query.zig": "3407fe2fa2460a265f4b7b4613b16461b97f14b4cfa961134c079143c4904166",
+    "src/projectiles/root.zig": "0fda92d99b25a6e630ba865aeb739d825af67b3bb68f50458ca241599c3a2a45",
+    "tests/effects/composition_tests.zig": "3f2708fae77be116fd07031731fd9226f8e34f4b6ab0065c03931811ed42ba40",
+    "tests/effects/deflection_tests.zig": "9c05800770268dc6607930c81211ef6b9ce1c7ffb4854b44989c1d0fd245e0ab",
+    "tests/effects/effect_tests.zig": "73019110a054baf1c370fdd103eac892e74ff5297c7c629e3400539fa245edd5",
+    "tests/effects/projectile_tests.zig": "e9e34822bbdbb8702a2dd5842d391997883b09d79d01ca634ca5f83cbf138b4d",
+    "tests/effects/proof_tests.zig": "390f4946e9f7c340f0b6121bdc80306a37991b6d435bc61a2f3377170825dd51",
+    "tests/effects/root.zig": "9c4630cf5e90c7ddbe4b201ad97584f78dc8fbce83129982a14c6053d1e228b0",
+    "tests/effects/support.zig": "cb2f3d14b36f5e0d3c07e499ab3c6f41f4a9053a80c8cc0cbf3b42e3448e9aae",
+    "tools/effects_projectiles_review.py": "4000e70ca11d997dd5c62b39e80c42024c31305ffa6b941542333d2c1ec68c2c"
+  },
+  "historical_evidence_sha256": {
+    "evidence/effects_projectiles/history/initial/check.txt": "96b1a90b94f0fd28dc8db6ca4252e33195881c2b879df59e8e90024f2cc2a094",
+    "evidence/effects_projectiles/history/initial/focused-debug.txt": "88385ea700a08d8fa62158cbed7f286cce555bf1d47c63f0c9f46b1330545a43",
+    "evidence/effects_projectiles/history/initial/focused-release-fast.txt": "4be9ac18b35582305f36468a720d962f30420cba15c2bd959bc11d29b162d878",
+    "evidence/effects_projectiles/history/initial/focused-release-safe.txt": "cac3e2d1af5d0bb78f338f78d49827789537ee4325827f7d0353d77ac22a3920",
+    "evidence/effects_projectiles/history/initial/gpu-smoke.txt": "1f4c56146fd4cf3c836596096a5d434a37eea12be9f866497d10c26bbb75b30e",
+    "evidence/effects_projectiles/history/initial/proof.txt": "86bd6fc34062d574344f50895809ed4b7faf76c3c502bc21a0e047622ddf06aa",
+    "evidence/effects_projectiles/history/initial/review.txt": "6d6b9acc741a79c9b05f4ef079330f662e5bcb1c061e0c0f879006570f42bede",
+    "evidence/effects_projectiles/history/initial/tick_120.png": "d3a4ad472127aeff0f3f16c41514508b55983c1f794e651737d93a688f60478e",
+    "evidence/effects_projectiles/history/initial/tick_176.png": "47b83a5af72de7546137de24d99b857898001fc25e3bd21d926fbfc7eb99dd6e",
+    "evidence/effects_projectiles/history/initial/tick_212.png": "ce3cda10b2fc11e22024d2cd81d5421b4ab327ca53696a38ac3a0fa8282bc999",
+    "evidence/effects_projectiles/history/initial/tick_256.png": "3e12bcbfe0d8952639c5f3e3c18bb0caf01402df7001617041dbb11ab076c243",
+    "evidence/effects_projectiles/history/initial/validation.json": "f9da5dc44d4971c890ec20c08f7b2b66bc7b6a078372f8f57be069a9dddcf7d0",
+    "evidence/effects_projectiles/history/initial/verify.txt": "4a8ab6ec7d469dd6bd86991c8e9e2b51d388819dbd9f06167809afcff3c2d772",
+    "evidence/effects_projectiles/history/precorrection/preflight.json": "bd2d64ea1900d839d8b775b70325ae93493b00f365846af5379a88bd2380c0c7",
+    "evidence/effects_projectiles/history/precorrection/verification.json": "8359da424d50f86ac368017839b77111baa727d981b46c78af3e3e8ec6adf844",
+    "evidence/effects_projectiles/history/precorrection/verify.txt": "16947328878c73adc019c77ab0bb2bac2e9991ae848fa26bc1a93bea17a87a16"
+  },
+  "original_master_files_byte_identical": 939,
+  "original_master_observation": {
+    "preflight_tracked_files": 948,
+    "unchanged_preflight_files": 939,
+    "changed_preflight_files": [
+      "build/gates.zig",
+      "build/modules.zig",
+      "build/tests_engine.zig",
+      "docs/ARCHITECTURE.md",
+      "docs/TESTING.md",
+      "docs/history/prompts/INDEX.md",
+      "docs/project/ARCHITECTURE_MAP.md",
+      "docs/project/CURRENT_STATE.md",
+      "docs/project/KNOWN_GAPS.md"
+    ],
+    "added_tracked_files": [
+      "docs/architecture/deterministic_record_replay_v1.md",
+      "docs/implementation/rr1_record_replay.md",
+      "src/app/record_replay_proof.zig",
+      "src/record_replay/root.zig",
+      "tests/record_replay_tests.zig"
+    ],
+    "head": "1dc13b47ab18b04649eb0854b103fcb05850f3a1",
+    "status": "M  build/gates.zig\nM  build/modules.zig\nM  build/tests_engine.zig\nM  docs/ARCHITECTURE.md\nM  docs/TESTING.md\nA  docs/architecture/deterministic_record_replay_v1.md\nM  docs/history/prompts/INDEX.md\nAM docs/implementation/rr1_record_replay.md\nM  docs/project/ARCHITECTURE_MAP.md\nM  docs/project/CURRENT_STATE.md\nM  docs/project/KNOWN_GAPS.md\nAM src/app/record_replay_proof.zig\nAM src/record_replay/root.zig\nAM tests/record_replay_tests.zig",
+    "concurrent_work": "The separate active Record / Replay task was inspected read-only and confirms an owner-authorized RR1 merge into master. These paths match its observed changes.",
+    "effects_task_write_scope": "All mutation commands in this task target the isolated effects worktree/cache. Original master was accessed read-only. Its concurrent RR1 changes were not reverted, staged or committed here.",
+    "whole_master_byte_identity": false
+  },
+  "unrelated_changed_files": [],
+  "proof_lines": [
+    "info: EFFECTS_PROJECTILES_DEFLECTION transfers=1 former_source_hits=1 new_source_hits=0",
+    "info: EFFECTS_PROJECTILES_PROOF frames=180 ticks=720 collisions=4 deflections=2 expirations=3 peak_projectiles=5 peak_emitters=213 peak_particles=352 trail_samples=544 peak_sprites=363 peak_draws=1 dropped_particles=0 dropped_effects=0 steady_allocations=0 simulation_ns=288211500 wall_ns=1470958700",
+    "info: EFFECTS_PROJECTILES_PROOF_OK backend=direct3d12 created=23 released=23 fences_acquired=185 fences_released=185"
+  ],
+  "authoritative_proof_metrics_unchanged": {
+    "frames": 180,
+    "ticks": 720,
+    "collisions": 4,
+    "deflections": 2,
+    "expirations": 3,
+    "peak_projectiles": 5,
+    "peak_emitters": 213,
+    "peak_particles": 352,
+    "trail_samples": 544,
+    "dropped_particles": 0,
+    "dropped_effects": 0,
+    "steady_allocations": 0
+  },
+  "captures": [
+    {
+      "tick": 120,
+      "changed_pixels": 5257,
+      "rgba_sha256": "3660ef0e0bc8b212335172fd033804b43da376ac8ee268498719fa42d5683345",
+      "png_sha256": "09d54cc43d85e12be5ffaade7fca6469dc742974caffe023713b779cdc935c08",
+      "changed_from_starting_commit": true
+    },
+    {
+      "tick": 176,
+      "changed_pixels": 5071,
+      "rgba_sha256": "7e60692dbe805a65020c92bf99a76d4c2cae6dd1286a47b924798c7734eccfeb",
+      "png_sha256": "03383c0dffb89a7fec3989ac6f48ee214e09d56519608a1c2296319f18fae009",
+      "changed_from_starting_commit": true
+    },
+    {
+      "tick": 212,
+      "changed_pixels": 4978,
+      "rgba_sha256": "6fd8c23d19838324393999dd76b2bac289ef257e04c1bbdebf91fddce4854108",
+      "png_sha256": "a7cdf24ef397f5ea0f2bf2f3c1c06fefa71e977ca2326d3899d0966b9527fa3f",
+      "changed_from_starting_commit": true
+    },
+    {
+      "tick": 256,
+      "changed_pixels": 4717,
+      "rgba_sha256": "5d09bc30095eb635f5f80628f905094f3b3d872a9fb11190720fcc09924c04e7",
+      "png_sha256": "3e60c78b51a2d04519b491de5c9443b7182ea37dc26fab50d971211458e35766",
+      "changed_from_starting_commit": true
+    }
+  ],
+  "repeat_rgba_matches": true,
+  "repeat_png_matches": true,
+  "evidence_change_reason": "Only particle size, opacity and RGB now span all renderable states and reach exact configured endpoints. Proof scene, projectile behavior, particle motion/counts, RNG and emission order are unchanged.",
+  "limitations": [
+    "Endpoint correction returns for owner review; no roadmap phase is completed.",
+    "Original master changed concurrently in the separate owner-authorized Record / Replay merge. This task made no original-worktree writes; whole-master byte identity is not claimed.",
+    "Pixel hashes show reference-machine repeatability, not a cross-driver guarantee.",
+    "SDL/driver internal allocations are outside the measured counters.",
+    "Production PHY adapter and other previously deferred integrations remain deferred."
+  ],
+  "commit_identity": "The new commit SHA is recorded in the delivery response and Git history; it is not embedded in its own evidence.",
+  "final_documentation_audit": {
+    "commands": [
+      {
+        "command": "pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/check_documentation.ps1",
+        "exit_code": 0,
+        "elapsed_seconds": 0.736,
+        "output": "documentation audit PASS: 46 required files, 42 Markdown files, 94 local Markdown targets"
+      },
+      {
+        "command": "git -c safe.directory=C:/Users/Chad/Documents/effects-projectiles-e1 -c core.safecrlf=false diff --check",
+        "exit_code": 0,
+        "elapsed_seconds": 0.114,
+        "output": ""
+      }
+    ],
+    "local_report_links": 36,
+    "broken_links": [],
+    "source_hashes_match_tested_files": true
+  },
+  "visual_review_observation": {
+    "inspected_current_frames": [
+      176,
+      256
+    ],
+    "observation": "Existing five-lane scene, trails and bursts remain visible; bottom ownership return and impact remain present. Owner review of the appearance correction is pending."
+  }
+}

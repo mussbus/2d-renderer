@@ -11,6 +11,7 @@ pub const Options = struct {
 pub const Registration = struct {
     run_secondary_motion: *std.Build.Step.Run,
     run_record_replay: *std.Build.Step.Run,
+    run_effects_projectiles: *std.Build.Step.Run,
     run_engine_composition: *std.Build.Step.Run,
     run_engine_lab: *std.Build.Step.Run,
     run_deterministic: *std.Build.Step.Run,
@@ -55,6 +56,10 @@ pub fn register(options: Options) Registration {
     const run_record_replay = b.addRunArtifact(record_replay_tests);
     b.step("test-record-replay", "Run headless deterministic V1 record/replay contracts and production proof")
         .dependOn(&run_record_replay.step);
+    const effects_projectiles_tests = addEngineTest(b, .{ .name = "effects-projectiles-tests", .root_module = modules.effects_projectiles_test_module });
+    const run_effects_projectiles = b.addRunArtifact(effects_projectiles_tests);
+    b.step("test-effects-projectiles", "Run Effects/projectiles headless projectile, effect and composition contracts").dependOn(&run_effects_projectiles.step);
+
     const engine_composition_tests = addEngineTest(b, .{
         .name = "engine-composition-tests",
         .root_module = modules.engine_composition_test_module,
@@ -231,6 +236,7 @@ pub fn register(options: Options) Registration {
     return .{
         .run_secondary_motion = run_secondary_motion_tests,
         .run_record_replay = run_record_replay,
+        .run_effects_projectiles = run_effects_projectiles,
         .run_engine_composition = run_engine_composition_tests,
         .run_engine_lab = run_engine_lab_tests,
         .run_deterministic = run_tests,

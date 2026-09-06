@@ -21,6 +21,7 @@ pub fn register(options: Options) void {
     );
     test_step.dependOn(&options.engine.run_secondary_motion.step);
     test_step.dependOn(&options.engine.run_record_replay.step);
+    test_step.dependOn(&options.engine.run_effects_projectiles.step);
     test_step.dependOn(&options.engine.run_deterministic.step);
     test_step.dependOn(&options.engine.run_engine_composition.step);
     test_step.dependOn(&options.engine.run_engine_lab.step);
@@ -58,6 +59,7 @@ pub fn register(options: Options) void {
         "check",
         "Run the routine app compile, fast engine contracts, formatting, architecture policy, and documentation audit",
     );
+    check_step.dependOn(&options.apps.effects_projectiles.step);
     check_step.dependOn(&options.apps.demo.step);
     check_step.dependOn(&options.apps.engine_smoke.step);
     check_step.dependOn(&options.apps.engine_lab.step);
