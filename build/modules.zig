@@ -12,6 +12,9 @@ pub const Catalog = struct {
     secondary_motion_module: *std.Build.Module,
     secondary_motion_rate_module: *std.Build.Module,
     secondary_motion_test_module: *std.Build.Module,
+    record_replay_module: *std.Build.Module,
+    record_replay_proof_module: *std.Build.Module,
+    record_replay_test_module: *std.Build.Module,
     demo_entry_module: *std.Build.Module,
     engine_smoke_entry_module: *std.Build.Module,
     engine_lab_entry_module: *std.Build.Module,
@@ -1528,10 +1531,42 @@ pub fn register(options: Options) Catalog {
     camera_test_module.addImport("collision_world", collision_world_module);
     camera_test_module.addImport("character_controller", character_controller_module);
 
+    const record_replay_module = b.createModule(.{
+        .root_source_file = b.path("src/record_replay/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    record_replay_module.addImport("foundation", foundation_module);
+    const record_replay_proof_module = b.createModule(.{
+        .root_source_file = b.path("src/app/record_replay_proof.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    record_replay_proof_module.addImport("record_replay", record_replay_module);
+    record_replay_proof_module.addImport("foundation", foundation_module);
+    record_replay_proof_module.addImport("scene_core", scene_core_module);
+    record_replay_proof_module.addImport("math", math_module);
+    record_replay_proof_module.addImport("character_controller", character_controller_module);
+    record_replay_proof_module.addImport("character_intent", character_intent_module);
+    record_replay_proof_module.addImport("collision_world", collision_world_module);
+    record_replay_proof_module.addImport("fixed_step", fixed_step_module);
+    const record_replay_test_module = b.createModule(.{
+        .root_source_file = b.path("tests/record_replay_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    record_replay_test_module.addImport("record_replay", record_replay_module);
+    record_replay_test_module.addImport("record_replay_proof", record_replay_proof_module);
+    record_replay_test_module.addImport("foundation", foundation_module);
+    record_replay_test_module.addImport("fixed_step", fixed_step_module);
+    record_replay_test_module.addImport("input", input_module);
     return .{
         .secondary_motion_module = secondary_motion_module,
         .secondary_motion_rate_module = secondary_motion_rate_module,
         .secondary_motion_test_module = secondary_motion_test_module,
+        .record_replay_module = record_replay_module,
+        .record_replay_proof_module = record_replay_proof_module,
+        .record_replay_test_module = record_replay_test_module,
         .demo_entry_module = demo_entry_module,
         .engine_smoke_entry_module = engine_smoke_entry_module,
         .engine_lab_entry_module = engine_lab_entry_module,

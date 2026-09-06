@@ -422,3 +422,30 @@ first satisfy their recorded prerequisites. Prompt 27A, Prompt 27B, Prompt
 `[PENDING OWNER REVIEW]` as a separate presentation matter. PSM01 is accepted
 within the bounded generic scope recorded above; no further milestone or
 production binding is authorized by this acceptance bookkeeping.
+
+## RR1 deterministic record/replay foundation
+
+RR1 uses the corrected V1 from fb0526ddbd268be0befef9694b1b1dc03ad7fb68;
+the original candidate and corrective pass remain separate commits in history.
+Container, protocol, derivation framing, initial schema and named encoding
+are version 1 at exactly 240 Hz. Command, causal and observed channel
+identities are 1/1.
+CharacterIntent is the dense per-tick command; SetMaximumRunSpeed is causal
+type 1/1. Observed types 1/1, 2/1, 3/1 are JumpAccepted, DashStarted and Landed
+from the real production StepResult, never reinjected.
+
+The half-open interval contains one command and one post-tick fingerprint
+per tick, ordered same-tick events and bounded globally unique named markers.
+The proof marks jump_accepted, speed_changed and final_state. Playback compares
+observations, fingerprints and names before permitting another tick.
+Tick-batch grouping independence assumes identical semantic streams, not
+arbitrary frame schedules or raw input sampling.
+
+State coverage retains all 20 controller State fields, four gameplay
+properties, configuration/spawn/reset data, seed/derived key, collision world,
+and immutable scene-anchor semantics. No per-tick snapshot publication is used.
+The [contract](../architecture/deterministic_record_replay_v1.md) and
+[implementation record](../implementation/rr1_record_replay.md) define exact
+compatibility, evidence and remaining limits. This is a supported headless
+proof; other engine systems and screenshot/JSON sidecars remain unintegrated.
+Earlier F4 administrative and visual records retain their historical meaning.

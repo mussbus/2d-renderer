@@ -118,6 +118,30 @@ application, and backend access; no unused foundation edge is required.
 Read the [world-time implementation report](implementation/world_time_foundation.md)
 for units, continuation behavior, validation evidence, and owner-review decisions.
 
+### RR1 deterministic record/replay
+
+`zig build test-record-replay -j1` exercises the CPU-only corrected V1 contract:
+independent byte/hash/key goldens, dense intervals, ordered causal/observed
+streams, named-marker grammar/order/uniqueness, corruption/compatibility
+failures, combined divergence diagnostics, state coverage and bounded lifetime.
+
+The real production proof records and verifies 480 ticks, every observed
+event, every post-tick fingerprint, three named checkpoints and exact final
+controller state. Direct tick batches 1/7/1 produce byte-identical artifacts;
+playback invocation batches 1/7/23 produce identical state and marker counts.
+These tests make no arbitrary frame-schedule claim. A separate test gives
+unrelated live input and a clock which discards time to an outside caller,
+while playback itself consumes only recorded tick data.
+
+An allocator guard covers causal injection, multiple observations, fingerprints,
+names and combined divergence without allocation/resize/remap attempts.
+Focused tests remain in `test`, `check`, `test-full` and `verify` through the
+unchanged modular build registration. Correction acceptance additionally runs
+focused ReleaseSafe/ReleaseFast tests and default builds in both release modes.
+No physical GPU gate is required. See the
+[V1 contract](architecture/deterministic_record_replay_v1.md) and
+[implementation evidence](implementation/rr1_record_replay.md).
+
 ### Independent engine composition proof
 
 `zig build engine-smoke -j1` builds the permanent small second application.

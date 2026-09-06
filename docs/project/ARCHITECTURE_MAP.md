@@ -255,3 +255,18 @@ submissions, each bound to the exported projected module chain. Final trace,
 F1, JSON, summary, and validation consume those same request records. The
 technical arm uses the existing atlas, global queue, D3D12 renderer, and
 resource ownership; no graph-only or overlay-only renderer exists.
+
+## RR1 record/replay ownership
+
+| Boundary | Authority |
+| --- | --- |
+| Bounded V1 sessions, three streams, canonical encoding/loading, fingerprints, named markers and divergence | [record_replay/root.zig](../../src/record_replay/root.zig), importing foundation/std only |
+| CharacterIntent, causal speed changes and observed controller StepResult adapters | [record_replay_proof.zig](../../src/app/record_replay_proof.zig), a normal external client |
+| Headless proof and protocol/error/allocation tests | [record_replay_tests.zig](../../tests/record_replay_tests.zig), existing engine-test and fast-gate registration |
+
+The [V1 contract](../architecture/deterministic_record_replay_v1.md) preserves
+physical input -> actions -> semantic tick commands. Causal events apply before
+the existing controller step; observed events, fingerprints and names verify
+after it. The static RuntimeScene snapshot is acquired only at initialization.
+Dynamic publication and arbitrary specialized scenes remain outside RR1.
+Screenshot and JSON capture belong to future non-authoritative sidecars.

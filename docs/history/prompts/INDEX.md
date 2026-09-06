@@ -59,3 +59,17 @@ This ledger distinguishes exact prompt sources from reconstructed milestone reco
   diagnostic milestone, VF-02 implements bounded production registration, and
   VF-03 implements the typed immutable component graph. Prompt 27D, Prompt 28,
   and later work have not started.
+
+## RR1 record/replay provenance
+
+The owner supplied a dedicated implementation request for deterministic
+record/replay after F4 acceptance. Its scope, inspected base, implementation
+boundary and validation are recorded in
+[RR1 implementation](../../implementation/rr1_record_replay.md). This is a new
+milestone record; earlier prompt wording and evidence remain unchanged.
+
+The owner's RR1 corrective request preserves the first candidate commit and
+adds a second corrective commit: separate observed events, bounded named
+checkpoints and exact tick/batching semantics. The same implementation record
+contains the before-code audit and corrective validation; original candidate
+evidence remains explicitly historical.

@@ -909,3 +909,27 @@ with the current front/side/reflected transform. Gap pixels are observation
 data derived from the captured camera, never placement authority. Inactive
 modules retain immutable definition data but produce no active projected
 members and no queue submissions.
+
+## RR1 deterministic record/replay
+
+The normative [V1 contract](architecture/deterministic_record_replay_v1.md)
+defines a headless core importing only foundation and the standard library.
+The candidate encoding was corrected before publication; integration preserves
+the corrected V1 bytes from fb0526ddbd268be0befef9694b1b1dc03ad7fb68.
+The normal external proof client uses the existing controller, collision world,
+CharacterIntent, 240 Hz contract and one immutable RuntimeScene anchor.
+
+Each tick consumes one semantic command, applies ordered external causal
+events, steps once, verifies derived observed events, compares its mandatory
+state fingerprint, and evaluates named checkpoints before advancing.
+Observations and checkpoint names are non-causal. First mismatch diagnostics
+stop the following tick and can retain event and state failures together.
+
+The proof supports CharacterIntent, SetMaximumRunSpeed, and real StepResult
+JumpAccepted/DashStarted/Landed observations. Its complete controller state,
+gameplay properties and immutable bootstrap/scene/collision/seed state remain
+covered. Names mark jump_accepted, speed_changed and final_state.
+Tick-batch grouping independence requires the same complete tick streams;
+arbitrary physical-input or render-frame invariance is not claimed.
+Other engine systems remain unintegrated. Screenshot/JSON capture are future
+sidecar clients only. See the [implementation record](implementation/rr1_record_replay.md).
