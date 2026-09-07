@@ -1,6 +1,14 @@
 # Reproducible Windows checkouts (unnumbered repository correction)
 
-Status: mechanics validated in a fresh detached Windows checkout; documentation reconciliation candidate for owner review. This work changes repository integrity and status records only. No gameplay, human, editor or roadmap milestone is advanced.
+Status: **OWNER ACCEPTED** and present on master at
+`dca3b331a86abee43a271cc00292021334ab8612`, the documentation reconciliation
+commit. The checkout mechanics commit is
+`cf094b617ae52be1031d8dde1fda310651c1d84e`. Master was fast-forwarded directly
+to `dca3b331a86abee43a271cc00292021334ab8612`; no separate merge commit exists.
+
+This remains an unnumbered repository-integrity correction. It does not advance
+or renumber M03, M04, any product phase or editor milestone, or authorize EL2,
+PSM02 or cross-system integration.
 
 ## Root cause and decision
 
@@ -72,7 +80,7 @@ Exactly 28 existing historical artifact blobs are restored: 18 exact prompt/repo
 
 `--index-only` supports staged-policy review in the original correction checkout. It is not used by routine gates or fresh acceptance. No existing test or expectation is weakened, skipped or replaced.
 
-## Validation and remaining limits
+## Historical validation record
 
 Mechanics commit `cf094b617ae52be1031d8dde1fda310651c1d84e` was checked out into
 a genuinely new detached worktree, `2d Renderer-reproducibility-policy-proof`.
@@ -102,10 +110,11 @@ correction worktree; neither fresh proof checkout receives a byte workaround.
 Frozen captures explicitly allow CR-at-EOL for Git diff checking while retaining
 the other default whitespace checks.
 
-The table below records observed policy-commit results. The final documentation
-candidate receives the same full command sequence in a second new detached
-worktree; its exact commit and results are recorded in the owner-facing delivery
-report, without amending this history.
+The table below records observed policy-commit results. During implementation,
+the documentation candidate received the same full command sequence in a second
+new detached worktree; its exact commit and results were recorded in the
+owner-facing delivery report. These implementation-time results are preserved
+unchanged following owner acceptance.
 
 All five parallel foundations remain architecturally independent. PHY, Engine Lab, RR1, world/environment, 3D presentation, gameplay, representation bindings, EL2 and PSM02 integrations remain deferred or separately authorized. This correction does not renumber any milestone or alter feature behavior.
 
@@ -148,7 +157,6 @@ merge/acceptance-document fast-forward. Historical milestone-time wording is
 preserved as history. No phase, M03/M04 or editor milestone is renumbered; no
 EL2, PSM02, gameplay or deferred integration is authorized by this record.
 
-Remaining limits: the correction is unpushed and unmerged pending owner review;
-pre-policy checkouts are not automatically rematerialized; repository gates
-require Git/Python; GPU evidence is reference-machine scoped. No dependency is
-updated and no branch or worktree is deleted.
+Remaining limits: pre-policy checkouts are not automatically rematerialized;
+repository gates require Git/Python; GPU evidence is reference-machine scoped.
+No dependency is updated and no branch or worktree is deleted.

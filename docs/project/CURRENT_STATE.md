@@ -141,7 +141,13 @@ parallel foundations. Effects/Projectiles merge
 `d71c4ae439d0b04019734cd3f45b7a6366a6a00f` are on master after the completed
 fast-forward and push. The unnumbered
 [checkout reproducibility correction](../implementation/reproducible_windows_checkouts.md)
-is separate repository-integrity work and does not advance a product milestone.
+is owner-accepted and present on master at
+`dca3b331a86abee43a271cc00292021334ab8612`. Master was fast-forwarded to that
+commit, which includes mechanics commit
+`cf094b617ae52be1031d8dde1fda310651c1d84e`; no separate merge commit exists.
+This unnumbered repository-integrity acceptance does not advance or renumber
+M03, M04, any product phase or editor milestone, or authorize EL2, PSM02 or
+cross-system integration.
 
 | Accepted lane | Implementation on master | Bounded ownership |
 | --- | --- | --- |

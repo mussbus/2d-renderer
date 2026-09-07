@@ -45,9 +45,11 @@ identifies their implementation commits and independent ownership boundaries.
 Effects/Projectiles merge `493549cfc31b3d768b680f7284b6bd7fae517c7a` and
 acceptance-document commit `d71c4ae439d0b04019734cd3f45b7a6366a6a00f` are on master.
 
-The unnumbered checkout/status correction is repository-integrity work. It does
-not integrate these systems with one another or authorize EL2, PSM02, gameplay,
-representation bindings, or any new milestone. All explicit deferred work and
+The unnumbered checkout/status correction is owner-accepted repository-integrity
+work on master at `dca3b331a86abee43a271cc00292021334ab8612`, following a direct
+fast-forward with no separate merge commit. It advances no product milestone,
+does not integrate these systems with one another or authorize EL2, PSM02,
+gameplay, representation bindings, or any new milestone. All explicit deferred work and
 M03/M04, phase and editor numbering remain unchanged.
 
 ## Accepted post-F4 PSM01 milestone

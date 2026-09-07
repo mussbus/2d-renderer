@@ -45,14 +45,16 @@ editor milestone.
 
 ## Windows working-byte reproducibility
 
-**Resolved in the unnumbered repository correction after fresh-worktree proof.**
+**Resolved/closed: owner-accepted on master at
+`dca3b331a86abee43a271cc00292021334ab8612`.** Master was fast-forwarded
+directly to that commit; no separate merge commit exists.
 Mechanics commit `cf094b617ae52be1031d8dde1fda310651c1d84e` passed all nineteen
 required commands in a newly created detached Windows worktree, with unchanged
 system Git configuration and no tracked-file copying or checkout-byte repair.
 The [implementation report](../implementation/reproducible_windows_checkouts.md)
 records the policy, prospective ten-file owner decision, exact restorations and
-measured results. This candidate remains separate from master pending owner
-review; this status authorizes no merge, push or downstream implementation.
+measured results. Acceptance closes this repository-integrity defect only; it
+advances no product milestone or deferred cross-system integration.
 
 The following paragraph preserves the integration-time defect and workaround
 history. Before the correction, fresh Windows worktrees could
