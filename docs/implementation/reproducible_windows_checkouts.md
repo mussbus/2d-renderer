@@ -1,6 +1,6 @@
 # Reproducible Windows checkouts (unnumbered repository correction)
 
-Status: repository mechanics candidate; fresh-checkout acceptance pending. This work changes repository integrity and status records only. No gameplay, human, editor or roadmap milestone is advanced.
+Status: mechanics validated in a fresh detached Windows checkout; documentation reconciliation candidate for owner review. This work changes repository integrity and status records only. No gameplay, human, editor or roadmap milestone is advanced.
 
 ## Root cause and decision
 
@@ -33,7 +33,7 @@ All ten restorations satisfy exact raw size/hash and CRLF-to-LF equality with th
 
 Root [.gitattributes](../../.gitattributes) defines LF for Zig/ZON, scripts, HLSL, JSON, Markdown, plain text, TSV and textual OBJ, then overrides only exact captured documents and the six retained historical geometry packages. Current geometry authoring JSON, human structural reports, parser fixtures and the active R4 package remain canonical text. Retained Effects/Projectiles history uses its existing raw capture hashes. Binary formats remain binary.
 
-Exactly 28 existing historical blobs are restored: 18 exact prompt/report artifacts (eight CRLF and ten mixed ending streams) to their pre-existing accepted hashes, and the ten newly owner-authorized geometry streams. The other two protected document blobs were already correct. No source or active canonical blob changes. Existing exact document expectations in check_documentation.ps1 and capture hashes in Effects/Projectiles validation.json are unchanged.
+Exactly 28 existing historical artifact blobs are restored: 18 exact prompt/report artifacts (eight CRLF and ten mixed ending streams) to their pre-existing accepted hashes, and the ten newly owner-authorized geometry streams. The other two protected document blobs were already correct. No source or active canonical blob changes. Existing exact document expectations in check_documentation.ps1 and capture hashes in Effects/Projectiles validation.json are unchanged.
 
 | Restored artifact | Authority | Raw bytes | Raw SHA-256 |
 | --- | --- | ---: | --- |
@@ -74,6 +74,81 @@ Exactly 28 existing historical blobs are restored: 18 exact prompt/report artifa
 
 ## Validation and remaining limits
 
-Fresh-checkout validation is pending. The existing known-gap record stays unresolved until that proof passes. Final validation must use a new detached worktree, the pinned existing dependencies, and a task-local cache, with no tracked-file copying, local byte repairs or conversion configuration overrides.
+Mechanics commit `cf094b617ae52be1031d8dde1fda310651c1d84e` was checked out into
+a genuinely new detached worktree, `2d Renderer-reproducibility-policy-proof`.
+All 1,007 tracked files matched their raw Git blobs immediately after checkout
+and after all nineteen commands. System `core.autocrlf=true` remained unchanged;
+no line-ending configuration override, tracked-file copy or post-checkout repair
+was used. Only the existing pinned ignored `.deps` installation was shared by
+junction. The checkout used its own `.zig-cache` and `.tmp/zig-global-cache`.
+
+The new integrity audit passed 545 LF-classified paths, all 20 pre-existing
+exact document hashes, 16 pre-existing archived capture hashes, and the ten
+newly owner-established authorities. Content qualification reproduced every
+existing family inventory size. Six deliberate faults in separate temporary
+indexes were rejected before the mechanics commit: missing Zig attributes,
+historical text conversion, active canonical misclassification, CRLF Zig blobs,
+changed existing hashes, and changed new-authority hashes. The real index was
+unchanged by these probes.
+
+There are zero Zig/build/application/test blob changes. The existing repository
+check gains one helper invocation; the new helper is repository validation only.
+Attributes alone correct 643 previously converted working representations while
+preserving those existing blobs. The large line count in the historical diff
+is solely raw newline restoration; all 28 normalized comparisons pass. During
+development Git rechecked out one unstaged malformed-PNG fixture under its binary
+attribute, without changing or staging its blob. This occurred only in the
+correction worktree; neither fresh proof checkout receives a byte workaround.
+Frozen captures explicitly allow CR-at-EOL for Git diff checking while retaining
+the other default whitespace checks.
+
+The table below records observed policy-commit results. The final documentation
+candidate receives the same full command sequence in a second new detached
+worktree; its exact commit and results are recorded in the owner-facing delivery
+report, without amending this history.
 
 All five parallel foundations remain architecturally independent. PHY, Engine Lab, RR1, world/environment, 3D presentation, gameplay, representation bindings, EL2 and PSM02 integrations remain deferred or separately authorized. This correction does not renumber any milestone or alter feature behavior.
+
+## Fresh policy-commit validation results
+
+| Exact command | Exit | Steps | Passed tests |
+| --- | ---: | --- | ---: |
+| `.\.deps\zig-0.16.0\zig.exe version` | 0 | not a build-step summary | not reported |
+| `.\.deps\zig-0.16.0\zig.exe fmt --check build.zig build.zig.zon build src tests` | 0 | not a build-step summary | not reported |
+| `pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/check_documentation.ps1` | 0 | not a build-step summary | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build test-effects-projectiles test-record-replay test-psm01 test-world test-engine-lab -j1 --summary all` | 0 | Build Summary: 15/15 steps succeeded | 181 |
+| `.\.deps\zig-0.16.0\zig.exe build test-effects-projectiles test-record-replay test-psm01 test-world test-engine-lab -Doptimize=ReleaseSafe -j1 --summary all` | 0 | Build Summary: 15/15 steps succeeded | 181 |
+| `.\.deps\zig-0.16.0\zig.exe build test-effects-projectiles test-record-replay test-psm01 test-world test-engine-lab -Doptimize=ReleaseFast -j1 --summary all` | 0 | Build Summary: 15/15 steps succeeded | 181 |
+| `.\.deps\zig-0.16.0\zig.exe build check -j1 --summary all` | 0 | Build Summary: 37/37 steps succeeded | 565 |
+| `.\.deps\zig-0.16.0\zig.exe build test-full -j1 --summary all` | 0 | Build Summary: 50/50 steps succeeded | 662 |
+| `.\.deps\zig-0.16.0\zig.exe build test-content -j1 --summary all` | 0 | Build Summary: 60/60 steps succeeded | 279 |
+| `.\.deps\zig-0.16.0\zig.exe build verify -j1 --summary all` | 0 | Build Summary: 101/101 steps succeeded | 852 |
+| `.\.deps\zig-0.16.0\zig.exe build -j1 --summary all` | 0 | Build Summary: 24/24 steps succeeded | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build -Doptimize=ReleaseSafe -j1 --summary all` | 0 | Build Summary: 24/24 steps succeeded | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build -Doptimize=ReleaseFast -j1 --summary all` | 0 | Build Summary: 24/24 steps succeeded | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build gpu-smoke -j1 --summary all` | 0 | Build Summary: 26/26 steps succeeded | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build effects-projectiles-smoke -j1 --summary all` | 0 | Build Summary: 26/26 steps succeeded | not reported |
+| `python tools/effects_projectiles_review.py --compare evidence/effects_projectiles` | 0 | not a build-step summary | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build run-engine-lab -j1 -- --verify` | 0 | not a build-step summary | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build run-engine-lab -j1 -- --smoke` | 0 | not a build-step summary | not reported |
+| `.\.deps\zig-0.16.0\zig.exe build evidence-history-check -j1 --summary all` | 0 | Build Summary: 2/2 steps succeeded | not reported |
+
+The five combined lanes passed 181 tests (54 Effects/Projectiles, 50 RR1,
+40 PSM01, 21 World Time and 16 Engine Lab) in each optimization mode. Physical
+GPU and standalone application proofs retain their existing ownership. Timing
+and exact pixel repeatability apply to this reference machine/driver; they do
+not grant new visual acceptance or cross-platform determinism.
+
+## Post-parallel reconciliation
+
+CURRENT_STATE, MASTER_ROADMAP, ARCHITECTURE_MAP, KNOWN_GAPS, TESTING,
+REPOSITORY_RETENTION, the World Time report and the Effects/Projectiles report now identify the five
+accepted independent lanes on master and the completed Effects/Projectiles
+merge/acceptance-document fast-forward. Historical milestone-time wording is
+preserved as history. No phase, M03/M04 or editor milestone is renumbered; no
+EL2, PSM02, gameplay or deferred integration is authorized by this record.
+
+Remaining limits: the correction is unpushed and unmerged pending owner review;
+pre-policy checkouts are not automatically rematerialized; repository gates
+require Git/Python; GPU evidence is reference-machine scoped. No dependency is
+updated and no branch or worktree is deleted.

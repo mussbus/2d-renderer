@@ -35,6 +35,21 @@ Current disposition and post-F4 readiness are recorded in
 The renderer/character phases below remain useful implementation history and
 capability inventory. They do not supersede the accepted F4 contracts.
 
+## Accepted post-F4 parallel foundations on master
+
+PSM01 Secondary Motion, World Time Foundation, Engine Lab EL1, RR1 deterministic
+Record/Replay, and Effects and Projectiles Foundation are accepted within their
+bounded scopes and present on master. The
+[current five-lane record](CURRENT_STATE.md#accepted-post-f4-foundations-on-master-2026-09-06)
+identifies their implementation commits and independent ownership boundaries.
+Effects/Projectiles merge `493549cfc31b3d768b680f7284b6bd7fae517c7a` and
+acceptance-document commit `d71c4ae439d0b04019734cd3f45b7a6366a6a00f` are on master.
+
+The unnumbered checkout/status correction is repository-integrity work. It does
+not integrate these systems with one another or authorize EL2, PSM02, gameplay,
+representation bindings, or any new milestone. All explicit deferred work and
+M03/M04, phase and editor numbering remain unchanged.
+
 ## Accepted post-F4 PSM01 milestone
 
 **PSM01 — Deterministic Secondary-Motion Foundation is ACCEPTED at

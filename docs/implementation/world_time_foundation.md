@@ -1,6 +1,17 @@
 # World-time foundation correction
 
-## Executive summary and review status
+## Current disposition (2026-09-06)
+
+The bounded World Time Foundation at
+`89faed3b416e8d9aa4665e39ff72f5cb7ee93bb9` is accepted and present on master at
+`d71c4ae439d0b04019734cd3f45b7a6366a6a00f`. See the
+[current five-lane record](../project/CURRENT_STATE.md#accepted-post-f4-foundations-on-master-2026-09-06).
+Acceptance covers deterministic caller-owned logical time and snapshots only.
+Climate, weather, environment/application adoption and additional milestones
+remain outside this scope. The candidate wording below records implementation
+time and does not supersede this current disposition.
+
+## Historical executive summary and review status
 
 This is a **non-numbered feature slice pending owner review**. It retains only
 deterministic, caller-owned, headless world-time accumulation. The corrected

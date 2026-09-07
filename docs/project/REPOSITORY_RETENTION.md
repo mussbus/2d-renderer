@@ -70,6 +70,26 @@ Material independently confirmed unnecessary and explicitly approved for
 removal by an owner-reviewed F4 phase. The approving implementation record
 must preserve the pre-deletion path, hash, size, references and rationale.
 
+## Raw-byte identity and checkout policy
+
+Historical raw-byte identity means the originally accepted captured byte stream,
+not normalized textual equivalence. Immutable CRLF or mixed-ending captures
+must be stored without Git text conversion through scoped `-text` attributes.
+Existing accepted hashes may not be changed to fit normalized blobs or a local
+checkout. Active source/current canonical structured inputs remain deterministic
+LF text; an old directory name does not make current authority historical.
+
+The 2026-09-06 owner decision establishes ten new individual raw SHA-256/size
+authorities in the existing [history manifest](../../assets/history/manifest.json).
+They previously had accepted family inventory sizes but no individual hash
+authorities. Untouched clean-master bytes and exact normalized equivalence to
+baseline Git blobs supported this prospective decision; it is not retroactive
+evidence. It authorizes no additional artifact or change to an earlier hash.
+The [reproducibility report](../implementation/reproducible_windows_checkouts.md)
+records each path, old blob, new authority and verification. Repository checks
+consume those entries. This policy grants no deletion or future restoration
+authority without corresponding provenance and owner scope.
+
 ## Future retirement manifest rule
 
 No demo, test, evidence family, asset family, canonical-lineage artifact,

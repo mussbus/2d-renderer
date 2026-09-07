@@ -8,7 +8,9 @@ Status: **OWNER ACCEPTED** at feature commit
 `integration/effects-projectiles-foundation`.
 The first parent is master baseline
 `c6892c324ba59f8317886005fe977efce7ac1546`; the second parent is the accepted
-feature commit. Master itself was not advanced by this integration.
+feature commit. Master was subsequently fast-forwarded and pushed to
+acceptance-document commit `d71c4ae439d0b04019734cd3f45b7a6366a6a00f`, retaining
+this merge and both ordered parents. Both commits are on master.
 
 This is an owner-authorized parallel foundation pulled forward from later
 roadmap work. It does not renumber or complete M03, M04, Phase D, Phase L,
@@ -50,7 +52,7 @@ the accepted images exactly at ticks 120, 176, 212 and 256. Engine Lab headless
 verification and its 180-frame GPU smoke passed. These measurements retain
 the standalone proof boundary and do not claim new cross-system integration.
 
-### Local validation reproducibility workaround
+### Historical integration-time reproducibility workaround
 
 Fresh Windows checkout bytes failed existing formatting and immutable-history
 hash gates at both the master baseline and the integration, while the untouched
@@ -76,11 +78,14 @@ the resolved tree. Source semantics, historical contents and expected hashes
 were not changed. Diagnostics are local ignored output under
 `.tmp/integration-validation/finalization`; they are not committed evidence.
 
-The baseline defect and deferred repository-wide decision about `.gitattributes`
-and historical-hash semantics are tracked in
-[Known Gaps](../project/KNOWN_GAPS.md#windows-working-byte-reproducibility).
-No repository normalization, attribute policy or hash-policy change is part
-of this acceptance.
+At integration time, the baseline defect and policy decision remained deferred;
+no repository normalization or hash-policy change was part of that acceptance.
+The later [unnumbered repository correction](reproducible_windows_checkouts.md)
+resolves checkout reproducibility through committed attributes and raw-byte
+preservation, with fresh-worktree validation. It preserves all earlier expected
+hashes and establishes ten additional individual authorities only through an
+explicit prospective owner decision. The [gap record](../project/KNOWN_GAPS.md#windows-working-byte-reproducibility)
+separates the resolved correction from this historical workaround.
 
 ## Historical feature implementation and owner-review record
 

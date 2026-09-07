@@ -45,7 +45,17 @@ editor milestone.
 
 ## Windows working-byte reproducibility
 
-**Observed baseline defect; durable fix deferred.** Fresh Windows worktrees can
+**Resolved in the unnumbered repository correction after fresh-worktree proof.**
+Mechanics commit `cf094b617ae52be1031d8dde1fda310651c1d84e` passed all nineteen
+required commands in a newly created detached Windows worktree, with unchanged
+system Git configuration and no tracked-file copying or checkout-byte repair.
+The [implementation report](../implementation/reproducible_windows_checkouts.md)
+records the policy, prospective ten-file owner decision, exact restorations and
+measured results. This candidate remains separate from master pending owner
+review; this status authorizes no merge, push or downstream implementation.
+
+The following paragraph preserves the integration-time defect and workaround
+history. Before the correction, fresh Windows worktrees could
 materialize format-sensitive Zig files and immutable historical text artifacts
 with working bytes that fail existing validation. At master baseline
 `c6892c324ba59f8317886005fe977efce7ac1546`, a fresh detached checkout failed
@@ -69,14 +79,19 @@ Git's cached file sizes also required a metadata refresh with identical existing
 index entries; no staged mode/blob/path or merge-tree content changed.
 The copied working bytes are not tracked feature changes.
 
-A durable repository-wide decision about `.gitattributes` and historical-hash
-semantics remains future work. Existing evidence includes both CRLF and mixed
-newline byte forms, so blanket normalization is not an established remedy.
-No attributes, expected hashes or historical evidence were rewritten for this
-integration. Until that decision is implemented and validated, a fresh checkout
-cannot be assumed to reproduce these gates without explicitly authorized local
-byte materialization. See the
-[integration validation record](../implementation/effects_projectiles_foundation.md).
+The subsequent correction implements the owner-selected policy: active source
+and canonical text use LF, while immutable captured byte streams use scoped
+`-text`. Eighteen prompt/report blobs regain their pre-existing accepted raw
+hashes. Ten geometry streams use new individual authorities established by the
+2026-09-06 owner decision; those individual hashes did not exist before that
+decision. Every earlier expected hash and family size remains unchanged.
+Current geometry authority and active R4 qualification retain textual LF policy.
+
+The original integration itself changed no attributes or historical expectations;
+its [validation record](../implementation/effects_projectiles_foundation.md)
+remains historical evidence. Existing pre-policy working directories are not
+automatically rewritten by changing attributes. Use a new checkout for the
+reproducibility guarantee; no old worktree or local byte copying is required.
 
 ## Art-quality status
 

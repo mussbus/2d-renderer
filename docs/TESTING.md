@@ -80,12 +80,37 @@ world/environment, 3D presentation or gameplay-specific clients. Both cores
 and the standalone visual proof are currently 2D.
 
 The [owner acceptance and measured aggregate counts](implementation/effects_projectiles_foundation.md)
-record the integration commit and exact validation boundary. The
-[Windows working-byte reproducibility defect](project/KNOWN_GAPS.md#windows-working-byte-reproducibility)
-can make fresh checkouts fail formatting and protected historical hashes even
-when committed content matches an accepted tree. This integration used a local
-uncommitted workaround; it did not change formatting policy, `.gitattributes`,
-expected hashes or historical evidence.
+record the integration commit and exact validation boundary. The integration-time
+[Windows working-byte defect](project/KNOWN_GAPS.md#windows-working-byte-reproducibility)
+required a local workaround at that time. The later unnumbered repository
+correction resolves it with committed attributes, exact byte preservation and
+fresh-worktree proof. Historical integration evidence and expectations are
+unchanged; current validation needs no old-worktree copying.
+
+### Checkout integrity and parallel-lane status
+
+Root `.gitattributes` makes source/current canonical text LF, preserves immutable
+captures with scoped `-text`, and keeps images/archive bytes binary.
+`python tools/checks/checkout_bytes.py` checks both raw index and checkout bytes
+and required attributes. It runs through `tools/check_repository.ps1`, so normal
+`check`, `test-full` and `verify` include it. `--index-only` is a staged-review
+option, not acceptance evidence and not used by any aggregate gate.
+
+The check consumes existing document/capture hash authorities and the ten
+prospective owner-established authorities in `assets/history/manifest.json`.
+It never needs an old worktree or network access. Git and Python must be
+available to repository gates. A pre-policy checkout is not rematerialized by
+editing attributes; use a new worktree for reproducibility validation. Existing
+pinned dependencies may be shared through an ignored `.deps` junction; use a
+fresh task-local Zig cache. Do not apply local conversion-configuration overrides
+or copy tracked files to make a proof checkout pass. See the
+[correction report](implementation/reproducible_windows_checkouts.md).
+
+PSM01, World Time, Engine Lab EL1, RR1 and Effects/Projectiles are all accepted
+on master within their individual scopes. Their focused gates remain separate
+and registered once in the fast aggregate. Run the five together in Debug,
+ReleaseSafe and ReleaseFast for a repository-integrity acceptance boundary.
+Sharing a gate or master does not integrate their state or ownership.
 
 ### Change-based gate guidance
 
@@ -1678,5 +1703,6 @@ tracking, facing and animation. F1/F2 move the same actor to station destination
 P pauses/resumes, T advances one paused tick, R reconstructs the complete seeded
 hub, F3 toggles diagnostics, and Escape exits. Both station states remain live
 through ordinary movement and destination travel. Review the exact evidence and
-remaining owner visual/architectural gate in the
-[EL1 report](implementation/engine_lab_el1.md).
+owner-confirmed visual/architectural acceptance and retained milestone-time
+limitations in the [EL1 report](implementation/engine_lab_el1.md). EL1 is accepted;
+this does not authorize later EL2 work.

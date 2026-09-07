@@ -12,10 +12,31 @@ This map supplements, rather than replaces, the normative details in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). It names the current production
 modules and their current authority boundaries.
 
+## Accepted post-F4 ownership on master
+
+All five parallel foundations are accepted and present on master at
+`d71c4ae439d0b04019734cd3f45b7a6366a6a00f`. The
+[current status record](CURRENT_STATE.md#accepted-post-f4-foundations-on-master-2026-09-06)
+provides commit provenance and scope. Coexistence on master does not create
+cross-system adoption or override any existing authority boundary.
+
+| Lane | Independent authority |
+| --- | --- |
+| PSM01 | Scalar secondary motion and authored rate response under physics; no anatomical or representation binding |
+| World Time | [world/root.zig](../../src/world/root.zig) and [time.zig](../../src/world/time.zig): caller-owned logical time; no wall clock, weather or environment ownership |
+| Engine Lab EL1 | [app/engine_lab](../../src/app/engine_lab): independent persistent hub/application composition; lower engine modules do not import it |
+| RR1 | Bounded record/replay protocol and external controller-proof adapter, described below; no general Engine Lab or scene replay |
+| Effects/Projectiles | Separate 2D cores and optional composition, described below; standalone visual proof |
+
+Future adoption among these lanes, PHY adapters, world/environment integration,
+canonical-generated actor presentation and gameplay remain separately scoped.
+This record does not authorize EL2 or PSM02.
+
 ## Accepted parallel Effects and Projectiles ownership
 
 Owner-accepted feature `c0421e5182b9adb5fece7fb38520c9181bf8b038` was integrated
-through merge `493549cfc31b3d768b680f7284b6bd7fae517c7a`. This is a parallel
+through merge `493549cfc31b3d768b680f7284b6bd7fae517c7a`, followed by acceptance
+documentation `d71c4ae439d0b04019734cd3f45b7a6366a6a00f`, both on master. This is a parallel
 foundation pulled forward from later roadmap work; it does not renumber or
 complete M03, M04, Phase D, Phase L or any editor milestone.
 

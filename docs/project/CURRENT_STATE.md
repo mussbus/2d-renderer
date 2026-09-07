@@ -133,6 +133,32 @@ catalog. Its visible ownership is preferable to hidden directory discovery.
 Revisit it only if future parallel-domain additions make it a meaningful
 change magnet.
 
+## Accepted post-F4 foundations on master (2026-09-06)
+
+Master at `d71c4ae439d0b04019734cd3f45b7a6366a6a00f` contains all five accepted
+parallel foundations. Effects/Projectiles merge
+`493549cfc31b3d768b680f7284b6bd7fae517c7a` and its acceptance-document commit
+`d71c4ae439d0b04019734cd3f45b7a6366a6a00f` are on master after the completed
+fast-forward and push. The unnumbered
+[checkout reproducibility correction](../implementation/reproducible_windows_checkouts.md)
+is separate repository-integrity work and does not advance a product milestone.
+
+| Accepted lane | Implementation on master | Bounded ownership |
+| --- | --- | --- |
+| [PSM01 Secondary Motion](../implementation/psm01_secondary_motion.md) | `43ae062867d8bda79b1ba364ad6e934c0beee8c7` | Generic scalar solver and authored rate resolution; anatomical tuning, production bindings, PSM02 and baking remain outside acceptance |
+| [World Time Foundation](../implementation/world_time_foundation.md) | `89faed3b416e8d9aa4665e39ff72f5cb7ee93bb9` | Caller-owned deterministic logical time and snapshots; no climate, weather, environment or application integration |
+| [Engine Lab EL1](../implementation/engine_lab_el1.md) | `7b3eb3a4b90093656167dc65082b62fa6378c963` | Independent persistent hub, provisional actor and existing engine clients; EL1 is accepted, canonical-generated characters and later EL2 work are separate |
+| [RR1 Record/Replay](../implementation/rr1_record_replay.md) | `fb0526ddbd268be0befef9694b1b1dc03ad7fb68` | Bounded deterministic V1 protocol and headless production-controller proof; arbitrary scenes, dynamic publication and whole-engine replay remain deferred |
+| [Effects and Projectiles Foundation](../implementation/effects_projectiles_foundation.md) | `c0421e5182b9adb5fece7fb38520c9181bf8b038` | Independent 2D cores, optional event composition and standalone GPU proof; other subsystem adoption remains deferred |
+
+Sharing master records accepted repository integration; it does not make these
+five lanes consume one another. Their existing engine dependencies and authority
+boundaries remain intact. No EL2, PSM02, gameplay integration, new representation
+binding or other implementation is authorized here. Historical feature-time
+candidate/review wording retains its original meaning and does not supersede
+this current acceptance record. M03, M04, phases and editor milestones retain
+their existing numbering and gates.
+
 ## Accepted post-F4 secondary-motion foundation
 
 **PSM01 is ACCEPTED by the owner at
@@ -150,7 +176,8 @@ migration, baking work or change to M03/M04 status follows from acceptance.
 
 The owner accepted feature commit `c0421e5182b9adb5fece7fb38520c9181bf8b038`.
 It is integrated through merge `493549cfc31b3d768b680f7284b6bd7fae517c7a`
-on `integration/effects-projectiles-foundation`; master was not advanced.
+and acceptance-document commit `d71c4ae439d0b04019734cd3f45b7a6366a6a00f`
+on master. The integration branch remains retained.
 The [implementation record](../implementation/effects_projectiles_foundation.md)
 contains measured integration gates and preserved feature-time evidence.
 
