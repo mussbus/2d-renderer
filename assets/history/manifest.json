@@ -12,5 +12,139 @@
     { "family": "canonical_geometry_prompt_2c_t3_hm08_adoption", "classification": "current_validation_and_lineage", "authority": "protected", "disposition": "keep_historical_in_place", "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_t3_hm08_adoption", "files": 35, "bytes": 59696319, "reproduction": "Current adoption tests and tooling consume this family." },
     { "family": "canonical_geometry_prompt_2c_r3", "classification": "current_validation_and_lineage", "authority": "protected", "disposition": "keep_historical_in_place", "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_r3_hm08_neutral_adaptation", "files": 64, "bytes": 104483991, "reproduction": "Current R3 tests, tools, and accepted records consume this family." },
     { "family": "canonical_geometry_prompt_2c_r4", "classification": "current_protected_authority", "authority": "protected", "disposition": "keep_active", "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_r4_final_neutral", "files": 56, "bytes": 97501539, "reproduction": "Current final-neutral qualification and identity checks consume this family." }
-  ]
+  ],
+  "raw_byte_integrity": {
+    "pre_existing_authorities": [
+      {
+        "source": "tools/check_documentation.ps1",
+        "scope": "exactPromptHashes and exactReportHashes: 20 accepted raw SHA-256 values; unchanged"
+      },
+      {
+        "source": "evidence/effects_projectiles/validation.json",
+        "scope": "historical_evidence_sha256: retained existing capture hashes; unchanged"
+      },
+      {
+        "source": "assets/history/manifest.json",
+        "scope": "Existing families, byte totals and binary sha256 arrays above; unchanged"
+      }
+    ],
+    "owner_established_authorities": {
+      "decision_date": "2026-09-06",
+      "baseline": "d71c4ae439d0b04019734cd3f45b7a6366a6a00f",
+      "authority": "Prospective owner decision during the unnumbered reproducible-Windows-checkout correction. These ten individual hashes were established by this decision; they are not prior individual hash authorities or retroactive evidence.",
+      "audit_report_sha256": "dfd488c2188edd9a644b6cdb927993b37293e07ffc6de3612742fa42eaca02f3",
+      "entries": [
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c/mobile_text_exports/human_base_main_body_mobile_sheet_a_whole_body.png.base64.txt",
+          "sha256": "325104f7f2857752e885516a50ecdf6f20b22bcab536827728e7b7ba2d7f2a16",
+          "bytes": 368888,
+          "baseline_git_blob": "1964fc820c485d66af3ff0b76be674cf0e79112e",
+          "baseline_blob_sha256": "207ba472b4a9fb177e132fd32bbf3c6c8444ee9d8fcc75c542762645920a697f",
+          "family": "canonical_geometry_prompt_2c",
+          "accepted_family_bytes": 34328703,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c/mobile_text_exports/human_base_main_body_mobile_sheet_b_topology.png.base64.txt",
+          "sha256": "2f9a6b81fbad7619192d30f6040ebe105f053daac2accdf31a9986fd34f28fae",
+          "bytes": 2294190,
+          "baseline_git_blob": "788faa069c09b8c2690b6b54e6deab98e00d226d",
+          "baseline_blob_sha256": "d8c1e682b4c43cf7b657afd2acd79b191b9f6150812613d20a065fa7540e4585",
+          "family": "canonical_geometry_prompt_2c",
+          "accepted_family_bytes": 34328703,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c/mobile_text_exports/human_base_main_body_mobile_sheet_c_anatomy.png.base64.txt",
+          "sha256": "d58277585df8f5f0ee8cd5f971a6784165d2a99409b982ac35360f5454745b0b",
+          "bytes": 1538530,
+          "baseline_git_blob": "75a2ff7fa6148d3fd3425b074afef52971e3fa86",
+          "baseline_blob_sha256": "b77605d7c48732338e2e3e080adef70b46513fadf95aed5423f7d001af4f9110",
+          "family": "canonical_geometry_prompt_2c",
+          "accepted_family_bytes": 34328703,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c/mobile_text_exports/human_base_main_body_owner_review_contact_sheet.png.base64.txt",
+          "sha256": "766daf6ad7ac7d08bd782fb8cc0c93dd7772f34885fcb4cd1296e0ba4e3a9bff",
+          "bytes": 1393902,
+          "baseline_git_blob": "124f15534b8e9e7e4e19525c55962e2635d53e16",
+          "baseline_blob_sha256": "dd06d78fa64b7220132523190e1dc7b3feaa51802e6bf114efd79b8b53f5fff0",
+          "family": "canonical_geometry_prompt_2c",
+          "accepted_family_bytes": 34328703,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_r3_hm08_neutral_adaptation/human_base_main_body_r3_adaptation.json",
+          "sha256": "5130293639d99fba83ffd9de328e5a29d71d897c033ab64acfff6cf67f92960c",
+          "bytes": 1775,
+          "baseline_git_blob": "757a8370b6b50c944c889e1606a9853b705aa57b",
+          "baseline_blob_sha256": "9940ac45abcf184f86222ac01c449903f36e3a978f287830a592c77ffdc64ee6",
+          "family": "canonical_geometry_prompt_2c_r3",
+          "accepted_family_bytes": 104483991,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_r3_hm08_neutral_adaptation/human_base_main_body_r3_self_intersection.json",
+          "sha256": "885935cfc8f4d207c6ef1192cf936297a4f4cc3563a149b9a01049db9947cf18",
+          "bytes": 154,
+          "baseline_git_blob": "963afb0e8f8c62ffcf243bc74a601c8ef1ad8e56",
+          "baseline_blob_sha256": "c0bf54f66cbf6e522c578cdde82ace64696460c458956ee0319e5161ce9a1401",
+          "family": "canonical_geometry_prompt_2c_r3",
+          "accepted_family_bytes": 104483991,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_t2_hm08/hm08.provenance.json",
+          "sha256": "f1372b446c2b88b1cb3b6748bf7d2afb007abd6131cbb1ad78663ee9dce8e141",
+          "bytes": 2833,
+          "baseline_git_blob": "43d6e06a1ee2f32f051198fac2795326059c5d12",
+          "baseline_blob_sha256": "3e7a2a2fa24ddf5fc5903b910fdb338526d8816c84a6a076937644cec26457bf",
+          "family": "canonical_geometry_prompt_2c_t2_hm08",
+          "accepted_family_bytes": 110280975,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_t2_hm08/hm08.qualification_metrics.json",
+          "sha256": "83709b750bf50ee0bebb872a7ed5ae166ab9f9b59764a57cd3ff503f3d27e2ad",
+          "bytes": 119644,
+          "baseline_git_blob": "9d84c15dd219f8c54fc3e4b02a8b88b7c37ac117",
+          "baseline_blob_sha256": "e202424a7bf3bbc38a2e4c711f6d3f1e8c23c1f45221103c2339dcb3adc0b8bb",
+          "family": "canonical_geometry_prompt_2c_t2_hm08",
+          "accepted_family_bytes": 110280975,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_t2_hm08/hm08.seam_candidates.json",
+          "sha256": "2e768b3a59c796c1c10deba4959a327730a928fdb9d5d024c9917c651c14f93d",
+          "bytes": 10836,
+          "baseline_git_blob": "a245397f899ee125815cffadc97988ccc0e563fc",
+          "baseline_blob_sha256": "494e7a5f862b145b489b0f07cafa5244023ffe6376cac6495e92f273fb3d64d8",
+          "family": "canonical_geometry_prompt_2c_t2_hm08",
+          "accepted_family_bytes": 110280975,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        },
+        {
+          "path": "assets/canonical_model/human_base/geometry/evidence/prompt_2c_t2_hm08/hm08.visual_index.json",
+          "sha256": "21a2351e9c8c934e2bb7572b1112b117c9c6225fb5e2b711b28d5455ed0dcdf3",
+          "bytes": 3008,
+          "baseline_git_blob": "8e5247cac8e3f7d33e1757e964c6cef7e6fb99bd",
+          "baseline_blob_sha256": "053e8f75b03e1cac331d6b491d5f5594bd3ba7bd1eaec7eed6b5fa52f95ed2da",
+          "family": "canonical_geometry_prompt_2c_t2_hm08",
+          "accepted_family_bytes": 110280975,
+          "prior_individual_sha256_authority": false,
+          "provenance": "Untouched clean master at the decision baseline; raw CRLF bytes match the audited owner-authorized SHA and size; CRLF-to-LF bytes equal the baseline blob exactly; accepted family inventory preserved."
+        }
+      ]
+    }
+  }
 }

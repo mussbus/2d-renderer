@@ -5,6 +5,11 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $checksRoot = Join-Path $PSScriptRoot 'checks'
+& python (Join-Path $checksRoot 'checkout_bytes.py')
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
 foreach ($helper in @('hygiene.ps1', 'architecture.ps1')) {
     $path = Join-Path $checksRoot $helper
     & $path

@@ -1,0 +1,45 @@
+# Current source and structured inputs have canonical LF bytes on every checkout.
+*.zig text eol=lf
+*.zon text eol=lf
+*.ps1 text eol=lf
+*.py text eol=lf
+*.hlsl text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.tsv text eol=lf
+# OBJ here is exported textual geometry, never a compiled object file.
+*.obj text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+
+# P6 PPM images can lack NUL bytes; automatic text detection corrupts them.
+*.png binary
+*.ppm binary
+*.zip binary
+
+# CRLF is intentional in frozen captures; retain all other default whitespace checks.
+# Frozen captures retain exact raw bytes. README and later unpinned reports
+# remain normal Markdown; only the twenty existing exact-hash artifacts opt out.
+/docs/history/prompts/exact/*-source.txt -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/023-implementation-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/024-implementation-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/024A-025-implementation-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/025A-implementation-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/025B-final-visual-gate-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/025B-implementation-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/025C-implementation-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/docs/history/reports/prompt-implementation-reports/exact/025D-implementation-report.md -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# These retained geometry qualification/lineage packages are immutable captures.
+# Current authoring JSON and the active R4 package use the textual rules above;
+# their binary images retain the binary rules. No current authority is archived.
+/assets/canonical_model/human_base/geometry/evidence/prompt_2b/** -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/assets/canonical_model/human_base/geometry/evidence/prompt_2c/** -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/assets/canonical_model/human_base/geometry/evidence/prompt_2c_r1/** -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/assets/canonical_model/human_base/geometry/evidence/prompt_2c_t2_hm08/** -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/assets/canonical_model/human_base/geometry/evidence/prompt_2c_t3_hm08_adoption/** -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/assets/canonical_model/human_base/geometry/evidence/prompt_2c_r3_hm08_neutral_adaptation/** -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Existing Effects/Projectiles archived capture hashes describe raw Git bytes.
+/evidence/effects_projectiles/history/** -text !eol whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
