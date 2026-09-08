@@ -72,7 +72,7 @@ test "calibration render interpolation follows actor once and cannot change any 
     defer close(&hub);
     var view = try view_module.View.init(tracking.allocator());
     defer view.deinit();
-    var queue = try queue_module.UnifiedRenderQueue.init(tracking.allocator(), view_module.entry_capacity, view_module.sprite_capacity, view_module.mesh_capacity, 2);
+    var queue = try queue_module.UnifiedRenderQueue.init(tracking.allocator(), view_module.legacy_entry_capacity, view_module.legacy_sprite_capacity, view_module.mesh_capacity, 2);
     defer queue.deinit();
     queue.markStabilized();
     try advance(&hub, 30, 1);

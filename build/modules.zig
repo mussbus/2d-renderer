@@ -1007,6 +1007,7 @@ pub fn register(options: Options) Catalog {
     engine_lab_module.addImport("collider", collider_module);
     engine_lab_module.addImport("collision_world", collision_world_module);
     engine_lab_module.addImport("character", character_module);
+    engine_lab_module.addImport("character_controller", character_controller_module);
     engine_lab_module.addImport("humanoid", humanoid_module);
     engine_lab_module.addImport("authored_clips", authored_clips_module);
     engine_lab_module.addImport("character_intent", character_intent_module);

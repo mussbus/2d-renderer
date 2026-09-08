@@ -147,7 +147,7 @@ test "World Time rendering all supported alphas preserves exact time and prior s
     defer close(&hub);
     var view = try view_module.View.init(tracking.allocator());
     defer view.deinit();
-    var queue = try queue_module.UnifiedRenderQueue.init(tracking.allocator(), view_module.entry_capacity, view_module.sprite_capacity, view_module.mesh_capacity, 2);
+    var queue = try queue_module.UnifiedRenderQueue.init(tracking.allocator(), view_module.legacy_entry_capacity, view_module.legacy_sprite_capacity, view_module.mesh_capacity, 2);
     defer queue.deinit();
     queue.markStabilized();
     try hub.navigate(.springs);
@@ -306,7 +306,7 @@ test "World Time worst legal production glyph count and widest label fit the nat
     defer close(&hub);
     var view = try view_module.View.init(std.testing.allocator);
     defer view.deinit();
-    var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, view_module.entry_capacity, view_module.sprite_capacity, view_module.mesh_capacity, 2);
+    var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, view_module.legacy_entry_capacity, view_module.legacy_sprite_capacity, view_module.mesh_capacity, 2);
     defer queue.deinit();
     // Presentation-only validated snapshots, never claimed as simulated history.
     for ([_]u64{ 0, 999, 1000, maximum.day, std.math.maxInt(u64) }) |day| for ([_]u64{ 0, maximum.minute, 1439 }) |minute| for ([_]h.Destination{ .hierarchy, .springs }) |destination| {

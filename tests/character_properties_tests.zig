@@ -423,3 +423,71 @@ test "property resolution performs no allocation growth" {
     try std.testing.expectEqual(before, fixed.end_index);
     _ = fixed.allocator();
 }
+
+test "CharacterInstance explicit properties preserve default synchronization and reject before mutation" {
+    var definition = try @import("humanoid").HumanoidDefinition.init(std.testing.allocator, null);
+    defer definition.deinit();
+    var animations = try authored.Definitions.init(std.testing.allocator, &definition.skeleton_definition, null);
+    defer animations.deinit();
+    var world = try floorWorld(std.testing.allocator);
+    defer world.deinit();
+    var ordinary = try character.CharacterInstance.initControlled(std.testing.allocator, try character.entityIdFromRaw(1), &definition, &animations, &world, .{}, .{ .x = 0, .y = 1.05 }, .right, 0, null);
+    defer ordinary.deinit();
+    var explicit = try character.CharacterInstance.initControlled(std.testing.allocator, try character.entityIdFromRaw(2), &definition, &animations, &world, .{}, .{ .x = 0, .y = 1.05 }, .right, 0, null);
+    defer explicit.deinit();
+    const defaults = character_controller.GameplayProperties.fromConfiguration(.{});
+    for (0..240) |i| {
+        var command = intent(if (i < 120) 1 else -1, i == 30, i == 60);
+        command.jump_released = i == 60;
+        const expected = try ordinary.stepController(&world, command);
+        try std.testing.expectEqualDeep(expected, try explicit.stepControllerWithProperties(&world, command, defaults));
+        try std.testing.expectEqualDeep(ordinary.controllerSnapshot(), explicit.controllerSnapshot());
+        try std.testing.expectEqualDeep(ordinary.worldPosition(), explicit.worldPosition());
+        try std.testing.expectEqual(ordinary.facingDirection(), explicit.facingDirection());
+        try std.testing.expectEqualDeep(ordinary.presentationRuntimeSnapshot(), explicit.presentationRuntimeSnapshot());
+        try std.testing.expectEqualDeep(ordinary.humanoidView().local_and_world_pose.world_transforms, explicit.humanoidView().local_and_world_pose.world_transforms);
+    }
+    const before = explicit.controllerSnapshot();
+    const presentation = explicit.presentationRuntimeSnapshot();
+    const root = explicit.worldPosition();
+    const facing = explicit.facingDirection();
+    for ([_]f32{ 0, -1, std.math.nan(f32), std.math.inf(f32) }) |invalid| {
+        var values = defaults;
+        values.maximum_run_speed = invalid;
+        try std.testing.expectError(error.InvalidResolvedMovementSpeed, explicit.stepControllerWithProperties(&world, intent(-1, true, true), values));
+        values = defaults;
+        values.jump_speed = invalid;
+        try std.testing.expectError(error.InvalidResolvedJumpStrength, explicit.stepControllerWithProperties(&world, intent(-1, true, true), values));
+        try std.testing.expectEqualDeep(before, explicit.controllerSnapshot());
+        try std.testing.expectEqualDeep(presentation, explicit.presentationRuntimeSnapshot());
+        try std.testing.expectEqualDeep(root, explicit.worldPosition());
+        try std.testing.expectEqual(facing, explicit.facingDirection());
+    }
+}
+
+test "CharacterInstance explicit authority replaces equipment values for one call without changing resolution" {
+    var definition = try modular_humanoid.initDefinition(std.testing.allocator);
+    defer definition.deinit();
+    var equipment_definition = try equipment_catalog.initDefinition(std.testing.allocator, &definition);
+    defer equipment_definition.deinit();
+    var animations = try authored.Definitions.init(std.testing.allocator, &definition.skeleton_definition, null);
+    defer animations.deinit();
+    var world = try floorWorld(std.testing.allocator);
+    defer world.deinit();
+    var controlled = try character.CharacterInstance.initControlled(std.testing.allocator, try character.entityIdFromRaw(1), &definition, &animations, &world, .{}, .{ .x = 0, .y = 1.05 }, .right, 0, null);
+    defer controlled.deinit();
+    try controlled.initializeEquipment(equipment_definition.view());
+    try controlled.replaceItem(try equipment_definition.itemId("speed_boots"));
+    try controlled.equipItem(try equipment_definition.itemId("amulet"));
+    const resolved = controlled.resolvedPropertiesSnapshot();
+    const defaults = character_controller.GameplayProperties.fromConfiguration(.{});
+    // Explicit false is authoritative even while equipment grants dash.
+    try std.testing.expect((try controlled.stepControllerWithProperties(&world, intent(1, false, true), defaults)).dash_denied);
+    for (0..120) |_| _ = try controlled.stepControllerWithProperties(&world, intent(1, false, false), defaults);
+    try std.testing.expectApproxEqAbs(@as(f32, 4.5), controlled.controllerSnapshot().?.state.velocity.x, tolerance);
+    try std.testing.expectEqualDeep(resolved, controlled.resolvedPropertiesSnapshot());
+    // The ordinary entry immediately resumes the equipment authority.
+    for (0..120) |_| _ = try controlled.stepController(&world, intent(1, false, false));
+    try std.testing.expectApproxEqAbs(@as(f32, 5.175), controlled.controllerSnapshot().?.state.velocity.x, tolerance);
+    try std.testing.expect((try controlled.stepController(&world, intent(-1, false, true))).dash_started);
+}

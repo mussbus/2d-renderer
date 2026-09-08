@@ -1817,3 +1817,23 @@ through ordinary movement and destination travel. Review the exact evidence and
 owner-confirmed visual/architectural acceptance and retained milestone-time
 limitations in the [EL1 report](implementation/engine_lab_el1.md). EL1 is accepted;
 this does not authorize later EL2 work.
+
+
+## Engine Lab traversal expansion
+
+The [bounded traversal record](implementation/engine_lab_traversal_expansion.md)
+separates the explicit legacy room from normal expanded construction. Retain all
+legacy expected identities and budgets. The expanded tests execute production
+movement, all three named routes, input/lifecycle, initialization/reset failure
+prefixes, camera/viewport bounds, render purity and full presentation saturation.
+Run `test-engine-lab`, `test-world`, `test-psm01`, `test-effects-projectiles` and
+`test-camera` in Debug, ReleaseSafe and ReleaseFast. Focus the additive shared API
+and retained equipment consumers with `test-deterministic -Dtest-filter=character_properties_tests`.
+Then run `check`, `test-full`, default/Engine Lab builds in all modes, physical
+`gpu-smoke`, Engine Lab `--verify` and `--smoke`, and the expected-failure
+`--verify-world-time-overflow` wrapper. Use `-j1` and the established caches/install.
+Supply all four fresh capture directories: `--impact-capture-dir`,
+`--calibration-capture-dir`, `--world-time-capture-dir`, `--traversal-capture-dir`.
+The traversal reproduction script chooses a fresh directory and verifies PNGs.
+Automated route and native evidence do not grant independent or owner visual/gamepad
+acceptance. Those remain pending for traversal; World Time acceptance is unchanged.

@@ -305,3 +305,33 @@ parallel renderer. F1 still owns the four diagnostic modes and F4 still
 captures exactly one same-state bundle per physical press. VF-03 bundles use
 schema 4 and ordinary timestamped manual naming; automated Prompt evidence
 names remain deterministic and untimestamped.
+
+
+## Persistent Engine Lab
+
+Normal Engine Lab launch opens the expanded two-level hub. Walk left from the
+installations to the marked ledges. Hold Space for a full jump; press again while
+airborne for one additional jump. Landing replenishes it. Left Shift dashes in
+the movement direction, or facing direction when stationary. The far upper gap
+can be crossed by jumping and then dashing. Falling returns to the safe floor.
+
+| Keyboard / gamepad | Engine Lab action |
+| --- | --- |
+| A/D, arrows / left stick | Move |
+| Space / south | Ground jump, then one additional air jump |
+| Left Shift / right shoulder | Horizontal dash on a fresh press |
+| E / west | Fire beside the launcher; eight concurrent projectiles |
+| F1 / F2 | Reposition beside Links / Damping, preserving the running hub |
+| P / T | Pause / execute one full simulation tick while paused |
+| R | Reconstruct the entire expanded hub |
+| F3 / Escape | Diagnostics / exit |
+
+F1 Links shows the fixed parent/child anchors and their spring-driven masses.
+F2 Damping compares three spring responses with different damping and plots their
+recent offsets. They are persistent engine installations, not movement modes.
+LAG is the accepted horizontal secondary-motion calibration above the actor.
+The upper-right label shows logical world day/time from executed ticks. Pause
+freezes it; navigation preserves it; reset returns to D0 23:59. Projectile activation
+checks both horizontal and vertical proximity, including when above the launcher.
+See the [traversal record](implementation/engine_lab_traversal_expansion.md) for
+measured routes and pending owner visual/gamepad acceptance.

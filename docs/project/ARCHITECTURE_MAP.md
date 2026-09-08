@@ -87,6 +87,20 @@ Measured complete conservative use is 1,950, with 34 sprites of headroom and thr
 batches. Shared cores/renderer defaults and static RuntimeScene ownership remain
 unchanged. This unnumbered feature work is local and implies no master incorporation.
 
+
+The [Engine Lab traversal expansion](../implementation/engine_lab_traversal_expansion.md)
+opens a 32-metre two-level persistent hub through an explicit expanded construction.
+It retains the accepted room as a regression construction and adds authored
+5.5 m/s run, 10.5 m/s jump, one air jump, existing horizontal dash and bounded
+vertical camera following. The one shared addition is a validated explicit
+CharacterInstance movement-property step using the existing synchronization path.
+Controller defaults/algorithm and accepted integration cores remain unchanged.
+Nine static boxes retain the launcher and target; no collectibles are implemented.
+Traversal is **pending independent review and owner visual/gamepad acceptance**.
+World Time remains accepted at the exact revision recorded above; neither status
+implies incorporation into master. See the implementation record for routes,
+separate legacy evidence and the 2,200/2,232 conservative presentation bound.
+
 ## Integrated production flow
 
 The [accepted Engine Lab projectile-impact checkpoint](../implementation/engine_lab_projectile_impact.md)

@@ -948,8 +948,19 @@ const CharacterState = struct {
         world: *const collision_world.CollisionWorld,
         intent: character_intent.CharacterIntent,
     ) !character_controller.StepResult {
+        return instance.stepControllerWithProperties(world, intent, try instance.controllerGameplayProperties());
+    }
+
+    fn stepControllerWithProperties(
+        instance: *CharacterState,
+        world: *const collision_world.CollisionWorld,
+        intent: character_intent.CharacterIntent,
+        movement_properties: character_controller.GameplayProperties,
+    ) !character_controller.StepResult {
         const controller = if (instance.controller) |*value| value else return error.CharacterHasNoController;
-        const result = try controller.stepWithProperties(world, intent, try instance.controllerGameplayProperties());
+        // Validate the complete explicit authority before any controller or pose mutation.
+        try movement_properties.validate(controller.configuration);
+        const result = try controller.stepWithProperties(world, intent, movement_properties);
         instance.world_position = controller.state.position;
         const resolved_facing: humanoid.Facing = if (controller.state.facing == .left) .left else .right;
         if (instance.facing != resolved_facing) try instance.clearAttachmentSecondaryMotion();
@@ -1969,6 +1980,13 @@ pub const CharacterInstance = struct {
     }
     pub fn stepController(instance: *CharacterInstance, world: *const collision_world.CollisionWorld, intent: character_intent.CharacterIntent) !character_controller.StepResult {
         return instance.stateMut().stepController(world, intent);
+    }
+    /// Complete per-step movement authority. Explicit values replace resolved
+    /// equipment/property values for this call only; no merging or stored override.
+    /// The ordinary entry point retains its existing resolution and both use the
+    /// same controller, root, facing, pose and presentation synchronization path.
+    pub fn stepControllerWithProperties(instance: *CharacterInstance, world: *const collision_world.CollisionWorld, intent: character_intent.CharacterIntent, movement_properties: character_controller.GameplayProperties) !character_controller.StepResult {
+        return instance.stateMut().stepControllerWithProperties(world, intent, movement_properties);
     }
     pub fn reset(instance: *CharacterInstance) !void {
         try instance.stateMut().reset();

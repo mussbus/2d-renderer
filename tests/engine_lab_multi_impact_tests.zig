@@ -317,7 +317,7 @@ test "maximum diagnostics and eight replacement flights plus 192 particles retai
     defer close(&hub);
     var view = try view_module.View.init(std.testing.allocator);
     defer view.deinit();
-    var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, view_module.entry_capacity, view_module.sprite_capacity, view_module.mesh_capacity, 2);
+    var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, view_module.legacy_entry_capacity, view_module.legacy_sprite_capacity, view_module.mesh_capacity, 2);
     defer queue.deinit();
     try hub.navigate(.springs);
     _ = try fill(&hub);
@@ -431,7 +431,7 @@ test "maximum diagnostics and eight replacement flights plus 192 particles retai
                             calibration_max = @max(calibration_max, addition);
                             combined_observed = @max(combined_observed, total - time_addition);
                             try std.testing.expect(addition > 0 and addition <= view_module.calibration_sprite_allowance);
-                            try std.testing.expect(total <= view_module.sprite_capacity);
+                            try std.testing.expect(total <= view_module.legacy_sprite_capacity);
                             largest = @max(largest, count);
                             try std.testing.expect(count <= 1792);
                             try std.testing.expectEqual(@as(usize, 3), queue.prepare().ranges.len);
@@ -445,7 +445,7 @@ test "maximum diagnostics and eight replacement flights plus 192 particles retai
                                 combined_bound = @max(combined_bound, upper + addition);
                                 try std.testing.expect(upper + addition <= 1856);
                                 all_bound = @max(all_bound, upper + addition + time_addition);
-                                try std.testing.expect(upper + addition + time_addition <= view_module.sprite_capacity);
+                                try std.testing.expect(upper + addition + time_addition <= view_module.legacy_sprite_capacity);
                                 if (upper > 1792) std.debug.print("DIAGNOSTIC_GLYPH_BOUND actual={d} upper={d} hash_cost={d} glyph_max={d} removed={d} paused={} tick={d}\n", .{ count, upper, actual_hash, maximum_hex_glyph, removed, paused, counter });
                                 try std.testing.expect(upper <= 1792);
                             }
@@ -462,7 +462,7 @@ test "maximum diagnostics and eight replacement flights plus 192 particles retai
         }
     }
     std.debug.print("CALIBRATION_PRESENTATION_BOUND preexisting_observed={d}/1792 preexisting_conservative={d}/1792 addition={d}/64 combined_observed={d}/1856 combined_conservative={d}/1856 offsets=rest,both_limits batches=3\n", .{ largest, conservative, calibration_max, combined_observed, combined_bound });
-    std.debug.print("WORLD_TIME_PRESENTATION_BOUND preexisting={d}/1792 calibration={d}/64 prior_combined={d}/1856 time={d}/128 observed={d}/1984 conservative={d}/1984 headroom={d} batches=3\n", .{ conservative, calibration_max, combined_bound, time_max, all_observed, all_bound, view_module.sprite_capacity - all_bound });
+    std.debug.print("WORLD_TIME_PRESENTATION_BOUND preexisting={d}/1792 calibration={d}/64 prior_combined={d}/1856 time={d}/128 observed={d}/1984 conservative={d}/1984 headroom={d} batches=3\n", .{ conservative, calibration_max, combined_bound, time_max, all_observed, all_bound, view_module.legacy_sprite_capacity - all_bound });
     std.debug.print("MULTI_IMPACT_DIAGNOSTIC_MAX sprites={d}/1792 conservative_hash_bound={d}/1792 projectiles=0..8 particles=192 batches=3 full_u64_ticks=true paused=true saturated_counters=true\n", .{ largest, conservative });
 }
 

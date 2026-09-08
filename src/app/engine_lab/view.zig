@@ -13,8 +13,11 @@ pub const preexisting_sprite_bound: usize = 1792;
 pub const calibration_sprite_allowance: usize = 64;
 pub const accepted_calibration_bound: usize = preexisting_sprite_bound + calibration_sprite_allowance;
 pub const time_sprite_allowance: usize = 128;
-pub const sprite_capacity: usize = accepted_calibration_bound + time_sprite_allowance;
-pub const entry_capacity: usize = 2048;
+pub const legacy_sprite_capacity: usize = accepted_calibration_bound + time_sprite_allowance;
+// Complete production-font bound 2200 plus the required 32 spare.
+pub const sprite_capacity: usize = 2232;
+pub const legacy_entry_capacity: usize = 2048;
+pub const entry_capacity: usize = sprite_capacity;
 pub const mesh_capacity: usize = 256;
 
 const colors = [hub_module.mass_count][4]f32{ .{ 0.25, 0.85, 1, 1 }, .{ 1, 0.65, 0.2, 1 }, .{ 0.85, 0.4, 1, 1 } };
@@ -44,14 +47,16 @@ pub const View = struct {
     pub fn render(self: *View, hub: *hub_module.Hub, queue: *queue_module.UnifiedRenderQueue) !void {
         self.commands.beginFrame();
         queue.beginFrame();
-        for (hub_module.collider_inputs, 0..) |item, index| {
+        for (hub_module.layout.colliders(hub.construction), 0..) |item, index| {
             _ = try queue.submitSprite(box(item.bounds.center(), item.bounds.size(), if (index == 3) .{ 0.27, 0.37, 0.47, 1 } else .{ 0.12, 0.19, 0.27, 1 }, -10));
             if (hub.diagnostics_enabled) try self.commands.addAabb(item.bounds, .{ 0.5, 0.75, 0.9, 1 });
         }
-        for (0..15) |mark| {
-            const x = @as(f32, @floatFromInt(mark)) - 7;
+        const mark_count: usize = if (hub.construction == .expanded) 31 else 15;
+        for (0..mark_count) |mark| {
+            const x = @as(f32, @floatFromInt(mark)) - @as(f32, if (hub.construction == .expanded) 23 else 7);
             _ = try queue.submitSprite(box(.{ .x = x, .y = -0.07 }, .{ .x = 0.06, .y = 0.1 }, .{ 0.4, 0.6, 0.7, 1 }, -9));
         }
+        if (hub.construction == .expanded) for (hub_module.layout.routes) |route| try self.label(route.label_origin, route.label);
         for (hub.stations, hub.installations.roots, hub.installations.anchors, 0..) |station, root, anchors, index| {
             try self.label(.{ .x = root.world.x - 1.05, .y = 3.55 }, if (index == 0) "F1 LINKS" else "F2 DAMPING");
             for (anchors, station.springs, station.previous_offsets, 0..) |anchor, state, previous, mass| {
@@ -126,8 +131,8 @@ pub const View = struct {
         const top = hub.camera.center.y + half.y - 0.2;
         try self.label(.{ .x = left, .y = top }, "ENGINE LAB");
         try self.label(.{ .x = left, .y = top - 0.24 }, "A/D ARROWS  SPACE JUMP");
-        try self.label(.{ .x = left, .y = top - 0.48 }, "F1 F2  R RESET  P PAUSE  T STEP");
-        try self.label(.{ .x = left, .y = top - 0.72 }, "F3 INFO  ESC");
+        try self.label(.{ .x = left, .y = top - 0.48 }, if (hub.construction == .expanded) "F1 F2 R RESET P PAUSE T STEP" else "F1 F2  R RESET  P PAUSE  T STEP");
+        try self.label(.{ .x = left, .y = top - 0.72 }, if (hub.construction == .expanded) "F3 INFO  ESC  SHIFT/RB DASH" else "F3 INFO  ESC");
         var text: [128]u8 = undefined;
         const status = if (hub.clock.paused) "PAUSED" else "RUN";
         const visited = @as(u8, @intFromBool(hub.visited[0])) + @as(u8, @intFromBool(hub.visited[1]));

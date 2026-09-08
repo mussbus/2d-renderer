@@ -172,3 +172,5 @@ pub fn verifyMultiImpact(allocator: std.mem.Allocator, seed: hub_module.Seed) !M
 }
 
 pub const world_time = @import("world_time_verification.zig");
+
+pub const traversal = @import("traversal_verification.zig");

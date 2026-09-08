@@ -19,6 +19,9 @@ pub const Mapper = struct {
     previous: physical.KeyboardState = .{},
     blocked: physical.KeyboardState = .{},
     event_presses: physical.KeyboardState = .{},
+    event_gamepad_dash: bool = false,
+    previous_dash: bool = false,
+    blocked_gamepad_dash: bool = false,
     previous_jump: bool = false,
     blocked_gamepad_jump: bool = false,
     blocked_gamepad_axis: bool = false,
@@ -29,11 +32,18 @@ pub const Mapper = struct {
         self.event_presses = physical.keyboardUnion(self.event_presses, physical.keyboardWithout(keys, self.blocked));
     }
 
+    pub fn captureGamepadDashPress(self: *Mapper) void {
+        if (!self.blocked_gamepad_dash) self.event_gamepad_dash = true;
+    }
+
     pub fn suppressHeld(self: *Mapper, raw: physical.RawInputState) void {
         self.blocked = physical.keyboardUnion(raw.keyboard, self.previous);
         self.previous = .{};
         self.event_presses = .{};
         self.previous_jump = false;
+        self.previous_dash = false;
+        self.event_gamepad_dash = false;
+        self.blocked_gamepad_dash = self.blocked_gamepad_dash or raw.gamepad_button_right_shoulder;
         self.previous_activation = false;
         self.blocked_gamepad_activation = self.blocked_gamepad_activation or raw.gamepad_button_west;
         self.blocked_gamepad_jump = raw.gamepad_button_south;
@@ -61,6 +71,11 @@ pub const Mapper = struct {
         const activation = current.e or (raw.gamepad_button_west and !self.blocked_gamepad_activation);
         const activate = pressed.e or (activation and !self.previous_activation);
         self.previous_activation = activation;
+        self.blocked_gamepad_dash = self.blocked_gamepad_dash and raw.gamepad_button_right_shoulder;
+        const dash = current.left_shift or (raw.gamepad_button_right_shoulder and !self.blocked_gamepad_dash);
+        const dash_pressed = pressed.left_shift or self.event_gamepad_dash or (dash and !self.previous_dash);
+        self.event_gamepad_dash = false;
+        self.previous_dash = dash;
         const digital: f32 = @as(f32, @floatFromInt(@intFromBool(current.rightHeld()))) - @as(f32, @floatFromInt(@intFromBool(current.leftHeld())));
         return .{
             .destination = if (pressed.f1) .hierarchy else if (pressed.f2) .springs else null,
@@ -72,6 +87,7 @@ pub const Mapper = struct {
             .activate = activate,
             .intent = .{
                 .move_axis = physical.mergeAxes(digital, if (self.blocked_gamepad_axis) 0 else analog),
+                .dash_pressed = dash_pressed,
                 .jump_pressed = jump_pressed,
                 .jump_held = jump,
                 .jump_released = jump_released,
@@ -91,7 +107,10 @@ pub fn advance(world: *hub.Hub, mapper: *Mapper, raw: physical.RawInputState, co
         return;
     }
     var intent = command.intent;
-    if (command.clear_activation) world.impact.pending_activation = false;
+    if (command.clear_activation) {
+        world.impact.pending_activation = false;
+        world.pending = hub.neutral_intent;
+    }
     if (command.destination) |destination| {
         try world.navigate(destination);
         mapper.suppressHeld(raw);

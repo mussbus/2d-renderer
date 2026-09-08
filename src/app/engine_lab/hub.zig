@@ -27,12 +27,8 @@ pub const destination_x = [station_count]f32{ -4.5, 4.5 };
 pub const camera_center_y: f32 = 2.1;
 pub const spawn = math.Vec2{ .x = destination_x[0], .y = 1.05 };
 pub const Destination = enum { hierarchy, springs };
-pub const collider_inputs = [_]collider.StaticColliderInput{
-    .{ .id = 1, .bounds = .{ .minimum = .{ .x = -8.3, .y = -0.45 }, .maximum = .{ .x = 8.3, .y = 0 } } },
-    .{ .id = 2, .bounds = .{ .minimum = .{ .x = -8.3, .y = 0 }, .maximum = .{ .x = -8, .y = 5 } } },
-    .{ .id = 3, .bounds = .{ .minimum = .{ .x = 8, .y = 0 }, .maximum = .{ .x = 8.3, .y = 5 } } },
-    .{ .id = 4, .bounds = .{ .minimum = .{ .x = -0.75, .y = 0 }, .maximum = .{ .x = 0.75, .y = 0.6 } } },
-};
+pub const layout = @import("layout.zig");
+pub const collider_inputs = layout.legacy_colliders;
 
 pub const Anchor = struct { id: foundation.identity.EntityId, world: math.Vec2 };
 
@@ -150,6 +146,8 @@ pub const Station = struct {
 pub const Hub = struct {
     allocator: std.mem.Allocator,
     seed: Seed,
+    construction: layout.Construction,
+    last_physical: @import("character_controller").StepResult = .{ .simulation_tick = 0 },
     installations: Installations,
     definition: humanoid.HumanoidDefinition,
     animations: authored.Definitions,
@@ -171,21 +169,33 @@ pub const Hub = struct {
     navigation_count: u32 = 0,
     diagnostics_enabled: bool = false,
 
+    /// Compatibility entry for the accepted fixtures. Interactive launch explicitly
+    /// selects initExpanded; both constructions share all ownership and tick work.
     pub fn init(allocator: std.mem.Allocator, seed: Seed) !Hub {
+        return initLegacy(allocator, seed);
+    }
+    pub fn initLegacy(allocator: std.mem.Allocator, seed: Seed) !Hub {
+        return initConstruction(allocator, seed, .legacy);
+    }
+    pub fn initExpanded(allocator: std.mem.Allocator, seed: Seed) !Hub {
+        return initConstruction(allocator, seed, .expanded);
+    }
+    fn initConstruction(allocator: std.mem.Allocator, seed: Seed, construction: layout.Construction) !Hub {
+        try layout.movement.validate(.{});
         var installations = try Installations.init(allocator);
         errdefer installations.deinit() catch |err| cleanupFailure(err);
         var definition = try humanoid.HumanoidDefinition.init(allocator, null);
         errdefer definition.deinit();
         var animations = try authored.Definitions.init(allocator, &definition.skeleton_definition, null);
         errdefer animations.deinit();
-        var world = try collision_world.CollisionWorld.init(allocator, &collider_inputs, null);
+        var world = try collision_world.CollisionWorld.init(allocator, layout.colliders(construction), null);
         errdefer world.deinit();
         var actor = try character.CharacterInstance.initControlled(allocator, try character.entityIdFromRaw(1), &definition, &animations, &world, .{}, spawn, .right, 0, null);
         errdefer actor.deinit();
         var stations: [station_count]Station = undefined;
         for (&stations, 0..) |*station, index| station.* = try Station.init(seed, installations.anchors[index], index);
         var camera = camera2d.Camera2D.initDefault();
-        try camera.setCenter(.{ .x = spawn.x, .y = camera_center_y });
+        try camera.setCenter(.{ .x = spawn.x, .y = if (construction == .expanded) spawn.y + vertical_target_offset else camera_center_y });
         var impact = try impact_module.Installation.init(allocator, seed, installations.roots[1].id, installations.roots[1].world, &world);
         errdefer impact.deinit();
         const controller = actor.controllerSnapshot() orelse return error.HubActorHasNoController;
@@ -197,7 +207,7 @@ pub const Hub = struct {
             std.log.err("Engine Lab World Time initialization tick 0: {s}", .{@errorName(err)});
             return err;
         };
-        return .{ .world_time = world_time, .calibration = calibration, .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
+        return .{ .construction = construction, .world_time = world_time, .calibration = calibration, .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
     }
 
     pub fn deinit(self: *Hub) !void {
@@ -211,7 +221,7 @@ pub const Hub = struct {
     }
 
     pub fn reset(self: *Hub) !void {
-        var candidate = try Hub.init(self.allocator, self.seed);
+        var candidate = try initConstruction(self.allocator, self.seed, self.construction);
         errdefer candidate.deinit() catch |err| cleanupFailure(err);
         try self.deinit();
         self.* = candidate;
@@ -231,8 +241,9 @@ pub const Hub = struct {
             std.log.err("Engine Lab calibration navigation at hub tick {d}: {s}", .{ self.tick, @errorName(err) });
             return err;
         };
-        try self.camera.setCenter(.{ .x = destination_x[index], .y = camera_center_y });
+        try self.camera.setCenter(.{ .x = destination_x[index], .y = if (self.construction == .expanded) spawn.y + vertical_target_offset else camera_center_y });
         self.pending = neutral_intent;
+        self.last_physical = .{ .simulation_tick = 0 };
         self.impact.pending_activation = false;
         self.visited[index] = true;
         self.navigation_count = try std.math.add(u32, self.navigation_count, 1);
@@ -247,11 +258,13 @@ pub const Hub = struct {
         self.pending.jump_held = intent.jump_held;
         self.pending.jump_pressed = self.pending.jump_pressed or intent.jump_pressed;
         self.pending.jump_released = self.pending.jump_released or intent.jump_released;
+        self.pending.dash_pressed = self.pending.dash_pressed or intent.dash_pressed;
         const frame = try self.clock.beginFrame(seconds);
         for (0..frame.substeps) |_| {
             const consumed = self.pending;
             self.pending.jump_pressed = false;
             self.pending.jump_released = false;
+            self.pending.dash_pressed = false;
             try self.fixedUpdate(consumed);
         }
     }
@@ -261,7 +274,11 @@ pub const Hub = struct {
         const next_tick = try std.math.add(u64, self.tick, 1);
         const observed_actor = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
         const launch = try self.impact.consumeActivation(observed_actor.state.position);
-        const physical = try self.actor.stepController(&self.world, intent);
+        const physical = if (self.construction == .expanded)
+            try self.actor.stepControllerWithProperties(&self.world, intent, layout.movement)
+        else
+            try self.actor.stepController(&self.world, intent);
+        self.last_physical = physical;
         try self.actor.selectControllerAnimation(physical);
         const controller = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
         try self.actor.advanceVisualTickWithFootPlanting(&self.world, .{
@@ -278,8 +295,7 @@ pub const Hub = struct {
             try station.step(self.tick, index);
             if (@abs(controller.state.position.x - station_x[index]) <= 1.4) self.visited[index] = true;
         }
-        try self.follower.update(&self.camera, controller.state.position.x);
-        try self.camera.setCenter(.{ .x = std.math.clamp(self.camera.center.x, -5, 5), .y = self.camera.center.y });
+        try self.updateCamera();
         self.calibration.step(controller.state.position) catch |err| {
             std.log.err("Engine Lab calibration executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
             return err;
@@ -294,9 +310,73 @@ pub const Hub = struct {
         };
     }
 
+    pub const vertical_dead_zone: f32 = 0.15;
+    pub const vertical_target_offset: f32 = 0.95;
+
+    /// Camera composition only: completed root, no time source or physics writes.
+    pub fn updateCamera(self: *Hub) !void {
+        const position = self.actor.worldPosition();
+        try self.follower.update(&self.camera, position.x);
+        if (self.construction == .legacy) {
+            try self.camera.setCenter(.{ .x = std.math.clamp(self.camera.center.x, -5, 5), .y = self.camera.center.y });
+            return;
+        }
+        const half = try self.camera.worldHalfExtents();
+        const target_y = position.y + vertical_target_offset;
+        const y = std.math.clamp(self.camera.center.y, target_y - vertical_dead_zone, target_y + vertical_dead_zone);
+        // Very wide viewports center the complete room rather than invert clamps.
+        const x = if (half.x >= 16) -8 else std.math.clamp(self.camera.center.x, -24 + half.x, 8 - half.x);
+        try self.camera.setCenter(.{ .x = x, .y = std.math.clamp(y, spawn.y + vertical_target_offset, 14 - half.y) });
+    }
+
+    pub fn setViewport(self: *Hub, width: u32, height: u32) !void {
+        try self.camera.setViewport(width, height);
+        if (self.construction == .expanded) try self.updateCamera();
+    }
+
     pub fn renderedActorPosition(self: *const Hub) !math.Vec2 {
         const controller = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
         return if (self.clock.paused) controller.state.position else controller.interpolatedPosition(self.clock.last_frame.interpolation_alpha);
+    }
+
+    /// Traversal observations supplement, never redefine, the EL1 v2 digest.
+    /// Explicit fields only; excludes frame grouping residue and render-only camera.
+    /// This diagnostic is neither a save format nor whole-hub replay authority.
+    pub fn traversalFingerprint(self: *const Hub) !Digest {
+        var bytes: [4096]u8 = undefined;
+        var writer = foundation.canonical_data.Writer.init(&bytes);
+        const state = (self.actor.controllerSnapshot() orelse return error.HubActorHasNoController).state;
+        try writer.raw("[");
+        try writer.jsonString(layout.identity(self.construction));
+        try writer.byte(',');
+        try writer.jsonString(layout.profileIdentity(self.construction));
+        for ([_]Digest{ try self.fingerprint(), try self.calibration.fingerprint(), try self.impact.fingerprint() }) |digest| {
+            try writer.byte(',');
+            try writer.jsonString(&digest.formatLowerHex());
+        }
+        var time_buffer: [world_time_module.diagnostic_capacity]u8 = undefined;
+        try writer.byte(',');
+        try writer.jsonString(try world_time_module.diagnostic(self.world_time.snapshot(), &time_buffer));
+        try writer.byte(',');
+        try vector(&writer, state.previous_position);
+        try writer.byte(',');
+        try vector(&writer, state.ground_normal);
+        for ([_]f32{ state.previous_vertical_velocity, state.last_landing_impact_speed, self.pending.move_axis }) |value| {
+            try writer.byte(',');
+            try writer.f32Value(value);
+        }
+        for ([_]u64{ state.air_jumps_used, state.dash_ticks_remaining, state.dash_cooldown_ticks_remaining }) |value| {
+            try writer.byte(',');
+            try writer.u64Value(value);
+        }
+        try writer.byte(',');
+        try writer.jsonString(@tagName(state.dash_direction));
+        for ([_]bool{ state.previous_grounded, state.jump_was_consumed, self.pending.jump_pressed, self.pending.jump_held, self.pending.jump_released, self.pending.dash_pressed, self.pending.interact_pressed, self.clock.paused, self.impact.pending_activation }) |value| {
+            try writer.byte(',');
+            try writer.boolean(value);
+        }
+        try writer.byte(']');
+        return foundation.canonical_data.hashDomainSeparated("engine_lab.traversal.observations.v1", &.{writer.bytes()});
     }
 
     /// Selected logical state only. Camera, UI, history, pointers, handles and
@@ -331,7 +411,7 @@ pub const Hub = struct {
         try writer.raw(",\"velocity\":");
         try vector(&writer, state.velocity);
         try writer.raw("},\"colliders\":[");
-        for (collider_inputs, 0..) |item, index| {
+        for (layout.colliders(self.construction), 0..) |item, index| {
             if (index != 0) try writer.byte(',');
             try writer.raw("{\"id\":");
             try writer.u64Value(item.id);
