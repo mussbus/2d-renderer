@@ -4,7 +4,7 @@ Status: implementation candidate, **PENDING OWNER VISUAL ACCEPTANCE** for this
 new behavior. The owner accepted the original single-projectile visuals in chat.
 EL1 remains closed; this is an unnumbered continuation of Engine Lab Integration.
 
-## Local authority and separate commits
+## Original implementation authority and separate commits
 
 Worktree: `C:/Users/Chad/Documents/2d Renderer-engine-lab-integration`.
 Branch: `feature/engine-lab-integration`. Reviewed starting commit:
@@ -137,9 +137,13 @@ bounded diagnostic-counter presentation principle. Tick values remain full u64.
 Renderer limits, instance allocation, texture mapping and effect quality are
 unchanged. A conservative glyph-cost test covers all 0..8 active counts, 192
 particles, running/paused states, maximum decimal fields and the most expensive
-possible 12-character hash. It proves 1,788/1,792 sprites; the directly measured
-saturated diagnostic case uses 1,747. Nominal maxima are 1,452 headless and
-1,454 native, always in three batches. Readiness shows E/WEST n/8 or FULL 8/8.
+possible 12-character hash. The corrected test measures 1,751 sprites and derives
+an upper bound of 1,792/1,792, with no conservative spare capacity. The previous
+1,747 observed / 1,788 conservative result used an incorrect maximum-glyph
+assumption and is retained only as historical evidence. The correction below
+supersedes that bound and the earlier four-sprite headroom claim. Prior nominal
+maxima were 1,452 headless and 1,454 native, always in three batches; the corrected
+focused tests again observe 1,452 headless. Readiness shows E/WEST n/8 or FULL 8/8.
 
 ## Diagnostic coverage and evidence boundaries
 
@@ -169,14 +173,79 @@ accounts for PAUSED overlays even on reset captures. The native reset assertion
 separately verifies running tick zero. Captures are engineering inspection
 evidence; new owner visual acceptance remains pending.
 
-## Validation and owner launch
+## Glyph-budget test correction (2026-09-08)
 
-All results below were executed locally on 2026-09-08. They are new evidence,
-not inherited passes. Exact commands/arguments, exit codes, timings, log hashes,
-source identities and capture metadata are recorded in `COMMANDS.md`,
-`commands.json` and `validation.json` inside the review ZIP. Final delivery
-formatting, architecture/documentation and staged checkout checks are included
-in that ledger as well.
+Starting HEAD: `fe742e703b15caa59886ff7a20a8ba724d7449ac`, on the clean
+`feature/engine-lab-integration` worktree named above. The correction creates
+one additional local commit, preserving both preceding commits without push,
+merge or history rewriting. Its final identity is recorded in the separate
+correction manifest. Only `tests/engine_lab_multi_impact_tests.zig` and this
+record change; production source, font, labels, renderer capacity, APIs, palette,
+particle quality and tick/lifecycle behavior remain unchanged.
+
+The corrected test measures all 1,000 formatted integer values in 0..999 through
+production `CommandBuffer.addLabel`. It separately formats and measures all
+1,000 dot-plus-three-digit fractional suffixes. Since this font emits independent
+commands per character, adding the two maxima bounds the full seconds field
+without enumerating a million combinations. Formatting the combined candidate
+confirms that the bound is attainable. Actual clamped formatting is checked at
+999.999, 1000 and the largest finite f64; each renders `999.999` and stays within
+the derived field cost. No result is substituted for the unchanged queue limits.
+
+Fresh Debug, ReleaseSafe and ReleaseFast executions all report:
+
+| Measured production label | Sprites |
+| --- | ---: |
+| Previous integer candidate `900` | 32 |
+| Maximum integer candidate `400` | 33 |
+| Previous seconds candidate `900.000` | 69 |
+| Maximum seconds candidate `400.000` | 70 |
+| Maximum fractional suffix `.000` (including dot) | 37 |
+| Maximum decimal / hexadecimal single glyph | 12 / 12 |
+
+The three bounded integer diagnostics and the seconds field each gain one
+sprite in the conservative calculation. The directly observed frame maximum is
+**1,751**, while replacing the observed hash with twelve maximally costly hex
+glyphs gives **1,792**. These are separate measurements: the conservative bound
+exactly meets capacity and does not demonstrate 41 sprites of guaranteed spare
+capacity. All actual-frame and conservative `<= 1792` assertions and the exact
+three-batch assertions remain intact.
+
+Coverage retains active counts 0..8, 192 live particles, running/paused states,
+diagnostics on/off, full-u64 tick values, saturated raw counters and the
+12-character hash bound. Full station history is now explicitly asserted before
+rendering. Every other test in the file is byte-preserved.
+
+Fresh `test-engine-lab` runs pass 49/49 tests and 3/3 build steps in each of the
+three optimization modes (exit 0 each). Fresh formatting, architecture,
+documentation, checkout-integrity and mandatory `check` results are recorded
+with exact commands, raw logs and file/source hashes in the correction manifest.
+Preflight reverified Zig 0.16.0, all 105 SDL 3.4.10 files, all 37 DXC 1.9.2602.24
+files, their archive hashes and the unchanged dependency lock. Delivery audits
+compare all 1,014 protected tracked files, 44 original evidence files and 89 prior
+follow-up evidence files against their preflight raw hashes.
+
+New evidence is confined to
+`.tmp/projectile-impact-follow-up/glyph-budget-correction`.
+It contains `engine-lab-glyph-budget-correction.patch` (byte-preserving full-index
+binary Git diff) and `engine-lab-glyph-budget-correction-review.zip`, with the
+patch, this updated record, fresh logs, exact command ledger, validation manifest
+and reproduction scripts. Original review ZIPs, logs, manifests and captures are
+preserved. The earlier 699-test full suite, D3D12 smoke and native captures below
+are **prior evidence for the starting revision**, not freshly executed correction
+gates. Full-suite, content, historical reproduction and GPU routes are not rerun
+for this test/documentation-only correction. New multi-projectile owner visual
+acceptance remains **PENDING OWNER VISUAL ACCEPTANCE**.
+
+## Original implementation validation and owner launch
+
+The table below records executions for the original implementation ending at
+`fe742e703b15caa59886ff7a20a8ba724d7449ac` on 2026-09-08. They remain prior
+evidence, separate from the correction executions above. Exact commands/arguments,
+exit codes, timings, log hashes, source identities and capture metadata remain
+in `COMMANDS.md`, `commands.json` and `validation.json` inside the original review
+ZIP. Its original delivery formatting, architecture/documentation and staged
+checkout checks are preserved in that ledger as well.
 
 | Executed gate | Exit | Observed result |
 | --- | ---: | --- |
@@ -193,7 +262,7 @@ in that ledger as well.
 | Lossless capture encoding | 0 each | Seven retained-fixture captures plus eight multi-shot captures, each with native PPM and PNG |
 | Formatting, architecture, documentation and checkout-integrity audits | 0 | Individual gates plus aggregate checks; exact delivery results in the ledger |
 
-All final source-bearing gates agree on SHA-256
+Those original source-bearing gates agree on SHA-256
 `2881ca1f46f7d4bd2231658130af096ea8d025742a3b8fb2ff93602dd6b4bbd9`
 for the runner's sorted raw source/test/build/capture-tool identity. Documentation
 has separate delivery audits. Native multi-shot smoke observes 16 launches and

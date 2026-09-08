@@ -325,6 +325,7 @@ test "maximum diagnostics and eight replacement flights plus 192 particles fit u
     _ = try fill(&hub);
     try std.testing.expectEqual(@as(usize, 8), hub.impact.projectiles.count());
     try std.testing.expectEqual(@as(usize, 192), hub.impact.effects.particleCount());
+    for (hub.stations) |station| try std.testing.expectEqual(station.history.len, station.history_count);
     var largest: usize = 0;
     var conservative: usize = 0;
     var glyphs = @import("debug_draw").CommandBuffer{};
@@ -333,21 +334,73 @@ test "maximum diagnostics and eight replacement flights plus 192 particles fit u
         glyphs.beginFrame();
         maximum_hex_glyph = @max(maximum_hex_glyph, try glyphs.addLabel(.zero, &.{letter}, .{ 1, 1, 1, 1 }));
     }
+    // Measure formatted values with the production font. The leading digit of
+    // a three-digit integer cannot be zero, so a dense zero glyph alone does
+    // not identify its most expensive legal prefix.
+    var text: [32]u8 = undefined;
+    var maximum_integer: u64 = 0;
+    var maximum_integer_cost: u32 = 0;
+    var maximum_fraction: usize = 0;
+    var maximum_fraction_cost: u32 = 0;
+    var maximum_decimal_glyph: u32 = 0;
+    for (0..1000) |value| {
+        glyphs.beginFrame();
+        const integer_cost = try glyphs.addLabel(.zero, try std.fmt.bufPrint(&text, "{d}", .{value}), .{ 1, 1, 1, 1 });
+        if (value < 10) maximum_decimal_glyph = @max(maximum_decimal_glyph, integer_cost);
+        if (integer_cost > maximum_integer_cost) {
+            maximum_integer = value;
+            maximum_integer_cost = integer_cost;
+        }
+        // Every nonnegative clamped value formats as one of the integer
+        // prefixes above plus a dot and exactly three fractional digits.
+        // Enumerate those 1,000 suffixes independently, avoiding a million
+        // full-value samples. addLabel's per-character costs are additive.
+        const fraction = @as(f64, @floatFromInt(value)) / 1000.0;
+        const formatted = try std.fmt.bufPrint(&text, "{d:.3}", .{fraction});
+        try std.testing.expectEqual(@as(usize, 5), formatted.len);
+        try std.testing.expectEqualStrings("0.", formatted[0..2]);
+        glyphs.beginFrame();
+        const fraction_cost = try glyphs.addLabel(.zero, formatted[1..], .{ 1, 1, 1, 1 });
+        if (fraction_cost > maximum_fraction_cost) {
+            maximum_fraction = value;
+            maximum_fraction_cost = fraction_cost;
+        }
+    }
+    const maximum_seconds = @as(f64, @floatFromInt(maximum_integer)) + @as(f64, @floatFromInt(maximum_fraction)) / 1000.0;
+    glyphs.beginFrame();
+    const maximum_seconds_cost = try glyphs.addLabel(.zero, try std.fmt.bufPrint(&text, "{d:.3}", .{@min(maximum_seconds, 999.999)}), .{ 1, 1, 1, 1 });
+    try std.testing.expectEqual(maximum_integer_cost + maximum_fraction_cost, maximum_seconds_cost);
+    // Check the actual clamp boundary and saturated input: rounding must not
+    // introduce a fourth integer digit or omit the three fractional digits.
+    for ([_]f64{ 999.999, 1000, std.math.floatMax(f64) }) |seconds| {
+        const formatted = try std.fmt.bufPrint(&text, "{d:.3}", .{@min(seconds, 999.999)});
+        try std.testing.expectEqualStrings("999.999", formatted);
+        glyphs.beginFrame();
+        try std.testing.expect(try glyphs.addLabel(.zero, formatted, .{ 1, 1, 1, 1 }) <= maximum_seconds_cost);
+    }
+    glyphs.beginFrame();
+    try std.testing.expectEqual(maximum_decimal_glyph, try glyphs.addLabel(.zero, "0", .{ 1, 1, 1, 1 }));
+    glyphs.beginFrame();
+    const old_integer_cost = try glyphs.addLabel(.zero, "900", .{ 1, 1, 1, 1 });
+    glyphs.beginFrame();
+    const old_seconds_cost = try glyphs.addLabel(.zero, "900.000", .{ 1, 1, 1, 1 });
+    std.debug.print("GLYPH_BUDGET integer_900={d} integer_max_value={d} integer_max_cost={d} seconds_900_000={d} seconds_max={d:.3} seconds_max_cost={d} fractional_suffix_max_cost={d} decimal_glyph_max={d} hex_glyph_max={d}\n", .{ old_integer_cost, maximum_integer, maximum_integer_cost, old_seconds_cost, maximum_seconds, maximum_seconds_cost, maximum_fraction_cost, maximum_decimal_glyph, maximum_hex_glyph });
     for (0..9) |removed| {
         for ([_]bool{ false, true }) |paused| {
             hub.clock.paused = paused;
             for ([_]bool{ false, true }) |diagnostics| {
                 hub.diagnostics_enabled = diagnostics;
                 for ([_]u64{ 10000000000000000000, std.math.maxInt(u64) }) |counter| {
-                    // 0 is the densest decimal glyph. 10^19 has the greatest
-                    // possible glyph cost of a u64; 900 maximizes a <=999 field.
-                    // 900.000 similarly stresses the bounded discarded-seconds
-                    // field. Full values survive; only presentation is exercised.
+                    // Zero was verified as the densest decimal glyph. Only a
+                    // leading 1 permits 20 decimal digits within u64, so 10^19
+                    // maximizes its cost. Exercise the derived bounded-field
+                    // maxima as well as saturated raw counters/clamped seconds.
+                    // Full values survive; only presentation is exercised.
                     hub.tick = counter;
-                    hub.impact.observations.launches = if (counter == std.math.maxInt(u64)) counter else 900;
+                    hub.impact.observations.launches = if (counter == std.math.maxInt(u64)) counter else maximum_integer;
                     hub.impact.observations.contacts = hub.impact.observations.launches;
                     hub.impact.bridge.metrics.dropped_effects = hub.impact.observations.launches;
-                    hub.clock.lifetime_discarded_time = if (counter == std.math.maxInt(u64)) std.math.floatMax(f64) else 900;
+                    hub.clock.lifetime_discarded_time = if (counter == std.math.maxInt(u64)) std.math.floatMax(f64) else maximum_seconds;
                     try view.render(&hub, &queue);
                     const count = queue.prepare().sprites.len;
                     largest = @max(largest, count);
