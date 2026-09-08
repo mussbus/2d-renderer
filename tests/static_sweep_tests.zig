@@ -45,3 +45,56 @@ test "static sweep validates finite input and computes finite extreme output wit
     try std.testing.expectError(error.InvalidBounds, q.query(.{ .from = v(0, 0), .to = v(2, 2) }, .{ .minimum = v(2, 1), .maximum = v(1, 2) }));
     try check((try q.query(.{ .from = v(-std.math.floatMax(f32), 1.5), .to = v(std.math.floatMax(f32), 1.5) }, box)).?, 0.5, v(1, 1.5), v(-1, 0));
 }
+
+// Analytic oracle: every point of either directed segment satisfies y=x,
+// whereas this box requires x<=2 and y>=3 simultaneously.
+test "static extreme diagonal disjoint slabs are not a rounded contact" {
+    const far: f32 = 0x1p60;
+    const disjoint = collider.Aabb{ .minimum = v(1, 3), .maximum = v(2, 4) };
+    const hit = try q.query(.{ .from = v(-far, -far), .to = v(far, far) }, disjoint);
+    if (hit) |value| std.debug.print("rounded false hit: fraction={d} normal=({d},{d}) position=({d},{d})\n", .{ value.fraction, value.normal.x, value.normal.y, value.position.x, value.position.y });
+    try std.testing.expect(hit == null);
+}
+
+test "static extreme diagonal crossing reversal and axis exchange preserve actual entry face" {
+    // On y=x, entry is max(min-X,min-Y); exit is min(max-X,max-Y).
+    // These analytic values also specify the unrounded transverse coordinate.
+    for ([_]f32{ 0x1p60, std.math.floatMax(f32) }) |far| {
+        try check((try q.query(.{ .from = v(-far, -far), .to = v(far, far) }, box)).?, 0.5, v(1, 1), v(-1, 0));
+        try check((try q.query(.{ .from = v(far, far), .to = v(-far, -far) }, box)).?, 0.5, v(2, 2), v(1, 0));
+        const crossing = collider.Aabb{ .minimum = v(1, 3), .maximum = v(4, 5) };
+        try check((try q.query(.{ .from = v(-far, -far), .to = v(far, far) }, crossing)).?, 0.5, v(3, 3), v(0, -1));
+        try check((try q.query(.{ .from = v(far, far), .to = v(-far, -far) }, crossing)).?, 0.5, v(4, 4), v(1, 0));
+        const swapped = collider.Aabb{ .minimum = v(3, 1), .maximum = v(5, 4) };
+        try check((try q.query(.{ .from = v(-far, -far), .to = v(far, far) }, swapped)).?, 0.5, v(3, 3), v(-1, 0));
+        try check((try q.query(.{ .from = v(far, far), .to = v(-far, -far) }, swapped)).?, 0.5, v(4, 4), v(0, 1));
+    }
+}
+test "static rounded ties distinguish separation corner grazing and body entry" {
+    const far: f32 = 0x1p60;
+    for ([_]f32{ far, -far }) |start| {
+        const sweep = q.Sweep{ .from = v(start, start), .to = v(-start, -start) };
+        for ([_]collider.Aabb{
+            .{ .minimum = v(1, 3), .maximum = v(2, 4) },
+            .{ .minimum = v(3, 1), .maximum = v(4, 2) },
+            .{ .minimum = v(1, 2), .maximum = v(2, 3) },
+            .{ .minimum = v(2, 1), .maximum = v(3, 2) },
+        }) |miss| try std.testing.expect((try q.query(sweep, miss)) == null);
+    }
+    const offset = collider.Aabb{ .minimum = v(1, 3), .maximum = v(2, 4) };
+    // Half-unit expansion only touches at (2.5,2.5); unit expansion has
+    // a real interior interval [2,3] along y=x and enters the bottom face.
+    try std.testing.expect((try q.query(.{ .from = v(-far, -far), .to = v(far, far), .half_extents = v(0.5, 0.5) }, offset)) == null);
+    try check((try q.query(.{ .from = v(-far, -far), .to = v(far, far), .half_extents = v(1, 1) }, offset)).?, 0.5, v(2, 3), v(0, -1));
+}
+test "static exact decisions span subnormal geometry and maximum finite travel" {
+    const unit: f32 = 0x1p-149;
+    const far = std.math.floatMax(f32);
+    const sweep = q.Sweep{ .from = v(-far, -far), .to = v(far, far) };
+    try std.testing.expect((try q.query(sweep, .{ .minimum = v(unit, 3 * unit), .maximum = v(2 * unit, 4 * unit) })) == null);
+    const hit = (try q.query(sweep, .{ .minimum = v(unit, unit), .maximum = v(2 * unit, 2 * unit) })).?;
+    // Exact subnormal output: an ordinary 1e-6 tolerance would hide a zero.
+    try std.testing.expectEqual(v(unit, unit), hit.position);
+    try std.testing.expectEqual(v(-1, 0), hit.normal);
+    try std.testing.expectEqual(@as(f32, 0.5), hit.fraction);
+}

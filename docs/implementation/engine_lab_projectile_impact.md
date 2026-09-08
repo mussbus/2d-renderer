@@ -45,8 +45,8 @@ context is borrowed for the call and event batches end before core mutation.
 
 Metres, X-right/Y-up; a complete segment sweeps a point or axis-aligned body
 against a solid static AABB. Finite endpoints/extents and ordered finite bounds
-are required. Double intermediates avoid overflow in finite f32 endpoint
-differences. Fraction is normalized center travel. Normal is an exact axial
+are required. Exact bounded dyadic comparisons preserve slab ordering for all finite f32
+inputs, including opposite maximum endpoints and subnormal geometry. Fraction is normalized center travel. Normal is an exact axial
 unit vector. Position is on the original obstacle face, with the other
 coordinate clamped to its face span, including penetrating initial states.
 
@@ -59,6 +59,47 @@ accepted separating/tangent zero-time filter. There is no epsilon inflation,
 dynamic collider publication, broadphase, controller-response change or body
 solver. A per-collider helper has no output buffer to truncate; bounded adapter
 failure is explicitly tested.
+
+## Static-sweep precision follow-up (2026-09-08)
+
+Starting revision: `37d11c8e3a7e2f67e210df0bb71000efdbbee793`. Local and
+remote integration/master refs matched the reviewed revisions; the integration
+worktree was clean. Zig 0.16.0 and every installed SDL 3.4.10/DXC 1.9.2602.24
+manifest file and archive hash were verified without dependency changes.
+
+The requested Zig regression reproduced the reviewed defect before the fix:
+point travel from `(-2^60,-2^60)` to `(2^60,2^60)` against minimum `(1,3)`,
+maximum `(2,4)` returned fraction 0.5, normal `(-1,0)`, position `(1,3)`.
+The analytic line `y=x` misses that box. The focused gate returned 1, with
+34 passing tests, one failure and zero skips. Its original log is preserved
+in `.tmp/projectile-impact-follow-up/sweep-reproduction.txt`.
+
+The helper now converts each finite binary32 value exactly into units of
+`2^-149`. Scaled magnitude is below `2^277`; expanded slab numerators use at
+most three terms and deltas at most two. Signed i288 stores these values;
+signed i576 stores ratio cross products and contact-coordinate numerators,
+whose magnitude is below `2^558`. Only two axes are processed, using fixed
+compiler integer storage with no allocation or precision-dependent loop.
+The intersection decision uses exact ordering, with strict positive interior
+intervals. A true entry/exit equality rejects grazing; genuine entry corner
+ties still choose X. Contact coordinates use the exact rational numerator
+before final float conversion, avoiding endpoint cancellation. No epsilon,
+geometry enlargement, wider-float correctness assumption or domain reduction
+is used. The public Sweep/Contact/Error API and existing contact conventions
+are unchanged; physics acquires no application dependencies.
+
+Analytic regressions cover the reported separation, reversed and axis-swapped
+travel, valid extreme diagonal crossings and normals, true corner entry versus
+grazing, body expansion, subnormal geometry and the retained maximum-f32 hit.
+The original geometry and integration assertions remain intact. Follow-up logs
+use the distinct directory above while reusing `.zig-cache` and
+`.tmp/projectile-impact/global-cache`; previous evidence remains unchanged.
+
+The corrected focused `test-engine-lab` gate returned 0 in Debug, ReleaseSafe
+and ReleaseFast: 3/3 steps and 38 tests per mode (16 EL1, nine geometry and
+13 integration). Formatting, repository architecture/hygiene, documentation
+and full raw index/working-checkout integrity checks returned 0. These are new
+follow-up executions, recorded in `commands.json`, not reused historical passes.
 
 ## Authored installation and tick order
 
