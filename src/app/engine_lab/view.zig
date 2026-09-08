@@ -6,6 +6,7 @@ const sprite = @import("sprite_batch");
 const queue_module = @import("render_queue");
 const fixed_step = @import("fixed_step");
 const collider = @import("collider");
+const impact = hub_module.impact_module;
 
 const colors = [hub_module.mass_count][4]f32{ .{ 0.25, 0.85, 1, 1 }, .{ 1, 0.65, 0.2, 1 }, .{ 0.85, 0.4, 1, 1 } };
 const text_color = [4]f32{ 0.85, 0.93, 1, 1 };
@@ -13,6 +14,8 @@ const text_color = [4]f32{ 0.85, 0.93, 1, 1 };
 pub const View = struct {
     commands: debug.CommandBuffer = .{},
     actor_queue: queue_module.UnifiedRenderQueue,
+    particles: [impact.particle_capacity]impact.e.RenderInstance = undefined,
+    projectiles: [1]impact.p.Snapshot = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !View {
         var queue = try queue_module.UnifiedRenderQueue.init(allocator, 16, 16, 1, 1);
@@ -66,6 +69,22 @@ pub const View = struct {
                 }
             }
         }
+        const installation = &hub.impact;
+        _ = try queue.submitSprite(box(installation.launcher, .{ .x = 0.28, .y = 0.18 }, .{ 0.2, 0.8, 0.85, 1 }, -1));
+        _ = try queue.submitSprite(box(installation.wall_marker, .{ .x = 0.035, .y = 0.5 }, .{ 1, 0.65, 0.2, 1 }, -1));
+        try self.label(.{ .x = installation.launcher.x - 0.75, .y = installation.launcher.y - 0.25 }, if (installation.projectiles.count() != 0) "IN FLIGHT" else "READY E/WEST");
+        const alpha: f32 = if (hub.clock.paused) 1 else @floatCast(hub.clock.last_frame.interpolation_alpha);
+        for (try installation.projectiles.copySnapshots(&self.projectiles)) |value| {
+            const position = try math.interpolation.lerpVec2(value.previous_position, value.position, alpha);
+            _ = try queue.submitSprite(box(position, value.definition.half_extents.scale(2), .{ 1, 0.9, 0.3, 1 }, -1));
+        }
+        for (try installation.effects.extract(&self.particles, alpha)) |value| {
+            // Explicit hub presentation map: one effect sprite -> neutral page.
+            if (@intFromEnum(value.sprite) != 1) return error.UnknownHubEffectSprite;
+            var request = box(value.position, value.size, value.color, value.layer);
+            request.rotation = value.rotation;
+            _ = try queue.submitSprite(request);
+        }
         self.actor_queue.beginFrame();
         const submitted = try hub.actor.submitUnified(&self.actor_queue);
         const actor_frame = self.actor_queue.prepare();
@@ -91,10 +110,10 @@ pub const View = struct {
         const half = try hub.camera.worldHalfExtents();
         const left = hub.camera.center.x - half.x + 0.2;
         const top = hub.camera.center.y + half.y - 0.2;
-        try self.label(.{ .x = left, .y = top }, "ENGINE LAB / PERSISTENT HUB");
+        try self.label(.{ .x = left, .y = top }, "ENGINE LAB");
         try self.label(.{ .x = left, .y = top - 0.24 }, "A D / ARROWS MOVE  SPACE JUMP");
         try self.label(.{ .x = left, .y = top - 0.48 }, "F1 F2 TRAVEL  R RESET  P PAUSE  T STEP");
-        try self.label(.{ .x = left, .y = top - 0.72 }, "F3 DIAGNOSTICS  ESC EXIT");
+        try self.label(.{ .x = left, .y = top - 0.72 }, "F3 INFO  ESC EXIT");
         var text: [128]u8 = undefined;
         const status = if (hub.clock.paused) "PAUSED" else "RUNNING";
         const visited = @as(u8, @intFromBool(hub.visited[0])) + @as(u8, @intFromBool(hub.visited[1]));
@@ -102,7 +121,8 @@ pub const View = struct {
         try self.label(.{ .x = left, .y = bottom }, try std.fmt.bufPrint(&text, "{s}  TICK {d}  STATIONS {d}/2", .{ status, hub.tick, visited }));
         if (hub.diagnostics_enabled) {
             const digest = (try hub.fingerprint()).formatLowerHex();
-            try self.label(.{ .x = left, .y = bottom - 0.24 }, try std.fmt.bufPrint(&text, "HASH {s}  DROP {d:.3}S", .{ digest[0..12], hub.clock.lifetime_discarded_time }));
+            try self.label(.{ .x = left, .y = bottom - 0.24 }, try std.fmt.bufPrint(&text, "HASH {s} DROP {d:.3}S", .{ digest[0..12], hub.clock.lifetime_discarded_time }));
+            try self.label(.{ .x = installation.launcher.x - 0.9, .y = 0.18 }, try std.fmt.bufPrint(&text, "L{d} C{d} D{d}", .{ @min(installation.observations.launches, 999), @min(installation.observations.contacts, 999), @min(installation.bridge.metrics.dropped_effects +| installation.effects.metrics().dropped_particles, 999) }));
         } else try self.label(.{ .x = left, .y = bottom - 0.24 }, "PROVISIONAL 2D ACTOR / 240 HZ");
         for (self.commands.commands[0..self.commands.count]) |*command| command.texture_page = 1;
         _ = try self.commands.submitUnified(queue);

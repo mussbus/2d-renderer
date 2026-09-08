@@ -10,6 +10,7 @@ const character = @import("character");
 const humanoid = @import("humanoid");
 const authored = @import("authored_clips");
 const camera2d = @import("camera2d");
+pub const impact_module = @import("impact.zig");
 
 pub const Intent = @import("character_intent").CharacterIntent;
 pub const Seed = foundation.determinism.Seed128;
@@ -153,6 +154,7 @@ pub const Hub = struct {
     world: collision_world.CollisionWorld,
     actor: character.CharacterInstance,
     stations: [station_count]Station,
+    impact: impact_module.Installation,
     camera: camera2d.Camera2D,
     follower: camera2d.HorizontalFollower,
     clock: fixed_step.Clock,
@@ -180,11 +182,14 @@ pub const Hub = struct {
         for (&stations, 0..) |*station, index| station.* = try Station.init(seed, installations.anchors[index], index);
         var camera = camera2d.Camera2D.initDefault();
         try camera.setCenter(.{ .x = spawn.x, .y = camera_center_y });
-        return .{ .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
+        var impact = try impact_module.Installation.init(allocator, seed, installations.roots[1].id, installations.roots[1].world, &world);
+        errdefer impact.deinit();
+        return .{ .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
     }
 
     pub fn deinit(self: *Hub) !void {
         try self.installations.deinit();
+        self.impact.deinit();
         self.actor.deinit();
         self.world.deinit();
         self.animations.deinit();
@@ -210,6 +215,7 @@ pub const Hub = struct {
         try self.actor.stageControlledTransform(.{ .x = destination_x[index], .y = spawn.y }, .right);
         try self.camera.setCenter(.{ .x = destination_x[index], .y = camera_center_y });
         self.pending = neutral_intent;
+        self.impact.pending_activation = false;
         self.visited[index] = true;
         self.navigation_count = try std.math.add(u32, self.navigation_count, 1);
     }
@@ -230,7 +236,10 @@ pub const Hub = struct {
     }
 
     fn fixedUpdate(self: *Hub, intent: Intent) !void {
+        if (self.tick != self.impact.projectiles.tick() or self.tick != self.impact.effects.tick()) return error.ImpactTickMismatch;
         const next_tick = try std.math.add(u64, self.tick, 1);
+        const observed_actor = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
+        const launch = self.impact.consumeActivation(observed_actor.state.position);
         const physical = try self.actor.stepController(&self.world, intent);
         try self.actor.selectControllerAnimation(physical);
         const controller = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
@@ -250,6 +259,10 @@ pub const Hub = struct {
         }
         try self.follower.update(&self.camera, controller.state.position.x);
         try self.camera.setCenter(.{ .x = std.math.clamp(self.camera.center.x, -5, 5), .y = self.camera.center.y });
+        self.impact.step(launch, &self.world, next_tick) catch |err| {
+            std.log.err("Engine Lab projectile-impact executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
+            return err;
+        };
     }
 
     pub fn renderedActorPosition(self: *const Hub) !math.Vec2 {

@@ -54,6 +54,14 @@ registrations do not imply adoption. See the
 
 ## Integrated production flow
 
+The [Engine Lab projectile-impact candidate](../implementation/engine_lab_projectile_impact.md)
+adds a physics-owned per-AABB `collision_world.static_sweep` helper. The hub
+enumerates its existing world into the accepted projectile query port, then
+consumes native events through the accepted bridge and extracts ordinary
+production SpriteRequests. Physics has no application/projectile/effects
+dependency. This bounded integration awaits owner acceptance; the standalone
+foundation proof and other deferred integrations retain their own authority.
+
 ```text
 Character / Anatomy Definition
 + Morphology / Body Preset

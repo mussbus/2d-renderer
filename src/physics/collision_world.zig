@@ -2,6 +2,7 @@ const std = @import("std");
 const math = @import("math");
 const collider = @import("collider");
 const fault_injection = @import("fault_injection");
+pub const static_sweep = @import("static_sweep.zig");
 
 pub const maximum_static_colliders: usize = 64;
 

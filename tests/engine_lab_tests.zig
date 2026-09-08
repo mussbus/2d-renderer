@@ -5,6 +5,10 @@ const actions = @import("engine_lab_actions");
 const view_module = @import("engine_lab_view");
 const queue_module = @import("render_queue");
 const collider = @import("collider");
+comptime {
+    _ = @import("static_sweep_tests.zig");
+    _ = @import("engine_lab_impact_tests.zig");
+}
 
 fn seed() !hub_module.Seed {
     return hub_module.Seed.parseLowerHex(hub_module.default_seed);

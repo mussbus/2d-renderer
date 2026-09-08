@@ -8,6 +8,7 @@ const platform_module = @import("sdl_input");
 const art_pack = @import("art_pack");
 const physical = @import("physical_input");
 const c = @import("sdl").c;
+const impact_smoke = @import("impact_smoke.zig");
 
 pub fn main(init: std.process.Init) !void {
     const arguments = try init.minimal.args.toSlice(init.arena.allocator());
@@ -32,7 +33,7 @@ pub fn main(init: std.process.Init) !void {
     }
     if (verify and smoke) return error.ConflictingVerificationModes;
     if (help) {
-        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke. A/D or arrows move; Space jumps; gamepad stick/south also move/jump. F1/F2 travel within the hub; R resets the whole hub; P pauses; T steps; F3 diagnostics; Escape exits.", .{});
+        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke. A/D or arrows move; Space jumps; gamepad stick/south also move/jump. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; Escape exits.", .{});
         return;
     }
     const allocator = std.heap.page_allocator;
@@ -40,12 +41,17 @@ pub fn main(init: std.process.Init) !void {
         const result = try verification.verify(allocator, seed);
         for (result.checkpoints) |checkpoint| std.log.info("EL1_HUB_CHECKPOINT tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
         std.log.info("ENGINE_LAB_HUB_VERIFY_OK schedules=60Hz,mixed ticks=1440 stations=2 jumps={d} landings={d} wall_contacts={d}", .{ result.jumps, result.landings, result.wall_contacts });
+        const integrated = try verification.verifyImpact(allocator, seed);
+        for (integrated.checkpoints) |checkpoint| std.log.info("IMPACT_OBSERVATIONS_V1 tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
+        std.log.info("ENGINE_LAB_IMPACT_VERIFY_OK launches=2 contacts=2 drain_tick=936 native_last_spawn_tick={d} native_last_contact_tick={d} contact_sequence={d}", .{ integrated.launch_tick, integrated.contact_tick, integrated.contact_sequence });
         return;
     }
-    try run(allocator, seed, smoke);
+    try run(init.io, allocator, seed, smoke);
 }
 
-fn run(allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
+fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
+    var tracking = std.testing.FailingAllocator.init(backing_allocator, .{});
+    const allocator = tracking.allocator();
     var hub = try hub_module.Hub.init(allocator, seed);
     defer hub.deinit() catch |err| hub_module.cleanupFailure(err);
     var view = try view_module.View.init(allocator);
@@ -85,6 +91,7 @@ fn run(allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
     var jump_seen = false;
     var collision_seen = false;
     while (true) : (frame += 1) {
+        const allocations_before = tracking.allocations;
         var event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&event)) {
             platform.handleEvent(&event);
@@ -108,26 +115,12 @@ fn run(allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
         }
         if (command.exit) break;
         const reset = command.reset;
-        if (reset) {
-            try hub.reset();
-            mapper.suppressHeld(raw);
-            command.intent = hub_module.neutral_intent;
-            try reportInitial(&hub);
-        } else if (command.destination) |destination| {
-            const old_updates = [2]u64{ hub.stations[0].updates, hub.stations[1].updates };
-            try hub.navigate(destination);
-            if (hub.stations[0].updates != old_updates[0] or hub.stations[1].updates != old_updates[1]) return error.NavigationResetStation;
-            mapper.suppressHeld(raw);
-            command.intent = hub_module.neutral_intent;
-            std.log.info("EL1_HUB_TRAVEL destination={s} tick={d} stations_retained=true", .{ @tagName(destination), hub.tick });
-        }
-        if (command.pause) hub.clock.setPaused(!hub.clock.paused);
-        if (command.step) hub.clock.requestSingleStep();
-        if (command.diagnostics) hub.diagnostics_enabled = !hub.diagnostics_enabled;
         const now = c.SDL_GetPerformanceCounter();
         const delta = if (reset) 0 else if (smoke) 1.0 / 60.0 else @as(f64, @floatFromInt(now - previous_time)) / @as(f64, @floatFromInt(frequency));
         previous_time = now;
-        try hub.advanceFrame(delta, command.intent);
+        try actions.advance(&hub, &mapper, raw, command, delta);
+        if (reset) try reportInitial(&hub);
+        if (!reset) if (command.destination) |destination| std.log.info("EL1_HUB_TRAVEL destination={s} tick={d} stations_retained=true", .{ @tagName(destination), hub.tick });
         movement_seen = movement_seen or @abs(hub.actor.worldPosition().x - hub_module.spawn.x) > 0.5;
         jump_seen = jump_seen or hub.jumps > 0;
         collision_seen = collision_seen or hub.wall_contacts > 0;
@@ -142,6 +135,7 @@ fn run(allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
             return err;
         };
         renderer.recordFrameResult(rendered);
+        if (!reset and tracking.allocations != allocations_before) return error.EngineLabSteadyStateGrowth;
         if (rendered) {
             rendered_frames += 1;
             draw_calls += queue.frame_metrics.sprite_draws;
@@ -161,6 +155,7 @@ fn run(allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
         };
         if (changed < 1000) return error.HubSmokeUniformFrame;
         std.log.info("Engine Lab hub physical proof: frames={d} draws={d} readback_changed_pixels={d} movement=true jump=true collision=true", .{ rendered_frames, draw_calls, changed });
+        try impact_smoke.run(io, &tracking, &hub, &view, &renderer);
     }
     const steady = renderer.metrics();
     if (steady.gpu_resource_creations != resources.gpu_resource_creations or steady.upload_buffer_growths != resources.upload_buffer_growths or
@@ -175,7 +170,7 @@ fn run(allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
 }
 
 fn reportInitial(hub: *const hub_module.Hub) !void {
-    std.log.info("EL1_HUB_START seed={s} tick=0 sha256={s}. A/D arrows move; Space jump; F1/F2 travel; R whole-hub reset; P pause; T step; F3 diagnostics; Escape exit.", .{ hub.seed.formatLowerHex(), (try hub.fingerprint()).formatLowerHex() });
+    std.log.info("EL1_HUB_START seed={s} tick=0 sha256={s}. A/D arrows move; Space jump; F1/F2 travel; E/west nearby launch; R whole-hub reset; P pause; T step; F3 diagnostics; Escape exit.", .{ hub.seed.formatLowerHex(), (try hub.fingerprint()).formatLowerHex() });
 }
 fn sdlError() []const u8 {
     const text = c.SDL_GetError();
@@ -191,6 +186,7 @@ fn keyPress(scancode: c.SDL_Scancode) physical.KeyboardState {
         c.SDL_SCANCODE_P => .{ .p = true },
         c.SDL_SCANCODE_T => .{ .t = true },
         c.SDL_SCANCODE_SPACE => .{ .space = true },
+        c.SDL_SCANCODE_E => .{ .e = true },
         c.SDL_SCANCODE_ESCAPE => .{ .escape = true },
         else => .{},
     };

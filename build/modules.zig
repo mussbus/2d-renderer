@@ -1082,6 +1082,11 @@ pub fn register(options: Options) Catalog {
     projectile_effects_module.addImport("effects", effects_module);
     projectile_effects_module.addImport("math", math_module);
     projectile_effects_module.addImport("foundation", foundation_module);
+    engine_lab_module.addImport("projectiles", projectiles_module);
+    engine_lab_module.addImport("effects", effects_module);
+    engine_lab_module.addImport("projectile_effects", projectile_effects_module);
+    engine_lab_test_module.addImport("collision_world", collision_world_module);
+    engine_lab_test_module.addImport("math", math_module);
     const effects_projectiles_scene_module = b.createModule(.{ .root_source_file = b.path("src/app/effects_projectiles_scene.zig"), .target = target, .optimize = optimize });
     effects_projectiles_scene_module.addImport("projectiles", projectiles_module);
     effects_projectiles_scene_module.addImport("effects", effects_module);

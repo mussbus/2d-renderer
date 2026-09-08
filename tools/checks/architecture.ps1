@@ -337,6 +337,13 @@ if (-not $engineBuild.Contains('"test-world"') -or -not $gatesBuild.Contains('ru
 }
 
 # EL1 hub protects production direction and real transitive build imports.
+# Static geometry remains physics-owned; application query metadata stays outside.
+foreach ($file in @(Get-ChildItem -File -Recurse -Filter '*.zig' -LiteralPath (Join-Path $repositoryRoot 'src/physics'))) {
+    $source = Get-Content -Raw -LiteralPath $file.FullName
+    if ([regex]::IsMatch($source, '@import\s*\(\s*"[^"]*(projectile|effects|engine_lab)[^"]*"')) {
+        Add-Failure "Static physics dependency violation: $($file.FullName)."
+    }
+}
 $labDirectory = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'src/app/engine_lab')) + [IO.Path]::DirectorySeparatorChar
 foreach ($file in $productionFiles) {
     $source = Get-Content -Raw -LiteralPath $file.FullName
@@ -344,7 +351,7 @@ foreach ($file in $productionFiles) {
     if (-not $inLab -and [regex]::IsMatch($source, '@import\s*\(\s*"[^"]*(engine_lab|engine-lab)[^"]*"')) {
         Add-Failure "EL1 dependency violation: production source imports Engine Lab: $($file.FullName)."
     }
-    if ($inLab -and [regex]::IsMatch($source, '@import\s*\(\s*"[^"]*(demo_application|engine_smoke|_demo|evidence|canonical_human|canonical_geometry)[^"]*"')) {
+    if ($inLab -and [regex]::IsMatch($source, '@import\s*\(\s*"[^"]*(demo_application|engine_smoke|_demo|evidence|canonical_human|canonical_geometry|effects_projectiles_scene|effects_projectiles_view)[^"]*"')) {
         Add-Failure "EL1 independent source imports an application, evidence or canonical-human module: $($file.FullName)."
     }
 }

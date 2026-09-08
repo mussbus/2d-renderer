@@ -196,6 +196,14 @@ existing registrations and authority boundaries.
 
 ## Post-F4 track readiness
 
+The separately approved [Engine Lab projectile-impact integration](../implementation/engine_lab_projectile_impact.md)
+is implemented on its dedicated integration branch and awaits owner acceptance.
+It composes one static-wall installation through a generic physics sweep,
+the accepted projectile/effects cores and bridge, and production presentation.
+This bounded candidate supersedes the general Engine Lab-adoption deferral
+only for that slice. Closed EL1 acceptance and all other deferred tracks remain
+unchanged; no new milestone number is assigned.
+
 Immediately architecture-ready for dedicated implementation requests:
 
 ```text

@@ -1681,8 +1681,20 @@ state and manifest JSON before rename. Manual visual acceptance is
 
 ## Engine Lab EL1
 
+The [projectile-impact integration candidate](implementation/engine_lab_projectile_impact.md)
+adds static geometry and hub composition tests to the existing `test-engine-lab`
+domain, preserving all 16 EL1 tests. `run-engine-lab -- --verify` also runs a
+separately identified 936-tick integration fixture and observations-v1 hashes;
+EL1 v2 fingerprints are unchanged. `run-engine-lab -- --smoke` retains the
+original smoke and adds native launch/contact/fade/drain, pause/step, offscreen
+navigation and flight/particle-reset coverage. Seven new task-local captures
+live under `.tmp/projectile-impact/captures`; encode them with
+`python tools/engine_lab_impact_review.py`. This evidence awaits owner review.
+E/gamepad west activates the nearby fixed installation at F2. See the new
+implementation record for exact tick order, bounds, commands and results.
+
 `zig build engine-lab -j1` builds/installs the independent persistent hub without
-building the sandbox. `zig build test-engine-lab -j1` runs 16 headless tests of
+building the sandbox. The retained 16 EL1 headless tests cover
 actual controller movement/collision, concurrent station state, destination travel,
 reset, frame-schedule checkpoints, input suppression, rendering extraction and
 allocation/lifetime safety. These also run in `test`, `check` and `verify`;
