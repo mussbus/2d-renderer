@@ -1000,6 +1000,7 @@ pub fn register(options: Options) Catalog {
     engine_lab_module.addImport("foundation", foundation_module);
     engine_lab_module.addImport("scene_core", scene_core_module);
     engine_lab_module.addImport("fixed_step", fixed_step_module);
+    engine_lab_module.addImport("world", world_module);
     engine_lab_module.addImport("spring", spring_module);
     engine_lab_module.addImport("secondary_motion", secondary_motion_module);
     engine_lab_module.addImport("math", math_module);

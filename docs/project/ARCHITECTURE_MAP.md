@@ -67,6 +67,16 @@ integration branch has no implied merge into master. The preexisting 1,792-sprit
 bound is retained separately; the calibration has a 64-sprite allowance within
 an explicitly configured 1,856-sprite CPU queue and three existing batches.
 
+The subsequent [bounded Engine Lab World Time integration](../implementation/engine_lab_world_time.md)
+is **pending independent review and owner visual acceptance**. One inline accepted
+WorldTime advances after each successfully executed hub tick, using authored 60/1
+logical time and a day-0 23:59 start. The completed snapshot supplies a bounded
+upper-right day/HH:MM label. The original and accepted calibration bounds remain
+separate; the additional time allowance is 128 within a 1,984-sprite CPU queue.
+Measured complete conservative use is 1,950, with 34 sprites of headroom and three
+batches. Shared cores/renderer defaults and static RuntimeScene ownership remain
+unchanged. This unnumbered feature work is local and implies no master incorporation.
+
 ## Integrated production flow
 
 The [accepted Engine Lab projectile-impact checkpoint](../implementation/engine_lab_projectile_impact.md)

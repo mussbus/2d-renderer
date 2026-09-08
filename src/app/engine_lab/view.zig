@@ -11,7 +11,9 @@ const impact = hub_module.impact_module;
 // Presentation policy belongs here, outside the headless hub/physics graph.
 pub const preexisting_sprite_bound: usize = 1792;
 pub const calibration_sprite_allowance: usize = 64;
-pub const sprite_capacity: usize = preexisting_sprite_bound + calibration_sprite_allowance;
+pub const accepted_calibration_bound: usize = preexisting_sprite_bound + calibration_sprite_allowance;
+pub const time_sprite_allowance: usize = 128;
+pub const sprite_capacity: usize = accepted_calibration_bound + time_sprite_allowance;
 pub const entry_capacity: usize = 2048;
 pub const mesh_capacity: usize = 256;
 
@@ -21,6 +23,7 @@ const text_color = [4]f32{ 0.85, 0.93, 1, 1 };
 pub const View = struct {
     commands: debug.CommandBuffer = .{},
     calibration_sprite_count: usize = 0,
+    time_sprite_count: usize = 0,
     actor_queue: queue_module.UnifiedRenderQueue,
     particles: [impact.particle_capacity]impact.e.RenderInstance = undefined,
     projectiles: [impact.projectile_capacity]impact.p.Snapshot = undefined,
@@ -136,8 +139,25 @@ pub const View = struct {
             try self.label(.{ .x = installation.launcher.x - 0.9, .y = 0.18 }, try std.fmt.bufPrint(&text, "L{d} C{d} D{d}", .{ @min(installation.observations.launches, 999), @min(installation.observations.contacts, 999), @min(installation.bridge.metrics.dropped_effects +| installation.effects.metrics().dropped_particles, 999) }));
         } else try self.label(.{ .x = left, .y = bottom - 0.24 }, "PROVISIONAL 2D ACTOR / 240 HZ");
         try self.drawCalibration(hub);
+        try self.drawTime(hub);
         for (self.commands.commands[0..self.commands.count]) |*command| command.texture_page = 1;
         _ = try self.commands.submitUnified(queue);
+    }
+
+    fn drawTime(self: *View, hub: *const hub_module.Hub) !void {
+        const start = self.commands.count;
+        const half = try hub.camera.worldHalfExtents();
+        var buffer: [hub_module.world_time_module.label_capacity]u8 = undefined;
+        const text = try hub_module.world_time_module.formatLabel(hub.world_time.snapshot(), &buffer);
+        try self.label(.{ .x = 0, .y = hub.camera.center.y + half.y - 0.2 }, text);
+        self.time_sprite_count = self.commands.count - start;
+        if (self.time_sprite_count > time_sprite_allowance) return error.WorldTimePresentationAllowanceExceeded;
+        // Measure the actual production glyphs; align their outer edge with the
+        // existing HUD inset without duplicating font metrics or allocating.
+        var right: f32 = 0;
+        for (self.commands.commands[start..self.commands.count]) |command| right = @max(right, command.world_position[0] + command.scale[0] * 0.5);
+        const shift = hub.camera.center.x + half.x - 0.2 - right;
+        for (self.commands.commands[start..self.commands.count]) |*command| command.world_position[0] += shift;
     }
 
     fn drawCalibration(self: *View, hub: *const hub_module.Hub) !void {

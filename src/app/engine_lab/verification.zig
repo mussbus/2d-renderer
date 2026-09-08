@@ -170,3 +170,5 @@ pub fn verifyMultiImpact(allocator: std.mem.Allocator, seed: hub_module.Seed) !M
     if (!std.mem.eql(u32, &first.colors, &second.colors)) return error.MultiImpactColorMismatch;
     return second;
 }
+
+pub const world_time = @import("world_time_verification.zig");

@@ -331,6 +331,10 @@ test "maximum diagnostics and eight replacement flights plus 192 particles retai
     var calibration_max: usize = 0;
     var combined_observed: usize = 0;
     var combined_bound: usize = 0;
+    var time_max: usize = 0;
+    var all_observed: usize = 0;
+    var all_bound: usize = 0;
+    const time_maximum = try @import("engine_lab_world_time_tests.zig").presentationMaximum();
     var glyphs = @import("debug_draw").CommandBuffer{};
     var maximum_hex_glyph: usize = 0;
     for ("0123456789abcdef") |letter| {
@@ -409,28 +413,42 @@ test "maximum diagnostics and eight replacement flights plus 192 particles retai
                     for ([_]f32{ 0, -h.calibration_module.profile.maximum_displacement, h.calibration_module.profile.maximum_displacement }) |offset| {
                         hub.calibration.state.response = .{ .offset = offset, .velocity = 0 };
                         hub.calibration.previous_response = hub.calibration.state.response;
-                        try view.render(&hub, &queue);
-                        const total = queue.prepare().sprites.len;
-                        const addition = view.calibration_sprite_count;
-                        const count = total - addition;
-                        calibration_max = @max(calibration_max, addition);
-                        combined_observed = @max(combined_observed, total);
-                        try std.testing.expect(addition > 0 and addition <= view_module.calibration_sprite_allowance);
-                        try std.testing.expect(total <= view_module.sprite_capacity);
-                        largest = @max(largest, count);
-                        try std.testing.expect(count <= 1792);
-                        try std.testing.expectEqual(@as(usize, 3), queue.prepare().ranges.len);
-                        try std.testing.expectEqual(counter, hub.tick);
-                        if (diagnostics) {
-                            const digest = (try hub.fingerprint()).formatLowerHex();
-                            glyphs.beginFrame();
-                            const actual_hash = try glyphs.addLabel(.zero, digest[0..12], .{ 1, 1, 1, 1 });
-                            const upper = count - actual_hash + 12 * maximum_hex_glyph;
-                            conservative = @max(conservative, upper);
-                            combined_bound = @max(combined_bound, upper + addition);
-                            try std.testing.expect(upper + addition <= view_module.sprite_capacity);
-                            if (upper > 1792) std.debug.print("DIAGNOSTIC_GLYPH_BOUND actual={d} upper={d} hash_cost={d} glyph_max={d} removed={d} paused={} tick={d}\n", .{ count, upper, actual_hash, maximum_hex_glyph, removed, paused, counter });
-                            try std.testing.expect(upper <= 1792);
+                        for ([_]u64{ time_maximum.day, 999, std.math.maxInt(u64) }) |day| {
+                            // Validated presentation-only world clock; no simulated provenance.
+                            var time_snapshot = h.world_time_module.initial_snapshot;
+                            time_snapshot.day_index = day;
+                            time_snapshot.time_of_day_us = time_maximum.minute * 60_000_000;
+                            hub.world_time = try h.world_time_module.WorldTime.fromSnapshot(time_snapshot);
+                            try view.render(&hub, &queue);
+                            const total = queue.prepare().sprites.len;
+                            const addition = view.calibration_sprite_count;
+                            const time_addition = view.time_sprite_count;
+                            const count = total - time_addition - addition;
+                            time_max = @max(time_max, time_addition);
+                            all_observed = @max(all_observed, total);
+                            try std.testing.expect(time_addition > 0 and time_addition <= view_module.time_sprite_allowance);
+                            try std.testing.expect(total - time_addition <= 1856);
+                            calibration_max = @max(calibration_max, addition);
+                            combined_observed = @max(combined_observed, total - time_addition);
+                            try std.testing.expect(addition > 0 and addition <= view_module.calibration_sprite_allowance);
+                            try std.testing.expect(total <= view_module.sprite_capacity);
+                            largest = @max(largest, count);
+                            try std.testing.expect(count <= 1792);
+                            try std.testing.expectEqual(@as(usize, 3), queue.prepare().ranges.len);
+                            try std.testing.expectEqual(counter, hub.tick);
+                            if (diagnostics) {
+                                const digest = (try hub.fingerprint()).formatLowerHex();
+                                glyphs.beginFrame();
+                                const actual_hash = try glyphs.addLabel(.zero, digest[0..12], .{ 1, 1, 1, 1 });
+                                const upper = count - actual_hash + 12 * maximum_hex_glyph;
+                                conservative = @max(conservative, upper);
+                                combined_bound = @max(combined_bound, upper + addition);
+                                try std.testing.expect(upper + addition <= 1856);
+                                all_bound = @max(all_bound, upper + addition + time_addition);
+                                try std.testing.expect(upper + addition + time_addition <= view_module.sprite_capacity);
+                                if (upper > 1792) std.debug.print("DIAGNOSTIC_GLYPH_BOUND actual={d} upper={d} hash_cost={d} glyph_max={d} removed={d} paused={} tick={d}\n", .{ count, upper, actual_hash, maximum_hex_glyph, removed, paused, counter });
+                                try std.testing.expect(upper <= 1792);
+                            }
                         }
                     }
                 }
@@ -444,6 +462,7 @@ test "maximum diagnostics and eight replacement flights plus 192 particles retai
         }
     }
     std.debug.print("CALIBRATION_PRESENTATION_BOUND preexisting_observed={d}/1792 preexisting_conservative={d}/1792 addition={d}/64 combined_observed={d}/1856 combined_conservative={d}/1856 offsets=rest,both_limits batches=3\n", .{ largest, conservative, calibration_max, combined_observed, combined_bound });
+    std.debug.print("WORLD_TIME_PRESENTATION_BOUND preexisting={d}/1792 calibration={d}/64 prior_combined={d}/1856 time={d}/128 observed={d}/1984 conservative={d}/1984 headroom={d} batches=3\n", .{ conservative, calibration_max, combined_bound, time_max, all_observed, all_bound, view_module.sprite_capacity - all_bound });
     std.debug.print("MULTI_IMPACT_DIAGNOSTIC_MAX sprites={d}/1792 conservative_hash_bound={d}/1792 projectiles=0..8 particles=192 batches=3 full_u64_ticks=true paused=true saturated_counters=true\n", .{ largest, conservative });
 }
 

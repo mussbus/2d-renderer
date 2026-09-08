@@ -71,7 +71,7 @@ fn frame(tracking: *std.testing.FailingAllocator, hub: *h.Hub, view: *view_modul
     try view.render(hub, renderer.renderQueue());
     renderer.camera().* = hub.camera;
     const prepared = renderer.renderQueue().prepare();
-    if (prepared.ranges.len != 3 or prepared.sprites.len > view_module.sprite_capacity or prepared.sprites.len - view.calibration_sprite_count > view_module.preexisting_sprite_bound) return error.ImpactQueueBound;
+    if (prepared.ranges.len != 3 or prepared.sprites.len > view_module.sprite_capacity or prepared.sprites.len - view.time_sprite_count > view_module.accepted_calibration_bound or prepared.sprites.len - view.time_sprite_count - view.calibration_sprite_count > view_module.preexisting_sprite_bound) return error.ImpactQueueBound;
     if (!try renderer.renderUnifiedToWindow(prepared)) return error.ImpactWindowUnavailable;
     if (tracking.allocations != allocations) return error.ImpactSteadyAllocation;
 }
@@ -82,7 +82,7 @@ fn capture(io: std.Io, allocator: std.mem.Allocator, hub: *h.Hub, view: *view_mo
     const before = try hub.impact.fingerprint();
     try view.render(hub, renderer.renderQueue());
     const prepared = renderer.renderQueue().prepare();
-    if (prepared.ranges.len != 3 or prepared.sprites.len > view_module.sprite_capacity or prepared.sprites.len - view.calibration_sprite_count > view_module.preexisting_sprite_bound) return error.ImpactQueueBound;
+    if (prepared.ranges.len != 3 or prepared.sprites.len > view_module.sprite_capacity or prepared.sprites.len - view.time_sprite_count > view_module.accepted_calibration_bound or prepared.sprites.len - view.time_sprite_count - view.calibration_sprite_count > view_module.preexisting_sprite_bound) return error.ImpactQueueBound;
     renderer.camera().* = hub.camera;
     var pixels = try renderer.captureUnified(prepared);
     defer pixels.deinit();
@@ -174,5 +174,5 @@ pub fn runMulti(io: std.Io, tracking: *std.testing.FailingAllocator, hub: *h.Hub
         if (hub.impact.observations.last_launch.?.projectile.definition.tag != colors[index]) return error.MultiImpactResetColors;
     }
     try actions.advance(hub, &mapper, .{}, .{ .reset = true }, 0);
-    std.log.info("ENGINE_LAB_MULTI_IMPACT_SMOKE_OK backend=direct3d12 launches=16 contacts=16 rejected_full=2 rejected_range=1 colors={any} peak_particles=192 peak_emitters=9 max_sprites={d}/1856 preexisting_bound=1792 calibration_allowance=64 batches=3 steady_allocations=0 drops=0 pause_step=true multi_reset=true reset_colors=true captures=8", .{ colors, max_sprites });
+    std.log.info("ENGINE_LAB_MULTI_IMPACT_SMOKE_OK backend=direct3d12 launches=16 contacts=16 rejected_full=2 rejected_range=1 colors={any} peak_particles=192 peak_emitters=9 max_sprites={d}/1984 preexisting_bound=1792 calibration_allowance=64 time_allowance=128 batches=3 steady_allocations=0 drops=0 pause_step=true multi_reset=true reset_colors=true captures=8", .{ colors, max_sprites });
 }

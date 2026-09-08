@@ -12,6 +12,7 @@ const authored = @import("authored_clips");
 const camera2d = @import("camera2d");
 pub const impact_module = @import("impact.zig");
 pub const calibration_module = @import("calibration.zig");
+pub const world_time_module = @import("world_time.zig");
 
 pub const Intent = @import("character_intent").CharacterIntent;
 pub const Seed = foundation.determinism.Seed128;
@@ -157,6 +158,7 @@ pub const Hub = struct {
     stations: [station_count]Station,
     impact: impact_module.Installation,
     calibration: calibration_module.Binding,
+    world_time: world_time_module.WorldTime,
     camera: camera2d.Camera2D,
     follower: camera2d.HorizontalFollower,
     clock: fixed_step.Clock,
@@ -191,7 +193,11 @@ pub const Hub = struct {
             std.log.err("Engine Lab calibration initialization tick 0: {s}", .{@errorName(err)});
             return err;
         };
-        return .{ .calibration = calibration, .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
+        const world_time = world_time_module.init() catch |err| {
+            std.log.err("Engine Lab World Time initialization tick 0: {s}", .{@errorName(err)});
+            return err;
+        };
+        return .{ .world_time = world_time, .calibration = calibration, .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
     }
 
     pub fn deinit(self: *Hub) !void {
@@ -233,6 +239,9 @@ pub const Hub = struct {
     }
 
     pub fn advanceFrame(self: *Hub, seconds: f64, intent: Intent) !void {
+        // A late World Time failure leaves a fatal partial hub tick. Reject even
+        // zero-step frames before touching input/clock; only whole-hub reset heals it.
+        if (self.world_time.snapshot().simulation_ticks != self.tick) return error.WorldTimeTickMismatch;
         try intent.validate();
         self.pending.move_axis = intent.move_axis;
         self.pending.jump_held = intent.jump_held;
@@ -277,6 +286,10 @@ pub const Hub = struct {
         };
         self.impact.step(launch, &self.world, next_tick) catch |err| {
             std.log.err("Engine Lab projectile-impact executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
+            return err;
+        };
+        self.world_time.advanceSimulationTicks(1) catch |err| {
+            std.log.err("Engine Lab World Time advanceSimulationTicks executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
             return err;
         };
     }

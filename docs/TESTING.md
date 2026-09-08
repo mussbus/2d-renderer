@@ -1679,6 +1679,38 @@ they are not completion evidence. Bundle finalization now parses generated
 state and manifest JSON before rename. Manual visual acceptance is
 `[PENDING OWNER REVIEW]`.
 
+## Engine Lab World Time integration
+
+The [bounded integration record](implementation/engine_lab_world_time.md) documents
+actual-tick composition, exact snapshots, rollover at tick 240, lifecycle and
+presentation limits. Run `test-engine-lab`, `test-world`, `test-psm01` and
+`test-effects-projectiles` in Debug, ReleaseSafe and ReleaseFast. New tests cover
+zero/capped frame steps, pause/step/navigation/focus/reset, grouping, snapshot-copy
+independence, validated fractional-carry continuation, render purity, all 160 failed
+reset allocation prefixes, integer label boundaries and exhaustive production-font
+bounds. Keep prior <=1,792 and <=1,856 assertions alongside the combined <=1,984
+bound. Measured conservative use is 1,950 with exactly three batches.
+
+`--verify` preserves 47 legacy and 12 calibration identities and adds eight separate
+exact World Time records. `--verify-world-time-overflow` is an explicitly failing
+headless fixture; it must propagate WorldDayOverflow with operation/hub-tick context
+and reject continuation. The task-local `verify-overflow.py` checks that expected
+nonzero exit without treating it as a passing simulation.
+
+Route the complete native rerun to fresh evidence destinations:
+
+```powershell
+& '.\.deps\zig-0.16.0\zig.exe' build run-engine-lab -j1 --global-cache-dir .tmp/projectile-impact/global-cache -p .tmp/projectile-impact/install -- --smoke --impact-capture-dir .tmp/engine-lab-world-time/captures/impact --calibration-capture-dir .tmp/engine-lab-world-time/captures/calibration --world-time-capture-dir .tmp/engine-lab-world-time/captures/world-time
+```
+
+Choose fresh destinations on a further rerun. The eight additional production
+D3D12 readbacks cover initial/advancing time, paused tick 239, one step to tick 240,
+navigation on both sides, moving LAG with live projectiles/particles and dominant
+reset. Capture allocation is outside warm frames; preserve raw PPM and lossless
+PNG/pixel hashes. Automated evidence and engineering inspection do not confer
+independent review or owner visual acceptance of World Time. PSM01 is accepted
+at the checkpoint recorded below. This feature is not incorporated into master.
+
 ## Engine Lab PSM01 calibration binding
 
 The [bounded calibration record](implementation/engine_lab_psm01_calibration_binding.md)

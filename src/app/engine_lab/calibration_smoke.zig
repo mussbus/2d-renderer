@@ -66,7 +66,7 @@ fn frame(tracking: *std.testing.FailingAllocator, hub: *h.Hub, view: *view_modul
     try view.render(hub, renderer.renderQueue());
     renderer.camera().* = hub.camera;
     const prepared = renderer.renderQueue().prepare();
-    if (prepared.ranges.len != 3 or prepared.sprites.len > view_module.sprite_capacity or prepared.sprites.len - view.calibration_sprite_count > view_module.preexisting_sprite_bound) return error.CalibrationNativeQueueBound;
+    if (prepared.ranges.len != 3 or prepared.sprites.len > view_module.sprite_capacity or prepared.sprites.len - view.time_sprite_count > view_module.accepted_calibration_bound or prepared.sprites.len - view.time_sprite_count - view.calibration_sprite_count > view_module.preexisting_sprite_bound) return error.CalibrationNativeQueueBound;
     if (!try renderer.renderUnifiedToWindow(prepared)) return error.CalibrationWindowUnavailable;
     if (tracking.alloc_index != allocations or tracking.resize_index != resizes) return error.CalibrationNativeSteadyAllocation;
     const effects = hub.impact.effects.metrics();
