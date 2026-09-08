@@ -1709,8 +1709,11 @@ python tools/engine_lab_impact_review.py --capture-dir .tmp/projectile-impact-fo
 python tools/engine_lab_impact_review.py --capture-dir .tmp/projectile-impact-follow-up/captures/single
 ```
 
-The original single-projectile visuals were accepted by the owner in chat.
-New multi-shot/color visuals remain pending owner acceptance. E/gamepad west
+The projectile-impact checkpoint, including eight-shot/color visuals and the
+corrected 1,792/1,792 conservative glyph bound, is owner accepted at
+`6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`; independent source/evidence
+review was also reported as passing. Acceptance applies to the integration
+branch and does not claim incorporation into master. E/gamepad west
 fires on fresh presses while capacity is available; holds never repeat. The
 follow-up record gives exact bounds, tick order, command ledger and review ZIP.
 

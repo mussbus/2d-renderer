@@ -63,9 +63,11 @@ dependency. The [follow-up](../implementation/engine_lab_multi_projectile_follow
 uses exact bounded dyadic slab comparisons, eight concurrent projectiles and
 hub-owned seeded palette tags. An optional value-only, per-event bridge RGB
 override copies colors into emitted definitions; both cores and native event
-formats remain unchanged. Original single-shot visuals have owner acceptance;
-the new behavior awaits visual acceptance. The standalone foundation proof and
-other deferred integrations retain their own authority.
+formats remain unchanged. The projectile-impact checkpoint is owner accepted
+at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`, including eight-shot visuals
+and passing independent source/evidence review reported by the owner. This
+feature-branch acceptance does not claim incorporation into master. The standalone
+foundation proof and other deferred integrations retain their own authority.
 
 ```text
 Character / Anatomy Definition

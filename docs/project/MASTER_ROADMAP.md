@@ -81,10 +81,11 @@ not start those tasks or change their prerequisite gates. See the
 ## Product target
 
 The separately approved [Engine Lab projectile-impact slice](../implementation/engine_lab_projectile_impact.md)
-has owner acceptance for the original single-projectile visuals. Its approved
-[eight-shot color and sweep-precision follow-up](../implementation/engine_lab_multi_projectile_follow_up.md)
-awaits owner visual acceptance on the same integration branch. Engine Lab
-Integration is an unnumbered track name. Only static swept geometry and this
+and its [eight-shot color, sweep and glyph-budget follow-up](../implementation/engine_lab_multi_projectile_follow_up.md)
+are owner accepted at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`, with
+independent source/evidence review reported as passing. Acceptance is on the
+integration branch; incorporation into master remains separate and no push or
+merge is claimed. Engine Lab Integration is an unnumbered track name. Only static swept geometry and this
 fixed projectile-to-impact installation are adopted; all later integrations
 and closed EL1 acceptance retain their existing boundaries.
 

@@ -197,13 +197,15 @@ existing registrations and authority boundaries.
 ## Post-F4 track readiness
 
 The separately approved [Engine Lab projectile-impact integration](../implementation/engine_lab_projectile_impact.md)
-has owner acceptance for its original single-projectile visuals. The separately
-approved [follow-up](../implementation/engine_lab_multi_projectile_follow_up.md)
-corrects static-sweep precision and supports eight concurrent shots with seeded
-immutable colors retained by each 24-particle impact. Its new visual behavior
-awaits owner acceptance. The generic sweep and optional bridge RGB override
-preserve accepted core ownership and the existing production presentation.
-This bounded candidate supersedes the general Engine Lab-adoption deferral
+and [follow-up](../implementation/engine_lab_multi_projectile_follow_up.md)
+are owner accepted at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e` on
+`feature/engine-lab-integration`, with independent source/evidence review reported
+as passing. The checkpoint includes corrected static-sweep precision, eight
+concurrent shots and matching 24-particle impacts. Its corrected glyph bound is
+1,792/1,792 with zero conservative headroom (1,751 observed). It is not yet
+incorporated into master; this statement claims no push or merge. The generic
+sweep and optional bridge RGB override preserve accepted core ownership.
+This bounded accepted checkpoint supersedes the general Engine Lab-adoption deferral
 only for that slice. Closed EL1 acceptance and all other deferred tracks remain
 unchanged; no new milestone number is assigned.
 

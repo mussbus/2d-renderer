@@ -2,9 +2,12 @@
 
 Status: the owner accepted the original single-projectile visuals in chat.
 The [eight-projectile/color follow-up](engine_lab_multi_projectile_follow_up.md)
-is separately implemented and **AWAITING OWNER VISUAL ACCEPTANCE**. Original
-measurements below remain historical; the follow-up record owns current bounds,
-color contracts, commands and review evidence.
+is **OWNER ACCEPTED** at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`,
+including its sweep and glyph-budget corrections. The owner also reports passing
+independent source/evidence review. This is acceptance on the integration branch,
+not incorporation into master or a push/merge claim. Original measurements below
+remain historical; the follow-up record owns current bounds, color contracts,
+commands and review evidence.
 Engine Lab Integration is a track name. This slice does not reopen closed EL1,
 assign a milestone number, or adopt later roadmap systems.
 

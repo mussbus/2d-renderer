@@ -1,8 +1,24 @@
 # Engine Lab sweep precision and eight-projectile follow-up
 
-Status: implementation candidate, **PENDING OWNER VISUAL ACCEPTANCE** for this
-new behavior. The owner accepted the original single-projectile visuals in chat.
-EL1 remains closed; this is an unnumbered continuation of Engine Lab Integration.
+Status: **OWNER ACCEPTED** projectile-impact checkpoint at
+`6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`, recorded on 2026-09-08.
+The owner visually inspected and accepted the eight-projectile behavior and
+matching impacts, and reports that independent source/evidence review passed.
+The original single-projectile visuals were already accepted in chat.
+
+Accepted history, in order:
+- Original integration: `37d11c8e3a7e2f67e210df0bb71000efdbbee793`.
+- Sweep correction: `3719ba225890f828df8d27d0badca521467d2d19`.
+- Eight colored projectiles: `fe742e703b15caa59886ff7a20a8ba724d7449ac`.
+- Glyph-budget correction: `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`.
+
+Acceptance applies to `feature/engine-lab-integration`; this checkpoint is not
+incorporated into master, and this bookkeeping claims no push or merge. The
+accepted glyph result remains 1,751 observed sprites and a conservative
+1,792/1,792 bound, with zero conservative headroom. Earlier measurements, captures
+and review packages retain their original provenance. EL1 remains closed;
+Engine Lab Integration remains an unnumbered track. This acceptance covers the
+projectile-impact checkpoint, without extending acceptance to a later binding.
 
 ## Original implementation authority and separate commits
 
@@ -171,7 +187,8 @@ losslessly PNG-encoded by the existing review tool. The retained capture helper
 temporarily pauses presentation to show completed state, then restores it; this
 accounts for PAUSED overlays even on reset captures. The native reset assertion
 separately verifies running tick zero. Captures are engineering inspection
-evidence; new owner visual acceptance remains pending.
+evidence; owner visual acceptance was pending at capture time and is now
+recorded for the exact checkpoint above.
 
 ## Glyph-budget test correction (2026-09-08)
 
@@ -234,8 +251,9 @@ and reproduction scripts. Original review ZIPs, logs, manifests and captures are
 preserved. The earlier 699-test full suite, D3D12 smoke and native captures below
 are **prior evidence for the starting revision**, not freshly executed correction
 gates. Full-suite, content, historical reproduction and GPU routes are not rerun
-for this test/documentation-only correction. New multi-projectile owner visual
-acceptance remains **PENDING OWNER VISUAL ACCEPTANCE**.
+for this test/documentation-only correction. Owner visual acceptance was pending
+at that correction's delivery; acceptance of its exact checkpoint is now recorded
+above. The original manifests retain their historical pending status.
 
 ## Original implementation validation and owner launch
 
