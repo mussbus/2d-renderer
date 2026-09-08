@@ -120,9 +120,15 @@ pub fn register(options: Options) Registration {
         .root_module = renderer_boundary_test_module,
     });
     const run_renderer_boundary_tests = b.addRunArtifact(renderer_boundary_tests);
+    const renderer_queue_tests = addEngineTest(b, .{
+        .name = "renderer-queue-initialization-tests",
+        .root_module = modules.sdl_gpu_renderer_module,
+    });
+    const run_renderer_queue_tests = b.addRunArtifact(renderer_queue_tests);
+    run_renderer_boundary_tests.step.dependOn(&run_renderer_queue_tests.step);
     const renderer_boundary_test_step = b.step(
         "test-renderer-boundary",
-        "Run focused copied-frame ownership and capture-contract tests",
+        "Run focused copied-frame ownership and CPU renderer queue initialization tests",
     );
     renderer_boundary_test_step.dependOn(&run_renderer_boundary_tests.step);
     const art_test_module = b.createModule(.{

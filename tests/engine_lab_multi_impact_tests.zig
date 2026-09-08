@@ -312,12 +312,12 @@ test "seventeen events cover one spawn plus eight movement contact or expiry pai
     }
 }
 
-test "maximum diagnostics and eight replacement flights plus 192 particles fit unchanged presentation" {
+test "maximum diagnostics and eight replacement flights plus 192 particles retain the accepted preexisting bound plus bounded calibration" {
     var hub = try init(std.testing.allocator);
     defer close(&hub);
     var view = try view_module.View.init(std.testing.allocator);
     defer view.deinit();
-    var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, 2048, 1792, 256, 2);
+    var queue = try queue_module.UnifiedRenderQueue.init(std.testing.allocator, view_module.entry_capacity, view_module.sprite_capacity, view_module.mesh_capacity, 2);
     defer queue.deinit();
     try hub.navigate(.springs);
     _ = try fill(&hub);
@@ -328,6 +328,9 @@ test "maximum diagnostics and eight replacement flights plus 192 particles fit u
     for (hub.stations) |station| try std.testing.expectEqual(station.history.len, station.history_count);
     var largest: usize = 0;
     var conservative: usize = 0;
+    var calibration_max: usize = 0;
+    var combined_observed: usize = 0;
+    var combined_bound: usize = 0;
     var glyphs = @import("debug_draw").CommandBuffer{};
     var maximum_hex_glyph: usize = 0;
     for ("0123456789abcdef") |letter| {
@@ -401,20 +404,34 @@ test "maximum diagnostics and eight replacement flights plus 192 particles fit u
                     hub.impact.observations.contacts = hub.impact.observations.launches;
                     hub.impact.bridge.metrics.dropped_effects = hub.impact.observations.launches;
                     hub.clock.lifetime_discarded_time = if (counter == std.math.maxInt(u64)) std.math.floatMax(f64) else maximum_seconds;
-                    try view.render(&hub, &queue);
-                    const count = queue.prepare().sprites.len;
-                    largest = @max(largest, count);
-                    try std.testing.expect(count <= 1792);
-                    try std.testing.expectEqual(@as(usize, 3), queue.prepare().ranges.len);
-                    try std.testing.expectEqual(counter, hub.tick);
-                    if (diagnostics) {
-                        const digest = (try hub.fingerprint()).formatLowerHex();
-                        glyphs.beginFrame();
-                        const actual_hash = try glyphs.addLabel(.zero, digest[0..12], .{ 1, 1, 1, 1 });
-                        const upper = count - actual_hash + 12 * maximum_hex_glyph;
-                        conservative = @max(conservative, upper);
-                        if (upper > 1792) std.debug.print("DIAGNOSTIC_GLYPH_BOUND actual={d} upper={d} hash_cost={d} glyph_max={d} removed={d} paused={} tick={d}\n", .{ count, upper, actual_hash, maximum_hex_glyph, removed, paused, counter });
-                        try std.testing.expect(upper <= 1792);
+                    // Presentation boundary fixtures, not simulated solver outcomes.
+                    // Constant primitive/glyph counts must hold at rest and both limits.
+                    for ([_]f32{ 0, -h.calibration_module.profile.maximum_displacement, h.calibration_module.profile.maximum_displacement }) |offset| {
+                        hub.calibration.state.response = .{ .offset = offset, .velocity = 0 };
+                        hub.calibration.previous_response = hub.calibration.state.response;
+                        try view.render(&hub, &queue);
+                        const total = queue.prepare().sprites.len;
+                        const addition = view.calibration_sprite_count;
+                        const count = total - addition;
+                        calibration_max = @max(calibration_max, addition);
+                        combined_observed = @max(combined_observed, total);
+                        try std.testing.expect(addition > 0 and addition <= view_module.calibration_sprite_allowance);
+                        try std.testing.expect(total <= view_module.sprite_capacity);
+                        largest = @max(largest, count);
+                        try std.testing.expect(count <= 1792);
+                        try std.testing.expectEqual(@as(usize, 3), queue.prepare().ranges.len);
+                        try std.testing.expectEqual(counter, hub.tick);
+                        if (diagnostics) {
+                            const digest = (try hub.fingerprint()).formatLowerHex();
+                            glyphs.beginFrame();
+                            const actual_hash = try glyphs.addLabel(.zero, digest[0..12], .{ 1, 1, 1, 1 });
+                            const upper = count - actual_hash + 12 * maximum_hex_glyph;
+                            conservative = @max(conservative, upper);
+                            combined_bound = @max(combined_bound, upper + addition);
+                            try std.testing.expect(upper + addition <= view_module.sprite_capacity);
+                            if (upper > 1792) std.debug.print("DIAGNOSTIC_GLYPH_BOUND actual={d} upper={d} hash_cost={d} glyph_max={d} removed={d} paused={} tick={d}\n", .{ count, upper, actual_hash, maximum_hex_glyph, removed, paused, counter });
+                            try std.testing.expect(upper <= 1792);
+                        }
                     }
                 }
             }
@@ -426,6 +443,7 @@ test "maximum diagnostics and eight replacement flights plus 192 particles fit u
             hub.impact.projectiles.clearEvents();
         }
     }
+    std.debug.print("CALIBRATION_PRESENTATION_BOUND preexisting_observed={d}/1792 preexisting_conservative={d}/1792 addition={d}/64 combined_observed={d}/1856 combined_conservative={d}/1856 offsets=rest,both_limits batches=3\n", .{ largest, conservative, calibration_max, combined_observed, combined_bound });
     std.debug.print("MULTI_IMPACT_DIAGNOSTIC_MAX sprites={d}/1792 conservative_hash_bound={d}/1792 projectiles=0..8 particles=192 batches=3 full_u64_ticks=true paused=true saturated_counters=true\n", .{ largest, conservative });
 }
 

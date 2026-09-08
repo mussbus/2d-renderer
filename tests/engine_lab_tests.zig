@@ -9,6 +9,7 @@ comptime {
     _ = @import("static_sweep_tests.zig");
     _ = @import("engine_lab_impact_tests.zig");
     _ = @import("engine_lab_multi_impact_tests.zig");
+    _ = @import("engine_lab_calibration_tests.zig");
 }
 
 fn seed() !hub_module.Seed {

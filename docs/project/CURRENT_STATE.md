@@ -11,6 +11,15 @@ The production-system inventory below distinguishes current engine authority
 from protected historical visual lineage. Historical names identify accepted
 provenance only and do not define current production architecture.
 
+The separately requested [Engine Lab PSM01 calibration binding](../implementation/engine_lab_psm01_calibration_binding.md)
+adds one application-owned horizontal response above the provisional actor using
+the accepted solver and ordinary movement controls. It is **pending independent
+review and owner visual acceptance**. The projectile-impact checkpoint remains
+accepted at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`. This unnumbered
+integration branch has no implied merge into master. The preexisting 1,792-sprite
+bound is retained separately; the calibration has a 64-sprite allowance within
+an explicitly configured 1,856-sprite CPU queue and three existing batches.
+
 ## Foundation and current architecture track
 
 | Milestone | Current status |

@@ -9,6 +9,7 @@ pub const Options = struct {
 };
 
 pub const Catalog = struct {
+    sdl_gpu_renderer_module: *std.Build.Module,
     secondary_motion_module: *std.Build.Module,
     secondary_motion_rate_module: *std.Build.Module,
     secondary_motion_test_module: *std.Build.Module,
@@ -1000,6 +1001,7 @@ pub fn register(options: Options) Catalog {
     engine_lab_module.addImport("scene_core", scene_core_module);
     engine_lab_module.addImport("fixed_step", fixed_step_module);
     engine_lab_module.addImport("spring", spring_module);
+    engine_lab_module.addImport("secondary_motion", secondary_motion_module);
     engine_lab_module.addImport("math", math_module);
     engine_lab_module.addImport("collider", collider_module);
     engine_lab_module.addImport("collision_world", collision_world_module);
@@ -1619,6 +1621,7 @@ pub fn register(options: Options) Catalog {
     record_replay_test_module.addImport("fixed_step", fixed_step_module);
     record_replay_test_module.addImport("input", input_module);
     return .{
+        .sdl_gpu_renderer_module = sdl_gpu_renderer_module,
         .secondary_motion_module = secondary_motion_module,
         .secondary_motion_rate_module = secondary_motion_rate_module,
         .secondary_motion_test_module = secondary_motion_test_module,

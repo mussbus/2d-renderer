@@ -242,6 +242,12 @@ pub const Renderer = struct {
         try self.state.initializeUnifiedQueue();
     }
 
+    /// Caller-selected CPU queue capacities; GPU storage remains explicitly
+    /// configured through ensureGpuCapacity. Existing defaults are unchanged.
+    pub fn initializeUnifiedQueueWithCapacities(self: *Renderer, entries: usize, sprites: usize, meshes: usize) !void {
+        try self.state.initializeUnifiedQueueWithCapacities(entries, sprites, meshes);
+    }
+
     pub fn ensureGpuCapacity(
         self: *Renderer,
         required: usize,
@@ -525,14 +531,12 @@ const State = struct {
     }
 
     fn initializeUnifiedQueue(self: *State) !void {
+        try self.initializeUnifiedQueueWithCapacities(render_queue.default_entry_capacity, render_queue.default_sprite_capacity, render_queue.default_mesh_capacity);
+    }
+
+    fn initializeUnifiedQueueWithCapacities(self: *State, entries: usize, sprites: usize, meshes: usize) !void {
         if (self.unified_queue != null) return error.UnifiedQueueAlreadyInitialized;
-        self.unified_queue = try render_queue.UnifiedRenderQueue.init(
-            self.allocator,
-            render_queue.default_entry_capacity,
-            render_queue.default_sprite_capacity,
-            render_queue.default_mesh_capacity,
-            self.texture_page_count,
-        );
+        self.unified_queue = try render_queue.UnifiedRenderQueue.init(self.allocator, entries, sprites, meshes, self.texture_page_count);
     }
 
     fn initializeVisualCaptureTransfer(self: *State) !void {
@@ -2070,4 +2074,59 @@ fn sdlErrorText() []const u8 {
 fn failSdl(operation: []const u8, result: anyerror) @TypeOf(result) {
     std.log.err("{s}: {s}", .{ operation, sdlErrorText() });
     return result;
+}
+
+// CPU queue initialization uses the public renderer entry points against an
+// unstarted State. These tests require no window, GPU or SDL initialization.
+test "renderer queue defaults remain unchanged and both entry points reject reinitialization" {
+    var state = State{ .allocator = std.testing.allocator };
+    var renderer = Renderer{ .state = &state };
+    try renderer.initializeUnifiedQueue();
+    defer state.unified_queue.?.deinit();
+    const queue = renderer.renderQueue();
+    try std.testing.expectEqual(render_queue.default_entry_capacity, queue.entries.len);
+    try std.testing.expectEqual(render_queue.default_sprite_capacity, queue.sprite_submissions.len);
+    try std.testing.expectEqual(render_queue.default_mesh_capacity, queue.mesh_submissions.len);
+    const allocation = queue.entries.ptr;
+    try std.testing.expectError(error.UnifiedQueueAlreadyInitialized, renderer.initializeUnifiedQueue());
+    try std.testing.expectError(error.UnifiedQueueAlreadyInitialized, renderer.initializeUnifiedQueueWithCapacities(1, 1, 1));
+    try std.testing.expect(allocation == renderer.renderQueue().entries.ptr);
+}
+
+test "renderer custom queue capacities delegate validation before publication" {
+    var state = State{ .allocator = std.testing.allocator, .texture_page_count = 2 };
+    var renderer = Renderer{ .state = &state };
+    for ([_][3]usize{ .{ 0, 1, 1 }, .{ 8, 9, 1 }, .{ 8, 1, 1 }, .{ 8, 8, 0 }, .{ 8, 8, 9 } }) |invalid| {
+        try std.testing.expectError(error.InvalidRenderQueueCapacity, renderer.initializeUnifiedQueueWithCapacities(invalid[0], invalid[1], invalid[2]));
+        try std.testing.expect(renderer.renderQueueOptional() == null);
+    }
+    state.texture_page_count = 0;
+    try std.testing.expectError(error.InvalidTexturePageCount, renderer.initializeUnifiedQueueWithCapacities(24, 20, 8));
+    try std.testing.expect(renderer.renderQueueOptional() == null);
+    state.texture_page_count = 2;
+    try renderer.initializeUnifiedQueueWithCapacities(24, 20, 8);
+    defer state.unified_queue.?.deinit();
+    try std.testing.expectEqual(@as(usize, 24), renderer.renderQueue().entries.len);
+    try std.testing.expectEqual(@as(usize, 20), renderer.renderQueue().sprite_submissions.len);
+    try std.testing.expectEqual(@as(usize, 8), renderer.renderQueue().mesh_submissions.len);
+    try std.testing.expectEqual(@as(u32, 2), renderer.renderQueue().texture_page_count);
+}
+
+test "renderer queue allocation failures free every prefix and permit a later initialization" {
+    // The queue owns eight allocations. Exercise each partial initialization,
+    // including both default and explicit paths, with the existing allocator.
+    for ([_]bool{ false, true }) |custom| for (0..8) |failure| {
+        var tracking = std.testing.FailingAllocator.init(std.testing.allocator, .{ .fail_index = failure });
+        var state = State{ .allocator = tracking.allocator() };
+        var renderer = Renderer{ .state = &state };
+        const result = if (custom) renderer.initializeUnifiedQueueWithCapacities(24, 20, 8) else renderer.initializeUnifiedQueue();
+        try std.testing.expectError(error.CpuAllocationFailure, result);
+        try std.testing.expect(renderer.renderQueueOptional() == null);
+        try std.testing.expectEqual(tracking.allocated_bytes, tracking.freed_bytes);
+        tracking.fail_index = std.math.maxInt(usize);
+        try renderer.initializeUnifiedQueueWithCapacities(24, 20, 8);
+        state.unified_queue.?.deinit();
+        state.unified_queue = null;
+        try std.testing.expectEqual(tracking.allocated_bytes, tracking.freed_bytes);
+    };
 }

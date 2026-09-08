@@ -52,9 +52,18 @@ The visual proof remains standalone. PHY, Engine Lab, RR1, world/environment,
 registrations do not imply adoption. See the
 [accepted implementation and validation record](../implementation/effects_projectiles_foundation.md).
 
+The separately requested [Engine Lab PSM01 calibration binding](../implementation/engine_lab_psm01_calibration_binding.md)
+adds one application-owned horizontal response above the provisional actor using
+the accepted solver and ordinary movement controls. It is **pending independent
+review and owner visual acceptance**. The projectile-impact checkpoint remains
+accepted at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`. This unnumbered
+integration branch has no implied merge into master. The preexisting 1,792-sprite
+bound is retained separately; the calibration has a 64-sprite allowance within
+an explicitly configured 1,856-sprite CPU queue and three existing batches.
+
 ## Integrated production flow
 
-The [Engine Lab projectile-impact candidate](../implementation/engine_lab_projectile_impact.md)
+The [accepted Engine Lab projectile-impact checkpoint](../implementation/engine_lab_projectile_impact.md)
 adds a physics-owned per-AABB `collision_world.static_sweep` helper. The hub
 enumerates its existing world into the accepted projectile query port, then
 consumes native events through the accepted bridge and extracts ordinary
@@ -174,7 +183,7 @@ collider-data authority.
 | Controller and fixed-step root physics | [`src/physics/character_controller.zig`](../../src/physics/character_controller.zig), [`src/physics/fixed_step.zig`](../../src/physics/fixed_step.zig) |
 | Interaction definition and coordination | [`src/interaction/interaction.zig`](../../src/interaction/interaction.zig), private lifecycle authority behind `Manager` in [`src/interaction/interaction_system.zig`](../../src/interaction/interaction_system.zig), [`src/interaction/handshake.zig`](../../src/interaction/handshake.zig) |
 | IK | [`src/animation/arm_ik.zig`](../../src/animation/arm_ik.zig), [`src/animation/leg_ik.zig`](../../src/animation/leg_ik.zig), [`src/animation/two_bone_ik.zig`](../../src/animation/two_bone_ik.zig) |
-| Generic scalar secondary motion (PSM01, ACCEPTED at 43ae062) | [`src/physics/secondary_motion.zig`](../../src/physics/secondary_motion.zig) reuses [`src/physics/spring.zig`](../../src/physics/spring.zig); [authored rate resolution](../../src/physics/secondary_motion_rate.zig) produces validated profiles for the same fixed-tick solver; [accepted generic contract and offline trace evidence](../implementation/psm01_secondary_motion.md). Final anatomical tuning and production bindings are outside acceptance; no representation binding is implemented. |
+| Generic scalar secondary motion (PSM01, ACCEPTED at 43ae062) | [`src/physics/secondary_motion.zig`](../../src/physics/secondary_motion.zig) reuses [`src/physics/spring.zig`](../../src/physics/spring.zig); [authored rate resolution](../../src/physics/secondary_motion_rate.zig) produces validated profiles for the same fixed-tick solver; [accepted generic contract and offline trace evidence](../implementation/psm01_secondary_motion.md). Final anatomical tuning and production bindings are outside generic foundation acceptance. The separately authorized Engine Lab calibration consumer is pending review as described above. |
 | Deformation and secondary motion | [`src/scene/deformation.zig`](../../src/scene/deformation.zig), [`src/animation/attachment_secondary_motion.zig`](../../src/animation/attachment_secondary_motion.zig), [`src/graphics/deformable_mesh.zig`](../../src/graphics/deformable_mesh.zig) |
 | Visual-geometry metadata, traces, and audits | [`src/scene/visual_geometry.zig`](../../src/scene/visual_geometry.zig), [`src/scene/visual_geometry_audit.zig`](../../src/scene/visual_geometry_audit.zig) |
 | Unified ordering | [`src/graphics/render_queue.zig`](../../src/graphics/render_queue.zig) and `sprite.OrderInput` in [`src/graphics/sprite_batch.zig`](../../src/graphics/sprite_batch.zig) |

@@ -1679,6 +1679,33 @@ they are not completion evidence. Bundle finalization now parses generated
 state and manifest JSON before rename. Manual visual acceptance is
 `[PENDING OWNER REVIEW]`.
 
+## Engine Lab PSM01 calibration binding
+
+The [bounded calibration record](implementation/engine_lab_psm01_calibration_binding.md)
+defines the application-owned fixed-world-X driver, authored profile, lifecycle,
+separate observation schema and presentation allowance. New integration tests
+run through `test-engine-lab`; the accepted `test-psm01` and
+`test-effects-projectiles` targets remain separate. Execute all three in Debug,
+ReleaseSafe and ReleaseFast. `test-renderer-boundary` additionally runs CPU-only
+renderer queue default/custom validation and allocation-failure cleanup tests.
+
+The combined budget test retains the accepted 1,792 preexisting bound and measures
+the calibration separately across all original saturation states and rest/both
+displacement limits. Current measurements are 1,751 old + 35 new = 1,786 observed,
+1,792 + 35 = 1,827 conservative, within the explicit 1,856 CPU limit. Native GPU
+storage uses the existing rounded 2,048 allocation for that 1,856 request; three
+batches, 2,048 queue entries and 256 mesh entries remain.
+
+`--verify` adds a separate calibration fixture after the unchanged old fixtures.
+`--smoke` compares its native checkpoints and writes nine additional readbacks.
+Use `--impact-capture-dir .tmp/engine-lab-psm01-binding/captures/impact` and
+`--calibration-capture-dir .tmp/engine-lab-psm01-binding/captures/calibration`
+to keep earlier impact evidence intact. The existing lossless capture encoder
+accepts the calibration names via `--names`; the task-local reproduction script
+records their exact list. Tests/native evidence do not confer independent review
+or owner acceptance of this new binding. The earlier projectile checkpoint stays
+accepted; EL1 remains closed.
+
 ## Engine Lab EL1
 
 The [projectile-impact integration](implementation/engine_lab_projectile_impact.md)

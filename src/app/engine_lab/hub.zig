@@ -11,6 +11,7 @@ const humanoid = @import("humanoid");
 const authored = @import("authored_clips");
 const camera2d = @import("camera2d");
 pub const impact_module = @import("impact.zig");
+pub const calibration_module = @import("calibration.zig");
 
 pub const Intent = @import("character_intent").CharacterIntent;
 pub const Seed = foundation.determinism.Seed128;
@@ -155,6 +156,7 @@ pub const Hub = struct {
     actor: character.CharacterInstance,
     stations: [station_count]Station,
     impact: impact_module.Installation,
+    calibration: calibration_module.Binding,
     camera: camera2d.Camera2D,
     follower: camera2d.HorizontalFollower,
     clock: fixed_step.Clock,
@@ -184,7 +186,12 @@ pub const Hub = struct {
         try camera.setCenter(.{ .x = spawn.x, .y = camera_center_y });
         var impact = try impact_module.Installation.init(allocator, seed, installations.roots[1].id, installations.roots[1].world, &world);
         errdefer impact.deinit();
-        return .{ .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
+        const controller = actor.controllerSnapshot() orelse return error.HubActorHasNoController;
+        const calibration = calibration_module.Binding.init(controller.state.position) catch |err| {
+            std.log.err("Engine Lab calibration initialization tick 0: {s}", .{@errorName(err)});
+            return err;
+        };
+        return .{ .calibration = calibration, .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
     }
 
     pub fn deinit(self: *Hub) !void {
@@ -213,6 +220,11 @@ pub const Hub = struct {
         };
         try self.actor.resetControlled(&self.world);
         try self.actor.stageControlledTransform(.{ .x = destination_x[index], .y = spawn.y }, .right);
+        const controller = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
+        self.calibration.reanchor(controller.state.position) catch |err| {
+            std.log.err("Engine Lab calibration navigation at hub tick {d}: {s}", .{ self.tick, @errorName(err) });
+            return err;
+        };
         try self.camera.setCenter(.{ .x = destination_x[index], .y = camera_center_y });
         self.pending = neutral_intent;
         self.impact.pending_activation = false;
@@ -259,6 +271,10 @@ pub const Hub = struct {
         }
         try self.follower.update(&self.camera, controller.state.position.x);
         try self.camera.setCenter(.{ .x = std.math.clamp(self.camera.center.x, -5, 5), .y = self.camera.center.y });
+        self.calibration.step(controller.state.position) catch |err| {
+            std.log.err("Engine Lab calibration executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
+            return err;
+        };
         self.impact.step(launch, &self.world, next_tick) catch |err| {
             std.log.err("Engine Lab projectile-impact executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
             return err;

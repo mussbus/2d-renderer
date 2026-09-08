@@ -1,4 +1,5 @@
 const std = @import("std");
+pub const calibration = @import("calibration_verification.zig");
 const hub_module = @import("engine_lab");
 
 pub const checkpoint_ticks = [_]u64{ 0, 480, 960, 1440 };

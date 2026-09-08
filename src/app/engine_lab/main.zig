@@ -9,6 +9,7 @@ const art_pack = @import("art_pack");
 const physical = @import("physical_input");
 const c = @import("sdl").c;
 const impact_smoke = @import("impact_smoke.zig");
+const calibration_smoke = @import("calibration_smoke.zig");
 
 pub fn main(init: std.process.Init) !void {
     const arguments = try init.minimal.args.toSlice(init.arena.allocator());
@@ -17,6 +18,7 @@ pub fn main(init: std.process.Init) !void {
     var smoke = false;
     var help = false;
     var impact_capture_dir: []const u8 = ".tmp/projectile-impact-follow-up/captures";
+    var calibration_capture_dir: []const u8 = ".tmp/engine-lab-psm01-binding/captures/calibration";
     var argument: usize = 1;
     while (argument < arguments.len) : (argument += 1) {
         const text = arguments[argument];
@@ -30,6 +32,10 @@ pub fn main(init: std.process.Init) !void {
             argument += 1;
             if (argument == arguments.len or arguments[argument].len == 0) return error.MissingCaptureDirectory;
             impact_capture_dir = arguments[argument];
+        } else if (std.mem.eql(u8, text, "--calibration-capture-dir")) {
+            argument += 1;
+            if (argument == arguments.len or arguments[argument].len == 0) return error.MissingCaptureDirectory;
+            calibration_capture_dir = arguments[argument];
         } else if (std.mem.eql(u8, text, "--seed")) {
             argument += 1;
             if (argument == arguments.len) return error.MissingSeedValue;
@@ -38,7 +44,7 @@ pub fn main(init: std.process.Init) !void {
     }
     if (verify and smoke) return error.ConflictingVerificationModes;
     if (help) {
-        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke --impact-capture-dir path. A/D or arrows move; Space jumps; gamepad stick/south also move/jump. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; Escape exits.", .{});
+        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke --impact-capture-dir path --calibration-capture-dir path. A/D or arrows move; Space jumps; gamepad stick/south also move/jump. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; Escape exits.", .{});
         return;
     }
     const allocator = std.heap.page_allocator;
@@ -52,12 +58,15 @@ pub fn main(init: std.process.Init) !void {
         const multi = try verification.verifyMultiImpact(allocator, seed);
         for (multi.checkpoints) |checkpoint| std.log.info("MULTI_IMPACT_OBSERVATIONS_V2 tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
         std.log.info("ENGINE_LAB_MULTI_IMPACT_VERIFY_OK launches=16 contacts=16 rejected_full=2 rejected_range=1 drain_tick=888 colors={any} peak_particles={d} peak_emitters={d} drops=0", .{ multi.colors, multi.peak_particles, multi.peak_emitters });
+        const calibrated = try verification.calibration.verify(allocator, seed);
+        for (calibrated.checkpoints) |checkpoint| std.log.info("CALIBRATION_OBSERVATIONS_V1 tick={d} sha256={s} offset={d:.6} velocity={d:.6}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex(), checkpoint.offset, checkpoint.velocity });
+        std.log.info("ENGINE_LAB_CALIBRATION_VERIFY_OK schedules=60Hz,mixed ticks=1440 settled=true axis=world_positive_x external_acceleration=0", .{});
         return;
     }
-    try run(init.io, allocator, seed, smoke, impact_capture_dir);
+    try run(init.io, allocator, seed, smoke, impact_capture_dir, calibration_capture_dir);
 }
 
-fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool, impact_capture_dir: []const u8) !void {
+fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool, impact_capture_dir: []const u8, calibration_capture_dir: []const u8) !void {
     var tracking = std.testing.FailingAllocator.init(backing_allocator, .{});
     const allocator = tracking.allocator();
     var hub = try hub_module.Hub.init(allocator, seed);
@@ -78,14 +87,15 @@ fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, 
     });
     defer art.deinit();
     try renderer.initializeArtTexturePages(&art);
-    try renderer.initializeUnifiedQueue();
+    try renderer.initializeUnifiedQueueWithCapacities(view_module.entry_capacity, view_module.sprite_capacity, view_module.mesh_capacity);
     if (smoke) try renderer.initializeCapture();
     var platform = platform_module.PlatformInput.init();
     var platform_live = true;
     defer if (platform_live) platform.deinit();
     var mapper = actions.Mapper{};
     const queue = renderer.renderQueue();
-    try renderer.ensureGpuCapacity(1792, null);
+    try renderer.ensureGpuCapacity(view_module.sprite_capacity, null);
+    std.log.info("ENGINE_LAB_PRESENTATION_CAPACITY entries={d} cpu_sprites={d} meshes={d} gpu_requested={d} preexisting_bound={d} calibration_allowance={d}", .{ queue.entries.len, queue.sprite_submissions.len, queue.mesh_submissions.len, view_module.sprite_capacity, view_module.preexisting_sprite_bound, view_module.calibration_sprite_allowance });
     queue.markStabilized();
     const resources = renderer.metrics();
     try reportInitial(&hub);
@@ -166,6 +176,7 @@ fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, 
         var single_path: [1024]u8 = undefined;
         try impact_smoke.run(io, &tracking, &hub, &view, &renderer, try std.fmt.bufPrint(&single_path, "{s}/single", .{impact_capture_dir}));
         try impact_smoke.runMulti(io, &tracking, &hub, &view, &renderer, impact_capture_dir);
+        try calibration_smoke.run(io, &tracking, &hub, &view, &renderer, calibration_capture_dir);
     }
     const steady = renderer.metrics();
     if (steady.gpu_resource_creations != resources.gpu_resource_creations or steady.upload_buffer_growths != resources.upload_buffer_growths or

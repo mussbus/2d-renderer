@@ -78,6 +78,15 @@ gameplay-specific integration require future dedicated work. Acceptance does
 not start those tasks or change their prerequisite gates. See the
 [implementation record](../implementation/effects_projectiles_foundation.md).
 
+The separately requested [Engine Lab PSM01 calibration binding](../implementation/engine_lab_psm01_calibration_binding.md)
+adds one application-owned horizontal response above the provisional actor using
+the accepted solver and ordinary movement controls. It is **pending independent
+review and owner visual acceptance**. The projectile-impact checkpoint remains
+accepted at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`. This unnumbered
+integration branch has no implied merge into master. The preexisting 1,792-sprite
+bound is retained separately; the calibration has a 64-sprite allowance within
+an explicitly configured 1,856-sprite CPU queue and three existing batches.
+
 ## Product target
 
 The separately approved [Engine Lab projectile-impact slice](../implementation/engine_lab_projectile_impact.md)
