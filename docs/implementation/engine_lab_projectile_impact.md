@@ -1,10 +1,14 @@
 # Engine Lab projectile-impact integration
 
-Status: implemented integration candidate, **AWAITING OWNER ACCEPTANCE**.
+Status: the owner accepted the original single-projectile visuals in chat.
+The [eight-projectile/color follow-up](engine_lab_multi_projectile_follow_up.md)
+is separately implemented and **AWAITING OWNER VISUAL ACCEPTANCE**. Original
+measurements below remain historical; the follow-up record owns current bounds,
+color contracts, commands and review evidence.
 Engine Lab Integration is a track name. This slice does not reopen closed EL1,
 assign a milestone number, or adopt later roadmap systems.
 
-## Authority and ownership
+## Original single-projectile authority and ownership
 
 Base: `1f8d2f3e01102285e76d02a788b7adb5f992087f`, verified against live GitHub
 master before editing. All five requested accepted foundation commits are

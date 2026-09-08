@@ -16,6 +16,7 @@ pub fn main(init: std.process.Init) !void {
     var verify = false;
     var smoke = false;
     var help = false;
+    var impact_capture_dir: []const u8 = ".tmp/projectile-impact-follow-up/captures";
     var argument: usize = 1;
     while (argument < arguments.len) : (argument += 1) {
         const text = arguments[argument];
@@ -25,6 +26,10 @@ pub fn main(init: std.process.Init) !void {
             verify = true;
         } else if (std.mem.eql(u8, text, "--smoke")) {
             smoke = true;
+        } else if (std.mem.eql(u8, text, "--impact-capture-dir")) {
+            argument += 1;
+            if (argument == arguments.len or arguments[argument].len == 0) return error.MissingCaptureDirectory;
+            impact_capture_dir = arguments[argument];
         } else if (std.mem.eql(u8, text, "--seed")) {
             argument += 1;
             if (argument == arguments.len) return error.MissingSeedValue;
@@ -33,7 +38,7 @@ pub fn main(init: std.process.Init) !void {
     }
     if (verify and smoke) return error.ConflictingVerificationModes;
     if (help) {
-        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke. A/D or arrows move; Space jumps; gamepad stick/south also move/jump. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; Escape exits.", .{});
+        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke --impact-capture-dir path. A/D or arrows move; Space jumps; gamepad stick/south also move/jump. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; Escape exits.", .{});
         return;
     }
     const allocator = std.heap.page_allocator;
@@ -42,14 +47,17 @@ pub fn main(init: std.process.Init) !void {
         for (result.checkpoints) |checkpoint| std.log.info("EL1_HUB_CHECKPOINT tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
         std.log.info("ENGINE_LAB_HUB_VERIFY_OK schedules=60Hz,mixed ticks=1440 stations=2 jumps={d} landings={d} wall_contacts={d}", .{ result.jumps, result.landings, result.wall_contacts });
         const integrated = try verification.verifyImpact(allocator, seed);
-        for (integrated.checkpoints) |checkpoint| std.log.info("IMPACT_OBSERVATIONS_V1 tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
+        for (integrated.checkpoints) |checkpoint| std.log.info("IMPACT_OBSERVATIONS_V2 tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
         std.log.info("ENGINE_LAB_IMPACT_VERIFY_OK launches=2 contacts=2 drain_tick=936 native_last_spawn_tick={d} native_last_contact_tick={d} contact_sequence={d}", .{ integrated.launch_tick, integrated.contact_tick, integrated.contact_sequence });
+        const multi = try verification.verifyMultiImpact(allocator, seed);
+        for (multi.checkpoints) |checkpoint| std.log.info("MULTI_IMPACT_OBSERVATIONS_V2 tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
+        std.log.info("ENGINE_LAB_MULTI_IMPACT_VERIFY_OK launches=16 contacts=16 rejected_full=2 rejected_range=1 drain_tick=888 colors={any} peak_particles={d} peak_emitters={d} drops=0", .{ multi.colors, multi.peak_particles, multi.peak_emitters });
         return;
     }
-    try run(init.io, allocator, seed, smoke);
+    try run(init.io, allocator, seed, smoke, impact_capture_dir);
 }
 
-fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool) !void {
+fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool, impact_capture_dir: []const u8) !void {
     var tracking = std.testing.FailingAllocator.init(backing_allocator, .{});
     const allocator = tracking.allocator();
     var hub = try hub_module.Hub.init(allocator, seed);
@@ -155,7 +163,9 @@ fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, 
         };
         if (changed < 1000) return error.HubSmokeUniformFrame;
         std.log.info("Engine Lab hub physical proof: frames={d} draws={d} readback_changed_pixels={d} movement=true jump=true collision=true", .{ rendered_frames, draw_calls, changed });
-        try impact_smoke.run(io, &tracking, &hub, &view, &renderer);
+        var single_path: [1024]u8 = undefined;
+        try impact_smoke.run(io, &tracking, &hub, &view, &renderer, try std.fmt.bufPrint(&single_path, "{s}/single", .{impact_capture_dir}));
+        try impact_smoke.runMulti(io, &tracking, &hub, &view, &renderer, impact_capture_dir);
     }
     const steady = renderer.metrics();
     if (steady.gpu_resource_creations != resources.gpu_resource_creations or steady.upload_buffer_growths != resources.upload_buffer_growths or

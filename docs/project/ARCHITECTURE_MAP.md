@@ -59,8 +59,13 @@ adds a physics-owned per-AABB `collision_world.static_sweep` helper. The hub
 enumerates its existing world into the accepted projectile query port, then
 consumes native events through the accepted bridge and extracts ordinary
 production SpriteRequests. Physics has no application/projectile/effects
-dependency. This bounded integration awaits owner acceptance; the standalone
-foundation proof and other deferred integrations retain their own authority.
+dependency. The [follow-up](../implementation/engine_lab_multi_projectile_follow_up.md)
+uses exact bounded dyadic slab comparisons, eight concurrent projectiles and
+hub-owned seeded palette tags. An optional value-only, per-event bridge RGB
+override copies colors into emitted definitions; both cores and native event
+formats remain unchanged. Original single-shot visuals have owner acceptance;
+the new behavior awaits visual acceptance. The standalone foundation proof and
+other deferred integrations retain their own authority.
 
 ```text
 Character / Anatomy Definition

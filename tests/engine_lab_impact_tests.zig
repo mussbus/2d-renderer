@@ -60,6 +60,10 @@ test "full emitter capacity drops bridge presentation without changing native co
         _ = try saturated.impact.effects.spawn(.{ .id = root.id, .position = .zero, .definition = .{ .duration_ticks = 1000 } });
         for (anchors) |anchor| _ = try saturated.impact.effects.spawn(.{ .id = anchor.id, .position = .zero, .definition = .{ .duration_ticks = 1000 } });
     }
+    // The eight station identities plus one distinct public identity fill the
+    // expanded nine-emitter budget before either launch or impact is delivered.
+    _ = try saturated.impact.effects.spawn(.{ .id = try p.Id.parseCanonical("9ebd3547-1b72-522b-9bc3-baa4938a1a49"), .position = .zero, .definition = .{ .duration_ticks = 1000 } });
+    try std.testing.expectEqual(@as(usize, impact.emitter_capacity), saturated.impact.effects.emitterCount());
     try ready(&nominal);
     try ready(&saturated);
     try ticks(&nominal, 312);
@@ -247,14 +251,18 @@ test "pause step and multi substep frames consume activation once and never queu
     try hub.advanceFrame(0.04, h.neutral_intent);
     try std.testing.expectEqual(@as(u64, 1), hub.impact.observations.launches);
     hub.clock.setPaused(false);
+    for (1..impact.projectile_capacity) |_| {
+        hub.impact.pending_activation = true;
+        try ticks(&hub, 1);
+    }
     hub.impact.pending_activation = true;
     try hub.advanceFrame(4.0 / 240.0, h.neutral_intent);
     try std.testing.expectEqual(@as(u64, 1), hub.impact.observations.busy);
     try ticks(&hub, 480);
-    try std.testing.expectEqual(@as(u64, 1), hub.impact.observations.launches);
+    try std.testing.expectEqual(@as(u64, 8), hub.impact.observations.launches);
     hub.impact.pending_activation = true;
     try hub.advanceFrame(4.0 / 240.0, h.neutral_intent);
-    try std.testing.expectEqual(@as(u64, 2), hub.impact.observations.launches);
+    try std.testing.expectEqual(@as(u64, 9), hub.impact.observations.launches);
     try aligned(&hub);
 }
 

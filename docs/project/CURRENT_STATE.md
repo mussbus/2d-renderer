@@ -197,9 +197,12 @@ existing registrations and authority boundaries.
 ## Post-F4 track readiness
 
 The separately approved [Engine Lab projectile-impact integration](../implementation/engine_lab_projectile_impact.md)
-is implemented on its dedicated integration branch and awaits owner acceptance.
-It composes one static-wall installation through a generic physics sweep,
-the accepted projectile/effects cores and bridge, and production presentation.
+has owner acceptance for its original single-projectile visuals. The separately
+approved [follow-up](../implementation/engine_lab_multi_projectile_follow_up.md)
+corrects static-sweep precision and supports eight concurrent shots with seeded
+immutable colors retained by each 24-particle impact. Its new visual behavior
+awaits owner acceptance. The generic sweep and optional bridge RGB override
+preserve accepted core ownership and the existing production presentation.
 This bounded candidate supersedes the general Engine Lab-adoption deferral
 only for that slice. Closed EL1 acceptance and all other deferred tracks remain
 unchanged; no new milestone number is assigned.

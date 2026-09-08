@@ -239,7 +239,7 @@ pub const Hub = struct {
         if (self.tick != self.impact.projectiles.tick() or self.tick != self.impact.effects.tick()) return error.ImpactTickMismatch;
         const next_tick = try std.math.add(u64, self.tick, 1);
         const observed_actor = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
-        const launch = self.impact.consumeActivation(observed_actor.state.position);
+        const launch = try self.impact.consumeActivation(observed_actor.state.position);
         const physical = try self.actor.stepController(&self.world, intent);
         try self.actor.selectControllerAnimation(physical);
         const controller = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;

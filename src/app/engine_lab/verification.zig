@@ -108,3 +108,64 @@ pub fn verifyImpact(allocator: std.mem.Allocator, seed: hub_module.Seed) !Impact
     for (first.checkpoints, second.checkpoints) |left, right| if (left.tick != right.tick or !left.digest.eql(right.digest)) return error.ImpactCheckpointMismatch;
     return second;
 }
+
+pub const multi_launch_ticks = [_]u64{ 0, 16, 32, 48, 64, 80, 96, 112, 320, 336, 352, 368, 384, 400, 416, 432 };
+pub const multi_ticks = [_]u64{ 0, 1, 16, 32, 48, 64, 80, 96, 112, 113, 128, 129, 144, 152, 153, 200, 311, 312, 313, 320, 328, 336, 352, 368, 384, 400, 416, 424, 432, 433, 456, 568, 632, 744, 888 };
+pub const MultiResult = struct { checkpoints: [multi_ticks.len]Checkpoint, colors: [multi_launch_ticks.len]u32, peak_particles: usize, peak_emitters: usize };
+
+fn runMulti(hub: *hub_module.Hub, mixed: bool) !MultiResult {
+    const impact = hub_module.impact_module;
+    try hub.navigate(.springs);
+    var result: MultiResult = .{ .checkpoints = undefined, .colors = undefined, .peak_particles = 0, .peak_emitters = 0 };
+    result.checkpoints[0] = .{ .tick = 0, .digest = try hub.impact.fingerprint() };
+    var frame_index: usize = 0;
+    var shot: usize = 0;
+    const schedule = [_]u64{ 1, 3, 2 };
+    for (multi_ticks[1..], 1..) |target, checkpoint| {
+        while (hub.tick < target) : (frame_index += 1) {
+            const launching = shot < multi_launch_ticks.len and hub.tick == multi_launch_ticks[shot];
+            if (launching or hub.tick == 128 or hub.tick == 311 or hub.tick == 152) hub.impact.pending_activation = true;
+            if (hub.tick == 144) try hub.navigate(.hierarchy);
+            if (hub.tick == 200) try hub.navigate(.springs);
+            const steps = @min(target - hub.tick, if (mixed) schedule[frame_index % schedule.len] else 4);
+            try hub.advanceFrame(@as(f64, @floatFromInt(steps)) / 240.0, hub_module.neutral_intent);
+            if (launching) {
+                result.colors[shot] = hub.impact.observations.last_launch.?.projectile.definition.tag;
+                shot += 1;
+            }
+            if (hub.tick != hub.impact.projectiles.tick() or hub.tick != hub.impact.effects.tick()) return error.ImpactTickMismatch;
+            if (mixed) {
+                const before = try hub.impact.fingerprint();
+                var particles: [impact.particle_capacity]impact.e.RenderInstance = undefined;
+                _ = try hub.impact.effects.extract(&particles, 0);
+                _ = try hub.impact.effects.extract(&particles, 1);
+                _ = try hub.impact.fingerprint();
+                try hub.camera.setCenter(.{ .x = 0, .y = 2.1 });
+                if (!before.eql(try hub.impact.fingerprint())) return error.ImpactObservationMutation;
+            }
+        }
+        result.checkpoints[checkpoint] = .{ .tick = hub.tick, .digest = try hub.impact.fingerprint() };
+    }
+    const observed = hub.impact.observations;
+    const metrics = hub.impact.effects.metrics();
+    if (shot != 16 or observed.launches != 16 or observed.contacts != 16 or observed.busy != 2 or observed.out_of_range != 1 or
+        hub.impact.next_shot_ordinal != 16 or hub.impact.projectiles.count() != 0 or hub.impact.effects.particleCount() != 0 or
+        hub.impact.effects.emitterCount() != 0 or hub.impact.bridge.count != 0 or hub.impact.bridge.metrics.impacts != 16 or
+        hub.impact.bridge.metrics.dropped_effects != 0 or metrics.dropped_particles != 0 or metrics.rejected_emitters != 0 or
+        metrics.peak_particles != impact.particle_capacity or metrics.peak_emitters != impact.emitter_capacity or
+        hub.clock.lifetime_discarded_time != 0) return error.MultiImpactFixtureIncomplete;
+    result.peak_particles = metrics.peak_particles;
+    result.peak_emitters = metrics.peak_emitters;
+    return result;
+}
+
+pub fn verifyMultiImpact(allocator: std.mem.Allocator, seed: hub_module.Seed) !MultiResult {
+    var hub = try hub_module.Hub.init(allocator, seed);
+    defer hub.deinit() catch |err| hub_module.cleanupFailure(err);
+    const first = try runMulti(&hub, false);
+    try hub.reset();
+    const second = try runMulti(&hub, true);
+    for (first.checkpoints, second.checkpoints) |left, right| if (left.tick != right.tick or !left.digest.eql(right.digest)) return error.MultiImpactCheckpointMismatch;
+    if (!std.mem.eql(u32, &first.colors, &second.colors)) return error.MultiImpactColorMismatch;
+    return second;
+}

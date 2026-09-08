@@ -15,7 +15,7 @@ pub const View = struct {
     commands: debug.CommandBuffer = .{},
     actor_queue: queue_module.UnifiedRenderQueue,
     particles: [impact.particle_capacity]impact.e.RenderInstance = undefined,
-    projectiles: [1]impact.p.Snapshot = undefined,
+    projectiles: [impact.projectile_capacity]impact.p.Snapshot = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !View {
         var queue = try queue_module.UnifiedRenderQueue.init(allocator, 16, 16, 1, 1);
@@ -42,7 +42,7 @@ pub const View = struct {
             _ = try queue.submitSprite(box(.{ .x = x, .y = -0.07 }, .{ .x = 0.06, .y = 0.1 }, .{ 0.4, 0.6, 0.7, 1 }, -9));
         }
         for (hub.stations, hub.installations.roots, hub.installations.anchors, 0..) |station, root, anchors, index| {
-            try self.label(.{ .x = root.world.x - 1.05, .y = 3.55 }, if (index == 0) "F1 HIERARCHY" else "F2 DAMPING");
+            try self.label(.{ .x = root.world.x - 1.05, .y = 3.55 }, if (index == 0) "F1 LINKS" else "F2 DAMPING");
             for (anchors, station.springs, station.previous_offsets, 0..) |anchor, state, previous, mass| {
                 try self.commands.addLine(root.world, anchor.world, .{ 0.3, 0.45, 0.6, 1 });
                 try self.commands.addMarker(anchor.world, text_color);
@@ -72,11 +72,14 @@ pub const View = struct {
         const installation = &hub.impact;
         _ = try queue.submitSprite(box(installation.launcher, .{ .x = 0.28, .y = 0.18 }, .{ 0.2, 0.8, 0.85, 1 }, -1));
         _ = try queue.submitSprite(box(installation.wall_marker, .{ .x = 0.035, .y = 0.5 }, .{ 1, 0.65, 0.2, 1 }, -1));
-        try self.label(.{ .x = installation.launcher.x - 0.75, .y = installation.launcher.y - 0.25 }, if (installation.projectiles.count() != 0) "IN FLIGHT" else "READY E/WEST");
+        var readiness: [32]u8 = undefined;
+        const active = installation.projectiles.count();
+        try self.label(.{ .x = installation.launcher.x - 0.75, .y = installation.launcher.y - 0.25 }, try std.fmt.bufPrint(&readiness, "{s} {d}/8", .{ if (active == impact.projectile_capacity) "FULL" else "E/WEST", active }));
         const alpha: f32 = if (hub.clock.paused) 1 else @floatCast(hub.clock.last_frame.interpolation_alpha);
         for (try installation.projectiles.copySnapshots(&self.projectiles)) |value| {
             const position = try math.interpolation.lerpVec2(value.previous_position, value.position, alpha);
-            _ = try queue.submitSprite(box(position, value.definition.half_extents.scale(2), .{ 1, 0.9, 0.3, 1 }, -1));
+            const rgb = try impact.colorForTag(value.definition.tag);
+            _ = try queue.submitSprite(box(position, value.definition.half_extents.scale(2), .{ rgb[0], rgb[1], rgb[2], 1 }, -1));
         }
         for (try installation.effects.extract(&self.particles, alpha)) |value| {
             // Explicit hub presentation map: one effect sprite -> neutral page.
@@ -111,17 +114,17 @@ pub const View = struct {
         const left = hub.camera.center.x - half.x + 0.2;
         const top = hub.camera.center.y + half.y - 0.2;
         try self.label(.{ .x = left, .y = top }, "ENGINE LAB");
-        try self.label(.{ .x = left, .y = top - 0.24 }, "A D / ARROWS MOVE  SPACE JUMP");
-        try self.label(.{ .x = left, .y = top - 0.48 }, "F1 F2 TRAVEL  R RESET  P PAUSE  T STEP");
-        try self.label(.{ .x = left, .y = top - 0.72 }, "F3 INFO  ESC EXIT");
+        try self.label(.{ .x = left, .y = top - 0.24 }, "A/D ARROWS  SPACE JUMP");
+        try self.label(.{ .x = left, .y = top - 0.48 }, "F1 F2  R RESET  P PAUSE  T STEP");
+        try self.label(.{ .x = left, .y = top - 0.72 }, "F3 INFO  ESC");
         var text: [128]u8 = undefined;
-        const status = if (hub.clock.paused) "PAUSED" else "RUNNING";
+        const status = if (hub.clock.paused) "PAUSED" else "RUN";
         const visited = @as(u8, @intFromBool(hub.visited[0])) + @as(u8, @intFromBool(hub.visited[1]));
         const bottom = hub.camera.center.y - half.y + 0.42;
-        try self.label(.{ .x = left, .y = bottom }, try std.fmt.bufPrint(&text, "{s}  TICK {d}  STATIONS {d}/2", .{ status, hub.tick, visited }));
+        try self.label(.{ .x = left, .y = bottom }, try std.fmt.bufPrint(&text, "{s} T{d}  {d}/2", .{ status, hub.tick, visited }));
         if (hub.diagnostics_enabled) {
             const digest = (try hub.fingerprint()).formatLowerHex();
-            try self.label(.{ .x = left, .y = bottom - 0.24 }, try std.fmt.bufPrint(&text, "HASH {s} DROP {d:.3}S", .{ digest[0..12], hub.clock.lifetime_discarded_time }));
+            try self.label(.{ .x = left, .y = bottom - 0.24 }, try std.fmt.bufPrint(&text, "H {s} D{d:.3}S", .{ digest[0..12], @min(hub.clock.lifetime_discarded_time, 999.999) }));
             try self.label(.{ .x = installation.launcher.x - 0.9, .y = 0.18 }, try std.fmt.bufPrint(&text, "L{d} C{d} D{d}", .{ @min(installation.observations.launches, 999), @min(installation.observations.contacts, 999), @min(installation.bridge.metrics.dropped_effects +| installation.effects.metrics().dropped_particles, 999) }));
         } else try self.label(.{ .x = left, .y = bottom - 0.24 }, "PROVISIONAL 2D ACTOR / 240 HZ");
         for (self.commands.commands[0..self.commands.count]) |*command| command.texture_page = 1;

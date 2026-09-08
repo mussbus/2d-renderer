@@ -1681,17 +1681,38 @@ state and manifest JSON before rename. Manual visual acceptance is
 
 ## Engine Lab EL1
 
-The [projectile-impact integration candidate](implementation/engine_lab_projectile_impact.md)
-adds static geometry and hub composition tests to the existing `test-engine-lab`
-domain, preserving all 16 EL1 tests. `run-engine-lab -- --verify` also runs a
-separately identified 936-tick integration fixture and observations-v1 hashes;
-EL1 v2 fingerprints are unchanged. `run-engine-lab -- --smoke` retains the
-original smoke and adds native launch/contact/fade/drain, pause/step, offscreen
-navigation and flight/particle-reset coverage. Seven new task-local captures
-live under `.tmp/projectile-impact/captures`; encode them with
-`python tools/engine_lab_impact_review.py`. This evidence awaits owner review.
-E/gamepad west activates the nearby fixed installation at F2. See the new
-implementation record for exact tick order, bounds, commands and results.
+The [projectile-impact integration](implementation/engine_lab_projectile_impact.md)
+and its [eight-shot follow-up](implementation/engine_lab_multi_projectile_follow_up.md)
+add geometry, composition and lifecycle tests to `test-engine-lab`, preserving
+all 16 EL1 tests. Run `test-engine-lab` and `test-effects-projectiles` in Debug,
+ReleaseSafe and ReleaseFast. The optional bridge RGB path has independent
+validation/default-appearance tests; it changes no projectile/effect core format.
+
+`run-engine-lab -- --verify` retains the 1,440-tick EL1 and 936-tick single-shot
+fixtures and adds a separate 888-tick, 16-shot fixture. Local integration hashes
+are `engine_lab.projectile_impact.observations.v2`, covering color derivation
+context, authored palette, successful-shot ordinal, copied tags and particle RGB
+in addition to prior public observations. Original EL1 v2 fingerprints and
+historical integration-v1 evidence remain unchanged; this is not replay/save state.
+
+`run-engine-lab -- --smoke --impact-capture-dir .tmp/projectile-impact-follow-up/captures`
+retains the original smoke and adds multiple flights, overlapping matching
+impacts, capacity reuse, paused contact/next-tick birth ages, and multi-flight
+plus live-particle reset coverage. The optional destination only controls
+explicit offline capture writes. The follow-up directory is the new default;
+original captures under `.tmp/projectile-impact/captures` are preserved.
+
+Encode the eight new readbacks with:
+
+```powershell
+python tools/engine_lab_impact_review.py --capture-dir .tmp/projectile-impact-follow-up/captures --names multi-flight overlapping replacement paused single-step-contact single-step-next old-particles-drained multi-reset
+python tools/engine_lab_impact_review.py --capture-dir .tmp/projectile-impact-follow-up/captures/single
+```
+
+The original single-projectile visuals were accepted by the owner in chat.
+New multi-shot/color visuals remain pending owner acceptance. E/gamepad west
+fires on fresh presses while capacity is available; holds never repeat. The
+follow-up record gives exact bounds, tick order, command ledger and review ZIP.
 
 `zig build engine-lab -j1` builds/installs the independent persistent hub without
 building the sandbox. The retained 16 EL1 headless tests cover

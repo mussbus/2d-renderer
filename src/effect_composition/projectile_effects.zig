@@ -14,7 +14,8 @@ pub const Config = struct {
     expiration: e.Definition,
 };
 pub const Metrics = struct { launches: u64 = 0, trail_samples: u64 = 0, impacts: u64 = 0, expirations: u64 = 0, dropped_effects: u64 = 0, dropped_trails: u64 = 0, truncated_segments: u64 = 0 };
-pub const Error = e.Error || error{ InvalidConfiguration, EventsOutOfOrder };
+pub const Error = e.Error || error{ InvalidConfiguration, EventsOutOfOrder, InvalidColorOverrides };
+pub const Rgb = [3]f32;
 const Trail = struct { id: p.Id, remainder: f64 = 0 };
 /// Optional client-owned adapter. The projectile system is never passed by
 /// mutable reference. Presentation capacity cannot change projectile outcomes.
@@ -49,29 +50,44 @@ pub const Bridge = struct {
     /// Consume each ordered event batch once, before the core clears its buffer.
     /// Validate event sequence first, so duplicate delivery cannot repeat bursts.
     pub fn consume(self: *Bridge, events: []const p.Event, effects: *e.System) Error!void {
+        return self.consumeWithColors(events, effects, null);
+    }
+    /// Optional value-only RGB per event, aligned with the original ordered
+    /// batch. Null batch/entries retain authored appearance. Both endpoints of
+    /// each emitted definition copy receive RGB; opacity and every other value
+    /// remain unchanged. No caller buffer is retained. Validate the entire batch
+    /// before processing, including unused overrides on non-emitting events.
+    pub fn consumeWithColors(self: *Bridge, events: []const p.Event, effects: *e.System, overrides: ?[]const ?Rgb) Error!void {
+        if (overrides) |colors| {
+            if (colors.len != events.len) return error.InvalidColorOverrides;
+            for (colors) |color| if (color) |rgb| {
+                for (rgb) |component| if (!std.math.isFinite(component) or component < 0 or component > 1) return error.InvalidColorOverrides;
+            };
+        }
         var last = self.last_sequence;
         for (events) |event| {
             if (last) |sequence| if (event.sequence <= sequence) return error.EventsOutOfOrder;
             last = event.sequence;
         }
-        for (events) |event| {
+        for (events, 0..) |event, index| {
+            const color = if (overrides) |colors| colors[index] else null;
             switch (event.kind) {
                 .spawned => {
                     if (self.count < self.trails.len) {
                         self.trails[self.count] = .{ .id = event.projectile.id };
                         self.count += 1;
                     } else self.metrics.dropped_trails +|= 1;
-                    try self.emit(effects, event, 0, event.projectile.position, self.config.launch);
+                    try self.emit(effects, event, 0, event.projectile.position, colored(self.config.launch, color));
                     self.metrics.launches +|= 1;
                 },
-                .moved => try self.trail(event, effects),
+                .moved => try self.trail(event, effects, color),
                 .collided => {
-                    try self.emit(effects, event, 0, event.hit.?.position, self.config.impact);
+                    try self.emit(effects, event, 0, event.hit.?.position, colored(self.config.impact, color));
                     self.metrics.impacts +|= 1;
                     if (event.projectile.definition.response == .despawn) self.removeTrail(event.projectile.id);
                 },
                 .expired => {
-                    try self.emit(effects, event, 0, event.projectile.position, self.config.expiration);
+                    try self.emit(effects, event, 0, event.projectile.position, colored(self.config.expiration, color));
                     self.metrics.expirations +|= 1;
                     self.removeTrail(event.projectile.id);
                 },
@@ -81,7 +97,7 @@ pub const Bridge = struct {
         }
         self.last_sequence = last;
     }
-    fn trail(self: *Bridge, event: p.Event, effects: *e.System) Error!void {
+    fn trail(self: *Bridge, event: p.Event, effects: *e.System, color: ?Rgb) Error!void {
         for (self.trails[0..self.count]) |*value| {
             if (!value.id.eql(event.projectile.id)) continue;
             const delta = event.projectile.position.sub(event.from);
@@ -98,7 +114,7 @@ pub const Bridge = struct {
             for (0..samples) |index| {
                 const distance = spacing - value.remainder + @as(f64, @floatFromInt(index)) * spacing;
                 const position = event.from.add(delta.scale(@floatCast(@min(distance / length, 1))));
-                try self.emit(effects, event, @intCast(index), position, self.config.trail);
+                try self.emit(effects, event, @intCast(index), position, colored(self.config.trail, color));
                 self.metrics.trail_samples +|= 1;
             }
             if (available > self.config.maximum_samples_per_segment) self.metrics.truncated_segments +|= 1;
@@ -128,3 +144,12 @@ pub const Bridge = struct {
         }
     }
 };
+
+fn colored(definition: e.Definition, color: ?Rgb) e.Definition {
+    var copy = definition;
+    if (color) |rgb| {
+        copy.start_color = rgb;
+        copy.end_color = rgb;
+    }
+    return copy;
+}
