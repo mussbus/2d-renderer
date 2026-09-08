@@ -1681,6 +1681,17 @@ state and manifest JSON before rename. Manual visual acceptance is
 
 ## Engine Lab World Time integration
 
+**OWNER ACCEPTED** at `deacc4e2c6f24873df730a18fc83cc23dfa6b97b`.
+Independent source/evidence review and owner visual acceptance passed. The reviewer
+inspected reconstructed patches, production code, tests, logs, hashes and native
+captures; the implementation owner performed the Windows/Zig/D3D12 executions.
+The reviewer did not independently repeat those executions. Acceptance includes
+one hub-owned WorldTime advancing from executed ticks, pause, single-step,
+navigation, whole-hub reset, snapshot continuation and overflow behavior.
+The accepted conservative bound is 1,950/1,984 sprites, three batches and 34 spare.
+Feature-branch acceptance does not imply incorporation into master. Historical
+pending-status evidence and original raw bytes remain preserved.
+
 The [bounded integration record](implementation/engine_lab_world_time.md) documents
 actual-tick composition, exact snapshots, rollover at tick 240, lifecycle and
 presentation limits. Run `test-engine-lab`, `test-world`, `test-psm01` and

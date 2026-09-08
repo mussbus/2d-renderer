@@ -1,6 +1,15 @@
 # Engine Lab World Time integration
 
-Status: **PENDING INDEPENDENT REVIEW AND OWNER VISUAL ACCEPTANCE**.
+Status: **OWNER ACCEPTED** at `deacc4e2c6f24873df730a18fc83cc23dfa6b97b`.
+Independent source/evidence review and owner visual acceptance passed. The reviewer
+inspected reconstructed patches, production code, tests, logs, hashes and native
+captures; the implementation owner performed the Windows/Zig/D3D12 executions.
+The reviewer did not independently repeat those executions. Acceptance includes
+one hub-owned WorldTime advancing from executed ticks, pause, single-step,
+navigation, whole-hub reset, snapshot continuation and overflow behavior.
+The accepted conservative bound is 1,950/1,984 sprites, three batches and 34 spare.
+Feature-branch acceptance does not imply incorporation into master. Historical
+pending-status evidence and original raw bytes remain preserved.
 This is one bounded slice of the unnumbered Engine Lab Integration track. EL1
 remains closed. The accepted World Time Foundation and PSM01 solver are unchanged.
 
@@ -178,8 +187,8 @@ installations; it does not implement dynamic scene publication. No calendar,
 weekday/month/season, timezone, weather, lighting, schedule, fast-forward, separate
 pause domain, RR1, combat, abilities, Fireball, collectibles, liquids, anatomical
 or garment binding, canonical authoring or sibling application work is included.
-No next integration slice is started. World Time remains pending independent
-review and owner visual acceptance; the preceding PSM01 checkpoint is accepted.
+No next integration slice is started. World Time and the preceding PSM01 checkpoint are accepted at their exact
+revisions recorded above; their original evidence retains its historical status.
 
 From the established integration worktree:
 

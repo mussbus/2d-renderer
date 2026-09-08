@@ -94,7 +94,17 @@ bound is retained separately; the calibration has a 64-sprite allowance within
 an explicitly configured 1,856-sprite CPU queue and three existing batches.
 
 The subsequent [bounded Engine Lab World Time integration](../implementation/engine_lab_world_time.md)
-is **pending independent review and owner visual acceptance**. One inline accepted
+is **OWNER ACCEPTED** at `deacc4e2c6f24873df730a18fc83cc23dfa6b97b`.
+Independent source/evidence review and owner visual acceptance passed. The reviewer
+inspected reconstructed patches, production code, tests, logs, hashes and native
+captures; the implementation owner performed the Windows/Zig/D3D12 executions.
+The reviewer did not independently repeat those executions. Acceptance includes
+one hub-owned WorldTime advancing from executed ticks, pause, single-step,
+navigation, whole-hub reset, snapshot continuation and overflow behavior.
+The accepted conservative bound is 1,950/1,984 sprites, three batches and 34 spare.
+Feature-branch acceptance does not imply incorporation into master. Historical
+pending-status evidence and original raw bytes remain preserved.
+One inline accepted
 WorldTime advances after each successfully executed hub tick, using authored 60/1
 logical time and a day-0 23:59 start. The completed snapshot supplies a bounded
 upper-right day/HH:MM label. The original and accepted calibration bounds remain
