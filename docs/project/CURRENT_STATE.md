@@ -13,8 +13,14 @@ provenance only and do not define current production architecture.
 
 The separately requested [Engine Lab PSM01 calibration binding](../implementation/engine_lab_psm01_calibration_binding.md)
 adds one application-owned horizontal response above the provisional actor using
-the accepted solver and ordinary movement controls. It is **pending independent
-review and owner visual acceptance**. The projectile-impact checkpoint remains
+the accepted solver and ordinary movement controls. It is **OWNER ACCEPTED** at
+`cfb2876c29df78f0cfa034d3df45ebe19764b141`. Independent source/evidence review
+passed: the reviewer inspected patches, source, logs and captures; the
+implementation owner performed the Windows/Zig/D3D12 executions. The accepted
+conservative presentation is 1,827/1,856 sprites, three batches and 29 sprites
+of headroom. Acceptance includes the generic
+`Renderer.initializeUnifiedQueueWithCapacities` API; solver and renderer
+defaults remain unchanged. The projectile-impact checkpoint remains
 accepted at `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e`. This unnumbered
 integration branch has no implied merge into master. The preexisting 1,792-sprite
 bound is retained separately; the calibration has a 64-sprite allowance within

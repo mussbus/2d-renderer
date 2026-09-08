@@ -1,6 +1,20 @@
 # Engine Lab PSM01 calibration binding
 
-Status: **PENDING INDEPENDENT REVIEW AND OWNER VISUAL ACCEPTANCE**.
+Status: **OWNER ACCEPTED** at
+`cfb2876c29df78f0cfa034d3df45ebe19764b141`, recorded on 2026-09-08.
+The owner explicitly accepted the LAG marker. Independent source/evidence
+review passed: the reviewer inspected patches, source, logs and captures;
+the Windows/Zig/D3D12 executions were performed by the implementation owner,
+not independently reexecuted by the reviewer.
+
+Acceptance covers one application-owned horizontal binding, completed-controller
+driver sampling, lifecycle and production presentation, and the generic
+`Renderer.initializeUnifiedQueueWithCapacities` API. Existing solver and renderer
+defaults are preserved. The conservative bound is 1,827/1,856 sprites, three
+batches and 29 sprites of headroom. This acceptance applies to the feature
+branch and does not imply incorporation into master. Original evidence manifests
+retain their historical pending status and original raw bytes. The implementation
+and execution record below describes the accepted checkpoint.
 Engine Lab Integration is an unnumbered application integration track. Original
 EL1 remains closed. The projectile-impact checkpoint at
 `6e4f7c2aadf24c2336ab3cba2d60ff127e750e0e` remains owner accepted; the owner
@@ -248,5 +262,5 @@ No anatomy, garment migration, new force model, dynamic publication, World Time,
 combat, editor or mode shell is included. This is a calibration object in the
 existing camera; it follows vertical jumps rigidly and can travel beyond the
 viewport along with the actor. Automated and engineering visual checks are
-separate from independent review and owner visual acceptance, both still pending
-for this binding. Projectile-impact acceptance is retained.
+separate from independent review and owner visual acceptance, both now passed for the exact checkpoint above; the original evidence retains
+its historical pending status. Projectile-impact acceptance is retained.

@@ -1702,9 +1702,14 @@ Use `--impact-capture-dir .tmp/engine-lab-psm01-binding/captures/impact` and
 `--calibration-capture-dir .tmp/engine-lab-psm01-binding/captures/calibration`
 to keep earlier impact evidence intact. The existing lossless capture encoder
 accepts the calibration names via `--names`; the task-local reproduction script
-records their exact list. Tests/native evidence do not confer independent review
-or owner acceptance of this new binding. The earlier projectile checkpoint stays
-accepted; EL1 remains closed.
+records their exact list. The owner has now accepted this binding at
+`cfb2876c29df78f0cfa034d3df45ebe19764b141`, and independent source/evidence
+review passed. The reviewer inspected patches, source, logs and captures;
+Windows/Zig/D3D12 tests were executed by the implementation owner, not independently
+reexecuted by the reviewer. Original manifests retain historical pending status.
+The accepted conservative bound is 1,827/1,856, three batches and 29 sprites of
+headroom. Acceptance is on the feature branch and implies no incorporation into
+master. The earlier projectile checkpoint stays accepted; EL1 remains closed.
 
 ## Engine Lab EL1
 
