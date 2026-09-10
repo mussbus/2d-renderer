@@ -341,3 +341,15 @@ freezes it; navigation preserves it; reset returns to D0 23:59. Projectile activ
 checks both horizontal and vertical proximity, including when above the launcher.
 See the [traversal record](implementation/engine_lab_traversal_expansion.md) for
 measured routes and recorded owner acceptance of traversal and corrected zoom.
+
+## Engine Lab bounded collectible challenge
+
+In the expanded persistent hub, **C / gamepad north** starts the six-pickup course
+or restarts after **6/6 DONE**. Walk, jump and dash into each green diamond in order.
+The arrow points toward the active target when it lies outside the usable view.
+Collection particles provide a 24-tick reaction before the next pickup appears.
+Presses during the run/reaction are ignored. Start keeps your position, zoom,
+projectiles and World Time. P pauses; T steps one tick; R resets everything to idle
+and current zoom. F1/F2 navigation preserves course state, but the proven course uses
+physical traversal. Independent collectible review and owner acceptance are pending.
+See [the implementation record](implementation/engine_lab_collectibles.md).

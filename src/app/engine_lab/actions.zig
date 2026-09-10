@@ -10,6 +10,7 @@ pub const Actions = struct {
     cycle_zoom: bool = false,
     exit: bool = false,
     activate: bool = false,
+    challenge_start: bool = false,
     clear_activation: bool = false,
     intent: hub.Intent = hub.neutral_intent,
 };
@@ -21,6 +22,9 @@ pub const Mapper = struct {
     blocked: physical.KeyboardState = .{},
     event_presses: physical.KeyboardState = .{},
     event_gamepad_dash: bool = false,
+    event_gamepad_challenge: bool = false,
+    previous_challenge: bool = false,
+    blocked_gamepad_challenge: bool = false,
     previous_dash: bool = false,
     blocked_gamepad_dash: bool = false,
     previous_jump: bool = false,
@@ -37,11 +41,18 @@ pub const Mapper = struct {
         if (!self.blocked_gamepad_dash) self.event_gamepad_dash = true;
     }
 
+    pub fn captureGamepadChallengePress(self: *Mapper) void {
+        if (!self.blocked_gamepad_challenge) self.event_gamepad_challenge = true;
+    }
+
     pub fn suppressHeld(self: *Mapper, raw: physical.RawInputState) void {
         self.blocked = physical.keyboardUnion(raw.keyboard, self.previous);
         self.previous = .{};
         self.event_presses = .{};
         self.previous_jump = false;
+        self.previous_challenge = false;
+        self.event_gamepad_challenge = false;
+        self.blocked_gamepad_challenge = self.blocked_gamepad_challenge or raw.gamepad_button_north;
         self.previous_dash = false;
         self.event_gamepad_dash = false;
         self.blocked_gamepad_dash = self.blocked_gamepad_dash or raw.gamepad_button_right_shoulder;
@@ -77,6 +88,11 @@ pub const Mapper = struct {
         const dash_pressed = pressed.left_shift or self.event_gamepad_dash or (dash and !self.previous_dash);
         self.event_gamepad_dash = false;
         self.previous_dash = dash;
+        self.blocked_gamepad_challenge = self.blocked_gamepad_challenge and raw.gamepad_button_north;
+        const challenge = current.c or (raw.gamepad_button_north and !self.blocked_gamepad_challenge);
+        const challenge_start = pressed.c or self.event_gamepad_challenge or (challenge and !self.previous_challenge);
+        self.event_gamepad_challenge = false;
+        self.previous_challenge = challenge;
         const digital: f32 = @as(f32, @floatFromInt(@intFromBool(current.rightHeld()))) - @as(f32, @floatFromInt(@intFromBool(current.leftHeld())));
         return .{
             .destination = if (pressed.f1) .hierarchy else if (pressed.f2) .springs else null,
@@ -87,6 +103,7 @@ pub const Mapper = struct {
             .cycle_zoom = pressed.f4,
             .exit = raw.window_close_requested or pressed.escape,
             .activate = activate,
+            .challenge_start = challenge_start,
             .intent = .{
                 .move_axis = physical.mergeAxes(digital, if (self.blocked_gamepad_axis) 0 else analog),
                 .dash_pressed = dash_pressed,
@@ -111,6 +128,7 @@ pub fn advance(world: *hub.Hub, mapper: *Mapper, raw: physical.RawInputState, co
     var intent = command.intent;
     if (command.clear_activation) {
         world.impact.pending_activation = false;
+        if (world.challenge) |*value| value.pending_start = false;
         world.pending = hub.neutral_intent;
     }
     if (command.destination) |destination| {
@@ -118,6 +136,9 @@ pub fn advance(world: *hub.Hub, mapper: *Mapper, raw: physical.RawInputState, co
         mapper.suppressHeld(raw);
         intent = hub.neutral_intent;
     } else if (command.activate and !command.clear_activation) world.impact.pending_activation = true;
+    if (command.destination == null and !command.clear_activation and command.challenge_start) {
+        if (world.challenge) |*value| value.requestStart();
+    }
     if (command.pause) world.clock.setPaused(!world.clock.paused);
     if (command.step) world.clock.requestSingleStep();
     if (command.diagnostics) world.diagnostics_enabled = !world.diagnostics_enabled;

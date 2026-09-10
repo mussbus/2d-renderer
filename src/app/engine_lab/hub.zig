@@ -10,6 +10,7 @@ const character = @import("character");
 const humanoid = @import("humanoid");
 const authored = @import("authored_clips");
 const camera2d = @import("camera2d");
+pub const collectibles_module = @import("collectibles.zig");
 pub const impact_module = @import("impact.zig");
 pub const calibration_module = @import("calibration.zig");
 pub const world_time_module = @import("world_time.zig");
@@ -170,6 +171,7 @@ pub const Hub = struct {
     actor: character.CharacterInstance,
     stations: [station_count]Station,
     impact: impact_module.Installation,
+    challenge: ?collectibles_module.Challenge = null,
     calibration: calibration_module.Binding,
     world_time: world_time_module.WorldTime,
     camera: camera2d.Camera2D,
@@ -223,11 +225,14 @@ pub const Hub = struct {
             std.log.err("Engine Lab World Time initialization tick 0: {s}", .{@errorName(err)});
             return err;
         };
-        return .{ .construction = construction, .world_time = world_time, .calibration = calibration, .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
+        var challenge: ?collectibles_module.Challenge = if (construction == .expanded) try collectibles_module.Challenge.init(allocator, seed, controller.configuration.collider_half_extents) else null;
+        errdefer if (challenge) |*value| value.deinit();
+        return .{ .challenge = challenge, .construction = construction, .world_time = world_time, .calibration = calibration, .allocator = allocator, .seed = seed, .installations = installations, .definition = definition, .animations = animations, .world = world, .actor = actor, .stations = stations, .impact = impact, .camera = camera, .follower = try camera2d.HorizontalFollower.init(0.9), .clock = try fixed_step.Clock.init(.{}) };
     }
 
     pub fn deinit(self: *Hub) !void {
         try self.installations.deinit();
+        if (self.challenge) |*value| value.deinit();
         self.impact.deinit();
         self.actor.deinit();
         self.world.deinit();
@@ -262,6 +267,7 @@ pub const Hub = struct {
         self.pending = neutral_intent;
         self.last_physical = .{ .simulation_tick = 0 };
         self.impact.pending_activation = false;
+        if (self.challenge) |*value| value.pending_start = false;
         self.visited[index] = true;
         self.navigation_count = try std.math.add(u32, self.navigation_count, 1);
     }
@@ -288,6 +294,7 @@ pub const Hub = struct {
 
     fn fixedUpdate(self: *Hub, intent: Intent) !void {
         if (self.tick != self.impact.projectiles.tick() or self.tick != self.impact.effects.tick()) return error.ImpactTickMismatch;
+        if (self.challenge) |*value| if (value.effects.tick() != self.tick) return error.CollectionTickMismatch;
         const next_tick = try std.math.add(u64, self.tick, 1);
         const observed_actor = self.actor.controllerSnapshot() orelse return error.HubActorHasNoController;
         const launch = try self.impact.consumeActivation(observed_actor.state.position);
@@ -321,10 +328,21 @@ pub const Hub = struct {
             std.log.err("Engine Lab projectile-impact executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
             return err;
         };
+        self.stepChallenge(controller) catch |err| {
+            std.log.err("Engine Lab collection executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
+            return err;
+        };
         self.world_time.advanceSimulationTicks(1) catch |err| {
             std.log.err("Engine Lab World Time advanceSimulationTicks executing hub tick {d}: {s}; partial hub tick cannot continue", .{ next_tick, @errorName(err) });
             return err;
         };
+    }
+
+    fn stepChallenge(self: *Hub, controller: @import("character_controller").CharacterController) !void {
+        if (self.challenge) |*value| {
+            try value.advanceParticles(self.tick);
+            if (try value.transition(controller, self.tick)) |event| try value.emit(event);
+        }
     }
 
     pub const vertical_dead_zone: f32 = 0.15;

@@ -41,7 +41,9 @@ pub fn register(options: Options) Registration {
     const optimize = options.optimize;
     const modules = options.modules;
 
+    const engine_lab_filter = b.option([]const u8, "engine-lab-test-filter", "Narrow Engine Lab development tests by name; omit for complete acceptance");
     const engine_lab_tests = addEngineTest(b, .{
+        .filters = if (engine_lab_filter) |filter| &.{filter} else &.{},
         .name = "engine-lab-tests",
         .root_module = modules.engine_lab_test_module,
     });

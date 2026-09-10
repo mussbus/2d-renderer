@@ -81,10 +81,10 @@ test "traversal complete production glyph geometry and effects saturation fits b
                         try view.render(&hub, &queue);
                         const frame = queue.prepare();
                         try std.testing.expectEqual(@as(usize, 3), frame.ranges.len);
-                        observed = @max(observed, frame.sprites.len);
-                        command_max = @max(command_max, view.commands.count);
+                        observed = @max(observed, frame.sprites.len - view.collectible_sprite_count);
+                        command_max = @max(command_max, view.commands.count - (view.collectible_range.end - view.collectible_range.start) - (view.indicator_range.end - view.indicator_range.start));
                         frames += 1;
-                        var bound = frame.sprites.len;
+                        var bound = frame.sprites.len - view.collectible_sprite_count;
                         if (diagnostics) {
                             const digest = (try hub.fingerprint()).formatLowerHex();
                             glyphs.beginFrame();
@@ -103,8 +103,8 @@ test "traversal complete production glyph geometry and effects saturation fits b
             hub.impact.projectiles.clearEvents();
         }
     }
-    std.debug.print("TRAVERSAL_PRESENTATION_BOUND observed={d} conservative={d} sprites={d} entries={d} spare={d} commands={d}/2048 meshes={d} frames={d} batches=3 projectiles=0..8 particles=192 viewports=3 positions=3 zooms=3\n", .{ observed, conservative, v.sprite_capacity, v.entry_capacity, v.sprite_capacity - conservative, command_max, v.mesh_capacity, frames });
-    try std.testing.expect(v.sprite_capacity <= 2304 and v.entry_capacity <= 2560 and v.mesh_capacity == 256);
-    try std.testing.expect(conservative + 32 <= v.sprite_capacity);
+    std.debug.print("TRAVERSAL_PRESENTATION_BOUND observed={d} conservative={d} sprites={d} entries={d} spare={d} commands={d}/2048 meshes={d} frames={d} batches=3 projectiles=0..8 particles=192 viewports=3 positions=3 zooms=3\n", .{ observed, conservative, v.accepted_traversal_capacity, v.accepted_traversal_capacity, v.accepted_traversal_capacity - conservative, command_max, v.mesh_capacity, frames });
+    try std.testing.expect(v.accepted_traversal_capacity <= 2304 and v.entry_capacity <= 2560 and v.mesh_capacity == 256);
+    try std.testing.expect(conservative <= v.accepted_traversal_bound and conservative + 32 <= v.accepted_traversal_capacity);
     try std.testing.expectEqual(@as(u64, 0), queue.lifetime_metrics.cpu_allocations_after_stabilization);
 }

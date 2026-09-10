@@ -10,119 +10,125 @@ pub const marker_size_meters: f32 = 7.0 / 82.0;
 
 pub const Color = [4]f32;
 
-pub const CommandBuffer = struct {
-    commands: [command_capacity]sprite.SpriteRequest = undefined,
-    count: usize = 0,
-    overflow_count: u64 = 0,
-    submission_allocations: u64 = 0,
+pub const CommandBuffer = CommandBufferWithCapacity(command_capacity);
 
-    pub fn beginFrame(buffer: *CommandBuffer) void {
-        buffer.count = 0;
-    }
+/// Bounded caller-owned storage; the shared default remains 2048 commands.
+pub fn CommandBufferWithCapacity(comptime capacity: usize) type {
+    return struct {
+        const Self = @This();
+        commands: [capacity]sprite.SpriteRequest = undefined,
+        count: usize = 0,
+        overflow_count: u64 = 0,
+        submission_allocations: u64 = 0,
 
-    pub fn addMarker(buffer: *CommandBuffer, world_position: math.Vec2, color: Color) !void {
-        if (!world_position.isFinite()) return error.NonFiniteDebugPrimitive;
-        try buffer.append(.{
-            .world_position = world_position.toArray(),
-            .rotation = 0,
-            .scale = .{ marker_size_meters, marker_size_meters },
-            .pivot = .{ 0.5, 0.5 },
-            .uv_rect = .{ 0, 0, 0.5, 0.5 },
-            .tint = color,
-            .texture_page = 0,
-            .order = debugOrder(buffer.count),
-        });
-    }
+        pub fn beginFrame(buffer: *Self) void {
+            buffer.count = 0;
+        }
 
-    pub fn addLine(buffer: *CommandBuffer, from_world: math.Vec2, to_world: math.Vec2, color: Color) !void {
-        if (!from_world.isFinite() or !to_world.isFinite()) return error.NonFiniteDebugPrimitive;
-        const delta = to_world.sub(from_world);
-        const length = delta.length();
-        if (!std.math.isFinite(length)) return error.NonFiniteDebugPrimitive;
-        if (length <= std.math.floatEps(f32)) return buffer.addMarker(from_world, color);
-        try buffer.append(.{
-            .world_position = from_world.toArray(),
-            .rotation = std.math.atan2(delta.y, delta.x),
-            .scale = .{ length, line_thickness_meters },
-            .pivot = .{ 0, 0.5 },
-            .uv_rect = .{ 0, 0, 0.5, 0.5 },
-            .tint = color,
-            .texture_page = 0,
-            .order = debugOrder(buffer.count),
-        });
-    }
+        pub fn addMarker(buffer: *Self, world_position: math.Vec2, color: Color) !void {
+            if (!world_position.isFinite()) return error.NonFiniteDebugPrimitive;
+            try buffer.append(.{
+                .world_position = world_position.toArray(),
+                .rotation = 0,
+                .scale = .{ marker_size_meters, marker_size_meters },
+                .pivot = .{ 0.5, 0.5 },
+                .uv_rect = .{ 0, 0, 0.5, 0.5 },
+                .tint = color,
+                .texture_page = 0,
+                .order = debugOrder(buffer.count),
+            });
+        }
 
-    pub fn addAabb(buffer: *CommandBuffer, bounds: collider.Aabb, color: Color) !void {
-        try bounds.validate();
-        const minimum = bounds.minimum;
-        const maximum = bounds.maximum;
-        try buffer.addLine(minimum, .{ .x = maximum.x, .y = minimum.y }, color);
-        try buffer.addLine(.{ .x = maximum.x, .y = minimum.y }, maximum, color);
-        try buffer.addLine(maximum, .{ .x = minimum.x, .y = maximum.y }, color);
-        try buffer.addLine(.{ .x = minimum.x, .y = maximum.y }, minimum, color);
-    }
+        pub fn addLine(buffer: *Self, from_world: math.Vec2, to_world: math.Vec2, color: Color) !void {
+            if (!from_world.isFinite() or !to_world.isFinite()) return error.NonFiniteDebugPrimitive;
+            const delta = to_world.sub(from_world);
+            const length = delta.length();
+            if (!std.math.isFinite(length)) return error.NonFiniteDebugPrimitive;
+            if (length <= std.math.floatEps(f32)) return buffer.addMarker(from_world, color);
+            try buffer.append(.{
+                .world_position = from_world.toArray(),
+                .rotation = std.math.atan2(delta.y, delta.x),
+                .scale = .{ length, line_thickness_meters },
+                .pivot = .{ 0, 0.5 },
+                .uv_rect = .{ 0, 0, 0.5, 0.5 },
+                .tint = color,
+                .texture_page = 0,
+                .order = debugOrder(buffer.count),
+            });
+        }
 
-    /// Adds a tiny bounded 3x5 diagnostic label using the same debug sprite
-    /// command buffer. This is intentionally allocation-free and returns the
-    /// exact number of commands appended for capacity accounting.
-    pub fn addLabel(
-        buffer: *CommandBuffer,
-        origin: math.Vec2,
-        text: []const u8,
-        color: Color,
-    ) !u32 {
-        const pixel_size: f32 = 1.25 / 82.0;
-        const advance: f32 = 4.25 / 82.0;
-        var appended: u32 = 0;
-        for (text, 0..) |raw, character_index| {
-            const glyph = labelGlyph(toUpper(raw));
-            for (0..5) |row| {
-                for (0..3) |column| {
-                    const bit: u4 = @intCast(row * 3 + (2 - column));
-                    if (glyph & (@as(u16, 1) << bit) == 0) continue;
-                    try buffer.append(.{
-                        .world_position = .{
-                            origin.x +
-                                @as(f32, @floatFromInt(character_index)) *
-                                    advance +
-                                @as(f32, @floatFromInt(column)) * pixel_size,
-                            origin.y -
-                                @as(f32, @floatFromInt(row)) * pixel_size,
-                        },
-                        .rotation = 0,
-                        .scale = .{ pixel_size, pixel_size },
-                        .pivot = .{ 0.5, 0.5 },
-                        .uv_rect = .{ 0, 0, 0.5, 0.5 },
-                        .tint = color,
-                        .texture_page = 0,
-                        .order = debugOrder(buffer.count),
-                    });
-                    appended += 1;
+        pub fn addAabb(buffer: *Self, bounds: collider.Aabb, color: Color) !void {
+            try bounds.validate();
+            const minimum = bounds.minimum;
+            const maximum = bounds.maximum;
+            try buffer.addLine(minimum, .{ .x = maximum.x, .y = minimum.y }, color);
+            try buffer.addLine(.{ .x = maximum.x, .y = minimum.y }, maximum, color);
+            try buffer.addLine(maximum, .{ .x = minimum.x, .y = maximum.y }, color);
+            try buffer.addLine(.{ .x = minimum.x, .y = maximum.y }, minimum, color);
+        }
+
+        /// Adds a tiny bounded 3x5 diagnostic label using the same debug sprite
+        /// command buffer. This is intentionally allocation-free and returns the
+        /// exact number of commands appended for capacity accounting.
+        pub fn addLabel(
+            buffer: *Self,
+            origin: math.Vec2,
+            text: []const u8,
+            color: Color,
+        ) !u32 {
+            const pixel_size: f32 = 1.25 / 82.0;
+            const advance: f32 = 4.25 / 82.0;
+            var appended: u32 = 0;
+            for (text, 0..) |raw, character_index| {
+                const glyph = labelGlyph(toUpper(raw));
+                for (0..5) |row| {
+                    for (0..3) |column| {
+                        const bit: u4 = @intCast(row * 3 + (2 - column));
+                        if (glyph & (@as(u16, 1) << bit) == 0) continue;
+                        try buffer.append(.{
+                            .world_position = .{
+                                origin.x +
+                                    @as(f32, @floatFromInt(character_index)) *
+                                        advance +
+                                    @as(f32, @floatFromInt(column)) * pixel_size,
+                                origin.y -
+                                    @as(f32, @floatFromInt(row)) * pixel_size,
+                            },
+                            .rotation = 0,
+                            .scale = .{ pixel_size, pixel_size },
+                            .pivot = .{ 0.5, 0.5 },
+                            .uv_rect = .{ 0, 0, 0.5, 0.5 },
+                            .tint = color,
+                            .texture_page = 0,
+                            .order = debugOrder(buffer.count),
+                        });
+                        appended += 1;
+                    }
                 }
             }
+            return appended;
         }
-        return appended;
-    }
 
-    pub fn submit(buffer: *const CommandBuffer, batch: *sprite.SpriteBatch) !u32 {
-        for (buffer.commands[0..buffer.count]) |command| try batch.submit(command);
-        return @intCast(buffer.count);
-    }
-
-    pub fn submitUnified(buffer: *const CommandBuffer, queue: anytype) !u32 {
-        for (buffer.commands[0..buffer.count]) |command| _ = try queue.submitSprite(command);
-        return @intCast(buffer.count);
-    }
-
-    fn append(buffer: *CommandBuffer, command: sprite.SpriteRequest) !void {
-        if (buffer.count == buffer.commands.len) {
-            buffer.overflow_count += 1;
-            return error.DebugCommandCapacityExceeded;
+        pub fn submit(buffer: *const Self, batch: *sprite.SpriteBatch) !u32 {
+            for (buffer.commands[0..buffer.count]) |command| try batch.submit(command);
+            return @intCast(buffer.count);
         }
-        buffer.commands[buffer.count] = command;
-        buffer.count += 1;
-    }
-};
+
+        pub fn submitUnified(buffer: *const Self, queue: anytype) !u32 {
+            for (buffer.commands[0..buffer.count]) |command| _ = try queue.submitSprite(command);
+            return @intCast(buffer.count);
+        }
+
+        fn append(buffer: *Self, command: sprite.SpriteRequest) !void {
+            if (buffer.count == buffer.commands.len) {
+                buffer.overflow_count += 1;
+                return error.DebugCommandCapacityExceeded;
+            }
+            buffer.commands[buffer.count] = command;
+            buffer.count += 1;
+        }
+    };
+}
 
 fn toUpper(value: u8) u8 {
     return if (value >= 'a' and value <= 'z') value - ('a' - 'A') else value;

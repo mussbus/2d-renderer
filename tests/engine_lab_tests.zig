@@ -6,6 +6,7 @@ const view_module = @import("engine_lab_view");
 const queue_module = @import("render_queue");
 const collider = @import("collider");
 comptime {
+    _ = @import("engine_lab_collectible_tests.zig");
     _ = @import("engine_lab_zoom_tests.zig");
     _ = @import("engine_lab_traversal_tests.zig");
     _ = @import("engine_lab_traversal_budget_tests.zig");

@@ -81,6 +81,7 @@ pub const PlatformInput = struct {
             raw.gamepad_button_south = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_SOUTH);
             raw.gamepad_button_right_shoulder = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
             raw.gamepad_button_west = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_WEST);
+            raw.gamepad_button_north = c.SDL_GetGamepadButton(gamepad, c.SDL_GAMEPAD_BUTTON_NORTH);
         }
         platform.focus_lost_pending = false;
         platform.window_close_pending = false;

@@ -1859,3 +1859,27 @@ of each of the 15 player sprites after actual window submission. Captures then u
 that submitted camera without replacing it. A direct offscreen capture alone does
 not verify the window refresh path. Because the fix adds an opt-in shared camera
 scale, also run `test-renderer-boundary`, `check` and the default `gpu-smoke`.
+
+## Engine Lab collectible validation
+
+The [bounded collectible record](implementation/engine_lab_collectibles.md) separates
+physical two-run reachability from staged lifecycle/saturation fixtures. New tests
+cover exact birth/reaction/effect ages, resolved axis queries, C/north edges, pause,
+focus, navigation, candidate reset, ownership, purity and the combined sprite bound.
+`test-engine-lab` includes them automatically; `-Dengine-lab-test-filter=collectible`
+is a development aid and must be omitted for final complete acceptance.
+
+The required final roots are `test-engine-lab`, `test-deterministic`, `test-camera`
+and `test-renderer-boundary` in Debug/ReleaseSafe/ReleaseFast, then `check` and
+`test-full`, both applications in all modes, `gpu-smoke`, `--verify` and `--smoke`.
+Use `--collectible-capture-dir` along with all four preexisting capture directory
+options to preserve old evidence. The new `--verify-collection-overflow` deliberately
+returns `Overflow` after proving fatal partial-tick rejection and reset repair;
+`--verify-world-time-overflow` retains its expected failure contract.
+
+Native collection captures test the actual submitted window camera and new HUD/arrow
+geometry, including real window sizes at 640x480, 960x720 and 1280x720 across all
+zooms. PNG encoding must match raw PPM RGB and reported native RGBA hashes. Capture
+allocation is distinct from zero steady-state simulation/extraction allocation.
+Automated results remain separate from pending collectible owner visual/gamepad
+acceptance. Task evidence is under `.tmp/engine-lab-collectibles/`.

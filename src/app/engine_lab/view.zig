@@ -15,7 +15,9 @@ pub const accepted_calibration_bound: usize = preexisting_sprite_bound + calibra
 pub const time_sprite_allowance: usize = 128;
 pub const legacy_sprite_capacity: usize = accepted_calibration_bound + time_sprite_allowance;
 // Traversal bound 2200 plus 54 F4 ZOOM glyph sprites and 32 spare.
-pub const sprite_capacity: usize = 2286;
+pub const accepted_traversal_bound: usize = 2254;
+pub const accepted_traversal_capacity: usize = 2286;
+pub const sprite_capacity: usize = 2560;
 pub const legacy_entry_capacity: usize = 2048;
 pub const entry_capacity: usize = sprite_capacity;
 pub const mesh_capacity: usize = 256;
@@ -28,7 +30,11 @@ pub const HudRange = struct { start: usize = 0, end: usize = 0 };
 pub const View = struct {
     // Actual glyph ranges for window-framing verification: controls, status, time.
     hud_ranges: [3]HudRange = .{ .{}, .{}, .{} },
-    commands: debug.CommandBuffer = .{},
+    commands: debug.CommandBufferWithCapacity(2304) = .{},
+    collectible_range: HudRange = .{},
+    indicator_range: HudRange = .{},
+    collectible_sprite_count: usize = 0,
+    collection_particles: [hub_module.collectibles_module.particle_capacity]hub_module.collectibles_module.e.RenderInstance = undefined,
     calibration_sprite_count: usize = 0,
     time_sprite_count: usize = 0,
     actor_queue: queue_module.UnifiedRenderQueue,
@@ -50,6 +56,9 @@ pub const View = struct {
     /// it never rewrites character pose or controller authority.
     pub fn render(self: *View, hub: *hub_module.Hub, queue: *queue_module.UnifiedRenderQueue) !void {
         self.commands.beginFrame();
+        self.collectible_sprite_count = 0;
+        self.collectible_range = .{};
+        self.indicator_range = .{};
         queue.beginFrame();
         for (hub_module.layout.colliders(hub.construction), 0..) |item, index| {
             _ = try queue.submitSprite(box(item.bounds.center(), item.bounds.size(), if (index == 3) .{ 0.27, 0.37, 0.47, 1 } else .{ 0.12, 0.19, 0.27, 1 }, -10));
@@ -108,6 +117,21 @@ pub const View = struct {
             request.rotation = value.rotation;
             _ = try queue.submitSprite(request);
         }
+        if (hub.challenge) |*challenge| {
+            if (challenge.activeTarget()) |target| {
+                var marker = box(target.position, target.half_extents.scale(2), collection_color, -1);
+                marker.rotation = std.math.pi / 4.0;
+                _ = try queue.submitSprite(marker);
+                self.collectible_sprite_count += 1;
+            }
+            for (try challenge.effects.extract(&self.collection_particles, alpha)) |value| {
+                if (@intFromEnum(value.sprite) != 1) return error.UnknownCollectionSprite;
+                var request = box(value.position, value.size, value.color, value.layer);
+                request.rotation = value.rotation;
+                _ = try queue.submitSprite(request);
+                self.collectible_sprite_count += 1;
+            }
+        }
         self.actor_queue.beginFrame();
         const submitted = try hub.actor.submitUnified(&self.actor_queue);
         const actor_frame = self.actor_queue.prepare();
@@ -157,8 +181,37 @@ pub const View = struct {
         }
         try self.drawCalibration(hub);
         try self.drawTime(hub);
+        try self.drawChallenge(hub);
         for (self.commands.commands[0..self.commands.count]) |*command| command.texture_page = 1;
         _ = try self.commands.submitUnified(queue);
+    }
+
+    fn drawChallenge(self: *View, hub: *const hub_module.Hub) !void {
+        const challenge = if (hub.challenge) |*value| value else return;
+        const start = self.commands.count;
+        const half = try hub.camera.worldHalfExtents();
+        const zoom = hub.zoom.factor();
+        var text: [40]u8 = undefined;
+        const label_text = switch (challenge.phase) {
+            .idle => "C/NORTH START 0/6",
+            .complete => "6/6 DONE C/NORTH",
+            .active, .reaction => try std.fmt.bufPrint(&text, "COLLECT {d}/6", .{challenge.progress}),
+        };
+        try self.hudLabel(hub, .{ .x = hub.camera.center.x - half.x + 0.2 * zoom, .y = hub.camera.center.y + half.y - 1.16 * zoom }, label_text);
+        self.collectible_range = .{ .start = start, .end = self.commands.count };
+        self.indicator_range.start = self.commands.count;
+        if (try indicator(hub)) |mark| {
+            // A three-line arrow stays the same drawable size at each zoom.
+            const tip = mark.position.add(mark.direction.scale(0.1 * zoom));
+            const tail = mark.position.sub(mark.direction.scale(0.1 * zoom));
+            const side = math.Vec2{ .x = -mark.direction.y, .y = mark.direction.x };
+            try self.commands.addLine(tail, tip, collection_color);
+            try self.commands.addLine(tip, mark.position.add(side.scale(0.07 * zoom)), collection_color);
+            try self.commands.addLine(tip, mark.position.sub(side.scale(0.07 * zoom)), collection_color);
+            for (self.commands.commands[self.indicator_range.start..self.commands.count]) |*command| command.scale[1] *= zoom;
+        }
+        self.indicator_range.end = self.commands.count;
+        self.collectible_sprite_count += self.commands.count - start;
     }
 
     fn drawTime(self: *View, hub: *const hub_module.Hub) !void {
@@ -223,6 +276,30 @@ pub const View = struct {
         }
     }
 };
+
+const collection_color = [4]f32{ 0.35, 1, 0.55, 1 };
+pub const Indicator = struct { position: math.Vec2, direction: math.Vec2 };
+
+/// Read-only placement in the central safe area below controls and above status.
+pub fn indicator(hub: *const hub_module.Hub) !?Indicator {
+    const challenge = if (hub.challenge) |*value| value else return null;
+    const target = challenge.activeTarget() orelse return null;
+    const half = try hub.camera.worldHalfExtents();
+    const z = hub.zoom.factor();
+    const low = hub.camera.center.sub(half).add(.{ .x = 0.4 * z, .y = 0.8 * z });
+    const high = hub.camera.center.add(half).sub(.{ .x = 0.4 * z, .y = 1.55 * z });
+    const radius = target.half_extents.scale(1.414214);
+    if (target.position.x - radius.x >= low.x and target.position.x + radius.x <= high.x and target.position.y - radius.y >= low.y and target.position.y + radius.y <= high.y) return null;
+    const center = low.add(high).scale(0.5);
+    const delta = target.position.sub(center);
+    const length = delta.length();
+    if (length == 0) return null;
+    const direction = delta.scale(1 / length);
+    const extent = high.sub(low).scale(0.5);
+    const sx = if (@abs(direction.x) > 0) extent.x / @abs(direction.x) else std.math.inf(f32);
+    const sy = if (@abs(direction.y) > 0) extent.y / @abs(direction.y) else std.math.inf(f32);
+    return .{ .position = center.add(direction.scale(@min(sx, sy))), .direction = direction };
+}
 
 fn box(center: math.Vec2, size: math.Vec2, tint: [4]f32, layer: i32) sprite.SpriteRequest {
     return .{ .world_position = center.toArray(), .rotation = 0, .scale = size.toArray(), .pivot = .{ 0.5, 0.5 }, .uv_rect = .{ 0, 0, 0.5, 0.5 }, .tint = tint, .texture_page = 1, .order = .{ .scene_layer = layer, .interaction_layer = 0, .actor_layer = 0, .body_part_layer = 0 } };

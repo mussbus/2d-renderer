@@ -121,7 +121,8 @@ It retains the accepted room as a regression construction and adds authored
 vertical camera following. The one shared addition is a validated explicit
 CharacterInstance movement-property step using the existing synchronization path.
 Controller defaults/algorithm and accepted integration cores remain unchanged.
-Nine static boxes retain the launcher and target; no collectibles are implemented.
+Nine static boxes retain the launcher and target. The accepted traversal checkpoint
+excluded collectibles; the separate bounded follow-up is described below.
 Traversal and corrected F4 zoom are **OWNER ACCEPTED** on
 `feature/engine-lab-integration`. Independent source/evidence review and owner
 acceptance are complete for reviewed source
@@ -132,6 +133,15 @@ sprites, 32 spare and three batches. World Time and closed EL1 acceptance remain
 unchanged. This feature-branch acceptance does not imply incorporation into
 master. Earlier traversal bounds, failed attempts and evidence limitations remain
 in the implementation record.
+
+The [bounded collectible challenge](../implementation/engine_lab_collectibles.md) adds
+six ordered physical-contact pickups to the expanded hub, C/gamepad north start or
+restart, separate collection effects and a fixed HUD/offscreen arrow. Implementation
+and final automated validation are complete; independent review and owner acceptance
+remain pending. The final Debug suite passed 751 tests; 395 affected tests passed in
+each optimization mode. Combined presentation is bounded at 2,453/2,560 sprites,
+107 spare and three batches.
+It preserves the accepted traversal/zoom boundary and does not imply a master merge.
 
 ## Product target
 

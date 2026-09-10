@@ -10,6 +10,7 @@ const physical = @import("physical_input");
 const c = @import("sdl").c;
 const impact_smoke = @import("impact_smoke.zig");
 const calibration_smoke = @import("calibration_smoke.zig");
+const collectible_smoke = @import("collectible_smoke.zig");
 const traversal_smoke = @import("traversal_smoke.zig");
 const world_time_smoke = @import("world_time_smoke.zig");
 
@@ -18,6 +19,8 @@ pub fn main(init: std.process.Init) !void {
     var seed = try hub_module.Seed.parseLowerHex(hub_module.default_seed);
     var verify = false;
     var verify_time_overflow = false;
+    var verify_collection_overflow = false;
+    var collectible_capture_dir: []const u8 = ".tmp/engine-lab-collectibles/captures/collectibles";
     var smoke = false;
     var help = false;
     var impact_capture_dir: []const u8 = ".tmp/engine-lab-traversal/captures/impact";
@@ -33,6 +36,12 @@ pub fn main(init: std.process.Init) !void {
             verify = true;
         } else if (std.mem.eql(u8, text, "--verify-world-time-overflow")) {
             verify_time_overflow = true;
+        } else if (std.mem.eql(u8, text, "--verify-collection-overflow")) {
+            verify_collection_overflow = true;
+        } else if (std.mem.eql(u8, text, "--collectible-capture-dir")) {
+            argument += 1;
+            if (argument == arguments.len or arguments[argument].len == 0) return error.MissingCaptureDirectory;
+            collectible_capture_dir = arguments[argument];
         } else if (std.mem.eql(u8, text, "--smoke")) {
             smoke = true;
         } else if (std.mem.eql(u8, text, "--impact-capture-dir")) {
@@ -57,12 +66,14 @@ pub fn main(init: std.process.Init) !void {
             seed = try hub_module.Seed.parseLowerHex(arguments[argument]);
         } else return error.UnknownArgument;
     }
+    if (verify_collection_overflow and (verify or smoke or verify_time_overflow)) return error.ConflictingVerificationModes;
     if ((verify and smoke) or (verify_time_overflow and (verify or smoke))) return error.ConflictingVerificationModes;
     if (help) {
-        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke --impact-capture-dir path --calibration-capture-dir path --world-time-capture-dir path --traversal-capture-dir path --verify-world-time-overflow (expected failure fixture). A/D or arrows move; Space jumps twice; Shift dashes; gamepad stick/south/right shoulder also move/jump/dash. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; F4 cycles current/2x-out/4x-out zoom; R also restores current zoom; Escape exits.", .{});
+        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke --impact-capture-dir path --calibration-capture-dir path --world-time-capture-dir path --traversal-capture-dir path --verify-world-time-overflow and --verify-collection-overflow (expected failure fixtures); --collectible-capture-dir path. C/gamepad north starts or restarts the collectible course. A/D or arrows move; Space jumps twice; Shift dashes; gamepad stick/south/right shoulder also move/jump/dash. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; F4 cycles current/2x-out/4x-out zoom; R also restores current zoom; Escape exits.", .{});
         return;
     }
     const allocator = std.heap.page_allocator;
+    if (verify_collection_overflow) return verification.collectibles.verifyOverflow(allocator, seed);
     if (verify_time_overflow) return verification.world_time.verifyOverflow(allocator, seed);
     if (verify) {
         const result = try verification.verify(allocator, seed);
@@ -81,15 +92,19 @@ pub fn main(init: std.process.Init) !void {
         var time_diagnostic: [hub_module.world_time_module.diagnostic_capacity]u8 = undefined;
         for (timed.checkpoints) |snapshot| std.log.info("{s}", .{try hub_module.world_time_module.diagnostic(snapshot, &time_diagnostic)});
         std.log.info("ENGINE_LAB_WORLD_TIME_VERIFY_OK schedules=60Hz,mixed checkpoints=8 rollover_tick=240 exact_carry=true", .{});
+        const collected = try verification.collectibles.verify(allocator, seed);
+        for (collected.events) |event| std.log.info("COLLECTION_EVENT run={d} spawn={d} ordinal={d} tick={d} position={any} segment={s}", .{ event.run, @intFromEnum(event.spawn_id), event.ordinal, event.tick, event.position, @tagName(event.segment) });
+        for (collected.digests, collected.ticks) |digest, tick| std.log.info("COLLECTION_OBSERVATIONS_V1 tick={d} sha256={s}", .{ tick, digest.formatLowerHex() });
+        std.log.info("ENGINE_LAB_COLLECTION_VERIFY_OK runs=2 pickups=12 physical_traversal=true schedules=60Hz,mixed navigation=0", .{});
         const traversed = try verification.traversal.verify(allocator, seed);
         for (traversed.checkpoints) |checkpoint| std.log.info("TRAVERSAL_OBSERVATIONS_V1 tick={d} sha256={s}", .{ checkpoint.tick, checkpoint.digest.formatLowerHex() });
         std.log.info("ENGINE_LAB_TRAVERSAL_VERIFY_OK routes=easy,air,dash schedules=60Hz,mixed layout=engine_lab.traversal.layout.v1 profile=engine_lab.traversal.movement.v1", .{});
         return;
     }
-    try run(init.io, allocator, seed, smoke, impact_capture_dir, calibration_capture_dir, world_time_capture_dir, traversal_capture_dir);
+    try run(init.io, allocator, seed, smoke, impact_capture_dir, calibration_capture_dir, world_time_capture_dir, traversal_capture_dir, collectible_capture_dir);
 }
 
-fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool, impact_capture_dir: []const u8, calibration_capture_dir: []const u8, world_time_capture_dir: []const u8, traversal_capture_dir: []const u8) !void {
+fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, smoke: bool, impact_capture_dir: []const u8, calibration_capture_dir: []const u8, world_time_capture_dir: []const u8, traversal_capture_dir: []const u8, collectible_capture_dir: []const u8) !void {
     var tracking = std.testing.FailingAllocator.init(backing_allocator, .{});
     const allocator = tracking.allocator();
     var hub = if (smoke) try hub_module.Hub.initLegacy(allocator, seed) else try hub_module.Hub.initExpanded(allocator, seed);
@@ -139,6 +154,7 @@ fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, 
             try renderer.handleWindowEvent(&event);
             if (event.type == c.SDL_EVENT_KEY_DOWN and !event.key.repeat) mapper.capturePress(keyPress(event.key.scancode));
             if (event.type == c.SDL_EVENT_GAMEPAD_BUTTON_DOWN and event.gbutton.which == platform.active_gamepad_id and event.gbutton.button == c.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER) mapper.captureGamepadDashPress();
+            if (event.type == c.SDL_EVENT_GAMEPAD_BUTTON_DOWN and event.gbutton.which == platform.active_gamepad_id and event.gbutton.button == c.SDL_GAMEPAD_BUTTON_NORTH) mapper.captureGamepadChallengePress();
         }
         const raw = try platform.pollRaw();
         var command = mapper.sample(raw);
@@ -209,6 +225,7 @@ fn run(io: std.Io, backing_allocator: std.mem.Allocator, seed: hub_module.Seed, 
             hub = candidate;
         }
         try traversal_smoke.run(io, &tracking, &hub, &view, &renderer, traversal_capture_dir);
+        try collectible_smoke.run(io, &tracking, &hub, &view, &renderer, collectible_capture_dir);
     }
     const steady = renderer.metrics();
     if (steady.gpu_resource_creations != resources.gpu_resource_creations or steady.upload_buffer_growths != resources.upload_buffer_growths or
@@ -226,7 +243,7 @@ fn reportInitial(hub: *const hub_module.Hub) !void {
     var buffer: [hub_module.world_time_module.diagnostic_capacity]u8 = undefined;
     std.log.info("{s}", .{try hub_module.world_time_module.diagnostic(hub.world_time.snapshot(), &buffer)});
     if (hub.construction == .expanded) std.log.info("TRAVERSAL_HUB_START layout={s} profile={s} sha256={s} Shift/right shoulder dash; Space/south ground plus one air jump", .{ hub_module.layout.identity(hub.construction), hub_module.layout.profileIdentity(hub.construction), (try hub.traversalFingerprint()).formatLowerHex() });
-    std.log.info("EL1_HUB_START seed={s} tick=0 sha256={s}. A/D arrows move; Space jump; F1/F2 travel; E/west nearby launch; R whole-hub reset; P pause; T step; F3 diagnostics; F4 cycles current/2x-out/4x-out zoom; R also restores current zoom; Escape exit.", .{ hub.seed.formatLowerHex(), (try hub.fingerprint()).formatLowerHex() });
+    std.log.info("EL1_HUB_START seed={s} tick=0 sha256={s}. A/D arrows move; Space jump; F1/F2 travel; E/west nearby launch; C/north collectible start/restart; R whole-hub reset; P pause; T step; F3 diagnostics; F4 cycles current/2x-out/4x-out zoom; R also restores current zoom; Escape exit.", .{ hub.seed.formatLowerHex(), (try hub.fingerprint()).formatLowerHex() });
 }
 fn sdlError() []const u8 {
     const text = c.SDL_GetError();
@@ -244,6 +261,7 @@ fn keyPress(scancode: c.SDL_Scancode) physical.KeyboardState {
         c.SDL_SCANCODE_T => .{ .t = true },
         c.SDL_SCANCODE_LSHIFT => .{ .left_shift = true },
         c.SDL_SCANCODE_SPACE => .{ .space = true },
+        c.SDL_SCANCODE_C => .{ .c = true },
         c.SDL_SCANCODE_E => .{ .e = true },
         c.SDL_SCANCODE_ESCAPE => .{ .escape = true },
         else => .{},

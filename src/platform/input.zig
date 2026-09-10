@@ -45,6 +45,7 @@ pub const RawInputState = struct {
     gamepad_button_south: bool = false,
     gamepad_button_right_shoulder: bool = false,
     gamepad_button_west: bool = false,
+    gamepad_button_north: bool = false,
 };
 
 pub fn keyboardWithout(state: KeyboardState, blocked: KeyboardState) KeyboardState {
