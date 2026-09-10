@@ -1,11 +1,47 @@
 # Bounded Engine Lab collectible challenge
 
-Status: **IMPLEMENTED WITH FINAL AUTOMATED EVIDENCE; INDEPENDENT REVIEW AND OWNER ACCEPTANCE PENDING**.
+Status: **OWNER ACCEPTED** on `feature/engine-lab-integration`; the nonblocking generic debug-capacity guard correction is pending.
 
 This is one unnumbered application integration on `feature/engine-lab-integration`.
 The accepted traversal/zoom parent is `fd8378974305b9e9b2b27451caf028f2b1ccd5db`.
 Traversal/zoom and closed EL1 acceptance remain intact. Neither local commit implies
 incorporation into master. Collectibles have their own review boundary.
+
+## Acceptance checkpoint (2026-09-09)
+
+The owner accepts the experience: pickups work, reset works, indicators are
+present, and the experience looks good. No physical gamepad model or detailed
+manual test transcript was supplied. A ring of indicators nearer screen center
+is deferred presentation polish, not an acceptance blocker.
+
+Accepted implementation: `14dc4e42923d0e50d80a637c6113456c87b41488`, with source
+SHA-256 `d1616e7b0a878a253474734be92d7b2c822e0cf96343acefe64b1233eca27be3`.
+The reviewed `.tmp/engine-lab-collectibles/engine-lab-collectibles-review.zip`
+is 7,648,452 bytes, SHA-256
+`8ac9ae8c236a17c630d3ba205db9c884e9256bacf18fcc81142a861f2ee74b80`.
+
+Acceptance covers one active authored pickup at a time, all six physical-contact
+pickups, reaction and separate collection effects, indicators, start/restart and
+the lifecycle behavior documented below. The conservative combined presentation
+bound remains 2,453/2,560 sprites, 107 spare, three batches. Shared additions are
+default-false gamepad north polling and caller-selected debug command capacity;
+the shared default is 2,048 and Engine Lab selects 2,304.
+
+Independent review found no blocking six-pickup installation issue and verified
+both ordered patches, snapshots, archive/member identities and all 120 native
+capture conversions. It confirmed the 47 legacy, 12 calibration, eight World Time
+and 26 traversal records unchanged. It reviewed the implementation session's
+Windows evidence (751 full-suite tests, 395 focused tests per optimization mode,
+required builds and native/GPU checks); the reviewer did not execute Windows,
+Zig or D3D12 gates itself. Those results retain the source identity above.
+
+Review also identified a nonblocking shared-helper issue: the existing guard
+checks the default constant rather than the supplied generic capacity. Its narrow
+correction and fresh regression evidence are a separate follow-up. This acceptance
+documentation does not rerun or relabel the earlier product matrix. Historical
+pending wording in the original evidence records describes their creation time.
+EL1 remains closed, no new milestone is created, and acceptance on the integration
+branch does not imply incorporation into master.
 
 ## Ownership and controls
 

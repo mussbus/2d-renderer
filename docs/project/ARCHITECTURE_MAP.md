@@ -111,9 +111,14 @@ in the implementation record.
 The [bounded collectible challenge](../implementation/engine_lab_collectibles.md) adds
 six ordered physical-contact pickups to the expanded hub, C/gamepad north start or
 restart, separate collection effects and a fixed HUD/offscreen arrow. Implementation
-and final automated validation are complete; independent review and owner acceptance
-remain pending. The final Debug suite passed 751 tests; 395 affected tests passed in
-each optimization mode. Combined presentation is bounded at 2,453/2,560 sprites,
+is **OWNER ACCEPTED**, with independent package review complete, at implementation
+`14dc4e42923d0e50d80a637c6113456c87b41488`. The owner reports working pickups,
+reset, present indicators and a good experience. The implementation session's
+751 full-suite and 395 focused tests per mode remain evidence for reviewed source
+`d1616e7b0a878a253474734be92d7b2c822e0cf96343acefe64b1233eca27be3`;
+the independent reviewer did not rerun Windows/Zig/D3D12 gates. The nonblocking
+caller-capacity guard correction remains pending. A central indicator ring is
+deferred polish. Combined presentation is bounded at 2,453/2,560 sprites,
 107 spare and three batches.
 It preserves the accepted traversal/zoom boundary and does not imply a master merge.
 

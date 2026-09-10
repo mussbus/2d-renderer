@@ -1881,5 +1881,9 @@ Native collection captures test the actual submitted window camera and new HUD/a
 geometry, including real window sizes at 640x480, 960x720 and 1280x720 across all
 zooms. PNG encoding must match raw PPM RGB and reported native RGBA hashes. Capture
 allocation is distinct from zero steady-state simulation/extraction allocation.
-Automated results remain separate from pending collectible owner visual/gamepad
-acceptance. Task evidence is under `.tmp/engine-lab-collectibles/`.
+The owner has accepted pickups, reset, indicators and the overall experience;
+no physical gamepad model or detailed manual transcript was supplied. Independent
+package review and the implementation session's automated results are distinct
+facts, recorded in the collectible implementation record. Original task evidence
+remains under `.tmp/engine-lab-collectibles/`; the shared capacity guard correction
+is a separate bounded follow-up.
