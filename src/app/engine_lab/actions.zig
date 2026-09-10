@@ -7,6 +7,7 @@ pub const Actions = struct {
     pause: bool = false,
     step: bool = false,
     diagnostics: bool = false,
+    cycle_zoom: bool = false,
     exit: bool = false,
     activate: bool = false,
     clear_activation: bool = false,
@@ -83,6 +84,7 @@ pub const Mapper = struct {
             .pause = pressed.p,
             .step = pressed.t,
             .diagnostics = pressed.f3,
+            .cycle_zoom = pressed.f4,
             .exit = raw.window_close_requested or pressed.escape,
             .activate = activate,
             .intent = .{
@@ -119,5 +121,6 @@ pub fn advance(world: *hub.Hub, mapper: *Mapper, raw: physical.RawInputState, co
     if (command.pause) world.clock.setPaused(!world.clock.paused);
     if (command.step) world.clock.requestSingleStep();
     if (command.diagnostics) world.diagnostics_enabled = !world.diagnostics_enabled;
+    if (command.cycle_zoom) try world.cycleZoom();
     try world.advanceFrame(seconds, intent);
 }

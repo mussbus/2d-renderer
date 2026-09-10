@@ -55,10 +55,16 @@ vertical camera following. The one shared addition is a validated explicit
 CharacterInstance movement-property step using the existing synchronization path.
 Controller defaults/algorithm and accepted integration cores remain unchanged.
 Nine static boxes retain the launcher and target; no collectibles are implemented.
-Traversal is **pending independent review and owner visual/gamepad acceptance**.
-World Time remains accepted at the exact revision recorded above; neither status
-implies incorporation into master. See the implementation record for routes,
-separate legacy evidence and the 2,200/2,232 conservative presentation bound.
+Traversal and corrected F4 zoom are **OWNER ACCEPTED** on
+`feature/engine-lab-integration`. Independent source/evidence review and owner
+acceptance are complete for reviewed source
+`69330e7111d19fe784fa99ce59abd4df19595b1c1a2d5693dc0052900ed540d6`.
+The reviewer inspected the source and evidence; Windows/Zig/D3D12 executions
+belong to the implementation session. The accepted final bound is 2,254/2,286
+sprites, 32 spare and three batches. World Time and closed EL1 acceptance remain
+unchanged. This feature-branch acceptance does not imply incorporation into
+master. Earlier traversal bounds, failed attempts and evidence limitations remain
+in the implementation record.
 
 ## Foundation and current architecture track
 

@@ -141,6 +141,21 @@ pub const Station = struct {
     }
 };
 
+/// Application view scales relative to the authored traversal presentation.
+pub const Zoom = enum {
+    current,
+    out_2x,
+    out_4x,
+
+    pub fn factor(self: Zoom) f32 {
+        return switch (self) {
+            .current => 1,
+            .out_2x => 2,
+            .out_4x => 4,
+        };
+    }
+};
+
 /// One world lifetime, one controlled production actor, both live installations.
 /// Renderer/platform ownership stays outside this headless composition.
 pub const Hub = struct {
@@ -158,6 +173,7 @@ pub const Hub = struct {
     calibration: calibration_module.Binding,
     world_time: world_time_module.WorldTime,
     camera: camera2d.Camera2D,
+    zoom: Zoom = .current,
     follower: camera2d.HorizontalFollower,
     clock: fixed_step.Clock,
     pending: Intent = neutral_intent,
@@ -242,6 +258,7 @@ pub const Hub = struct {
             return err;
         };
         try self.camera.setCenter(.{ .x = destination_x[index], .y = if (self.construction == .expanded) spawn.y + vertical_target_offset else camera_center_y });
+        if (self.zoom != .current) try self.updateCamera();
         self.pending = neutral_intent;
         self.last_physical = .{ .simulation_tick = 0 };
         self.impact.pending_activation = false;
@@ -326,11 +343,27 @@ pub const Hub = struct {
         const y = std.math.clamp(self.camera.center.y, target_y - vertical_dead_zone, target_y + vertical_dead_zone);
         // Very wide viewports center the complete room rather than invert clamps.
         const x = if (half.x >= 16) -8 else std.math.clamp(self.camera.center.x, -24 + half.x, 8 - half.x);
-        try self.camera.setCenter(.{ .x = x, .y = std.math.clamp(y, spawn.y + vertical_target_offset, 14 - half.y) });
+        // Keep the original screen margin below the floor at each scale. A view
+        // taller than the room centers it instead of applying inverted limits.
+        const lower_y = (spawn.y + vertical_target_offset) * self.zoom.factor();
+        const center_y = if (half.y >= 7) 7 else std.math.clamp(y, lower_y, 14 - half.y);
+        try self.camera.setCenter(.{ .x = x, .y = center_y });
+    }
+
+    /// Presentation-only state. Whole-hub reset reconstructs the current view.
+    pub fn cycleZoom(self: *Hub) !void {
+        if (self.construction == .legacy) return;
+        self.zoom = switch (self.zoom) {
+            .current => .out_2x,
+            .out_2x => .out_4x,
+            .out_4x => .current,
+        };
+        try self.setViewport(self.camera.viewport_width, self.camera.viewport_height);
     }
 
     pub fn setViewport(self: *Hub, width: u32, height: u32) !void {
         try self.camera.setViewport(width, height);
+        try self.camera.setZoomScale(1 / self.zoom.factor());
         if (self.construction == .expanded) try self.updateCamera();
     }
 

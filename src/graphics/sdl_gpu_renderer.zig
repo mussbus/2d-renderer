@@ -931,7 +931,8 @@ const State = struct {
             !self.drawable_available;
         // Scene publication can replace visible_camera before submission.
         // Reapply the acquired swapchain dimensions every frame so the GPU
-        // always receives the authoritative drawable-derived scale.
+        // receives authoritative drawable dimensions while retaining the scene
+        // camera's explicit zoom scale (identity for existing callers).
         try self.visible_camera.setViewport(pixel_width, pixel_height);
         if (changed) {
             self.drawable_width = pixel_width;

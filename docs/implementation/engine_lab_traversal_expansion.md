@@ -1,8 +1,46 @@
 # Engine Lab traversal and layout expansion
 
-Status: **PENDING INDEPENDENT REVIEW AND OWNER VISUAL/GAMEPAD ACCEPTANCE**.
+Status: **OWNER ACCEPTED: TRAVERSAL AND CORRECTED F4 ZOOM**.
 This is one bounded checkpoint in the unnumbered Engine Lab Integration track.
 EL1 remains closed. Automated route execution is not general reachability or owner acceptance.
+
+## Traversal and zoom owner acceptance
+
+The owner explicitly accepted the reviewed traversal/zoom checkpoint in the
+closeout request. Independent source/evidence review found no blocking source
+defect and verified patch reconstruction, artifact hashes and the corrected
+window-submission path. That reviewer inspected evidence rather than executing
+the Windows gates. The Windows implementation session executed the final-source
+740-test Debug full suite, 103 affected tests in each release mode, default and
+Engine Lab release builds, Debug restoration and formatting. Retained final-source
+Debug check and D3D12 evidence remain associated with their original executions.
+
+Acceptance covers traversal and persistent F4 current/2x-out/4x-out zoom, fixed
+screen HUD, R zoom reset and the conservative 2,254/2,286 sprite bound with 32
+spare and exactly three batches. It preserves 47 legacy checkpoints, 12 calibration
+identities, eight World Time records and 26 traversal checkpoints. This records
+owner acceptance without inventing a controller model or manual test transcript.
+
+Accepted source SHA-256:
+`69330e7111d19fe784fa99ce59abd4df19595b1c1a2d5693dc0052900ed540d6`.
+Implementation archive SHA-256:
+`bb5cc34d4340a958b7ee18ce053c97f06d02dcb6f8acd11d4668b8a477fc2a2e`.
+Final validation archive SHA-256:
+`e858b561e7663a896bdff5042e7d82a3fd48a62b94eeb6ac570706a503e32dc2`.
+The original archive paths are `.tmp/engine-lab-zoom-window/review/engine-lab-traversal-zoom-review.zip`
+and `.tmp/engine-lab-traversal-zoom-validation/engine-lab-traversal-zoom-validation-review.zip`.
+
+The interrupted ReleaseSafe attempt has no verified completion metadata and is
+excluded; a separately logged retry passed. Earlier focused Debug/boundary results
+remain associated with `7796fe1204f1de54e4bb4b2181ed7cbc90d697dc47ab3d11b2b1c6f625820a56`.
+Two historical encoding logs still lack ledger rows. All earlier failures,
+corrections, source distinctions and historical pending wording below remain
+preserved. The first new local closeout commit contains the unchanged reviewed
+source/test changes plus these acceptance records; its hash is recorded in the
+collectible task's closeout receipt. No product matrix is rerun for this
+administrative closeout. This checkpoint is accepted on the integration branch;
+no merge into master is claimed. EL1 stays closed and the later collectible
+challenge requires separate review and owner acceptance.
 
 ## Authority and ordered commits
 
@@ -295,3 +333,78 @@ Final native shutdown reports 26/26 GPU resources and 2940/2940 fences.
 Traversal reports zero warm allocation growth, zero drops, and exactly three
 batches. The installed Debug Engine Lab executable defaults to the expanded hub.
 Source/evidence review and owner visual/gamepad acceptance remain pending.
+
+## F4 zoom follow-up
+
+The owner requested three view scales after testing the traversal checkpoint:
+current, 2x farther out and 4x farther out. F4 is unused by Engine Lab and cycles
+those settings on a fresh press, including short taps. Held F4 does not repeat.
+Focus loss suppresses held input until release. R dominates a simultaneous F4
+and restores the original view as part of candidate-first whole-hub reset.
+Navigation and drawable resizing retain the selected zoom; zoom also works paused.
+
+This explicitly adds optional zoom to the earlier fixed-scale traversal presentation.
+The current setting retains its original scale. The app selects the existing
+height-relative pixels-per-metre value divided by 1, 2 or 4. The initial follow-up
+reapplied this only in the hub; the window-submission defect and correction are
+documented below. Wider/taller views center the room when its bounds would invert;
+otherwise they follow the actor and keep the floor visible. Physics, routes,
+World Time and both diagnostic fingerprint schemas exclude zoom state.
+
+Controls, status and the time HUD retain their drawable-relative size and insets;
+world geometry, actors, station labels and the LAG guide zoom together. The added
+`F4 ZOOM` hint costs 54 production glyph sprites. CPU sprites/entries are 2,286,
+with the unchanged 256 mesh and 2,048 debug-command capacities. The full saturation
+test now covers all three zoom states and retains the requirement of 32 conservative
+spare sprites and exactly three batches. Earlier budget/capture evidence above
+remains the historical traversal checkpoint, not a claim about this follow-up.
+
+Focused coverage exercises fresh/held/short F4 presses, focus suppression, pause,
+reset precedence, failed reset preservation, resize/navigation, all production route
+checkpoints while zooming, time-HUD pixel positions/sizes and allocation guards.
+Native smoke adds `zoom-current`, `zoom-out-2x`, `zoom-out-4x` and `zoom-reset` captures.
+Fresh follow-up evidence is in `.tmp/engine-lab-zoom`; earlier artifacts remain intact.
+
+## Live-window zoom correction
+
+The owner's `2026-09-08 16-31-19.mp4` recording exposed a gap in the first zoom
+verification: the renderer refreshes its camera from the acquired swapchain size
+immediately before drawing. That reset the pixel density to full scale after the
+hub had positioned the player and HUD for a wider view. Earlier offscreen captures
+replaced the renderer camera immediately before capture, bypassing this refresh;
+those captures demonstrated the intended composition, not correct live zoom.
+Their original evidence remains preserved in `.tmp/engine-lab-zoom`.
+
+The correction adds an explicit `Camera2D.zoom_scale`, defaulting to 1, which
+survives drawable refresh and resize. Engine Lab selects 1, 0.5 or 0.25 through a
+validated setter. Invalid scale or overflow leaves the camera unchanged. Existing
+callers retain their default height-derived scale and the 16-byte GPU uniform is
+unchanged. Controls, status/diagnostics and time keep their screen position and
+size during movement and zoom. Station/route signs and the actor's LAG guide remain
+attached to their world objects. F4 cycling and R reset retain their input policy.
+
+Fresh evidence is under `.tmp/engine-lab-zoom-window`. The new regression failed
+before the fix: at 2x out, expected clip scale 0.128125 became 0.25625. The corrected
+native route changes zoom every 24 rendered route frames and validates the camera,
+HUD bounds and full segmented actor after actual window submission. Its captures
+use that resulting camera. Headless HUD checks cover four viewport sizes, five
+positions, both diagnostic modes and all three zooms without allocation growth.
+This correction changes no sprite capacity, batch count, simulation or route rules.
+
+Correction verification: 83 Engine Lab and 14 camera tests passed, plus six renderer
+boundary tests. `check` passed 643 tests and 39/39 steps; the default physical GPU
+smoke passed 26/26 steps. Engine Lab native smoke passed 551 route frames and 26
+route checkpoints, with 32 unchanged legacy captures plus 22 traversal/zoom
+captures. Shutdown balanced 26/26 resources and 2968/2968 fences, with zero warm
+queue allocations or drops. Current and R-reset pixels match exactly. Inspection
+of the current, 2x, 4x and upper-landing images confirms player visibility and HUD
+placement. Manual owner review of the corrected interactive build remains pending.
+The capture-encoding helper initially received `dash-mid`, an incorrect capture
+name; the corrected invocation losslessly encoded all 22 actual traversal captures.
+No test was disabled or weakened. Exact command exits, including the intentional
+pre-fix regression failure, remain in `commands.json`.
+
+Final corrected code/test/build/capture-encoder source SHA-256:
+`69330e7111d19fe784fa99ce59abd4df19595b1c1a2d5693dc0052900ed540d6`.
+The earlier focused and boundary invocations precede only the final smoke success
+message wording; the final `check`, build and native gates use this source hash.

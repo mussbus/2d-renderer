@@ -281,3 +281,38 @@ test "camera uniform is the exact GPU clip contract" {
     try std.testing.expectApproxEqAbs(@as(f32, 0.25), uniform.clip_scale[0], tolerance);
     try std.testing.expectApproxEqAbs(@as(f32, 1.0 / 3.0), uniform.clip_scale[1], tolerance);
 }
+
+test "explicit camera zoom survives repeated submission refresh and drawable resizing" {
+    var camera = camera2d.Camera2D.initDefault();
+    for ([_]f32{ 1, 0.5, 0.25, 1 }) |scale| {
+        try camera.setZoomScale(scale);
+        for ([_][2]u32{ .{ 640, 480 }, .{ 1280, 720 }, .{ 1920, 1080 }, .{ 640, 480 } }) |viewport| {
+            for (0..3) |_| try camera.setViewport(viewport[0], viewport[1]);
+            const extents = try camera.worldHalfExtents();
+            try std.testing.expectApproxEqAbs(camera2d.reference_vertical_world_span / scale, extents.y * 2, tolerance);
+            try expectVec(camera2d.default_center, camera.center);
+            try expectVec(math.Vec2.zero, try camera.worldToClip(camera.center, 1));
+        }
+    }
+    try std.testing.expectEqualDeep(camera2d.Camera2D.initDefault(), camera);
+}
+
+test "invalid zoom and overflowing viewport updates leave the camera unchanged" {
+    var camera = camera2d.Camera2D.initDefault();
+    const before = camera;
+    for ([_]f32{ 0, -1, std.math.nan(f32), std.math.inf(f32) }) |scale| {
+        try std.testing.expectError(error.InvalidCameraZoom, camera.setZoomScale(scale));
+        try std.testing.expectEqualDeep(before, camera);
+    }
+    try std.testing.expectError(error.InvalidPixelsPerMeter, camera.setZoomScale(std.math.floatMax(f32)));
+    try std.testing.expectEqualDeep(before, camera);
+    try camera.setZoomScale(std.math.floatMax(f32) / 100);
+    const large = camera;
+    try std.testing.expectError(error.InvalidPixelsPerMeter, camera.setViewport(1920, 1080));
+    try std.testing.expectEqualDeep(large, camera);
+    try camera.setViewport(1, 1);
+    const small = camera;
+    const smallest: f32 = @bitCast(@as(u32, 1));
+    try std.testing.expectError(error.InvalidPixelsPerMeter, camera.setZoomScale(smallest));
+    try std.testing.expectEqualDeep(small, camera);
+}

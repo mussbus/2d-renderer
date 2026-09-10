@@ -25,6 +25,8 @@ pub const Camera2D = struct {
     viewport_width: u32,
     viewport_height: u32,
     pixels_per_meter: f32,
+    /// Explicit view scale retained when the renderer refreshes drawable size.
+    zoom_scale: f32 = 1,
 
     pub fn init(center: math.Vec2, viewport_width: u32, viewport_height: u32, pixels_per_meter: f32) !Camera2D {
         const camera = Camera2D{
@@ -47,6 +49,7 @@ pub const Camera2D = struct {
     }
 
     pub fn validate(camera: Camera2D) !void {
+        if (!std.math.isFinite(camera.zoom_scale) or camera.zoom_scale <= 0) return error.InvalidCameraZoom;
         if (!camera.center.isFinite()) return error.NonFiniteCameraCenter;
         if (camera.viewport_width == 0 or camera.viewport_height == 0) return error.ZeroViewport;
         if (!std.math.isFinite(camera.pixels_per_meter) or camera.pixels_per_meter <= 0) {
@@ -61,9 +64,15 @@ pub const Camera2D = struct {
 
     pub fn setViewport(camera: *Camera2D, width: u32, height: u32) !void {
         if (width == 0 or height == 0) return error.ZeroViewport;
-        const pixels_per_meter = try pixelsPerMeterForDrawableHeight(height);
+        const pixels_per_meter = try zoomedPixelsPerMeter(height, camera.zoom_scale);
         camera.viewport_width = width;
         camera.viewport_height = height;
+        camera.pixels_per_meter = pixels_per_meter;
+    }
+
+    pub fn setZoomScale(camera: *Camera2D, scale: f32) !void {
+        const pixels_per_meter = try zoomedPixelsPerMeter(camera.viewport_height, scale);
+        camera.zoom_scale = scale;
         camera.pixels_per_meter = pixels_per_meter;
     }
 
@@ -122,6 +131,13 @@ pub const Camera2D = struct {
         };
     }
 };
+
+fn zoomedPixelsPerMeter(height: u32, scale: f32) !f32 {
+    if (!std.math.isFinite(scale) or scale <= 0) return error.InvalidCameraZoom;
+    const pixels_per_meter = try pixelsPerMeterForDrawableHeight(height) * scale;
+    if (!std.math.isFinite(pixels_per_meter) or pixels_per_meter <= 0) return error.InvalidPixelsPerMeter;
+    return pixels_per_meter;
+}
 
 pub fn pixelsPerMeterForDrawableHeight(drawable_height: u32) !f32 {
     if (drawable_height == 0) return error.ZeroViewport;

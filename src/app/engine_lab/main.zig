@@ -59,7 +59,7 @@ pub fn main(init: std.process.Init) !void {
     }
     if ((verify and smoke) or (verify_time_overflow and (verify or smoke))) return error.ConflictingVerificationModes;
     if (help) {
-        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke --impact-capture-dir path --calibration-capture-dir path --world-time-capture-dir path --traversal-capture-dir path --verify-world-time-overflow (expected failure fixture). A/D or arrows move; Space jumps twice; Shift dashes; gamepad stick/south/right shoulder also move/jump/dash. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; Escape exits.", .{});
+        std.log.info("Engine Lab opens one persistent hub. --seed 32-lower-hex --verify --smoke --impact-capture-dir path --calibration-capture-dir path --world-time-capture-dir path --traversal-capture-dir path --verify-world-time-overflow (expected failure fixture). A/D or arrows move; Space jumps twice; Shift dashes; gamepad stick/south/right shoulder also move/jump/dash. F1/F2 travel within the hub; E/gamepad west activates the nearby projectile installation. R resets the whole hub; P pauses; T steps; F3 diagnostics; F4 cycles current/2x-out/4x-out zoom; R also restores current zoom; Escape exits.", .{});
         return;
     }
     const allocator = std.heap.page_allocator;
@@ -226,7 +226,7 @@ fn reportInitial(hub: *const hub_module.Hub) !void {
     var buffer: [hub_module.world_time_module.diagnostic_capacity]u8 = undefined;
     std.log.info("{s}", .{try hub_module.world_time_module.diagnostic(hub.world_time.snapshot(), &buffer)});
     if (hub.construction == .expanded) std.log.info("TRAVERSAL_HUB_START layout={s} profile={s} sha256={s} Shift/right shoulder dash; Space/south ground plus one air jump", .{ hub_module.layout.identity(hub.construction), hub_module.layout.profileIdentity(hub.construction), (try hub.traversalFingerprint()).formatLowerHex() });
-    std.log.info("EL1_HUB_START seed={s} tick=0 sha256={s}. A/D arrows move; Space jump; F1/F2 travel; E/west nearby launch; R whole-hub reset; P pause; T step; F3 diagnostics; Escape exit.", .{ hub.seed.formatLowerHex(), (try hub.fingerprint()).formatLowerHex() });
+    std.log.info("EL1_HUB_START seed={s} tick=0 sha256={s}. A/D arrows move; Space jump; F1/F2 travel; E/west nearby launch; R whole-hub reset; P pause; T step; F3 diagnostics; F4 cycles current/2x-out/4x-out zoom; R also restores current zoom; Escape exit.", .{ hub.seed.formatLowerHex(), (try hub.fingerprint()).formatLowerHex() });
 }
 fn sdlError() []const u8 {
     const text = c.SDL_GetError();
@@ -238,6 +238,7 @@ fn keyPress(scancode: c.SDL_Scancode) physical.KeyboardState {
         c.SDL_SCANCODE_F1 => .{ .f1 = true },
         c.SDL_SCANCODE_F2 => .{ .f2 = true },
         c.SDL_SCANCODE_F3 => .{ .f3 = true },
+        c.SDL_SCANCODE_F4 => .{ .f4 = true },
         c.SDL_SCANCODE_R => .{ .r = true },
         c.SDL_SCANCODE_P => .{ .p = true },
         c.SDL_SCANCODE_T => .{ .t = true },

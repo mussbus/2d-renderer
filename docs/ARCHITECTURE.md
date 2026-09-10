@@ -62,7 +62,7 @@ The application is a character controller and animation system, not a ragdoll si
 
 - Simulation and authored animation use a right-handed 2D world: positive X points right, positive Y points up, and positive rotation is counter-clockwise.
 - Physics distances are metres, time is seconds, velocity is metres per second, acceleration is metres per second squared, and angles are radians.
-- Sprite dimensions and bone offsets are authored in metres. Pixels are presentation units only; the camera supplies pixels-per-metre.
+- Sprite dimensions and bone offsets are authored in metres. Pixels are presentation units only; the camera supplies pixels-per-metre. `Camera2D.zoom_scale` defaults to 1 and explicitly scales the height-derived density when selected. Drawable refreshes retain it, including the refresh immediately before GPU submission. The GPU uniform layout is unchanged. Engine Lab compensates HUD glyph sizes and screen-edge insets for its selected zoom; world objects retain their metre dimensions.
 - SDL GPU viewport coordinates have their origin at the top-left with positive Y down. The camera projection performs the one required Y inversion when mapping world coordinates to clip space. Physics, animation, IK, and scene code never adopt screen-space Y.
 - Texture coordinates follow SDL GPU convention: `(0, 0)` is the top-left and positive V points down.
 

@@ -323,8 +323,14 @@ can be crossed by jumping and then dashing. Falling returns to the safe floor.
 | E / west | Fire beside the launcher; eight concurrent projectiles |
 | F1 / F2 | Reposition beside Links / Damping, preserving the running hub |
 | P / T | Pause / execute one full simulation tick while paused |
-| R | Reconstruct the entire expanded hub |
+| R | Reconstruct the entire expanded hub and restore current zoom |
 | F3 / Escape | Diagnostics / exit |
+| F4 | Cycle current zoom, 2x farther out, 4x farther out, then current |
+
+F4 is the first unused function key in Engine Lab. Zoom changes the environment
+view; controls, status/diagnostics and day/time text stay anchored to the screen
+and retain their screen size as the player moves or zoom changes. Navigation and window
+resizing retain the selected zoom. R resets it.
 
 F1 Links shows the fixed parent/child anchors and their spring-driven masses.
 F2 Damping compares three spring responses with different damping and plots their
@@ -334,4 +340,4 @@ The upper-right label shows logical world day/time from executed ticks. Pause
 freezes it; navigation preserves it; reset returns to D0 23:59. Projectile activation
 checks both horizontal and vertical proximity, including when above the launcher.
 See the [traversal record](implementation/engine_lab_traversal_expansion.md) for
-measured routes and pending owner visual/gamepad acceptance.
+measured routes and recorded owner acceptance of traversal and corrected zoom.

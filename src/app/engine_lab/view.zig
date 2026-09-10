@@ -14,8 +14,8 @@ pub const calibration_sprite_allowance: usize = 64;
 pub const accepted_calibration_bound: usize = preexisting_sprite_bound + calibration_sprite_allowance;
 pub const time_sprite_allowance: usize = 128;
 pub const legacy_sprite_capacity: usize = accepted_calibration_bound + time_sprite_allowance;
-// Complete production-font bound 2200 plus the required 32 spare.
-pub const sprite_capacity: usize = 2232;
+// Traversal bound 2200 plus 54 F4 ZOOM glyph sprites and 32 spare.
+pub const sprite_capacity: usize = 2286;
 pub const legacy_entry_capacity: usize = 2048;
 pub const entry_capacity: usize = sprite_capacity;
 pub const mesh_capacity: usize = 256;
@@ -23,7 +23,11 @@ pub const mesh_capacity: usize = 256;
 const colors = [hub_module.mass_count][4]f32{ .{ 0.25, 0.85, 1, 1 }, .{ 1, 0.65, 0.2, 1 }, .{ 0.85, 0.4, 1, 1 } };
 const text_color = [4]f32{ 0.85, 0.93, 1, 1 };
 
+pub const HudRange = struct { start: usize = 0, end: usize = 0 };
+
 pub const View = struct {
+    // Actual glyph ranges for window-framing verification: controls, status, time.
+    hud_ranges: [3]HudRange = .{ .{}, .{}, .{} },
     commands: debug.CommandBuffer = .{},
     calibration_sprite_count: usize = 0,
     time_sprite_count: usize = 0,
@@ -127,22 +131,30 @@ pub const View = struct {
             try self.commands.addAabb(try collider.characterBounds(controller.state.position, controller.configuration.collider_half_extents), .{ 1, 1, 1, 1 });
         }
         const half = try hub.camera.worldHalfExtents();
-        const left = hub.camera.center.x - half.x + 0.2;
-        const top = hub.camera.center.y + half.y - 0.2;
-        try self.label(.{ .x = left, .y = top }, "ENGINE LAB");
-        try self.label(.{ .x = left, .y = top - 0.24 }, "A/D ARROWS  SPACE JUMP");
-        try self.label(.{ .x = left, .y = top - 0.48 }, if (hub.construction == .expanded) "F1 F2 R RESET P PAUSE T STEP" else "F1 F2  R RESET  P PAUSE  T STEP");
-        try self.label(.{ .x = left, .y = top - 0.72 }, if (hub.construction == .expanded) "F3 INFO  ESC  SHIFT/RB DASH" else "F3 INFO  ESC");
+        const zoom = hub.zoom.factor();
+        const left = hub.camera.center.x - half.x + 0.2 * zoom;
+        const top = hub.camera.center.y + half.y - 0.2 * zoom;
+        self.hud_ranges[0].start = self.commands.count;
+        try self.hudLabel(hub, .{ .x = left, .y = top }, "ENGINE LAB");
+        try self.hudLabel(hub, .{ .x = left, .y = top - 0.24 * zoom }, "A/D ARROWS  SPACE JUMP");
+        try self.hudLabel(hub, .{ .x = left, .y = top - 0.48 * zoom }, if (hub.construction == .expanded) "F1 F2 R RESET P PAUSE T STEP" else "F1 F2  R RESET  P PAUSE  T STEP");
+        try self.hudLabel(hub, .{ .x = left, .y = top - 0.72 * zoom }, if (hub.construction == .expanded) "F3 INFO  ESC  SHIFT/RB DASH  F4 ZOOM" else "F3 INFO  ESC");
+        self.hud_ranges[0].end = self.commands.count;
+        self.hud_ranges[1].start = self.commands.count;
         var text: [128]u8 = undefined;
         const status = if (hub.clock.paused) "PAUSED" else "RUN";
         const visited = @as(u8, @intFromBool(hub.visited[0])) + @as(u8, @intFromBool(hub.visited[1]));
-        const bottom = hub.camera.center.y - half.y + 0.42;
-        try self.label(.{ .x = left, .y = bottom }, try std.fmt.bufPrint(&text, "{s} T{d}  {d}/2", .{ status, hub.tick, visited }));
+        const bottom = hub.camera.center.y - half.y + 0.42 * zoom;
+        try self.hudLabel(hub, .{ .x = left, .y = bottom }, try std.fmt.bufPrint(&text, "{s} T{d}  {d}/2", .{ status, hub.tick, visited }));
         if (hub.diagnostics_enabled) {
             const digest = (try hub.fingerprint()).formatLowerHex();
-            try self.label(.{ .x = left, .y = bottom - 0.24 }, try std.fmt.bufPrint(&text, "H {s} D{d:.3}S", .{ digest[0..12], @min(hub.clock.lifetime_discarded_time, 999.999) }));
+            try self.hudLabel(hub, .{ .x = left, .y = bottom - 0.24 * zoom }, try std.fmt.bufPrint(&text, "H {s} D{d:.3}S", .{ digest[0..12], @min(hub.clock.lifetime_discarded_time, 999.999) }));
+            self.hud_ranges[1].end = self.commands.count;
             try self.label(.{ .x = installation.launcher.x - 0.9, .y = 0.18 }, try std.fmt.bufPrint(&text, "L{d} C{d} D{d}", .{ @min(installation.observations.launches, 999), @min(installation.observations.contacts, 999), @min(installation.bridge.metrics.dropped_effects +| installation.effects.metrics().dropped_particles, 999) }));
-        } else try self.label(.{ .x = left, .y = bottom - 0.24 }, "PROVISIONAL 2D ACTOR / 240 HZ");
+        } else {
+            try self.hudLabel(hub, .{ .x = left, .y = bottom - 0.24 * zoom }, "PROVISIONAL 2D ACTOR / 240 HZ");
+            self.hud_ranges[1].end = self.commands.count;
+        }
         try self.drawCalibration(hub);
         try self.drawTime(hub);
         for (self.commands.commands[0..self.commands.count]) |*command| command.texture_page = 1;
@@ -154,14 +166,15 @@ pub const View = struct {
         const half = try hub.camera.worldHalfExtents();
         var buffer: [hub_module.world_time_module.label_capacity]u8 = undefined;
         const text = try hub_module.world_time_module.formatLabel(hub.world_time.snapshot(), &buffer);
-        try self.label(.{ .x = 0, .y = hub.camera.center.y + half.y - 0.2 }, text);
+        try self.hudLabel(hub, .{ .x = 0, .y = hub.camera.center.y + half.y - 0.2 * hub.zoom.factor() }, text);
+        self.hud_ranges[2] = .{ .start = start, .end = self.commands.count };
         self.time_sprite_count = self.commands.count - start;
         if (self.time_sprite_count > time_sprite_allowance) return error.WorldTimePresentationAllowanceExceeded;
         // Measure the actual production glyphs; align their outer edge with the
         // existing HUD inset without duplicating font metrics or allocating.
         var right: f32 = 0;
         for (self.commands.commands[start..self.commands.count]) |command| right = @max(right, command.world_position[0] + command.scale[0] * 0.5);
-        const shift = hub.camera.center.x + half.x - 0.2 - right;
+        const shift = hub.camera.center.x + half.x - 0.2 * hub.zoom.factor() - right;
         for (self.commands.commands[start..self.commands.count]) |*command| command.world_position[0] += shift;
     }
 
@@ -181,6 +194,21 @@ pub const View = struct {
         try self.label(sample.reference.add(.{ .x = -0.12, .y = 0.23 }), "LAG");
         self.calibration_sprite_count = self.commands.count - start;
         if (self.calibration_sprite_count > calibration_sprite_allowance) return error.CalibrationPresentationAllowanceExceeded;
+    }
+
+    /// Keep camera-anchored text at its original drawable-relative size.
+    fn hudLabel(self: *View, hub: *const hub_module.Hub, origin: math.Vec2, text: []const u8) !void {
+        const start = self.commands.count;
+        try self.label(origin, text);
+        const zoom = hub.zoom.factor();
+        if (zoom == 1) return;
+        for (self.commands.commands[start..self.commands.count]) |*command| {
+            for (0..2) |axis| {
+                const base = if (axis == 0) origin.x else origin.y;
+                command.world_position[axis] = base + (command.world_position[axis] - base) * zoom;
+                command.scale[axis] *= zoom;
+            }
+        }
     }
 
     fn label(self: *View, origin: math.Vec2, text: []const u8) !void {
