@@ -14,6 +14,9 @@ pub const CommandBuffer = CommandBufferWithCapacity(command_capacity);
 
 /// Bounded caller-owned storage; the shared default remains 2048 commands.
 pub fn CommandBufferWithCapacity(comptime capacity: usize) type {
+    if (capacity == 0 or capacity > std.math.maxInt(u16)) {
+        @compileError("debug command capacity must fit the sprite ordering key");
+    }
     return struct {
         const Self = @This();
         commands: [capacity]sprite.SpriteRequest = undefined,
@@ -196,10 +199,4 @@ fn debugOrder(index: usize) sprite.OrderInput {
         .actor_layer = 0,
         .body_part_layer = @intCast(index),
     };
-}
-
-comptime {
-    if (command_capacity == 0 or command_capacity > std.math.maxInt(u16)) {
-        @compileError("debug command capacity must fit the sprite ordering key");
-    }
 }

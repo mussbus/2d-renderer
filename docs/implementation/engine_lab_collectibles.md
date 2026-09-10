@@ -1,6 +1,6 @@
 # Bounded Engine Lab collectible challenge
 
-Status: **OWNER ACCEPTED** on `feature/engine-lab-integration`; the nonblocking generic debug-capacity guard correction is pending.
+Status: **OWNER ACCEPTED** on `feature/engine-lab-integration`; the nonblocking generic debug-capacity guard is corrected with bounded regression evidence.
 
 This is one unnumbered application integration on `feature/engine-lab-integration`.
 The accepted traversal/zoom parent is `fd8378974305b9e9b2b27451caf028f2b1ccd5db`.
@@ -197,3 +197,48 @@ These are automated engineering results. Independent collectible review and owne
 visual/gamepad acceptance remain pending. The two-commit review package records
 commit IDs, ordered patches, exact snapshots, preservation receipts and isolated
 index/object reconstruction; packaging checks do not count as product test execution.
+
+## Generic debug command capacity correction (2026-09-09)
+
+This follow-up resolves the nonblocking issue recorded at acceptance. The old
+module-level guard checked only `command_capacity` (2,048). The generic now checks
+its actual comptime `capacity` before returning the storage type, accepting
+1..65,535 inclusive and rejecting zero/65,536 with the existing diagnostic.
+`OrderInput.body_part_layer` is an i32 input validated into the u16
+`DrawOrderKey.body_part_layer`; this preserves the existing conservative domain.
+The default 2,048, Engine Lab 2,304, command layout, order and bounded append
+error remain unchanged. There is no runtime branch or allocation added.
+
+Production-type fixtures force analysis with `@sizeOf`; valid 1, 3, 2,048, 2,304
+and 65,535 compile without creating a maximum-size stack value. The zero and
+65,536 probes each return compiler exit 1 with exactly the intended diagnostic;
+the runner separately returns 0 after checking it. The integration root also
+checks actual three-command storage, validated order, exact fill, failed append,
+no last-command overwrite, overflow count and beginFrame reuse. Existing default
+and Engine Lab saturation tests remain intact. No compile-failure infrastructure
+existed, so three small fixtures and `tools/checks/debug_capacity.py` provide the
+bounded reproduction; there is no new general framework or build registration.
+
+Frozen corrected source SHA-256:
+`cc7aeb19037625cd219edc2e9daa9a6e2adec1bd8bb7f0438927115ea322b812`.
+The existing inventory algorithm covers source/tests/build and the retained
+impact-review tool; the new probe runner and fixtures are additionally frozen
+in `frozen-probes.json`. Every final gate checks those identities unchanged.
+
+Fresh Windows/Zig 0.16.0 evidence under
+`.tmp/engine-lab-collectibles-closeout/`: positive/negative probes in all three
+optimization modes; unfiltered `test-engine-lab` (94) and `test-integration` (10)
+in Debug, ReleaseSafe and ReleaseFast (104 per mode); `check` (39/39 steps,
+654 executed tests); Engine Lab Debug build (11/11 steps), leaving the normal
+owner executable ready. Compilation cache reuse is identified in the raw build
+summaries; executed test counts come from actual test output. The new generic
+regression belongs to `test-integration`, not `test-deterministic`.
+
+All commands use the existing local cache, `.tmp/projectile-impact/global-cache`,
+`.tmp/projectile-impact/install` and `-j1` for build gates. Direct object probes
+emit no binary and use the same cache locations. No new full suite, application
+matrix, GPU/native capture or manual review was performed for this correction.
+Earlier 751/395, native/GPU and visual evidence retain reviewed source
+`d1616e7b0a878a253474734be92d7b2c822e0cf96343acefe64b1233eca27be3`.
+The accepted archive and prior failures are preserved. Central indicator-ring
+polish remains deferred; the correction changes no collectible experience.

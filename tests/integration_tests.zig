@@ -71,6 +71,32 @@ test "debug command storage is bounded reports overflow and allocates nothing" {
     try std.testing.expectEqual(@as(u64, 0), commands.submission_allocations);
 }
 
+test "caller selected debug capacity preserves storage ordering and exact overflow" {
+    // Type inspection proves the upper bound without putting a large array on the stack.
+    inline for (.{ 1, 3, 2048, 2304, 65535 }) |capacity| {
+        const Buffer = debug_draw.CommandBufferWithCapacity(capacity);
+        const Storage = @FieldType(Buffer, "commands");
+        try std.testing.expectEqual(@as(usize, capacity), @typeInfo(Storage).array.len);
+        try std.testing.expectEqual(sprite.SpriteRequest, @typeInfo(Storage).array.child);
+    }
+    var commands = debug_draw.CommandBufferWithCapacity(3){};
+    for (0..3) |index| {
+        try commands.addMarker(.{ .x = 0, .y = 0 }, .{ 1, 1, 1, 1 });
+        const order = try sprite.validateOrder(commands.commands[index].order, index);
+        try std.testing.expectEqual(@as(u16, @intCast(index)), order.body_part_layer);
+    }
+    const last = commands.commands[2];
+    try std.testing.expectError(error.DebugCommandCapacityExceeded, commands.addMarker(.{ .x = 1, .y = 1 }, .{ 0, 0, 0, 1 }));
+    try std.testing.expectEqual(@as(usize, 3), commands.count);
+    try std.testing.expectEqualDeep(last, commands.commands[2]);
+    try std.testing.expectEqual(@as(u64, 1), commands.overflow_count);
+    try std.testing.expectEqual(@as(u64, 0), commands.submission_allocations);
+    commands.beginFrame();
+    try commands.addMarker(.{ .x = 0, .y = 0 }, .{ 1, 1, 1, 1 });
+    try std.testing.expectEqual(@as(usize, 1), commands.count);
+    try std.testing.expectEqual(@as(i32, 0), commands.commands[0].order.body_part_layer);
+}
+
 test "debug visualization on and off preserve the exact authoritative integrated result" {
     const schedule = [_]f64{1.0 / 60.0};
     const disabled = try runSchedule(.{ .debug_visualization = false }, &schedule, true);

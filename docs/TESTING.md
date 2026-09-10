@@ -1887,3 +1887,20 @@ package review and the implementation session's automated results are distinct
 facts, recorded in the collectible implementation record. Original task evidence
 remains under `.tmp/engine-lab-collectibles/`; the shared capacity guard correction
 is a separate bounded follow-up.
+
+### Shared debug-capacity guard follow-up
+
+For the compile-time guard correction, run `test-engine-lab` and
+`test-integration` without filters in Debug, ReleaseSafe and ReleaseFast, then
+`check` and one `engine-lab -Doptimize=Debug` build. This bounded follow-up does
+not require rerunning the collectible product matrix above. The integration
+root owns the small-buffer order/overflow regression; maximum supported capacity
+is checked as a type, not a large Windows stack value.
+
+Run `python -B tools/checks/debug_capacity.py --output <new-evidence-directory>
+--optimize Debug` (also ReleaseSafe and ReleaseFast). The runner requires pinned
+Zig 0.16.0, compiles the production generic with valid 1/3/2048/2304/65535 and
+rejects 0/65536 only when the intended capacity diagnostic is the sole compiler
+error. `results.json` separates compiler exit 1 for expected negatives from
+runner success; raw compiler logs are retained. Use a fresh output directory
+per invocation, while retaining the existing shared build caches.

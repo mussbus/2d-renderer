@@ -76,7 +76,9 @@ reset, present indicators and a good experience. The implementation session's
 751 full-suite and 395 focused tests per mode remain evidence for reviewed source
 `d1616e7b0a878a253474734be92d7b2c822e0cf96343acefe64b1233eca27be3`;
 the independent reviewer did not rerun Windows/Zig/D3D12 gates. The nonblocking
-caller-capacity guard correction remains pending. A central indicator ring is
+caller-capacity guard is corrected with fresh bounded checks (104 affected tests
+per mode, 654 check tests and a Debug Engine Lab build); see the implementation
+record for source identities. A central indicator ring is
 deferred polish. Combined presentation is bounded at 2,453/2,560 sprites,
 107 spare and three batches.
 It preserves the accepted traversal/zoom boundary and does not imply a master merge.
