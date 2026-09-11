@@ -364,7 +364,7 @@ foreach ($edge in [regex]::Matches($modulesBuild, '(?<from>\w+_module)\.addImpor
         Add-Failure "EL1 reverse build dependency from '$from'."
     }
 }
-foreach ($root in @('engine_lab_entry_module', 'engine_lab_test_module', 'engine_lab_verification_module')) {
+foreach ($root in @('engine_lab_entry_module', 'engine_lab_test_module', 'engine_lab_verification_module', 'engine_lab_replay_test_module')) {
     $visited = [Collections.Generic.HashSet[string]]::new()
     $pending = [Collections.Generic.Queue[string]]::new()
     $pending.Enqueue($root)
@@ -374,7 +374,7 @@ foreach ($root in @('engine_lab_entry_module', 'engine_lab_test_module', 'engine
         if ($name -match '(^demo_|_demo_module$|engine_smoke|evidence|canonical_human|canonical_geometry|foundation_playground|visual_foundation)') {
             Add-Failure "EL1 transitive boundary violation: '$root' reaches '$name'."
         }
-        if ($root -in @('engine_lab_test_module', 'engine_lab_verification_module') -and $name -match '^(sdl|sdl_input|sdl_gpu_renderer)_module$') {
+        if ($root -in @('engine_lab_test_module', 'engine_lab_verification_module', 'engine_lab_replay_test_module') -and $name -match '^(sdl|sdl_input|sdl_gpu_renderer)_module$') {
             Add-Failure "EL1 headless test graph reaches SDL through '$name'."
         }
         if ($moduleEdges.ContainsKey($name)) {

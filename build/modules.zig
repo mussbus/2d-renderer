@@ -9,6 +9,12 @@ pub const Options = struct {
 };
 
 pub const Catalog = struct {
+    engine_lab_replay_schema_module: *std.Build.Module,
+    engine_lab_replay_state_module: *std.Build.Module,
+    engine_lab_replay_module: *std.Build.Module,
+    engine_lab_replay_proof_module: *std.Build.Module,
+    engine_lab_replay_test_module: *std.Build.Module,
+
     sdl_gpu_renderer_module: *std.Build.Module,
     secondary_motion_module: *std.Build.Module,
     secondary_motion_rate_module: *std.Build.Module,
@@ -1622,7 +1628,46 @@ pub fn register(options: Options) Catalog {
     record_replay_test_module.addImport("foundation", foundation_module);
     record_replay_test_module.addImport("fixed_step", fixed_step_module);
     record_replay_test_module.addImport("input", input_module);
+    const engine_lab_replay_schema_module = b.createModule(.{ .root_source_file = b.path("src/app/engine_lab/collectible_replay_schema.zig"), .target = target, .optimize = optimize });
+    engine_lab_replay_schema_module.addImport("record_replay", record_replay_module);
+    engine_lab_replay_schema_module.addImport("engine_lab", engine_lab_module);
+    engine_lab_replay_schema_module.addImport("foundation", foundation_module);
+    engine_lab_replay_schema_module.addImport("math", math_module);
+    engine_lab_replay_schema_module.addImport("fixed_step", fixed_step_module);
+    engine_lab_replay_schema_module.addImport("character", character_module);
+    engine_lab_replay_schema_module.addImport("procedural_motion", procedural_motion_module);
+    engine_lab_replay_schema_module.addImport("foot_planting", foot_planting_module);
+    engine_lab_replay_schema_module.addImport("attachment_secondary_motion", attachment_secondary_motion_module);
+    engine_lab_replay_schema_module.addImport("arm_ik", arm_ik_module);
+    engine_lab_replay_schema_module.addImport("leg_ik", leg_ik_module);
+    const engine_lab_replay_state_module = b.createModule(.{ .root_source_file = b.path("src/app/engine_lab/collectible_replay_state.zig"), .target = target, .optimize = optimize });
+    engine_lab_replay_state_module.addImport("engine_lab_replay_schema", engine_lab_replay_schema_module);
+    engine_lab_replay_state_module.addImport("character", character_module);
+    engine_lab_replay_state_module.addImport("character_controller", character_controller_module);
+    engine_lab_replay_state_module.addImport("procedural_motion", procedural_motion_module);
+    engine_lab_replay_state_module.addImport("foot_planting", foot_planting_module);
+    engine_lab_replay_state_module.addImport("presentation_view", presentation_view_module);
+    engine_lab_replay_state_module.addImport("animator", animator_module);
+    engine_lab_replay_state_module.addImport("foundation", foundation_module);
+    const engine_lab_replay_module = b.createModule(.{ .root_source_file = b.path("src/app/engine_lab/collectible_replay.zig"), .target = target, .optimize = optimize });
+    engine_lab_replay_module.addImport("engine_lab_replay_schema", engine_lab_replay_schema_module);
+    engine_lab_replay_module.addImport("engine_lab_replay_state", engine_lab_replay_state_module);
+    engine_lab_replay_module.addImport("fixed_step", fixed_step_module);
+    const engine_lab_replay_proof_module = b.createModule(.{ .root_source_file = b.path("src/app/engine_lab/collectible_replay_proof.zig"), .target = target, .optimize = optimize });
+    engine_lab_replay_proof_module.addImport("engine_lab_replay", engine_lab_replay_module);
+    engine_lab_replay_proof_module.addImport("engine_lab", engine_lab_module);
+    const engine_lab_replay_test_module = b.createModule(.{ .root_source_file = b.path("tests/engine_lab_collectible_replay_tests.zig"), .target = target, .optimize = optimize });
+    engine_lab_replay_test_module.addImport("engine_lab_replay_proof", engine_lab_replay_proof_module);
+    const engine_lab_replay_paths = b.addOptions();
+    engine_lab_replay_paths.addOption(?[]const u8, "output_path", b.option([]const u8, "engine-lab-replay-output", "Write the completed bounded RR1 recording after execution"));
+    engine_lab_replay_paths.addOption(?[]const u8, "input_path", b.option([]const u8, "engine-lab-replay-input", "Read this serialized RR1 recording for fresh headless playback"));
+    engine_lab_replay_test_module.addOptions("engine_lab_replay_paths", engine_lab_replay_paths);
     return .{
+        .engine_lab_replay_schema_module = engine_lab_replay_schema_module,
+        .engine_lab_replay_state_module = engine_lab_replay_state_module,
+        .engine_lab_replay_module = engine_lab_replay_module,
+        .engine_lab_replay_proof_module = engine_lab_replay_proof_module,
+        .engine_lab_replay_test_module = engine_lab_replay_test_module,
         .sdl_gpu_renderer_module = sdl_gpu_renderer_module,
         .secondary_motion_module = secondary_motion_module,
         .secondary_motion_rate_module = secondary_motion_rate_module,

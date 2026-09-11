@@ -383,6 +383,19 @@ F1, JSON, summary, and validation consume those same request records. The
 technical arm uses the existing atlas, global queue, D3D12 renderer, and
 resource ownership; no graph-only or overlay-only renderer exists.
 
+## Bounded Engine Lab collectible replay
+
+The [application adapter](../../src/app/engine_lab/collectible_replay.zig) owns a fresh
+heap Hub, RR1 Session/Player, canonical scratch and terminal failure latch. Its
+[schema](../../src/app/engine_lab/collectible_replay_schema.zig) and
+[state capture](../../src/app/engine_lab/collectible_replay_state.zig) cover twelve
+contributors for the fixed six-pickup lifecycle. The
+[proof](../../src/app/engine_lab/collectible_replay_proof.zig) generates recording
+commands; playback has no dependency on the route generator. Existing Hub execution
+supplies the only clock and production tick. One copied animation playback API
+on CharacterInstance is the sole shared addition. RR1 and the existing gameplay
+cores are unchanged. See the [implementation/review boundary](../implementation/engine_lab_collectible_replay.md).
+
 ## RR1 record/replay ownership
 
 | Boundary | Authority |

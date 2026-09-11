@@ -361,6 +361,13 @@ pub const HumanoidDefinitionView = struct {
     }
 };
 
+/// Independent scalar copy; no pose buffers, borrowed storage or replay policy.
+pub const AnimationPlaybackSnapshot = struct {
+    current_state_index: u16,
+    playback: animator_module.PlaybackState,
+    active_transition: ?animator_module.TransitionState,
+};
+
 pub const AnimationDefinitionsView = struct {
     clips: []const clip.ClipDefinition,
     machine: state_machine.Definition,
@@ -1732,6 +1739,16 @@ pub const CharacterInstance = struct {
     pub fn equipmentView(instance: *const CharacterInstance) ?*const equipment.Loadout {
         const state = instance.stateConst();
         return if (state.equipment_loadout) |*loadout| loadout else null;
+    }
+
+    /// The instance must be initialized and live. Later updates cannot change this copy.
+    pub fn animationPlaybackSnapshot(instance: *const CharacterInstance) AnimationPlaybackSnapshot {
+        const animator = &instance.stateConst().animator;
+        return .{
+            .current_state_index = animator.current_state_index,
+            .playback = animator.playback,
+            .active_transition = animator.active_transition,
+        };
     }
 
     pub fn controllerSnapshot(instance: CharacterInstance) ?character_controller.CharacterController {

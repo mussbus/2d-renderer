@@ -25,6 +25,7 @@ pub fn register(options: Options) void {
     test_step.dependOn(&options.engine.run_deterministic.step);
     test_step.dependOn(&options.engine.run_engine_composition.step);
     test_step.dependOn(&options.engine.run_engine_lab.step);
+    test_step.dependOn(&options.engine.run_engine_lab_replay.step);
     test_step.dependOn(&options.engine.run_renderer_boundary.step);
     test_step.dependOn(&options.content.run_image_decode.step);
     test_step.dependOn(&options.engine.run_foundation_primitives.step);

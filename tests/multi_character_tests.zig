@@ -666,3 +666,106 @@ test "draw-order mutations leave animation procedural pose and physics state inv
 comptime {
     if (@as(f64, fixed_step.fixed_dt_seconds) != 1.0 / 240.0) @compileError("multi-character tests require the authoritative 240 Hz clock");
 }
+
+test "copied animation snapshot ordinary playback loops completion and independence" {
+    var fixture = try SharedFixture.init(std.testing.allocator);
+    defer fixture.deinit();
+    var allocation = std.testing.FailingAllocator.init(std.testing.allocator, .{});
+    const actor = try allocation.allocator().create(character.CharacterInstance);
+    defer allocation.allocator().destroy(actor);
+    actor.* = try character.CharacterInstance.init(allocation.allocator(), try character.entityIdFromRaw(1), &fixture.definition, &fixture.animations, .zero, .right, 0, null);
+    defer actor.deinit();
+    const allocated = allocation.allocations;
+    const resized = allocation.resize_index;
+    const initial = actor.animationPlaybackSnapshot();
+    try std.testing.expectEqual(@as(usize, 128), @sizeOf(character.AnimationPlaybackSnapshot));
+    try std.testing.expectEqual(@as(usize, 8), @alignOf(character.AnimationPlaybackSnapshot));
+    try std.testing.expectEqual(fixture.animations.machine.initial_state_index, initial.current_state_index);
+    try std.testing.expect(initial.active_transition == null);
+    try std.testing.expectEqualDeep(@as(@TypeOf(initial.playback), .{ .playback_speed = 1, .state_entered = false }), initial.playback);
+    try actor.enterAnimationState(.walk);
+    for (0..600) |_| try actor.advanceVisualTick(.{ .horizontal_velocity = 2 });
+    const looping = actor.animationPlaybackSnapshot();
+    try std.testing.expect(looping.playback.loop_count > 0);
+    try std.testing.expect(!looping.playback.completed and !looping.playback.fallback_pending and !looping.playback.state_entered);
+    try std.testing.expectEqual(@as(u32, 0), looping.playback.completion_count);
+    try std.testing.expectEqual(actor.animationTime(), looping.playback.current_time);
+    var copy = looping;
+    copy.playback.current_time = 0;
+    copy.playback.loop_count += 1;
+    try std.testing.expectEqualDeep(looping, actor.animationPlaybackSnapshot());
+    try actor.enterAnimationState(.jump_start);
+    var ticks: usize = 0;
+    while (!actor.animationPlaybackSnapshot().playback.fallback_pending and ticks < 240) : (ticks += 1) try actor.advanceVisualTick(.{});
+    const completed = actor.animationPlaybackSnapshot();
+    try std.testing.expect(completed.playback.completed and completed.playback.fallback_pending);
+    try std.testing.expectEqual(@as(u32, 1), completed.playback.completion_count);
+    try std.testing.expect(looping.current_state_index != completed.current_state_index);
+    try std.testing.expectEqual(allocated, allocation.allocations);
+    try std.testing.expectEqual(resized, allocation.resize_index);
+}
+
+test "copied animation snapshot real transitions retain both sides and all policies" {
+    for ([_]bool{ false, true }) |advances| {
+        var fixture = try SharedFixture.init(std.testing.allocator);
+        defer fixture.deinit();
+        var states = authored.authoredStates();
+        states[0].playback_speed = 0.75;
+        states[1].playback_speed = 1.25;
+        var transitions = authored.authoredTransitions();
+        transitions[0].source_advances = advances;
+        transitions[0].destination_begins_immediately = !advances;
+        const machine_module = @import("state_machine");
+        const machine = try machine_module.Definition.init(std.testing.allocator, fixture.animations.library.clips, fixture.animations.library.token(), &states, &transitions, 0, null);
+        fixture.animations.machine.deinit();
+        fixture.animations.machine = machine;
+        var world = try collision_world.CollisionWorld.initDemo(std.testing.allocator, null);
+        defer world.deinit();
+        var allocation = std.testing.FailingAllocator.init(std.testing.allocator, .{});
+        const actor = try allocation.allocator().create(character.CharacterInstance);
+        defer allocation.allocator().destroy(actor);
+        actor.* = try character.CharacterInstance.initControlled(allocation.allocator(), try character.entityIdFromRaw(1), &fixture.definition, &fixture.animations, &world, .{}, controller_demo.spawn_position, .right, 0, null);
+        defer actor.deinit();
+        for (0..8) |_| try actor.advanceVisualTick(.{});
+        const before = actor.animationPlaybackSnapshot();
+        const physical = try actor.stepController(&world, .{ .move_axis = 1, .jump_pressed = false, .jump_held = false, .jump_released = false, .interact_pressed = false });
+        try actor.selectControllerAnimation(physical);
+        const snapshot = actor.animationPlaybackSnapshot();
+        const transition = snapshot.active_transition orelse return error.ExpectedProductionTransition;
+        try std.testing.expectEqual(@as(u16, 0), snapshot.current_state_index);
+        try std.testing.expectEqual(@as(u16, 0), transition.source_state_index);
+        try std.testing.expectEqual(@as(u16, 1), transition.destination_state_index);
+        try std.testing.expectEqual(@as(f32, 0), transition.elapsed);
+        try std.testing.expectEqual(@as(f32, 0.3), transition.duration);
+        try std.testing.expectEqual(advances, transition.source_advances);
+        try std.testing.expectEqual(!advances, transition.destination_begins_immediately);
+        try std.testing.expectEqualDeep(before.playback, transition.source_playback);
+        try std.testing.expectEqualDeep(before.playback, snapshot.playback);
+        try std.testing.expectEqualDeep(@as(@TypeOf(transition.destination_playback), .{ .playback_speed = 1.25 }), transition.destination_playback);
+        const allocated = allocation.allocations;
+        const resized = allocation.resize_index;
+        try actor.advanceVisualTick(.{ .horizontal_velocity = 1 });
+        const after = actor.animationPlaybackSnapshot();
+        const active = after.active_transition orelse return error.ExpectedProductionTransition;
+        // 1e-5 covers f32 accumulation for one fixed animation tick, not replay comparison.
+        const dt: f32 = @floatCast(fixed_step.fixed_dt_seconds);
+        try std.testing.expectApproxEqAbs(transition.elapsed + dt, active.elapsed, tolerance);
+        try std.testing.expectApproxEqAbs(transition.source_playback.current_time + (if (advances) dt * 0.75 else 0), active.source_playback.current_time, tolerance);
+        try std.testing.expectApproxEqAbs(if (advances) @as(f32, 0) else dt * 1.25, active.destination_playback.current_time, tolerance);
+        try std.testing.expectEqual(transition.source_playback.current_time, active.source_playback.previous_time);
+        try std.testing.expect(!active.source_playback.state_entered and !active.destination_playback.state_entered);
+        try std.testing.expectEqual(@as(u64, 0), active.source_playback.loop_count);
+        try std.testing.expectEqual(@as(u64, 0), active.destination_playback.loop_count);
+        try std.testing.expectEqual(@as(u32, 0), active.source_playback.completion_count);
+        try std.testing.expectEqual(@as(u32, 0), active.destination_playback.completion_count);
+        try std.testing.expect(!active.source_playback.completed and !active.destination_playback.completed);
+        try std.testing.expect(!active.source_playback.fallback_pending and !active.destination_playback.fallback_pending);
+        try std.testing.expect(!std.meta.eql(snapshot, after));
+        var independent = after;
+        independent.active_transition.?.source_advances = !advances;
+        independent.active_transition.?.destination_playback.loop_count = 91;
+        try std.testing.expectEqualDeep(after, actor.animationPlaybackSnapshot());
+        try std.testing.expectEqual(allocated, allocation.allocations);
+        try std.testing.expectEqual(resized, allocation.resize_index);
+    }
+}

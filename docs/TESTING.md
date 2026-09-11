@@ -171,6 +171,25 @@ application, and backend access; no unused foundation edge is required.
 Read the [world-time implementation report](implementation/world_time_foundation.md)
 for units, continuation behavior, validation evidence, and owner-review decisions.
 
+### Bounded Engine Lab collectible replay
+
+`zig build test-engine-lab-replay -j1` runs the application replay contracts through
+the focused runner and is included in `test`, `check` and `test-full`. Coverage
+includes the real 1,469-tick record/encode/decode/fresh playback, twelve contributors,
+ten names, exact 88,079-byte output, invocation groups, lifecycle, semantic tampering,
+terminal failures, allocation cleanup and the 1,024-byte decoder-envelope bound.
+`test-deterministic` includes the two generic copied animation snapshot tests.
+Use Debug, ReleaseSafe and ReleaseFast for the affected acceptance matrix.
+
+For file reproduction, run the same focused target with
+`-Dengine-lab-replay-test-filter="write recording"` and
+`-Dengine-lab-replay-output=<new-path.rr1>`, then with
+`-Dengine-lab-replay-test-filter="play recording"` and
+`-Dengine-lab-replay-input=<path.rr1>`. Playback with an input path consumes that file;
+it never substitutes generated commands. See exact PowerShell examples and evidence
+classification in the [implementation record](implementation/engine_lab_collectible_replay.md).
+No new GPU capture or owner visual test is required by this headless scope.
+
 ### RR1 deterministic record/replay
 
 `zig build test-record-replay -j1` exercises the CPU-only corrected V1 contract:
@@ -286,7 +305,7 @@ negative-X reflection and decomposition tolerances, canonical JSON/hash
 primitives and a fixed domain-hash vector, protected canonical-model and
 canonical-geometry byte/hash conformance, fixed seed/key derivation vectors,
 normalized rational scene time including negative time, and stable
-diagnostic ordering. Test-only imports compare the new faÃ§ade with the
+diagnostic ordering. Test-only imports compare the new faÃƒÂ§ade with the
 protected H canonical pipelines and the current 2D transform route; production
 foundation code does not import or replace those systems.
 
@@ -712,7 +731,7 @@ The aggregate commands remain:
 & '.\.deps\zig-0.16.0\zig.exe' build -Doptimize=ReleaseFast -j1
 ```
 
-Historical declaration counts in the Prompt 20â€“25 sections are
+Historical declaration counts in the Prompt 20Ã¢â‚¬â€œ25 sections are
 milestone-time evidence, not the current total.
 
 ## Prompt 25D focused visual geometry
@@ -919,7 +938,7 @@ It must demonstrate idle, left and right movement, release deceleration, opposin
 Prompt 14 originally added 12 grouped deterministic tests around a fixed
 82-pixel-per-metre resize policy. The current height-relative presentation
 decision deliberately supersedes that one assertion while preserving its
-640Ã—480 mapping, positive-Y-up transforms, zero-size rejection, GPU uniform,
+640Ãƒâ€”480 mapping, positive-Y-up transforms, zero-size rejection, GPU uniform,
 parallax, follow, physics-invariance, extended-world, and traversal coverage.
 The focused `zig build test-camera` route now also covers the 720/1080/1440/
 2160 linear scales, fixed vertical span, equal-aspect world extents,
@@ -938,7 +957,7 @@ Prompt 14's bounded GPU-backed route is:
 zig build run -- --frames 1100 --demo side-scroller --scripted-input
 ```
 
-It drives the real mapped `A` input through the 240 Hz controller into the extended-left world, traverses from `-3.15 m` past `-24 m`, and lets the character decelerate. The route must report at least 12 metres of deterministic camera-center travel, distant factor `0.125`, midground factor `0.45`, gameplay factor `1.0`, one texture page/range/actual draw, zero steady-state allocations, zero unrelated GPU-resource creation, and current drawable pixel dimensions. Failure to travel, follow, render, or cleanly settle returns nonzero. The fixed `zig build gpu-smoke` route remains 640Ã—480 and verifies the same shader contract through deterministic readback independently of visible-window resizing.
+It drives the real mapped `A` input through the 240 Hz controller into the extended-left world, traverses from `-3.15 m` past `-24 m`, and lets the character decelerate. The route must report at least 12 metres of deterministic camera-center travel, distant factor `0.125`, midground factor `0.45`, gameplay factor `1.0`, one texture page/range/actual draw, zero steady-state allocations, zero unrelated GPU-resource creation, and current drawable pixel dimensions. Failure to travel, follow, render, or cleanly settle returns nonzero. The fixed `zig build gpu-smoke` route remains 640Ãƒâ€”480 and verifies the same shader contract through deterministic readback independently of visible-window resizing.
 
 Prompt 15 adds eight grouped deterministic tests, bringing the aggregate Zig count from 205 to 213. They prove the canonical 16-bone rig, rest transforms, semantics, and four sockets remain unchanged while a definition adds custom attachment-point, region, group, visual, module, joint, and socket IDs. They cover zero and extended visual counts; multiple visuals sharing one point; visual-parent hierarchy; duplicate, dangling, self/cycle, and transactional cleanup failures; character-local visibility, deformation, and module pose with exact reset; mirrored point/module/child visuals; stable equal-layer input ordering; and 128 repeated appearance mutations/evaluations/submissions with no allocator movement after initialization.
 
@@ -1022,15 +1041,15 @@ draw, and upload peaks. The interactive companion is
 Resize verification is split deliberately: pure tests use synthetic viewports
 and compare controller, animation, world transform, appearance/loadout state,
 camera center, and pending edges across the atomic camera update. The
-production-scene test continues update/submission work after a 1920Ã—1080
+production-scene test continues update/submission work after a 1920Ãƒâ€”1080
 resize to prove later camera publication retains 184.5 px/m. The SDL route
 feeds real resize/pixel-size/restore events through `SDL_GetWindowSizeInPixels`
 and confirms acquired swapchain dimensions again before GPU encoding. A zero
 drawable skips without deriving scale. Neither form claims physical manual
 resizing or a visible 4K window unless it was actually performed.
 
-The active Prompt 27B scripted fixture retains its 960Ã—540, 800Ã—510, 640Ã—480
-incremental sequence and the separately classified direct 960Ã—540-to-640Ã—480
+The active Prompt 27B scripted fixture retains its 960Ãƒâ€”540, 800Ãƒâ€”510, 640Ãƒâ€”480
+incremental sequence and the separately classified direct 960Ãƒâ€”540-to-640Ãƒâ€”480
 transition in their original route phases. Every viewport-change frame is
 classified as instantaneous viewport reprojection instead of ordinary
 same-viewport world-camera motion. On the first submitted frame at a
@@ -1039,7 +1058,7 @@ required uses the available safe-region interval symmetrically so later bound
 changes have head and foot slack. If identical bounds are already safe, resize
 leaves the camera center exactly unchanged. Later frames at that viewport
 return to nearest-edge correction and retain the unchanged 16 px/render limit.
-Returning to 640Ã—480 does not invoke the non-reference recenter. Registration,
+Returning to 640Ãƒâ€”480 does not invoke the non-reference recenter. Registration,
 ground alignment, secondary motion, physics, animation, and interaction
 behavior remain unchanged.
 
@@ -1327,7 +1346,7 @@ fixtures for:
 - wrong landmark and wrong footwear pivot;
 - terrain/surface/character/debug semantic ordering;
 - exact and clipped camera safe bounds plus resized determinism;
-- direct 960Ã—540-to-640Ã—480 first-frame reprojection versus subsequent
+- direct 960Ãƒâ€”540-to-640Ãƒâ€”480 first-frame reprojection versus subsequent
   15.999 px valid and 16.001 px invalid world-camera steps;
 - measured, zero-travel, and reversed parallax;
 - ordinary and interaction participant overlap;
@@ -1351,7 +1370,7 @@ historical final-Prompt-27B ranges were:
 - heel/toe endpoint error: `0..0.03 px` and `-0.03..0 px`;
 - top/bottom clearance: `16..115.30 px` and `16..80.24 px`;
 - camera vertical step: `0..15.57 px/render`, required at most `16`;
-- abrupt first-post resize: `960Ã—540 -> 640Ã—480`, headroom `37.50 px`,
+- abrupt first-post resize: `960Ãƒâ€”540 -> 640Ãƒâ€”480`, headroom `37.50 px`,
   footroom `36.77 px`, instantaneous reprojection world delta `0 px`;
 - ordinary participant overlap: `0`;
 - semantic camera travel: `10.93 m`;
@@ -1440,7 +1459,7 @@ $env:SDL_GPU_DRIVER = 'direct3d12'
 & '.\tools\build_p27c_review_package.ps1'
 ```
 
-The state predicates produce eight 640Ã—480 body-only captures covering
+The state predicates produce eight 640Ãƒâ€”480 body-only captures covering
 neutral front, side-right, side-left, low/high build, extended arm, bent
 elbow, and deep knee bend. The ordinary `UnifiedRenderQueue` and SDL3 GPU
 readback are used; post-initialization update, submission, queue, and GPU
@@ -1621,8 +1640,8 @@ approved goldens.
 ## VF-03 typed component graph
 
 `zig build test-component-graph` covers the compiled immutable graph, typed
-socket roles/tags/capacities, selected bound visuals, eye â†’ eyebrow
-child-follow, scalp â†’ hair, explicit shoulder/elbow/wrist/hand-tip arm
+socket roles/tags/capacities, selected bound visuals, eye Ã¢â€ â€™ eyebrow
+child-follow, scalp Ã¢â€ â€™ hair, explicit shoulder/elbow/wrist/hand-tip arm
 modules, front/side-left/side-right projection, the `0.08 m`
 intentional-gap contract, and runtime topology-fingerprint compatibility.
 
@@ -1642,7 +1661,7 @@ identity, and zero post-stabilization queue allocation.
 VF-03-R1 adds the cross-layer invariant that an active optional module's three
 declared graph visuals resolve to exactly three final production
 submissions. Observable tests assert component/module ownership,
-shoulderâ†’elbow, elbowâ†’wrist, and wristâ†’hand-tip bindings, final submission
+shoulderÃ¢â€ â€™elbow, elbowÃ¢â€ â€™wrist, and wristÃ¢â€ â€™hand-tip bindings, final submission
 indices, nonempty visible alpha bounds, view/reflection persistence, inactive
 zero-submission behavior, and fail-closed duplicate/wrong-owner/wrong-joint
 fixtures. The focused totals are now `6/6` component-graph tests and `47/47`
@@ -1655,10 +1674,10 @@ metres, and reflected direction with invariant magnitude. Capture pixels use
 the exported camera:
 
 ```text
-gap_px = measured_gap_m Ã— pixels_per_meter
+gap_px = measured_gap_m Ãƒâ€” pixels_per_meter
 ```
 
-Historical `_0074â€“_0082` remain unchanged. The accepted corrective
+Historical `_0074Ã¢â‚¬â€œ_0082` remain unchanged. The accepted corrective
 real-D3D12/DXIL bundles are:
 
 - `_0083`: disabled front, `0` active modules and `0` submissions;
@@ -1674,7 +1693,7 @@ real-D3D12/DXIL bundles are:
 All eight accepted bundles are schema 4, JSON-parseable, manifest-complete,
 SHA-256/size valid, actual `direct3d12`/DXIL, and clean/debug frame, tick,
 state, and common fingerprint identical. Missing and orphan submission counts
-are zero. `_0084â€“_0090` are preserved invalid-JSON diagnostic candidates;
+are zero. `_0084Ã¢â‚¬â€œ_0090` are preserved invalid-JSON diagnostic candidates;
 they are not completion evidence. Bundle finalization now parses generated
 state and manifest JSON before rename. Manual visual acceptance is
 `[PENDING OWNER REVIEW]`.

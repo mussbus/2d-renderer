@@ -5,7 +5,7 @@ Acceptance Audit inspected clean, synchronized `master` at
 `48a7c677d781543e479b178c6e7b10b139eeb26e`. It found no CRITICAL or MAJOR
 blocker, verified every original F4A CRITICAL/MAJOR finding as resolved, and
 passed every required final validation gate. The owner accepts the audit and
-F4 — Production Architecture Hardening is accepted.
+F4 â€” Production Architecture Hardening is accepted.
 
 The production-system inventory below distinguishes current engine authority
 from protected historical visual lineage. Historical names identify accepted
@@ -83,6 +83,15 @@ deferred polish. Combined presentation is bounded at 2,453/2,560 sprites,
 107 spare and three batches.
 It preserves the accepted traversal/zoom boundary and does not imply a master merge.
 
+The [bounded collectible replay](../implementation/engine_lab_collectible_replay.md)
+is an application-owned headless implementation using accepted RR1, validated
+and ready for independent review.
+It records and plays back the serialized 1,469-tick six-pickup course with twelve
+state contributors and ten transition checkpoints. Independent review remains
+pending. Its only shared API is a copied CharacterInstance animation playback
+snapshot; it does not change RR1 or expand the accepted gameplay/visual boundary.
+Final automated evidence and its source identity belong to the new record.
+
 ## Foundation and current architecture track
 
 | Milestone | Current status |
@@ -102,9 +111,9 @@ It preserves the accepted traversal/zoom boundary and does not imply a master me
 | F4C5 | **OWNER-APPROVED** |
 | F4D | **OWNER-APPROVED** |
 | F4E | **OWNER-APPROVED** |
-| F4 — Production Architecture Hardening | **ACCEPTED** |
+| F4 â€” Production Architecture Hardening | **ACCEPTED** |
 
-Current architecture foundation: **F4 — Production Architecture Hardening,
+Current architecture foundation: **F4 â€” Production Architecture Hardening,
 ACCEPTED**.
 
 Post-F4 feature development is unblocked at the architecture gate. No
@@ -191,14 +200,14 @@ status.
 
 ## Post-F4 architecture debt
 
-### POST-F4-DEBT-001 — Renderer diagnostics compile coupling
+### POST-F4-DEBT-001 â€” Renderer diagnostics compile coupling
 
 **MODERATE, nonblocking.** Renderer resource reporting imports a diagnostics
 module whose dependency graph also reaches character and interaction types.
 This is compile-graph coupling, not a runtime-authority violation. Narrow it
 only when renderer/diagnostics work naturally provides the appropriate scope.
 
-### POST-F4-DEBT-002 — Explicit module catalog growth
+### POST-F4-DEBT-002 â€” Explicit module catalog growth
 
 **MINOR, monitor.** `build/modules.zig` remains a large explicit module
 catalog. Its visible ownership is preferable to hidden directory discovery.
@@ -289,34 +298,34 @@ SEM  SAF  MAT  CHR  CL  OBJ  LVL  AN  INT  PHY  WRD  ENV  IMG
 
 Dependency-gated:
 
-- **PFB** — after the OBJ authored-object contract;
-- **SCN** — after the intended LVL/PFB composition contract;
-- **PG** — after the LVL loading/origin/streaming boundary;
-- **AI** — after SEM, OBJ, and the required PHY query contracts;
-- **GAME** — after the selected LVL/SCN/OBJ gameplay dependencies;
-- **ED** — after the first authored schemas it is intended to edit are
+- **PFB** â€” after the OBJ authored-object contract;
+- **SCN** â€” after the intended LVL/PFB composition contract;
+- **PG** â€” after the LVL loading/origin/streaming boundary;
+- **AI** â€” after SEM, OBJ, and the required PHY query contracts;
+- **GAME** â€” after the selected LVL/SCN/OBJ gameplay dependencies;
+- **ED** â€” after the first authored schemas it is intended to edit are
   accepted.
 
 The PSM01 acceptance above records separately authorized work. This status record authorizes no additional downstream work.
 
 Status vocabulary:
 
-- **complete** — implemented and protected by appropriate tests/evidence;
-- **complete but visually provisional** — functional, but art or presentation
+- **complete** â€” implemented and protected by appropriate tests/evidence;
+- **complete but visually provisional** â€” functional, but art or presentation
   has not received final visual acceptance;
-- **partially implemented** — useful production behavior exists, but the
+- **partially implemented** â€” useful production behavior exists, but the
   stated concept is incomplete;
-- **documented only** — contract exists in documentation, not in the runtime
+- **documented only** â€” contract exists in documentation, not in the runtime
   schema;
-- **deferred** — intentionally postponed;
-- **not started** — no implementation should be inferred.
+- **deferred** â€” intentionally postponed;
+- **not started** â€” no implementation should be inferred.
 
 ## Production systems
 
 | System | Status | Current evidence and boundary |
 |---|---|---|
 | SDL3 GPU renderer and D3D12/DXIL route | complete | Atlas-backed sprites and deformable meshes use the global unified queue; Prompt 25D goldens and Prompt 26/27 captures were produced through the real production route. |
-| Height-relative production camera | automated complete, owner resize review pending | The 640×480 composition remains 82 px/m and fixes the vertical world span at 480/82 m. Positive drawable heights derive scale as 82×height/480 from actual SDL drawable/swapchain pixels; width changes horizontal visibility only. Zero drawables preserve the last valid camera. |
+| Height-relative production camera | automated complete, owner resize review pending | The 640Ã—480 composition remains 82 px/m and fixes the vertical world span at 480/82 m. Positive drawable heights derive scale as 82Ã—height/480 from actual SDL drawable/swapchain pixels; width changes horizontal visibility only. Zero drawables preserve the last valid camera. |
 | Fixed-step simulation, animation, physics, and controller | complete | One authoritative 240 Hz deterministic simulation; renderer interpolation does not own simulation. |
 | F-backed representative scene route | complete | `integrated` owns two persistent RuntimeScene entities through a bounded character adapter; F lifecycle/enabled/transform and snapshot semantics are live in production composition. Other routes remain explicitly transitional or specialized. |
 | Independent engine client | complete | `engine_smoke` owns one generic RuntimeScene entity, consumes the supported renderer/queue/capture surfaces directly, and has no demo or evidence dependency. |
@@ -378,7 +387,7 @@ errors are `-13.645128 px` and `+13.645128 px`. The historical zero-failure
 report is not cited as current-art proof. Historical isolated D3D12 runs and
 their review packages remain byte-identical; each historical review contains
 55 independent pixel metrics and zero failures. The direct
-960×540-to-640×480 first-post frame retains 37.50 px headroom and 36.77 px
+960Ã—540-to-640Ã—480 first-post frame retains 37.50 px headroom and 36.77 px
 footroom; subsequent camera movement peaks at 15.566496 px under the unchanged
 16 px bound. All 314 inventoried
 historical Prompt 27/27A evidence files remain present and hash-identical.
@@ -413,7 +422,7 @@ transformed, non-target evidence.
 VF-03 compiles the established appearance/anatomy definitions into one
 immutable component inspection authority. Typed socket roles/tags/capacities
 and explicit connection modes fail closed at initialization. The conventional
-and angular faces expose head → eye → eyebrow chains with one bound visual per
+and angular faces expose head â†’ eye â†’ eyebrow chains with one bound visual per
 eyebrow child; hair follows the typed scalp relationship. The nonstandard
 technical preset exports explicit shoulder/elbow/wrist/hand-tip arm modules,
 including one continuous and one declared `0.08 m` intentional-gap
@@ -429,13 +438,13 @@ chain. The invariant is declared = resolved = expected = actual, with exactly
 three submissions per active module. Inactive modules explicitly have no
 final indices and are not classified missing.
 
-Corrective D3D12/DXIL bundles `_0083`, `_0091–_0097` cover disabled,
+Corrective D3D12/DXIL bundles `_0083`, `_0091â€“_0097` cover disabled,
 continuous/intentional-gap front, both active side directions, reflection,
 and two modules. Singles contain exactly three submissions; `_0097` contains
-six. The `0.08 m` gap remains within `0.07–0.09 m` and derives approximately
+six. The `0.08 m` gap remains within `0.07â€“0.09 m` and derives approximately
 `6.56 px` from the captured `82 px/m` camera. Every accepted schema-4
 manifest, file hash/size, and clean/debug state identity validates.
-Historical `_0074–_0082` are unchanged. Invalid-JSON `_0084–_0090` attempts
+Historical `_0074â€“_0082` are unchanged. Invalid-JSON `_0084â€“_0090` attempts
 are preserved but are not completion evidence. A fresh current-art Prompt
 27B report remains fail-closed and passes 9,752 metrics with zero failures.
 The current aggregate is `428/428`.
@@ -511,8 +520,8 @@ current rendered application.
 - VF-02 registration bundles await owner/manual review and are not approved
   goldens.
 - VF-03-R1 rendered optional-arm bundles await owner/manual review and are not
-  approved goldens. Historical `_0074–_0082` and invalid corrective attempts
-  `_0084–_0090` remain preserved diagnostic candidates.
+  approved goldens. Historical `_0074â€“_0082` and invalid corrective attempts
+  `_0084â€“_0090` remain preserved diagnostic candidates.
 - The preserved pre-correction fresh-current-art Prompt 27B report has 24
   front-foot endpoint-height failures. The owner-review correction resolves
   that policy defect in a new 9,752-metric zero-failure run; neither report is

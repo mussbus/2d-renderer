@@ -38,7 +38,7 @@ owner-approved. The Final F4 Independent Production Architecture Acceptance
 Audit inspected commit `48a7c677d781543e479b178c6e7b10b139eeb26e`, found
 no CRITICAL or MAJOR blocker, verified all original F4A CRITICAL/MAJOR
 findings as resolved, and passed every required final validation gate. The
-owner accepts the audit: **F4 — Production Architecture Hardening is
+owner accepts the audit: **F4 â€” Production Architecture Hardening is
 ACCEPTED**. Post-F4 development is unblocked at the architecture gate, while
 every downstream implementation track still requires its own dedicated
 authorization and applicable dependency gates. Accepted F identity,
@@ -121,7 +121,7 @@ roots do not publish. F roots must be unparented, zero-origin, zero-Z,
 identity-rotation and unit-scale within the shared affine tolerance.
 Facing, animation pose, IK, equipment, anatomy and presentation offsets remain
 specialized and never enter RuntimeEntity. Generic reads use an F snapshot;
-character-specific reads use the character façade. Other surviving routes are
+character-specific reads use the character faÃ§ade. Other surviving routes are
 explicitly transitional or specialized acceptance/content routes and are not
 silently claimed as F-backed.
 
@@ -129,7 +129,7 @@ silently claimed as F-backed.
 
 `src/graphics/camera2d.zig` owns presentation state: a finite world-space center, nonzero drawable-pixel width and height, and a positive pixels-per-metre scale. It imports only the renderer-independent math module. `worldToPresentation`, `presentationToWorld`, `worldToClip`, visible half-extents, the 16-byte GPU uniform, and deterministic horizontal following are therefore testable without SDL, a window, or a GPU.
 
-The immutable reference presentation is 640×480 at 82 pixels per metre with
+The immutable reference presentation is 640Ã—480 at 82 pixels per metre with
 center `(0, 135 / 82) m`. It maps world origin to the established `(320, 105)`
 presentation point and fixes the vertical world span at `480 / 82`, or
 approximately `5.85365854 m`. Every valid viewport update atomically derives
@@ -144,11 +144,11 @@ from the previous resize. X and Y share that one scale. Resolution changes at
 one aspect ratio therefore preserve both world extents while increasing pixel
 detail, and aspect-ratio changes alter only horizontal visibility. Manual zoom
 remains deferred. This policy supersedes Prompt 14's fixed-pixel-density
-resize behavior; its fixed 640×480 capture composition remains identical.
+resize behavior; its fixed 640Ã—480 capture composition remains identical.
 The Prompt 27B 16-pixel top/bottom safe-region margins are likewise reference
 composition values: they are converted through 82 px/m to constant world
 margins, then rendered at the effective scale. This prevents a resolution
-change by itself from moving the camera center while leaving the 640×480 ruler
+change by itself from moving the camera center while leaving the 640Ã—480 ruler
 exactly unchanged.
 
 Visible windows are created with `SDL_WINDOW_RESIZABLE`. SDL window-resize, drawable-pixel-size, minimize, and restore events refresh `SDL_GetWindowSizeInPixels`; the dimensions returned by `SDL_WaitAndAcquireGPUSwapchainTexture` are the final per-frame authority. A zero or absent swapchain texture skips drawing without changing the last valid camera. Restoration applies the new nonzero pixel extent. Resize handling updates scalar camera state only and does not recreate shaders, textures, buffers, samplers, or pipelines.
@@ -597,8 +597,8 @@ existing horizontal policy, then publishes that camera for the same submitted
 frame. It cannot write simulation, collision, interaction, or foot-planting
 state.
 
-The route retains its incremental 960×540 to 800×510 to 640×480 resize and
-also performs one separately identified direct 960×540 to 640×480 event.
+The route retains its incremental 960Ã—540 to 800Ã—510 to 640Ã—480 resize and
+also performs one separately identified direct 960Ã—540 to 640Ã—480 event.
 Every changed-viewport frame is classified as instantaneous viewport
 reprojection: its finite head/foot projection must satisfy the unchanged
 safe-region contract immediately. The first submitted frame at a
@@ -909,6 +909,18 @@ with the current front/side/reflected transform. Gap pixels are observation
 data derived from the captured camera, never placement authority. Inactive
 modules retain immutable definition data but produce no active projected
 members and no queue submissions.
+
+## Bounded Engine Lab replay adapter
+
+The [collectible replay implementation](implementation/engine_lab_collectible_replay.md)
+is an application-owned, headless consumer of RR1. It exclusively owns a fresh
+expanded Hub, records one production tick per call, and plays serialized commands
+through that same Hub path. Twelve canonical contributors include copied animation
+playback, pose/foot history, stations, calibration, World Time, challenge/effects
+and the inactive impact installation. Player observes real events before state
+capture and verification; any failure permanently halts this adapter. Paused waits
+call neither the Hub nor Player.next. This does not provide restore, arbitrary scene
+replay, dynamic RuntimeScene actor publication or a second scheduler.
 
 ## RR1 deterministic record/replay
 

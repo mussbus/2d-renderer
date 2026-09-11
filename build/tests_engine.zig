@@ -9,6 +9,7 @@ pub const Options = struct {
 };
 
 pub const Registration = struct {
+    run_engine_lab_replay: *std.Build.Step.Run,
     run_secondary_motion: *std.Build.Step.Run,
     run_record_replay: *std.Build.Step.Run,
     run_effects_projectiles: *std.Build.Step.Run,
@@ -50,6 +51,11 @@ pub fn register(options: Options) Registration {
     const run_engine_lab_tests = b.addRunArtifact(engine_lab_tests);
     const engine_lab_test_step = b.step("test-engine-lab", "Run headless Engine Lab hub, actor, collision, navigation, reset and determinism contracts");
     engine_lab_test_step.dependOn(&run_engine_lab_tests.step);
+
+    const engine_lab_replay_filter = b.option([]const u8, "engine-lab-replay-test-filter", "Narrow bounded collectible replay development tests; omit for acceptance");
+    const engine_lab_replay_tests = addEngineTest(b, .{ .name = "engine-lab-collectible-replay-tests", .root_module = modules.engine_lab_replay_test_module, .filters = if (engine_lab_replay_filter) |filter| &.{filter} else &.{} });
+    const run_engine_lab_replay = b.addRunArtifact(engine_lab_replay_tests);
+    b.step("test-engine-lab-replay", "Run bounded headless collectible recording, serialized playback and lifecycle contracts").dependOn(&run_engine_lab_replay.step);
 
     const record_replay_tests = addEngineTest(b, .{
         .name = "record-replay-tests",
@@ -247,6 +253,7 @@ pub fn register(options: Options) Registration {
         .run_effects_projectiles = run_effects_projectiles,
         .run_engine_composition = run_engine_composition_tests,
         .run_engine_lab = run_engine_lab_tests,
+        .run_engine_lab_replay = run_engine_lab_replay,
         .run_deterministic = run_tests,
         .run_renderer_boundary = run_renderer_boundary_tests,
         .run_foundation_primitives = run_foundation_primitive_tests,
